@@ -3,7 +3,7 @@
 // @name:en      Find-Your-Country-Code
 // @name:zh-CN   Find-Your-Country-Code
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
-// @version      1.2.0
+// @version      1.2.1
 // @description  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
 // @description:en  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
 // @description:zh-CN  智能识别国家/电话区号字段，提供可搜索的快速选择面板并自动填充区号。
@@ -37,6 +37,11 @@ const SELECT_KW = [
   'intlcode','intl_code','intl-code',
   'prefix','phoneprefix','phone_prefix',
   'mobile_code','mobilecode','countryphone','idd','npa',
+];
+
+const SELECT_EXCLUDE_KW = [
+  'locale','language','lang','translate','translation','i18n',
+  '语言','语种','本地化','翻译',
 ];
 
 const INPUT_KW = [
@@ -376,6 +381,12 @@ const Detect = {
       .filter(Boolean).join(' ');
 
     const lbl = this._label(el).toLowerCase();
+    const parentHint = el.parentElement
+      ? `${el.parentElement.className || ''} ${(el.parentElement.getAttribute('aria-label') || '')}`
+      : '';
+    const detectHint = `${attrStr} ${lbl} ${parentHint}`.toLowerCase();
+    if (this._kw(detectHint, SELECT_EXCLUDE_KW)) return false;
+
     const hasLabelPhrase = LABEL_PHRASES.some(p => lbl.includes(p));
 
     const hasAttrKw = this._kw(attrStr, SELECT_KW) ||
@@ -385,17 +396,20 @@ const Detect = {
         SELECT_KW
       ));
 
-    if (hasAttrKw || hasLabelPhrase) return true;
-
-    const hitPlus = opts.filter(o => {
-      const v = o.value.trim();
-      const txt = o.text || '';
-      return /^\+\d{1,4}$/.test(v) || /\(\+\d{1,4}\)/.test(txt);
+    const hitCode = opts.filter(o => {
+      const v = (o.value || '').trim();
+      const txt = (o.text || '').trim();
+      return /^\+\d{1,4}$/.test(v) || /^00\d{1,4}$/.test(v) || /^\d{1,4}$/.test(v) || /\(\+\d{1,4}\)/.test(txt);
     });
-    if (hitPlus.length >= 2 && hitPlus.length / opts.length >= 0.4) return true;
+
+    if (hasAttrKw || hasLabelPhrase) {
+      return hitCode.length >= 2;
+    }
+
+    if (hitCode.length >= 2 && hitCode.length / opts.length >= 0.4) return true;
 
     const allText = opts.map(o => (o.text || '').toLowerCase()).join(' ');
-    if (/(china|japan|united states|usa|america|germany|france|india|canada|australia|united kingdom|uk)/.test(allText)) {
+    if (hitCode.length >= 2 && /(china|japan|united states|usa|america|germany|france|india|canada|australia|united kingdom|uk)/.test(allText)) {
       return true;
     }
 
