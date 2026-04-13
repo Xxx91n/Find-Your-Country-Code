@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Find-Your-Country-Codo
+// @name         Find-Your-Country-Code
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
 // @version      1.0.0
 // @description  智能识别区号字段，提供快捷搜索和选择
