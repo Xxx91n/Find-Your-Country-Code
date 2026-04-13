@@ -1,0 +1,10 @@
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# test
+test/
+
+# docx
+docx/
