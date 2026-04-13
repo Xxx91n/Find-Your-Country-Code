@@ -1,8 +1,11 @@
 // ==UserScript==
 // @name         Find-Your-Country-Code
+// @name:en      Find-Your-Country-Code
+// @name:zh-CN   Find-Your-Country-Code
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
-// @version      1.1.1
+// @version      1.2.0
 // @description  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
+// @description:en  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
 // @description:zh-CN  智能识别国家/电话区号字段，提供可搜索的快速选择面板并自动填充区号。
 // @author       Xxx91n
 // @license      MIT
@@ -590,7 +593,7 @@ user-select:none;line-height:1;padding:0}
 background:var(--cch-surface);border:1px solid var(--cch-border);border-radius:16px;
 box-shadow:0 18px 48px rgba(2,8,23,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
 width:320px;max-height:min(78vh,460px);display:flex;flex-direction:column;overflow:hidden;
-animation:cchIn .12s ease}
+animation:cchIn .12s ease;z-index:2147483647}
 @keyframes cchIn{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 #cch-sw{padding:12px 12px 10px;border-bottom:1px solid rgba(15,23,42,.08);background:var(--cch-surface-strong)}
 #cch-si{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid rgba(15,23,42,.12);
