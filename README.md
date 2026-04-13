@@ -28,7 +28,7 @@
 
 **方法三：手动安装**
 
-1. 复制 [Find-Your-Country-Codo.js](./src/Find-Your-Country-Codo.js) 的内容。
+1. 复制 [Find-Your-Country-Code.js](./src/Find-Your-Country-Code.js) 的内容。
 2. 打开 Tampermonkey 管理面板。
 3. 点击 添加新脚本。
 4. 粘贴代码并保存。
