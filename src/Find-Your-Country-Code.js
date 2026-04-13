@@ -1,11 +1,9 @@
 // ==UserScript==
 // @name         Find-Your-Country-Code
-// @name:en      Find-Your-Country-Code
-// @name:zh-CN   Find-Your-Country-Code
+// @name:zh-CN   快速选择你的手机号国家区号。
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
-// @version      1.2.1
+// @version      1.3.3
 // @description  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
-// @description:en  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
 // @description:zh-CN  智能识别国家/电话区号字段，提供可搜索的快速选择面板并自动填充区号。
 // @author       Xxx91n
 // @license      MIT
@@ -16,6 +14,7 @@
 // @match        *://*/*
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_addValueChangeListener
 // @run-at       document-idle
 // ==/UserScript==
 
@@ -42,6 +41,8 @@ const SELECT_KW = [
 const SELECT_EXCLUDE_KW = [
   'locale','language','lang','translate','translation','i18n',
   '语言','语种','本地化','翻译',
+  'province','state','city','region','county','district','prefecture','locality',
+  '省份','城市','区县','县区','州','地区','行政区',
 ];
 
 const INPUT_KW = [
@@ -307,22 +308,86 @@ const t = k => (MSG[LANG] || MSG.en)[k] || k;
 const Store = {
   _k: 'cch_v33',
   _c: null,
+  _bc: null,
+  _gmListener: null,
+  _subs: new Set(),
+  _notifyQueued: false,
+  _sid: Math.random().toString(36).slice(2),
+  init() {
+    if (!this._bc && typeof BroadcastChannel !== 'undefined') {
+      try {
+        this._bc = new BroadcastChannel('cch-favs-sync-v1');
+        this._bc.addEventListener('message', e => {
+          const msg = e && e.data;
+          if (!msg || msg.sid === this._sid || msg.type !== 'favs-sync') return;
+          if (!Array.isArray(msg.favs)) return;
+          const d = this._load();
+          d.favs = msg.favs;
+          this._save(d, true);
+          this._notify();
+        });
+      } catch {}
+    }
+    if (!this._gmListener && typeof GM_addValueChangeListener === 'function') {
+      try {
+        this._gmListener = GM_addValueChangeListener(this._k, (_k, _o, n, remote) => {
+          if (!remote) return;
+          try {
+            const parsed = JSON.parse(n || '{}');
+            if (!Array.isArray(parsed.favs)) parsed.favs = [];
+            this._c = parsed;
+            this._notify();
+          } catch {}
+        });
+      } catch {}
+    }
+  },
+  _notify() {
+    if (this._notifyQueued) return;
+    this._notifyQueued = true;
+    setTimeout(() => {
+      this._notifyQueued = false;
+      this._subs.forEach(fn => {
+        try { fn(); } catch {}
+      });
+    }, 0);
+  },
+  subscribe(fn) {
+    if (typeof fn !== 'function') return () => {};
+    this._subs.add(fn);
+    return () => this._subs.delete(fn);
+  },
+  _broadcastFavs(favs) {
+    if (!this._bc) return;
+    try {
+      this._bc.postMessage({ type: 'favs-sync', sid: this._sid, favs });
+    } catch {}
+  },
   _load() {
     if (this._c) return this._c;
     try { this._c = JSON.parse(GM_getValue(this._k, '{}')); } catch { this._c = {}; }
     if (!Array.isArray(this._c.favs)) this._c.favs = [];
     return this._c;
   },
-  _save(d) { this._c = d; GM_setValue(this._k, JSON.stringify(d)); },
+  _save(d, silent) {
+    this._c = d;
+    GM_setValue(this._k, JSON.stringify(d));
+    if (!silent) this._broadcastFavs(d.favs);
+  },
   isFav(code, iso) { return this._load().favs.some(f => f.code === code && f.iso === iso); },
   addFav(c) {
     const d = this._load();
-    if (!this.isFav(c.code, c.iso)) { d.favs.push(c); this._save(d); }
+    if (!this.isFav(c.code, c.iso)) {
+      d.favs.push(c);
+      this._save(d);
+      this._notify();
+    }
   },
   rmFav(code, iso) {
     const d = this._load();
     d.favs = d.favs.filter(f => !(f.code === code && f.iso === iso));
     this._save(d);
+    this._notify();
   },
   getFavs() { return this._load().favs; },
 };
@@ -401,12 +466,17 @@ const Detect = {
       const txt = (o.text || '').trim();
       return /^\+\d{1,4}$/.test(v) || /^00\d{1,4}$/.test(v) || /^\d{1,4}$/.test(v) || /\(\+\d{1,4}\)/.test(txt);
     });
+    const hitPlusLike = opts.filter(o => {
+      const v = (o.value || '').trim();
+      const txt = (o.text || '').trim();
+      return /^\+\d{1,4}$/.test(v) || /^00\d{1,4}$/.test(v) || /\(\+\d{1,4}\)/.test(txt);
+    });
 
     if (hasAttrKw || hasLabelPhrase) {
       return hitCode.length >= 2;
     }
 
-    if (hitCode.length >= 2 && hitCode.length / opts.length >= 0.4) return true;
+    if (hitPlusLike.length >= 2 && hitPlusLike.length / opts.length >= 0.4) return true;
 
     const allText = opts.map(o => (o.text || '').toLowerCase()).join(' ');
     if (hitCode.length >= 2 && /(china|japan|united states|usa|america|germany|france|india|canada|australia|united kingdom|uk)/.test(allText)) {
@@ -586,7 +656,7 @@ const Fill = {
 // ════════════════════════════════════════════════════════
 const UI = {
   _root: null, _popup: null, _target: null, _kind: null,
-  _toastTimer: null,
+  _toastTimer: null, _closeHandler: null,
 
   css() {
     if (document.getElementById('cch-style')) return;
@@ -613,11 +683,15 @@ animation:cchIn .12s ease;z-index:2147483647}
 #cch-si{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid rgba(15,23,42,.12);
 background:rgba(255,255,255,.88);color:var(--cch-text);border-radius:10px;font-size:13px;outline:none}
 #cch-si:focus{border-color:rgba(15,118,110,.45);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
-.cch-body{display:flex;flex-direction:column;gap:8px;padding:8px 8px 10px;overflow-y:auto;flex:1}
-.cch-sec{border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.66);border-radius:12px;overflow:hidden}
+.cch-body{display:flex;flex-direction:column;gap:8px;padding:8px 8px 10px;overflow:hidden;flex:1;min-height:0}
+.cch-sec{border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.66);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.cch-sec-favs{flex:0 0 auto}
+.cch-sec-all{flex:1 1 auto;min-height:120px}
 .cch-sec-hd{padding:7px 10px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--cch-subtext);
 text-transform:uppercase;background:rgba(255,255,255,.52);border-bottom:1px solid rgba(15,23,42,.06)}
-.cch-list{overflow-y:auto;max-height:180px}
+.cch-list{display:flex;flex-direction:column}
+.cch-sec-favs .cch-list{max-height:132px;overflow-y:auto}
+.cch-sec-all .cch-list{flex:1 1 auto;min-height:0;overflow-y:auto}
 .cch-row{display:flex;align-items:center;padding:8px 10px;cursor:pointer;
 gap:8px;border-bottom:1px solid rgba(15,23,42,.06);transition:background .12s ease,transform .08s ease}
 .cch-row:last-child{border-bottom:none}
@@ -685,7 +759,7 @@ transition:opacity .2s;white-space:nowrap}
       this._root.id = OWN_ROOT_ID;
       document.body.appendChild(this._root);
     }
-    if (this._popup) this._popup.remove();
+    this._closePopup();
 
     const pop = document.createElement('div');
     pop.id = 'cch-pop';
@@ -727,19 +801,62 @@ transition:opacity .2s;white-space:nowrap}
     body.appendChild(allSec);
     pop.appendChild(body);
 
-    si.addEventListener('input', () => this._render(si.value));
-    this._render('');
     document.body.appendChild(pop);
     this._pos(pop, anchor);
+    this._bindPopupEvents(pop);
+    this._render('');
 
     const close = e => {
       if (!pop.contains(e.target) && e.target !== anchor) {
-        pop.remove(); this._popup = null;
-        document.removeEventListener('mousedown', close);
+        this._closePopup();
       }
     };
+    this._closeHandler = close;
     setTimeout(() => document.addEventListener('mousedown', close), 0);
-    si.focus();
+    requestAnimationFrame(() => {
+      if (this._popup === pop) si.focus();
+    });
+  },
+
+  _closePopup() {
+    if (this._popup) {
+      this._popup.remove();
+      this._popup = null;
+    }
+    if (this._closeHandler) {
+      document.removeEventListener('mousedown', this._closeHandler);
+      this._closeHandler = null;
+    }
+  },
+
+  _bindPopupEvents(pop) {
+    const si = pop.querySelector('#cch-si');
+    if (si) {
+      si.addEventListener('input', () => {
+        if (this._popup !== pop) return;
+        this._render(si.value);
+      });
+    }
+    pop.addEventListener('click', e => {
+      if (this._popup !== pop) return;
+      const favBtn = e.target.closest('.cch-fav');
+      if (favBtn) {
+        e.stopPropagation();
+        const iso = (favBtn.dataset.iso || '').toLowerCase();
+        const entry = ISO2_MAP[iso];
+        if (!entry) return;
+        if (Store.isFav(entry.code, entry.iso)) Store.rmFav(entry.code, entry.iso);
+        else Store.addFav(entry);
+        return;
+      }
+      const row = e.target.closest('.cch-row');
+      if (!row) return;
+      const iso = (row.dataset.iso || '').toLowerCase();
+      const c = ISO2_MAP[iso];
+      if (!c) return;
+      Fill.run(this._target, this._kind, c);
+      this._closePopup();
+    });
   },
 
   _pos(pop, anchor) {
@@ -770,29 +887,13 @@ transition:opacity .2s;white-space:nowrap}
     const frag = document.createDocumentFragment();
     data.forEach(c => {
       const row = document.createElement('div'); row.className = 'cch-row';
+      row.dataset.iso = c.iso;
       const fav = Store.isFav(c.code, c.iso);
       row.innerHTML = `
 <span class="cch-fl">${c.flag}</span>
 <span class="cch-cd">${c.code}</span>
 <span class="cch-nm">${c.country} ${c.countryEn}</span>
 <button type="button" class="cch-fav${fav ? ' on' : ''}" data-code="${c.code}" data-iso="${c.iso}" title="${fav ? t('rmFav') : t('addFav')}">${fav ? '★' : '☆'}</button>`;
-      row.addEventListener('click', e => {
-        if (e.target.closest('.cch-fav')) return;
-        Fill.run(this._target, this._kind, c);
-        this._popup && this._popup.remove(); this._popup = null;
-      });
-      row.querySelector('.cch-fav').addEventListener('click', e => {
-        e.stopPropagation();
-        const btn = e.currentTarget;
-        const entry = ISO2_MAP[btn.dataset.iso.toLowerCase()] || c;
-        if (Store.isFav(btn.dataset.code, btn.dataset.iso)) {
-          Store.rmFav(btn.dataset.code, btn.dataset.iso);
-        } else {
-          Store.addFav(entry);
-        }
-        const q = this._popup ? this._popup.querySelector('#cch-si').value : '';
-        this._render(q);
-      });
       frag.appendChild(row);
     });
     list.appendChild(frag);
@@ -827,7 +928,13 @@ function observe() {
 }
 
 function init() {
+  Store.init();
   UI.css();
+  Store.subscribe(() => {
+    if (!UI._popup) return;
+    const q = UI._popup.querySelector('#cch-si')?.value || '';
+    UI._render(q);
+  });
   Detect.scan(document.body);
   let n = 0;
   const poll = setInterval(() => {
