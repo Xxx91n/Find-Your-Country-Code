@@ -1,9 +1,15 @@
 // ==UserScript==
 // @name         Find-Your-Country-Code
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
-// @version      1.1.0
-// @description  智能识别区号字段，提供快捷搜索和选择
+// @version      1.1.1
+// @description  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
+// @description:zh-CN  智能识别国家/电话区号字段，提供可搜索的快速选择面板并自动填充区号。
 // @author       Xxx91n
+// @license      MIT
+// @homepageURL  https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code
+// @supportURL   https://github.com/Xxx91n/Find-Your-Country-Code/issues
+// @downloadURL  https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js
+// @updateURL    https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.meta.js
 // @match        *://*/*
 // @grant        GM_setValue
 // @grant        GM_getValue
