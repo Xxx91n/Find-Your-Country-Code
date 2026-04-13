@@ -8,3 +8,6 @@ test/
 
 # docx
 docx/
+
+# worktrees
+.worktrees/

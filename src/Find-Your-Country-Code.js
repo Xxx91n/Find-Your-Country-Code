@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Find-Your-Country-Code
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
-// @version      1.0.0
+// @version      1.1.0
 // @description  智能识别区号字段，提供快捷搜索和选择
 // @author       Xxx91n
 // @match        *://*/*
@@ -563,7 +563,7 @@ const Fill = {
 // ════════════════════════════════════════════════════════
 const UI = {
   _root: null, _popup: null, _target: null, _kind: null,
-  _tab: 'all', _toastTimer: null,
+  _toastTimer: null,
 
   css() {
     if (document.getElementById('cch-style')) return;
@@ -571,41 +571,41 @@ const UI = {
     s.id = 'cch-style';
     s.textContent = `
 .${WRAPPER_CLASS}{position:relative;display:inline-block;width:100%}
-.cch-btn{position:absolute;right:5px;top:50%;transform:translateY(-50%);
-width:20px;height:20px;border-radius:50%;background:rgba(1,105,111,.14);
-border:1px solid rgba(1,105,111,.3);cursor:pointer;display:flex;
-align-items:center;justify-content:center;font-size:12px;z-index:9999;
-transition:background .15s;user-select:none;line-height:1;padding:0}
-.cch-btn:hover{background:rgba(1,105,111,.28)}
-#${OWN_ROOT_ID}{z-index:2147483647;font-family:system-ui,sans-serif}
-#cch-pop{background:#fff;border:1px solid #ddd;border-radius:10px;
-box-shadow:0 8px 32px rgba(0,0,0,.18);width:300px;max-height:420px;
-display:flex;flex-direction:column;overflow:hidden;animation:cchIn .14s ease}
-@keyframes cchIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
-@media(prefers-color-scheme:dark){
-#cch-pop{background:#1e1e1e;border-color:#444;color:#ddd}
-#cch-si{background:#2a2a2a;border-color:#555;color:#eee}
-.cch-tab{color:#999}.cch-tab.on{color:#4fc3f7;border-bottom-color:#4fc3f7}
-.cch-row:hover{background:#2a2a2a}.cch-fav{color:#777}}
-#cch-sw{padding:8px 10px 4px;border-bottom:1px solid #eee}
-#cch-si{width:100%;box-sizing:border-box;padding:6px 10px;border:1px solid #ddd;
-border-radius:6px;font-size:13px;outline:none}
-#cch-si:focus{border-color:#01696f}
-.cch-tabs{display:flex;border-bottom:1px solid #eee}
-.cch-tab{flex:1;padding:7px 0;font-size:12px;cursor:pointer;text-align:center;
-color:#777;border-bottom:2px solid transparent;transition:color .1s,border-color .1s}
-.cch-tab.on{color:#01696f;border-bottom-color:#01696f;font-weight:600}
-.cch-list{overflow-y:auto;flex:1}
-.cch-row{display:flex;align-items:center;padding:7px 12px;cursor:pointer;
-gap:8px;border-bottom:1px solid #f3f3f3;transition:background .1s}
-.cch-row:hover{background:#f0faf9}
-.cch-fl{font-size:18px;flex-shrink:0;width:24px;text-align:center}
-.cch-cd{font-weight:600;font-size:13px;color:#01696f;min-width:44px}
-.cch-nm{font-size:12px;color:#666;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cch-fav{background:none;border:none;cursor:pointer;font-size:15px;color:#ccc;
+.cch-btn{position:absolute;top:-12px;right:-12px;transform:none;
+width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.96);
+border:1px solid rgba(15,23,42,.16);cursor:pointer;display:flex;
+align-items:center;justify-content:center;font-size:13px;z-index:10000;
+box-shadow:0 8px 18px rgba(2,8,23,.18);transition:transform .12s ease,box-shadow .12s ease;
+user-select:none;line-height:1;padding:0}
+.cch-btn:hover{transform:scale(1.06);box-shadow:0 10px 20px rgba(2,8,23,.22)}
+#${OWN_ROOT_ID}{z-index:2147483647;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#cch-pop{--cch-surface:rgba(255,255,255,.78);--cch-surface-strong:rgba(255,255,255,.92);
+--cch-border:rgba(15,23,42,.12);--cch-text:#0f172a;--cch-subtext:#475569;--cch-accent:#0f766e;
+background:var(--cch-surface);border:1px solid var(--cch-border);border-radius:16px;
+box-shadow:0 18px 48px rgba(2,8,23,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+width:320px;max-height:min(78vh,460px);display:flex;flex-direction:column;overflow:hidden;
+animation:cchIn .12s ease}
+@keyframes cchIn{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+#cch-sw{padding:12px 12px 10px;border-bottom:1px solid rgba(15,23,42,.08);background:var(--cch-surface-strong)}
+#cch-si{width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid rgba(15,23,42,.12);
+background:rgba(255,255,255,.88);color:var(--cch-text);border-radius:10px;font-size:13px;outline:none}
+#cch-si:focus{border-color:rgba(15,118,110,.45);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+.cch-body{display:flex;flex-direction:column;gap:8px;padding:8px 8px 10px;overflow-y:auto;flex:1}
+.cch-sec{border:1px solid rgba(15,23,42,.08);background:rgba(255,255,255,.66);border-radius:12px;overflow:hidden}
+.cch-sec-hd{padding:7px 10px;font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--cch-subtext);
+text-transform:uppercase;background:rgba(255,255,255,.52);border-bottom:1px solid rgba(15,23,42,.06)}
+.cch-list{overflow-y:auto;max-height:180px}
+.cch-row{display:flex;align-items:center;padding:8px 10px;cursor:pointer;
+gap:8px;border-bottom:1px solid rgba(15,23,42,.06);transition:background .12s ease,transform .08s ease}
+.cch-row:last-child{border-bottom:none}
+.cch-row:hover{background:rgba(15,118,110,.08)}
+.cch-fl{font-size:17px;flex-shrink:0;width:24px;text-align:center}
+.cch-cd{font-weight:600;font-size:13px;color:var(--cch-accent);min-width:44px}
+.cch-nm{font-size:12px;color:var(--cch-subtext);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cch-fav{background:none;border:none;cursor:pointer;font-size:15px;color:#b8c1cc;
 padding:2px 4px;border-radius:4px;flex-shrink:0;transition:color .1s}
-.cch-fav.on,.cch-fav:hover{color:#f5a623}
-.cch-empty{padding:24px;text-align:center;color:#aaa;font-size:13px}
+.cch-fav.on,.cch-fav:hover{color:#f59e0b}
+.cch-empty{padding:14px 10px;text-align:center;color:#8a95a3;font-size:12px}
 #cch-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
 background:#01696f;color:#fff;padding:8px 20px;border-radius:20px;
 font-size:13px;z-index:2147483647;pointer-events:none;opacity:0;
@@ -675,27 +675,37 @@ transition:opacity .2s;white-space:nowrap}
     si.setAttribute('autocomplete', 'off');
     sw.appendChild(si); pop.appendChild(sw);
 
-    const tabs = document.createElement('div'); tabs.className = 'cch-tabs';
-    ['all','favs'].forEach(k => {
-      const btn = document.createElement('button');
-      btn.className = 'cch-tab' + (this._tab === k ? ' on' : '');
-      btn.textContent = t(k === 'all' ? 'all' : 'favs');
-      btn.dataset.t = k;
-      btn.type = 'button';
-      btn.addEventListener('click', () => {
-        this._tab = k;
-        tabs.querySelectorAll('.cch-tab').forEach(b => b.classList.toggle('on', b.dataset.t === k));
-        this._render(list, si.value);
-      });
-      tabs.appendChild(btn);
-    });
-    pop.appendChild(tabs);
+    const body = document.createElement('div');
+    body.className = 'cch-body';
 
-    const list = document.createElement('div'); list.className = 'cch-list';
-    pop.appendChild(list);
+    const favSec = document.createElement('section');
+    favSec.className = 'cch-sec cch-sec-favs';
+    const favHd = document.createElement('div');
+    favHd.className = 'cch-sec-hd';
+    favHd.textContent = t('favs');
+    const favList = document.createElement('div');
+    favList.className = 'cch-list';
+    favList.setAttribute('data-sec', 'favs');
+    favSec.appendChild(favHd);
+    favSec.appendChild(favList);
 
-    si.addEventListener('input', () => this._render(list, si.value));
-    this._render(list, '');
+    const allSec = document.createElement('section');
+    allSec.className = 'cch-sec cch-sec-all';
+    const allHd = document.createElement('div');
+    allHd.className = 'cch-sec-hd';
+    allHd.textContent = t('all');
+    const allList = document.createElement('div');
+    allList.className = 'cch-list';
+    allList.setAttribute('data-sec', 'all');
+    allSec.appendChild(allHd);
+    allSec.appendChild(allList);
+
+    body.appendChild(favSec);
+    body.appendChild(allSec);
+    pop.appendChild(body);
+
+    si.addEventListener('input', () => this._render(si.value));
+    this._render('');
     document.body.appendChild(pop);
     this._pos(pop, anchor);
 
@@ -711,21 +721,25 @@ transition:opacity .2s;white-space:nowrap}
 
   _pos(pop, anchor) {
     const r = anchor.getBoundingClientRect();
-    let l = r.left, tp = r.bottom + 4;
-    const PW = 300, PH = 420;
-    if (l + PW > innerWidth)   l  = Math.max(4, innerWidth  - PW - 6);
-    if (tp + PH > innerHeight) tp = Math.max(4, r.top - PH - 4);
+    const pw = pop.offsetWidth || 320;
+    const ph = pop.offsetHeight || 440;
+    const m = 8;
+    let l = r.left;
+    let tp = r.bottom + 8;
+    if (l + pw > innerWidth - m) l = Math.max(m, innerWidth - pw - m);
+    if (tp + ph > innerHeight - m) tp = Math.max(m, r.top - ph - 8);
     pop.style.cssText += `;left:${l}px;top:${tp}px;position:fixed`;
   },
 
-  _render(list, q) {
+  _match(c, query) {
+    return c.country.includes(query) ||
+      c.countryEn.toLowerCase().includes(query) ||
+      c.code.includes(query) ||
+      c.iso.toLowerCase().includes(query);
+  },
+
+  _renderRows(list, data) {
     list.innerHTML = '';
-    const query = q.toLowerCase().trim();
-    let data = this._tab === 'favs' ? Store.getFavs() : COUNTRIES;
-    if (query) data = data.filter(c =>
-      c.country.includes(query) || c.countryEn.toLowerCase().includes(query) ||
-      c.code.includes(query)    || c.iso.toLowerCase().includes(query)
-    );
     if (!data.length) {
       list.innerHTML = `<div class="cch-empty">${t('none')}</div>`;
       return;
@@ -738,7 +752,7 @@ transition:opacity .2s;white-space:nowrap}
 <span class="cch-fl">${c.flag}</span>
 <span class="cch-cd">${c.code}</span>
 <span class="cch-nm">${c.country} ${c.countryEn}</span>
-<button type="button" class="cch-fav${fav?' on':''}" data-code="${c.code}" data-iso="${c.iso}" title="${fav?t('rmFav'):t('addFav')}">${fav?'★':'☆'}</button>`;
+<button type="button" class="cch-fav${fav ? ' on' : ''}" data-code="${c.code}" data-iso="${c.iso}" title="${fav ? t('rmFav') : t('addFav')}">${fav ? '★' : '☆'}</button>`;
       row.addEventListener('click', e => {
         if (e.target.closest('.cch-fav')) return;
         Fill.run(this._target, this._kind, c);
@@ -746,19 +760,35 @@ transition:opacity .2s;white-space:nowrap}
       });
       row.querySelector('.cch-fav').addEventListener('click', e => {
         e.stopPropagation();
-        const btn   = e.currentTarget;
+        const btn = e.currentTarget;
         const entry = ISO2_MAP[btn.dataset.iso.toLowerCase()] || c;
         if (Store.isFav(btn.dataset.code, btn.dataset.iso)) {
           Store.rmFav(btn.dataset.code, btn.dataset.iso);
-          btn.textContent = '☆'; btn.classList.remove('on'); btn.title = t('addFav');
         } else {
           Store.addFav(entry);
-          btn.textContent = '★'; btn.classList.add('on'); btn.title = t('rmFav');
         }
+        const q = this._popup ? this._popup.querySelector('#cch-si').value : '';
+        this._render(q);
       });
       frag.appendChild(row);
     });
     list.appendChild(frag);
+  },
+
+  _render(q) {
+    if (!this._popup) return;
+    const favList = this._popup.querySelector('.cch-list[data-sec="favs"]');
+    const allList = this._popup.querySelector('.cch-list[data-sec="all"]');
+    if (!favList || !allList) return;
+    const query = q.toLowerCase().trim();
+    let favData = Store.getFavs();
+    let allData = COUNTRIES;
+    if (query) {
+      favData = favData.filter(c => this._match(c, query));
+      allData = allData.filter(c => this._match(c, query));
+    }
+    this._renderRows(favList, favData);
+    this._renderRows(allList, allData);
   },
 };
 
