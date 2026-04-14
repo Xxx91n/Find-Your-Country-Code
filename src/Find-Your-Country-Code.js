@@ -2,7 +2,7 @@
 // @name         Find-Your-Country-Code
 // @name:zh-CN   快速选择你的手机号国家区号。
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
-// @version      1.3.3
+// @version      1.3.4
 // @description  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
 // @description:zh-CN  智能识别国家/电话区号字段，提供可搜索的快速选择面板并自动填充区号。
 // @author       Xxx91n
@@ -466,6 +466,10 @@ const Detect = {
       const txt = (o.text || '').trim();
       return /^\+\d{1,4}$/.test(v) || /^00\d{1,4}$/.test(v) || /^\d{1,4}$/.test(v) || /\(\+\d{1,4}\)/.test(txt);
     });
+    const hitIso = opts.filter(o => {
+      const v = (o.value || '').trim().toLowerCase();
+      return /^[a-z]{2}$/.test(v) && !!ISO2_MAP[v];
+    });
     const hitPlusLike = opts.filter(o => {
       const v = (o.value || '').trim();
       const txt = (o.text || '').trim();
@@ -473,13 +477,13 @@ const Detect = {
     });
 
     if (hasAttrKw || hasLabelPhrase) {
-      return hitCode.length >= 2;
+      return hitCode.length >= 2 || hitIso.length >= 2;
     }
 
     if (hitPlusLike.length >= 2 && hitPlusLike.length / opts.length >= 0.4) return true;
 
     const allText = opts.map(o => (o.text || '').toLowerCase()).join(' ');
-    if (hitCode.length >= 2 && /(china|japan|united states|usa|america|germany|france|india|canada|australia|united kingdom|uk)/.test(allText)) {
+    if ((hitCode.length >= 2 || hitIso.length >= 2) && /(china|japan|united states|usa|america|germany|france|india|canada|australia|united kingdom|uk)/.test(allText)) {
       return true;
     }
 
@@ -656,7 +660,8 @@ const Fill = {
 // ════════════════════════════════════════════════════════
 const UI = {
   _root: null, _popup: null, _target: null, _kind: null,
-  _toastTimer: null, _closeHandler: null,
+  _toastTimer: null, _closeHandler: null, _anchor: null,
+  _viewportHandler: null, _rafPending: false,
 
   css() {
     if (document.getElementById('cch-style')) return;
@@ -752,6 +757,11 @@ transition:opacity .2s;white-space:nowrap}
   },
 
   open(target, kind, anchor) {
+    if (this._popup && this._anchor === anchor) {
+      this._closePopup();
+      return;
+    }
+
     this._target = target;
     this._kind   = kind;
     if (!this._root) {
@@ -760,6 +770,7 @@ transition:opacity .2s;white-space:nowrap}
       document.body.appendChild(this._root);
     }
     this._closePopup();
+    this._anchor = anchor;
 
     const pop = document.createElement('div');
     pop.id = 'cch-pop';
@@ -803,6 +814,7 @@ transition:opacity .2s;white-space:nowrap}
 
     document.body.appendChild(pop);
     this._pos(pop, anchor);
+    this._bindViewportTracking();
     this._bindPopupEvents(pop);
     this._render('');
 
@@ -827,6 +839,28 @@ transition:opacity .2s;white-space:nowrap}
       document.removeEventListener('mousedown', this._closeHandler);
       this._closeHandler = null;
     }
+    if (this._viewportHandler) {
+      window.removeEventListener('scroll', this._viewportHandler, true);
+      window.removeEventListener('resize', this._viewportHandler);
+      this._viewportHandler = null;
+    }
+    this._rafPending = false;
+    this._anchor = null;
+  },
+
+  _bindViewportTracking() {
+    if (this._viewportHandler) return;
+    this._viewportHandler = () => {
+      if (this._rafPending) return;
+      this._rafPending = true;
+      requestAnimationFrame(() => {
+        this._rafPending = false;
+        if (!this._popup || !this._anchor) return;
+        this._pos(this._popup, this._anchor);
+      });
+    };
+    window.addEventListener('scroll', this._viewportHandler, true);
+    window.addEventListener('resize', this._viewportHandler);
   },
 
   _bindPopupEvents(pop) {
