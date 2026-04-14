@@ -19,10 +19,16 @@
 
 ## Screenshots
 
-<p>
-  <img width="48%" style="vertical-align: top;" src="./greasyfork/main1.png">
-  <img width="48%" style="vertical-align: top;" src="./greasyfork/main2.png">
-</p>
+<table>
+  <tr>
+    <td style="vertical-align: top;">
+      <img width="100%" src="./greasyfork/main1.png">
+    </td>
+    <td style="vertical-align: top;">
+      <img width="100%" src="./greasyfork/main2.png">
+    </td>
+  </tr>
+</table>
 
 ## Installation
 
@@ -44,6 +50,10 @@ Install one userscript manager extension:
    1. Copy [Find-Your-Country-Code.js](./src/Find-Your-Country-Code.js)
    2. Create a new userscript in your manager
    3. Paste and save
+
+## Contributing
+
+[issue](https://github.com/Xxx91n/Find-Your-Country-Code/issues) and [PR](https://github.com/Xxx91n/Find-Your-Country-Code/pulls) are welcome!
 
 ## License
 
