@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 查看文档 / Read Docs
+    url: https://github.com/Xxx91n/Find-Your-Country-Code#readme
+    about: 使用前请先阅读 README / Please read the README first
+  - name: Greasy Fork 页面
+    url: https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code
+    about: 在 Greasy Fork 上查看脚本 / View on Greasy Fork

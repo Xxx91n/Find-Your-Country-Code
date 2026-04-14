@@ -1,0 +1,81 @@
+name: Bug 报告 / Bug Report
+description: 报告一个脚本功能异常 / Report a script malfunction
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你提交 Bug 报告！请尽量填写完整，以便快速复现和修复。
+        Thanks for taking the time to report a bug!
+
+  - type: input
+    id: version
+    attributes:
+      label: 脚本版本 / Script Version
+      description: 在脚本管理器中查看当前安装版本
+      placeholder: "例如 / e.g. v1.3.4"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: 浏览器 / Browser
+      options:
+        - Chrome
+        - Firefox
+        - Edge
+        - Safari
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: manager
+    attributes:
+      label: 脚本管理器 / Userscript Manager
+      options:
+        - Tampermonkey
+        - Violentmonkey
+        - Greasemonkey
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: site
+    attributes:
+      label: 出现问题的网站 / Affected Website
+      placeholder: "例如 / e.g. https://example.com/register"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述 / Bug Description
+      description: 清晰描述发生了什么，期望是什么
+      placeholder: |
+        实际行为 / Actual behavior: ...
+        期望行为 / Expected behavior: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to Reproduce
+      placeholder: |
+        1. 打开 ...
+        2. 点击 ...
+        3. 观察到 ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 截图或控制台报错 / Screenshots or Console Errors
+      description: 可粘贴图片或复制控制台错误信息（F12 → Console）
+    validations:
+      required: false
