@@ -19,11 +19,10 @@
 
 ## 截图预览
 
-- 主界面（搜索 + 收藏 + 全部）
-- 触发入口（字段右上角 🌐 图标）
-- 选择后自动填充并提示
-
-> 可在 `test/cch-test-page.html` 本地页面中直接预览完整效果。
+<div style="display: flex; align-items: flex-start; gap: 10px;">
+  <img width="690" alt="主界面预览" src="https://greasyfork.org/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6Mjg4NjczLCJwdXIiOiJibG9iX2lkIn19--44c373684108d5b3eff5a9d9242eea5b79197a0d/%E5%9B%BE%E7%89%87.png">
+  <img width="690" alt="脚本触发预览" src="https://greasyfork.org/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsiZGF0YSI6Mjg4Njc1LCJwdXIiOiJibG9iX2lkIn19--50617e76254e4f74d395ee8ba1a0dc693ae08a89/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJwbmciLCJyZXNpemVfdG9fbGltaXQiOlsyMDAsMjAwXX0sInB1ciI6InZhcmlhdGlvbiJ9fQ==--74d795a80595346362306a325643f8710996102f/%E5%9B%BE%E7%89%87.png">
+</div>
 
 ## 如何使用
 ### 前置要求
@@ -34,15 +33,11 @@
 
 ### 安装脚本
 
-**方法一: GreasyFork 安装**
+**方法一：点击直接安装**
 
-[从 GreasyFork 安装](https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code)
+- [GreasyFork](https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js)  |  [Jsdelivr CDN](https://cdn.jsdelivr.net/gh/Xxx91n/Find-Your-Country-Code@refs/heads/main/src/Find-Your-Country-Code.js)
 
-**方法二：直接安装**
-
-[点击安装脚本](https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js)
-
-**方法三：手动安装**
+**方法二：手动安装**
 
 1. 复制 [Find-Your-Country-Code.js](./src/Find-Your-Country-Code.js) 的内容。
 2. 打开 Tampermonkey 管理面板。
