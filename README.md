@@ -19,10 +19,10 @@
 
 ## 截图预览
 
-<div style="display: flex; align-items: flex-start; gap: 10px;">
-  <img width="690" alt="主界面预览" src="./greasyfork/main1.png">
-  <img width="690" alt="脚本触发预览" src="./greasyfork/main2.png">
-</div>
+<p>
+  <img width="48%" style="vertical-align: top;" src="./greasyfork/main1.png">
+  <img width="48%" style="vertical-align: top;" src="./greasyfork/main2.png">
+</p>
 
 ## 如何使用
 ### 前置要求
