@@ -1,0 +1,69 @@
+name: Auto Release on Script Update
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/Find-Your-Country-Code.js'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from JS script
+        id: extract_version
+        run: |
+          VERSION=$(grep -m1 '// @version' src/Find-Your-Country-Code.js | awk '{print $NF}' | tr -d '\r')
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          if git ls-remote --tags origin "refs/tags/v${{ steps.extract_version.outputs.VERSION }}" | grep -q .; then
+            echo "EXISTS=true" >> $GITHUB_OUTPUT
+          else
+            echo "EXISTS=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Read changelog (Chinese)
+        if: steps.check_tag.outputs.EXISTS == 'false'
+        id: changelog_cn
+        run: |
+          {
+            echo 'CONTENT<<__EOF__'
+            cat greasyfork/Glog.md
+            echo '__EOF__'
+          } >> $GITHUB_OUTPUT
+
+      - name: Read changelog (English)
+        if: steps.check_tag.outputs.EXISTS == 'false'
+        id: changelog_en
+        run: |
+          {
+            echo 'CONTENT<<__EOF__'
+            cat greasyfork/Glog_EN.md
+            echo '__EOF__'
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.EXISTS == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.extract_version.outputs.TAG }}
+          name: ${{ steps.extract_version.outputs.TAG }}
+          body: |
+            ${{ steps.changelog_cn.outputs.CONTENT }}
+
+            ---
+
+            ${{ steps.changelog_en.outputs.CONTENT }}
+          files: src/Find-Your-Country-Code.js
