@@ -1,0 +1,24 @@
+name: 使用问题 / Question
+description: 关于脚本使用方式的疑问 / Ask about how to use the script
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提问前请先查阅 README 和已有 Issues，避免重复。
+        Please check README and existing Issues before asking.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 你的问题 / Your Question
+    validations:
+      required: true
+
+  - type: input
+    id: site
+    attributes:
+      label: 相关网站（如有）/ Related Website (if any)
+      placeholder: "https://..."
+    validations:
+      required: false
