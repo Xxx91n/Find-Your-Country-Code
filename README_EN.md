@@ -19,11 +19,10 @@
 
 ## Screenshots
 
-<div style="display: flex; align-items: flex-start; gap: 10px;">
-  <img width="690" alt="Main panel preview" src="https://greasyfork.org/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6Mjg4NjczLCJwdXIiOiJibG9iX2lkIn19--44c373684108d5b3eff5a9d9242eea5b79197a0d/%E5%9B%BE%E7%89%87.png">
-  <img width="690" alt="Script trigger preview" src="https://greasyfork.org/rails/active_storage/representations/redirect/eyJfcmFpbHMiOnsiZGF0YSI6Mjg4Njc1LCJwdXIiOiJibG9iX2lkIn19--50617e76254e4f74d395ee8ba1a0dc693ae08a89/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJwbmciLCJyZXNpemVfdG9fbGltaXQiOlsyMDAsMjAwXX0sInB1ciI6InZhcmlhdGlvbiJ9fQ==--74d795a80595346362306a325643f8710996102f/%E5%9B%BE%E7%89%87.png">
-</div>
-
+<p>
+  <img width="48%" style="vertical-align: top;" src="./greasyfork/main1.png">
+  <img width="48%" style="vertical-align: top;" src="./greasyfork/main2.png">
+</p>
 
 ## Installation
 

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Find-Your-Country-Code
-// @name:zh-CN   快速选择你的手机号国家区号。
+// @name:zh-CN   快速选择你的手机号国家区号
 // @namespace    https://github.com/Xxx91n/Find-Your-Country-Code
 // @version      1.3.4
 // @description  Detect country/phone code fields and quickly search/fill international dialing codes on any website.
