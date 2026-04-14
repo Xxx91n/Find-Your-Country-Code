@@ -19,10 +19,16 @@
 
 ## 截图预览
 
-<p>
-  <img width="48%" style="vertical-align: top;" src="./greasyfork/main1.png">
-  <img width="48%" style="vertical-align: top;" src="./greasyfork/main2.png">
-</p>
+<table>
+  <tr>
+    <td style="vertical-align: top;">
+      <img width="100%" src="./greasyfork/main1.png">
+    </td>
+    <td style="vertical-align: top;">
+      <img width="100%" src="./greasyfork/main2.png">
+    </td>
+  </tr>
+</table>
 
 ## 如何使用
 ### 前置要求
@@ -43,6 +49,10 @@
 2. 打开 Tampermonkey 管理面板。
 3. 点击 添加新脚本。
 4. 粘贴代码并保存。
+
+## 贡献
+
+提交 [issue](https://github.com/Xxx91n/Find-Your-Country-Code/issues) 或 [PR](https://github.com/Xxx91n/Find-Your-Country-Code/pulls)。
 
 ## 许可证
 
