@@ -1,6 +1,8 @@
 import { t } from '../i18n';
+import { createItiAdapter } from '../iti-adapter';
 export function createFill(UI) {
 const Fill = {
+  _itiAdapter: createItiAdapter(),
   _dispatch(el) {
     try {
       const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
@@ -10,64 +12,7 @@ const Fill = {
   },
 
   fillIti(el, country) {
-    const iso = country.iso.toLowerCase();
-
-    try {
-      const globalIti = window.intlTelInput || window.intlTelInputGlobals;
-      if (globalIti && typeof globalIti.getInstance === 'function') {
-        const inst = globalIti.getInstance(el);
-        if (inst && typeof inst.setCountry === 'function') { inst.setCountry(iso); return true; }
-      }
-    } catch {}
-
-    try {
-      if (el.iti && typeof el.iti.setCountry === 'function') { el.iti.setCountry(iso); return true; }
-    } catch {}
-
-    try {
-      const id = el.dataset.intlTelInputId;
-      if (id) {
-        const globalIti = window.intlTelInput || window.intlTelInputGlobals;
-        const inst = globalIti && globalIti.instances && globalIti.instances[id];
-        if (inst && typeof inst.setCountry === 'function') { inst.setCountry(iso); return true; }
-      }
-    } catch {}
-
-    try {
-      const $ = window.jQuery || window.$;
-      if ($) {
-        if (typeof $(el).intlTelInput === 'function') {
-          try { $(el).intlTelInput('setCountry', iso); return true; } catch {}
-          try { $(el).intlTelInput('setCountry', iso.toUpperCase()); return true; } catch {}
-        }
-        const inst = $(el).data('plugin_intlTelInput') || $(el).data('intlTelInput');
-        if (inst && typeof inst.setCountry === 'function') { inst.setCountry(iso); return true; }
-      }
-    } catch {}
-
-    try {
-      const wrapper = el.closest('.iti') || el.closest('.intl-tel-input');
-      if (wrapper) {
-        const btn = wrapper.querySelector('.iti__selected-country, .iti__flag-container, .selected-flag');
-        if (btn) btn.click();
-        const clickItem = () => {
-          const item = wrapper.querySelector(
-            `[data-country-code="${iso}"], [data-dial-code="${country.code.replace('+','')}"]`
-          ) || document.querySelector(
-            `.iti__country[data-country-code="${iso}"], .country[data-country-code="${iso}"]`
-          );
-          if (item) { item.click(); return true; }
-          return false;
-        };
-        if (clickItem()) return true;
-        setTimeout(() => { if (!clickItem()) { el.value = country.code; this._dispatch(el); } }, 120);
-        return true;
-      }
-    } catch {}
-
-    el.value = country.code;
-    this._dispatch(el);
-    return true;
+    return this._itiAdapter.fill(el, country, () => this._dispatch(el));
   },
 
   fillSelect(el, country) {
