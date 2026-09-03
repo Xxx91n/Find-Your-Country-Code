@@ -1,0 +1,13 @@
+import { chromium } from 'playwright'; import http from 'http'; import fs from 'fs'; import path from 'path';
+const ROOT='D:/Aworker/mozilla/choose-your-country';
+const code=fs.readFileSync(ROOT+'/dist/find-your-country-code.user.js','utf8');
+const srv=http.createServer((q,r)=>{r.writeHead(200,{'Content-Type':'text/html'});r.end(fs.readFileSync(path.join(ROOT,'test','test-page.html')))});
+srv.listen(0,'127.0.0.1',async()=>{const port=srv.address().port;const b=await chromium.launch({headless:true});const p=await b.newPage();
+p.on('pageerror',e=>console.log('PAGEERROR:',e.message));
+p.on('console',m=>{if(m.type()==='error')console.log('CONSOLE-ERR:',m.text())});
+await p.addInitScript(()=>{window.GM_getValue=(k,d)=>d;window.GM_setValue=()=>{};window.GM_addValueChangeListener=()=>0});
+await p.addInitScript(code);
+await p.goto('http://127.0.0.1:'+port+'/');
+await p.waitForTimeout(2000);
+console.log('buttons:',await p.locator('.cch-btn').count());
+await b.close(); srv.close();});
