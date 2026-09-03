@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "e2e": "npm run build && playwright test"
   },
   "devDependencies": {
+    "intl-tel-input": "^18.2.1",
     "playwright": "^1.62.1",
     "typescript": "latest",
     "vite": "latest",

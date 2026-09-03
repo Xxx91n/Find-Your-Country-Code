@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>误报回归 fixture — misdetection-root-causes §2 的 5 类</title>
+</head>
+<body>
+<h1>误报回归 fixture（5 类 + 正例控件）</h1>
+<p>断言基线：正例控件必须注入图标（证明扫描已运行）；以下 5 类字段<strong>不应</strong>注入图标。
+当前引擎会误插 → 用例默认红（TDD 红，test.fail 标记），待票 02 评分引擎转绿。</p>
+
+<!-- 正例控件：真区号下拉，必须注入图标 -->
+<section id="control">
+  <h2>正例控件（应注入）</h2>
+  <label for="fp-control">国家区号</label>
+  <select id="fp-control" name="country_code">
+    <option value="+86">+86 中国</option>
+    <option value="+1">+1 美国</option>
+    <option value="+44">+44 英国</option>
+  </select>
+</section>
+
+<!-- ① prefix 歧义（样本 F1）：称谓前缀下拉，非区号 -->
+<section id="fp-1">
+  <h2>① prefix 歧义（F1）</h2>
+  <label for="fp-prefix">称谓（Title）</label>
+  <select id="fp-prefix" name="prefix">
+    <option value="mr">Mr.</option>
+    <option value="ms">Ms.</option>
+    <option value="mrs">Mrs.</option>
+  </select>
+</section>
+
+<!-- ② 裸词“区号”（样本 F4）：固话本地区号，非国际区号 -->
+<section id="fp-2">
+  <h2>② 裸词“区号”（F4）</h2>
+  <label for="fp-area-local">固话区号（不含国家区号）</label>
+  <select id="fp-area-local" name="area">
+    <option value="010">010</option>
+    <option value="020">020</option>
+    <option value="0755">0755</option>
+    <option value="021">021</option>
+  </select>
+</section>
+
+<!-- ③ 纯数字选项形态学（样本 F5）：时区值 +8/+9 形似区号 -->
+<section id="fp-3">
+  <h2>③ 纯数字选项形态学（F5）</h2>
+  <label for="fp-timezone">时区</label>
+  <select id="fp-timezone" name="timezone" aria-label="时区">
+    <option value="+8">GMT+8</option>
+    <option value="+9">GMT+9</option>
+    <option value="+5">GMT+5</option>
+    <option value="0">GMT</option>
+    <option value="-5">GMT-5</option>
+  </select>
+</section>
+
+<!-- ④ 国家选择混同（样本 F2）：用户选国家而非区号，ISO 值表 -->
+<section id="fp-4">
+  <h2>④ 国家选择混同（F2）</h2>
+  <label for="fp-country">Country</label>
+  <select id="fp-country" name="country">
+    <option value="US">United States</option>
+    <option value="GB">United Kingdom</option>
+    <option value="CN">China</option>
+    <option value="JP">Japan</option>
+  </select>
+</section>
+
+<!-- ⑤ class 子串撞库（样本 F6）：hidden 含子串 idd，纯数字选项 -->
+<section id="fp-5">
+  <h2>⑤ class 子串撞库（F6）</h2>
+  <label for="fp-qty">数量</label>
+  <select id="fp-qty" name="qty" class="form-control hidden">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+  </select>
+</section>
+</body>
+</html>

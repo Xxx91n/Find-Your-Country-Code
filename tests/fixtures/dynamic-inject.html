@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>动态注入 fixture</title>
+</head>
+<body>
+<h1>动态注入 fixture（MutationObserver）</h1>
+<p>点击按钮 500ms 后注入真区号下拉，脚本应在防抖扫描后自动挂图标（当前行为可用，用例绿）。</p>
+<button id="inject-btn" type="button">500ms 后注入区号下拉</button>
+<div id="zone"></div>
+<script>
+  document.getElementById('inject-btn').addEventListener('click', () => {
+    setTimeout(() => {
+      document.getElementById('zone').innerHTML = `
+        <label for="dyn-phone-code">国家区号</label>
+        <select id="dyn-phone-code" name="phone_code">
+          <option value="+86">+86 中国</option>
+          <option value="+1">+1 美国</option>
+          <option value="+44">+44 英国</option>
+        </select>`;
+    }, 500);
+  });
+</script>
+</body>
+</html>
