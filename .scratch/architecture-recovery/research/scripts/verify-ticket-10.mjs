@@ -10,10 +10,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.
 let pass = 0, fail = 0;
 const check = (name, cond) => { if (cond) { pass++; console.log('PASS ' + name); } else { fail++; console.log('FAIL ' + name); } };
 
-const rel = fs.readFileSync(path.join(root, '.github/workflows/release.yml'), 'utf8');
-const dry = fs.readFileSync(path.join(root, '.github/workflows/release-dry-run.yml'), 'utf8');
-const zh = fs.readFileSync(path.join(root, 'CONTRIBUTING.md'), 'utf8');
-const en = fs.readFileSync(path.join(root, 'CONTRIBUTING_EN.md'), 'utf8');
+const rel = fs.readFileSync(path.join(root, '.github/workflows/release.yml'), 'utf8').replace(/\r\n/g, '\n');
+const dry = fs.readFileSync(path.join(root, '.github/workflows/release-dry-run.yml'), 'utf8').replace(/\r\n/g, '\n');
+const zh = fs.readFileSync(path.join(root, 'CONTRIBUTING.md'), 'utf8').replace(/\r\n/g, '\n');
+const en = fs.readFileSync(path.join(root, 'CONTRIBUTING_EN.md'), 'utf8').replace(/\r\n/g, '\n');
 
 // --- A. release.yml 适配（issue 验收1：构建产物路径 + 版本提取） ---
 check('A1 触发路径含 src/**', rel.includes("- 'src/**'"));
