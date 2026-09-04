@@ -1,6 +1,6 @@
 # 窗口实施报告：10 — 发布链路与版本策略适配
 
-> 子窗口（fresh context）实施 | 日期：2026-09-05 | 分支：`cch/10-release-pipeline`（GitButler，代码 commit `mys`，堆叠于 `cch/07-ui-upgrade` 之上，远端 `16b6f0e`）
+> 子窗口（fresh context）实施 | 日期：2026-09-05 | 分支：`cch/10-release-pipeline`（GitButler，commits `mys`/`nuq`/`lkq`，堆叠于 `cch/07-ui-upgrade` 之上，远端 `92e9e83`）
 > 开工复述：Blocked by 01、09、07 —— 三票 window-report 均已落盘（01/09/07+07fix），git log 显示 07 闭环（73/73、e2e 42 passed、wave 5 unlocked）、09 闭环（36/36、e2e 33 passed），前置满足。必读 5 份（prompt → issue → handoff → release.yml → 01 报告 → WORKFLOW，另补读 handoff 指定的 Glog.md/Glog_EN.md/GREADME×2）按序读全。
 > 版本控制遵循 WORKFLOW §4.2（GitButler；`but commit -b` 建分支、`but move --above` 堆叠、`but push` 推送）。
 
@@ -49,17 +49,19 @@
 
 ## 5. 版本号跳跃策略建议（供用户决策，未擅自定版）
 
+**决策记录（2026-09-05）：用户确认发 `v1.4.0`，不走 beta 预演。版本已 bump（vite.config.ts + package.json，commit `lkq`），Glog 双语 v1.4.0 小节已写入；dry-run run #33899481655 验证三源一致 `1.4.0` 且 `v1.4.0` tag 不存在（合入 main 后自动发版）。以下为原始取舍分析。**
+
 - **建议 `v2.0.0`**：自 v1.3.4 起累计了模块化重建（ADR 0002）、布尔检测 → 五层加权评分引擎（ADR 0001）、站点规则引擎（ADR 0003）、iti v16–v29 适配、框架受控组件注入加固（React/Vue）、UI 升级与负反馈。检测引擎整体换代意味着边界场景行为可见变化（部分旧误报消失、极端场景判定可能不同），语义化版本主位跳跃能给用户明确的换代信号，且避免 1.3.x 线上旧版与新版 changelog 混淆。
 - **备选 `v1.4.0`**：若更看重 GreasyFork 用户的连续升级体验（自动更新无感升级），可低调处理；代价是版本号无法传达行为换代的分量。
 - 无论哪个号，发布链路均可用（tag 由产物 @version 提取）；决策点仅是数字本身。**beta 预演选项**：可先 bump `2.0.0-beta.1` 走一次真实 push→main 链路，验证后删 tag/Release 回滚版本号——该动作属于外发动作，需用户点头。
 
-## 6. 待用户确认事项（beta 发布就绪清单）
+## 6. 待办与状态（用户已确认 v1.4.0，2026-09-05）
 
-1. 版本号：`v2.0.0`（建议）或 `v1.4.0`；是否先走 `2.0.0-beta.1` 预演。
-2. Glog.md / Glog_EN.md 本次版本小节内容（模板与写入位置已在 CONTRIBUTING「版本号与变更日志」节固化）。
-3. 收口合并：8 个 `cch/*` 并行分支需大脑在 S8 收口合入 `main`；`release.yml` 合入后，下一次触碰发布路径的 push main 即自动发版（tag 判重防重）。
-4. GreasyFork 站内同步（手动）：粘贴 dist 产物到 GreasyFork 编辑器，保持版本一致（已写入 CONTRIBUTING）。
-5. 确认后动作序列：bump 版本（vite.config.ts + package.json）→ 更新 Glog 双语 → 合入 main → CI 自动发版 → 按 CONTRIBUTING 验证清单核对链接。
+1. ✅ 版本号已定：`v1.4.0`（用户决策，不走 beta 预演）；vite.config.ts + package.json 已 bump（commit `lkq`），Glog 双语 v1.4.0 小节已写入。
+2. ✅ dry-run 就绪验证：run #33899481655 success —— `artifact=1.4.0 vite.config.ts=1.4.0 package.json=1.4.0`；`v1.4.0` tag 不存在（合入 main 后将创建 Release v1.4.0，正文以 Glog v1.4.0 小节开头）。
+3. ⏳ 收口合并：`cch/*` 并行分支由大脑在 S8 收口合入 `main`；合入后 push main 触发发布（tag 判重防重，v1.4.0 将创建）。
+4. ⏳ GreasyFork 站内同步（手动，发布后）：粘贴 dist 产物到 GreasyFork 编辑器，保持版本一致。
+5. ⏳ 发布后按 CONTRIBUTING 验证清单核对链接（`verify-ticket-10.mjs --links` 的 @version 应变为 1.4.0）。
 
 ## 7. 偏离点
 
