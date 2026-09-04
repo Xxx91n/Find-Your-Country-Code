@@ -1,0 +1,66 @@
+src = D:\Aworker\mozilla\choose-your-country\src\Find-Your-Country-Code.js
+提取段: segA(kw)=1152B  segB(countries)=9435B  segC(Detect)=4927B
+
+ISO2 撞库检查: mr→ "Mauritania"  ms→ "Montserrat"  id→ "Indonesia"  do→ "Dominican Republic"
+_kw 子串检查: "form-control hidden" 命中 idd = true
+
+[P1] CTRL+  符合预期
+      select name=countrycode + +XX 值（测试页 Case1）
+[P2] CTRL+  符合预期
+      select name=dial_code_country + ISO 值（测试页 A2）
+[P3] CTRL+  符合预期
+      input name=country_code type=text（测试页 B1）
+[P4] CTRL+  符合预期
+      input type=tel 在 .iti 容器内（iti v18 wrapper）
+[N0a] CTRL-  符合预期
+      select name=province 省份码（测试页 Case9）
+[N0b] CTRL-  符合预期
+      select name=months 月份 1-6 无关键词
+[N0c] CTRL-  符合预期
+      select name=countrycode 仅 1 个选项（测试页 Case10）
+[F1] FP  ✔ 复现
+      称谓前缀 select name="prefix"，值 mr/ms/mrs（Mr./Ms./Mrs.）
+[F1b] FP  ✔ 复现
+      称谓前缀 select name="prefix"，值 1/2/3（数字编码称谓）
+[F1c] FP  ✔ 复现
+      称谓 select（无 name），label 文本 "Phone Prefix"
+[F2] FP  ✔ 复现
+      纯国家选择 select name="country"（ISO 值，用户选国家非区号）
+[F3] FP  ✔ 复现
+      固话本地区号 input，label "固话区号（不含国家区号）"
+[F4] FP  ✔ 复现
+      固话本地区号 select，label "区号"，值 010/020/0755/021
+[F5] FP  ✔ 复现
+      时区 select name=timezone aria-label=时区，值 +8/+9/+5/0/-5
+[F6] FP  ✔ 复现
+      数量 select name=qty class="form-control hidden"（hidden 含子串 idd），值 1-6
+[F7] FP  ✔ 复现
+      表单主题容器 class="country-form" 内的称谓 select name=title（父类名污染）
+[F8] FP  ✘ 未复现
+      纯国家选择 select（无 name），label "国家/地区"（值 +86 等真区号格式也放进来对照）
+[N1] FN  符合预期
+      手机区号 select name=phone_code 值 +86/+1/+44，label "国家/地区区号"（EXCLUDE 地区 误杀）
+[N2] FN  符合预期
+      input type=tel aria-labelledby="lb1 lb2"（多 id，源码未 split）
+[N2b] FN-对照  符合预期
+      同上但 aria-labelledby 单 id="lb1" → 应命中（证明多 id 是失败原因）
+[N3] FN  符合预期
+      input type=number name=country_code（type 过滤 + scan 选择器双重漏）
+[N4] FN  符合预期
+      input id=phonePrefix（测试页2 B3 隐含期望命中；INPUT_KW 无 prefix）
+[N5] FN  符合预期
+      react-phone-input-2 组件：input type=tel name=phone，wrapper class="react-tel-input"
+[N6] FN  符合预期
+      MUI/AntD 隐藏承值 input type=hidden name=countryCode
+[N7] FN(可用性)  符合预期
+      Select2：原生 select name=country_code class="select2-hidden-accessible"（能检出，但目标 display:none → 图标挂零宽包裹）
+
+合计 25 例，与预期一致 24 例
+
+── FP 样本 gate 诊断（镜像 L441-486，仅供定位命中路径） ──
+F1 {"opts":3,"excluded":false,"hasAttrKw":true,"hasLabelPhrase":false,"hitCode":0,"hitIso":2,"hitPlusLike":0}
+F2 {"opts":4,"excluded":false,"hasAttrKw":true,"hasLabelPhrase":false,"hitCode":0,"hitIso":4,"hitPlusLike":0}
+F5 {"opts":5,"excluded":false,"hasAttrKw":null,"hasLabelPhrase":false,"hitCode":4,"hitIso":0,"hitPlusLike":3}
+F6 {"opts":4,"excluded":false,"hasAttrKw":true,"hasLabelPhrase":false,"hitCode":4,"hitIso":0,"hitPlusLike":0}
+F7 {"opts":2,"excluded":false,"hasAttrKw":true,"hasLabelPhrase":false,"hitCode":0,"hitIso":2,"hitPlusLike":0}
+F4(区号 label select) = {"opts":4,"excluded":false,"hasAttrKw":null,"hasLabelPhrase":false,"hitCode":4,"hitIso":0,"hitPlusLike":0}

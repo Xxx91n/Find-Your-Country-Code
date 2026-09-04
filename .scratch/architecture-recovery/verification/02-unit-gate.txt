@@ -1,0 +1,75 @@
+countries: 223 | ISO2_MAP keys: 223
+[PASS] P1  expect=auto got=auto score=72
+        c1_code：name=countrycode + 6 个 +NN（cch Case1）
+[PASS] P2  expect=auto got=auto score=78
+        sel-a2：name=dial_code_country + ISO 值/EN 名
+[PASS] P3  expect=lowkey got=lowkey score=48
+        inp-b1：input name=country_code（B1）
+[PASS] P4  expect=auto got=auto score=null
+        input type=tel 在 .iti 容器（iti 通道）
+[PASS] P6  expect=auto got=auto score=72
+        Case3：class=phone-code-selector 裸NN 值
+[PASS] P7  expect=lowkey got=lowkey score=64
+        Case6：label「Mobile Country Code」+ +NN 值
+[PASS] P8  expect=lowkey got=lowkey score=68
+        Case4：aria-label「Select country calling code」
+[PASS] P9  expect=auto got=auto score=86
+        Case7：label「区号选择」+ China (+86) 括号形态
+[PASS] P10  expect=lowkey got=lowkey score=68
+        Case8：data-name=area-code + 中国 +86（页面 label 无 for 关联）
+[PASS] P11  expect=auto got=auto score=100
+        L0：autocomplete=tel-country-code（一票强信号）
+[PASS] P12  expect=auto got=auto score=130
+        L0：autocomplete=country select + ISO 值
+[PASS] P13  expect=lowkey got=lowkey score=48
+        phonePrefix：id camelCase（N4 修复）
+[PASS] P16  expect=lowkey got=lowkey score=48
+        N3：input type=number name=country_code
+[PASS] N0a  expect=none got=none score=-48
+        省份 select name=province
+[PASS] N0b  expect=none got=none score=22
+        月份 select 1-6
+[PASS] N0c  expect=none got=none score=0
+        单选项 select name=countrycode（Case10）
+[PASS] N0d  expect=none got=none score=18
+        主号 tel input（type=tel 单独不足以注入）
+[PASS] N0e  expect=none got=none score=0
+        autocomplete=off 不触发 L0
+[PASS] N0f  expect=none got=none score=18
+        普通文本 input 无任何信号
+[PASS] N0g  expect=none got=none score=18
+        email/password 等 input 不评分
+[PASS] F1  expect=none got=none score=25
+        ① 称谓前缀 name=prefix mr/ms/mrs（F1）
+[PASS] F1b  expect=none got=none score=29
+        ① 称谓前缀数字编码 1/2/3
+[PASS] F1c  expect=none got=none score=18
+        ① label「Phone Prefix」称谓 select
+[PASS] F2  expect=none got=none score=62
+        ② 国家选择 name=country ISO 值（fp-4）
+[PASS] F3  expect=none got=none score=14
+        ③ 固话本地区号 input「固话区号（不含国家区号）」
+[PASS] F4  expect=none got=none score=-14
+        ③ 固话本地区号 select label「区号」010/020（fp-2）
+[PASS] F5  expect=none got=none score=18
+        ③ 时区 select GMT±X（fp-3）
+[PASS] F6  expect=none got=none score=22
+        ⑤ class hidden 子串撞库 + 数量 1-4（fp-5）
+[PASS] F7  expect=none got=none score=18
+        ④ 父容器 country-form 内称谓 select name=title
+[PASS] F8  expect=none got=none score=18
+        label「国家/地区」zh 国家名 select
+[PASS] F8b  expect=none got=none score=48
+        label「国家/地区」EN 国家名 select（ISO 主导 → 语义分层 none）
+[PASS] F9  expect=none got=none score=32
+        dyn_country：name=country zh 国家名无值属性（Case12）
+[PASS] N5  expect=none got=none score=18
+        react-phone-input-2 组件 input（组件自带选择器，不注入）
+[PASS] A1  expect=auto got=auto score=86
+        N1 修复：label「国家/地区区号」+ phone_code + XX（复合短语白名单）
+[PASS] A2  expect=lowkey got=lowkey score=40
+        N2 修复：aria-labelledby 双 id「手机区号」「必填」+ type=tel
+[PASS] A3  expect=lowkey got=lowkey score=48
+        phonePrefix 真页面形态（B3：label 相邻 + 有 tel 锚 → lowkey 档注入）
+
+36/36 pass

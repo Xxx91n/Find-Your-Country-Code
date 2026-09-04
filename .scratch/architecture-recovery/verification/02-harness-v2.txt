@@ -1,0 +1,56 @@
+engine = src/detect/index.ts（票 02 五层评分引擎）| countries: 223
+注入判定：tier ∈ {auto, lowkey}
+
+[PASS] P1 CTRL+  expect=inject got=inject(lowkey)
+      select name=countrycode + +XX 值（测试页 Case1）
+[PASS] P2 CTRL+  expect=inject got=inject(lowkey)
+      select name=dial_code_country + ISO 值（测试页 A2）
+[PASS] P3 CTRL+  expect=inject got=inject(lowkey)
+      input name=country_code type=text（测试页 B1；页面含 tel 主号锚）
+[PASS] P4 CTRL+  expect=inject got=inject(auto)
+      input type=tel 在 .iti 容器（iti v18 wrapper）
+[PASS] N0a CTRL-  expect=none got=none
+      select name=province 省份码（测试页 Case9）
+[PASS] N0b CTRL-  expect=none got=none
+      select name=months 月份 1-6 无关键词
+[PASS] N0c CTRL-  expect=none got=none
+      select name=countrycode 仅 1 个选项（测试页 Case10）
+[PASS] F1 FP  expect=none got=none
+      称谓前缀 select name="prefix"，值 mr/ms/mrs
+[PASS] F1b FP  expect=none got=none
+      称谓前缀 select name="prefix"，值 1/2/3
+[PASS] F1c FP  expect=none got=none
+      称谓 select（无 name），label "Phone Prefix"
+[PASS] F2 FP  expect=none got=none
+      纯国家选择 select name="country"（ISO 值）
+[PASS] F3 FP  expect=none got=none
+      固话本地区号 input，label "固话区号（不含国家区号）"
+[PASS] F4 FP  expect=none got=none
+      固话本地区号 select，label "区号"，值 010/020/0755/021
+[PASS] F5 FP  expect=none got=none
+      时区 select name=timezone aria-label=时区，值 +8/+9/+5/0/-5
+[PASS] F6 FP  expect=none got=none
+      数量 select name=qty class="form-control hidden"（hidden 含子串 idd），值 1-6
+[PASS] F7 FP  expect=none got=none
+      表单主题容器 class="country-form" 内的称谓 select name=title
+[PASS] F8 FP  expect=none got=none
+      纯国家选择 select（无 name），label "国家/地区"（旧 harness 未复现样本）
+[PASS] N1 FN  expect=inject got=inject(auto)
+      手机区号 select name=phone_code 值 +86/+1/+44，label "国家/地区区号"（旧 EXCLUDE 地区 误杀）
+[PASS] N2 FN  expect=inject got=inject(lowkey)
+      input type=tel aria-labelledby="lb1 lb2"（旧多 id 未 split）
+[PASS] N2b FN-对照  expect=inject got=inject(lowkey)
+      同上但 aria-labelledby 单 id="lb1"
+[PASS] N3 FN  expect=inject got=inject(lowkey)
+      input type=number name=country_code（锚上下文=真实页面存在 tel 主号）
+[PASS] N4 FN  expect=inject got=inject(lowkey)
+      input id=phonePrefix（锚上下文=真实页面存在 tel 主号）
+[PASS] N5 FN(语义保留)  expect=none got=none
+      react-phone-input-2 组件 input（组件自带选择器，不叠加图标）
+[PASS] N6 FN(语义保留)  expect=none got=none
+      MUI/AntD 隐藏承值 input type=hidden name=countryCode（隐藏字段不挂图标）
+[PASS] N7 FN(可用性)  expect=inject got=inject(lowkey)
+      Select2：原生 select name=country_code class="select2-hidden-accessible"
+
+合计 25 例，符合预期 25 例
+FP 全家桶（F1–F8）不注入： YES
