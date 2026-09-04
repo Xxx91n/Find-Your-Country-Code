@@ -67,3 +67,6 @@ export const RULES_BROADCAST = 'cch-rules-sync-v1';  // 规则跨标签页广播
 export const RULE_TIERS = ['auto', 'lowkey', 'none']; // 规则可用分档（强制选择器命中统一按规则声明档注入）
 export const RULE_FORCE_TIER = 'auto';               // 强制选择器默认注入档（高置信 [issue 验收2]）
 export const RULES_MAX_OVERRIDES = 500;              // 文档内覆盖规则上限（防御异常增长；Ponytail 无导入导出场景）
+// ── 面板 UI 常量（票 07）[SP US17「低调样式可配置」/ US18「低置信手动召唤」] ──
+export const UI_PREFS_KEY = 'cch_ui_prefs_v1';          // UI 偏好 GM 键（独立键，与收藏/规则解耦）
+export const LOWKEY_MODES = ['dim', 'hidden'];           // 中置信注入样式：dim=低调可见；hidden=不注入仅面板召唤

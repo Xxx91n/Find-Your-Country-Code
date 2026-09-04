@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh">
+<head><meta charset="utf-8"><title>CCH Rules UI Fixture</title></head>
+<body>
+<h1>CCH Rules UI Fixture</h1>
+<!-- 计分标定：
+     #cc-strong  select+label 国家区号+name country_code+L3 拨号分布 → auto
+     #cc-mid     name areacode(30)+label 区号(8)+锚 tel(18) → 56 → lowkey
+     #phone      type=tel → 10 → none（锚字段）
+     #plain-num  无信号 → none -->
+<form id="host-form">
+  <label for="cc-strong">国家区号</label>
+  <select id="cc-strong" name="country_code"></select>
+  <label for="cc-mid">区号</label>
+  <input id="cc-mid" name="areacode" type="text">
+  <label for="phone">电话</label>
+  <input id="phone" type="tel" name="phone">
+  <label for="plain-num">数量</label>
+  <input id="plain-num" name="qty" type="number">
+  <button type="submit" id="go">提交</button>
+</form>
+<script>
+  var sel = document.getElementById('cc-strong');
+  var codes = ['+86','+852','+853','+886','+81','+82','+44','+1','+49','+33','+39','+34','+61','+7','+55','+91','+62','+60','+65','+66','+84','+63','+90','+27','+20'];
+  codes.forEach(function (c) {
+    var o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+  // 验收5 探针：面板交互不得触发宿主表单 submit / 字段 input-change-blur / 状态污染
+  window.__leak = { submit: 0, formInput: 0, fieldEvents: [] };
+  document.addEventListener('submit', function () { window.__leak.submit++; }, true);
+  document.getElementById('host-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    window.__leak.submit++;
+  });
+  document.getElementById('host-form').addEventListener('input', function () { window.__leak.formInput++; });
+  ['cc-strong', 'cc-mid', 'phone', 'plain-num'].forEach(function (id) {
+    var el = document.getElementById(id);
+    ['input', 'change', 'blur'].forEach(function (t) {
+      el.addEventListener(t, function () { window.__leak.fieldEvents.push(id + ':' + t); });
+    });
+  });
+</script>
+</body>
+</html>
