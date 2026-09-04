@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>L0 标准信号 fixture — autocomplete tel-country-code / country（票 02 验收 4）</title>
+</head>
+<body>
+<h1>L0 标准信号 fixture（WHATWG autofill token [AM 核心结论2]）</h1>
+<p>三个标准语义字段必须注入图标（tel-country-code / country / country-name）；
+autocomplete=off 与无信号字段不得注入。</p>
+
+<section id="l0-positive">
+  <h2>应注入（L0 一票强信号）</h2>
+  <input id="l0-tcc" type="text" autocomplete="tel-country-code" placeholder="+86">
+  <select id="l0-country" autocomplete="country">
+    <option value="US">United States</option>
+    <option value="GB">United Kingdom</option>
+    <option value="CN">China</option>
+    <option value="JP">Japan</option>
+  </select>
+  <input id="l0-country-name" type="text" autocomplete="country-name">
+  <!-- 同表单放一个 tel 主号作 L2 锚（贴近真实注册表单形态） -->
+  <input id="l0-tel" type="tel" name="phone" placeholder="138 0000 0000">
+</section>
+
+<section id="l0-negative">
+  <h2>不注入</h2>
+  <input id="l0-off" type="text" autocomplete="off" name="country_code" placeholder="+86">
+  <input id="l0-plain" type="text" name="remark" placeholder="备注">
+</section>
+</body>
+</html>

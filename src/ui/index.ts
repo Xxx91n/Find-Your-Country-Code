@@ -6,6 +6,7 @@ const UI = {
   _root: null, _popup: null, _target: null, _kind: null,
   _toastTimer: null, _closeHandler: null, _anchor: null,
   _viewportHandler: null, _rafPending: false,
+  _lowFields: new Map(),
 
   css() {
     if (document.getElementById('cch-style')) return;
@@ -56,7 +57,14 @@ padding:2px 4px;border-radius:4px;flex-shrink:0;transition:color .1s}
 background:#01696f;color:#fff;padding:8px 20px;border-radius:20px;
 font-size:13px;z-index:2147483647;pointer-events:none;opacity:0;
 transition:opacity .2s;white-space:nowrap}
-#cch-toast.on{opacity:1}`;
+#cch-toast.on{opacity:1}
+/* 中置信低调注入样式 [SP US17]：半透明缩小，悬停恢复 */
+.cch-btn-lowkey{opacity:.38;transform:scale(.78);filter:saturate(.4)}
+.cch-btn-lowkey:hover{opacity:1;transform:scale(1.06);filter:none}
+#cch-summon{margin:6px 12px 0;padding:6px 10px;font-size:12px;color:#475569;
+background:rgba(15,118,110,.06);border:1px dashed rgba(15,118,110,.35);
+border-radius:8px;cursor:pointer;text-align:center}
+#cch-summon:hover{background:rgba(15,118,110,.12);color:#0f766e}`;
     document.head.appendChild(s);
   },
 
@@ -69,7 +77,7 @@ transition:opacity .2s;white-space:nowrap}
     this._toastTimer = setTimeout(() => el.classList.remove('on'), 2000);
   },
 
-  attach(el, kind) {
+  attach(el, kind, tier = 'auto', score = 0, signals = []) {
     if (el.closest('.' + WRAPPER_CLASS)) return;
 
     const wrap = document.createElement('div');
@@ -87,10 +95,12 @@ transition:opacity .2s;white-space:nowrap}
     wrap.appendChild(el);
 
     const btn = document.createElement('button');
-    btn.className = 'cch-btn';
+    btn.className = 'cch-btn' + (tier === 'lowkey' ? ' cch-btn-lowkey' : '');
     btn.type = 'button';
     btn.title = 'Country Code Helper';
     btn.setAttribute('aria-label', 'Country Code Helper');
+    btn.setAttribute('data-cch-tier', tier);
+    if (score) btn.setAttribute('data-cch-score', String(score));
     btn.textContent = '🌐';
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -98,6 +108,21 @@ transition:opacity .2s;white-space:nowrap}
       this.open(el, kind, btn);
     });
     wrap.appendChild(btn);
+  },
+
+  // 低置信字段登记（不注入图标；面板「手动召唤」入口 [SP US18]）
+  rememberLow(el, kind, score, signals) {
+    this._lowFields.set(el, { kind, score, signals });
+  },
+
+  // 面板召唤：对已登记的低置信字段补挂图标（用户显式请求 → 按高置信样式挂）
+  summon(el) {
+    const rec = this._lowFields.get(el);
+    if (!rec) return false;
+    this._lowFields.delete(el);
+    if (el.closest('.' + WRAPPER_CLASS)) return true;
+    this.attach(el, rec.kind, 'auto', rec.score, rec.signals);
+    return true;
   },
 
   open(target, kind, anchor) {
@@ -126,6 +151,21 @@ transition:opacity .2s;white-space:nowrap}
     si.placeholder = t('search');
     si.setAttribute('autocomplete', 'off');
     sw.appendChild(si); pop.appendChild(sw);
+
+    // 低置信字段召唤入口 [SP US18]：面板打开时若有登记字段则显示
+    if (this._lowFields.size > 0) {
+      const sm = document.createElement('div');
+      sm.id = 'cch-summon';
+      sm.setAttribute('role', 'button');
+      sm.textContent = t('summon');
+      sm.addEventListener('click', e => {
+        e.stopPropagation();
+        const targets = [...this._lowFields.keys()];
+        targets.forEach(el => this.summon(el));
+        sm.remove();
+      });
+      pop.appendChild(sm);
+    }
 
     const body = document.createElement('div');
     body.className = 'cch-body';
