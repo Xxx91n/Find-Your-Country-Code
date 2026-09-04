@@ -78,8 +78,8 @@ test.describe('票 02 分级行为接线（三档注入样式 + 面板召唤入�
   });
 });
 
-test.describe('iti v18.2.1 填充缺口（默认红，待票 03 转绿）', () => {
-  test.fail('面板选 Japan 后 iti 插件选中态应同步为 jp/+81（现状：仅 toast，实例不变）', async ({ page }) => {
+test.describe('iti v18.2.1 填充联动（票 03 适配层修复，已转绿）', () => {
+  test('面板选 Japan 后 iti 插件选中态应同步为 jp/+81（票 03 修复闭环）', async ({ page }) => {
     await page.goto('/test/cch-test-page2.html');
     await page.getByRole('button', { name: 'intl-tel-input' }).click();
     await openPanel(page, '#iti-phone-1');
