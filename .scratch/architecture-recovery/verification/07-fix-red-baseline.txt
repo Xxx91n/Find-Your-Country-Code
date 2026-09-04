@@ -1,0 +1,11 @@
+票 07-fix TDD 红基线：S3b 落库后、rules._own 修复前（buggy wrapper 检查仍在源码与 dist）
+命令：node .scratch/architecture-recovery/research/scripts/verify-ticket-07.mjs
+exit=1
+
+FAIL S3b 带 wrapper 祖先的字段仍可登记负反馈（修复前红：_own 按 wrapper 拦截）
+FAIL S3b forcedTier 穿过 wrapper 命中 none 规则 | got=null want="none"
+FAIL S3b 规则落盘 1 条 | got=0 want=1
+FAIL S3b cch-btn 仍不可登记 | got="rmtn37sf4olca6u" want=null
+FAIL S3b cch-si 仍不可登记 | got="rmtn37sf4wctj8m" want=null
+total 73 | pass 68 | fail 5
+FAILED: S3b 带 wrapper 祖先的字段仍可登记负反馈（修复前红：_own 按 wrapper 拦截） ; S3b forcedTier 穿过 wrapper 命中 none 规则 | got=null want="none" ; S3b 规则落盘 1 条 | got=0 want=1 ; S3b cch-btn 仍不可登记 | got="rmtn37sf4olca6u" want=null ; S3b cch-si 仍不可登记 | got="rmtn37sf4wctj8m" want=null

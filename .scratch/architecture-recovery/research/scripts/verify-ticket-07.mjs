@@ -74,6 +74,7 @@ class El {
   }
   get id() { return this._id; }
   get className() { return this._cls; }
+  get classList() { return { contains: c => String(this._cls || '').split(/\s+/).includes(c) }; }
   getAttribute(n) {
     if (n === 'name') return this._name || null;
     if (n === 'id') return this._id || null;
@@ -193,6 +194,29 @@ const DIAL_CODES = ['+86','+852','+853','+886','+81','+82','+44','+1','+49','+33
   eq(Rules.forcedTier(el2), 'none', 'S3 后到意图优先：none 压过 auto');
 }
 
+// ══ S3b 负反馈真实 DOM 等价（票 07-fix 防回归：mock 元素带 wrapper 祖先 = attach 后真实页面形态） ══
+{
+  setLoc('https://s3b.test/page');
+  const Store = createStore(); Store.init();
+  const Rules = createRules(Store);
+  const wrap = new El('DIV', { cls: 'cch-wrapper' });
+  const el = new El('INPUT', { id: 's3bx' });
+  el.ancestors.push(wrap); // brain-probe-07-fb 取证场景：字段被 attach 包进 wrapper 后用户点负反馈
+  const id = Rules.rememberNone(el);
+  ok(typeof id === 'string' && id, 'S3b 带 wrapper 祖先的字段仍可登记负反馈（修复前红：_own 按 wrapper 拦截）');
+  eq(Rules.forcedTier(el), 'none', 'S3b forcedTier 穿过 wrapper 命中 none 规则');
+  eq(Rules.pageOverrides().length, 1, 'S3b 规则落盘 1 条');
+  // 自身 UI 收敛面仍被拦截（对齐 04 版 Detect._own）
+  const btn = new El('BUTTON', { cls: 'cch-btn' });
+  eq(Rules.rememberNone(btn), null, 'S3b cch-btn 仍不可登记');
+  const si = new El('INPUT', { id: 'cch-si' });
+  eq(Rules.rememberNone(si), null, 'S3b cch-si 仍不可登记');
+  const inner = new El('INPUT', { id: 'in1' });
+  const ownRoot = new El('DIV', { id: 'cch-root' });
+  inner.ancestors.push(ownRoot);
+  eq(Rules.rememberNone(inner), null, 'S3b #cch-root 内元素仍不可登记');
+}
+
 // ══ S4 引擎侧即时生效与删除恢复（验收2/3 的检测接线） ══
 {
   setLoc('https://det.test/');
@@ -208,7 +232,11 @@ const DIAL_CODES = ['+86','+852','+853','+886','+81','+82','+44','+1','+49','+33
   ok(!!Rules.rememberNone(sel), 'S4 写入负反馈规则');
   scanWith(Det, [sel]);
   eq(mUI.attachCalls.length, 1, 'S4 规则命中后不再注入（抑制生效，重扫即可无需刷新）');
-  ok(Rules.removeOverride(Rules.listRules().overrides[0].id) === true, 'S4 删除规则');
+  // S4 预清理 S3 遗留规则（场景隔离），再写入本场景的 none，删除时精确按 selector
+  Rules.listRules().overrides.slice().forEach(r => Rules.removeOverride(r.id));
+  ok(!!Rules.rememberNone(sel), 'S4 写入负反馈规则');
+  const _s4hit = Rules.listRules().overrides.find(r => r.selector === '#cc-strong');
+  ok(Rules.removeOverride(_s4hit.id) === true, 'S4 删除规则（精确按 selector）');
   scanWith(Det, [sel]);
   eq(mUI.attachCalls.length, 2, 'S4 删除后重扫恢复注入');
   eq(mUI.attachCalls[1].tier, 'auto', 'S4 恢复注入档位 auto');
@@ -245,9 +273,12 @@ const DIAL_CODES = ['+86','+852','+853','+886','+81','+82','+44','+1','+49','+33
   }
   for (const f of ['cch-fb', 'cch-rules-view', 'cch-rules-tg', 'cch-exempt-tg', 'cch-lowkey-tg',
     'lowkeyMode', '{ force: true }', 'detachAll', '_applyLowkeyMode', 'matchingOverrides',
-    'rememberNone', 'panel-negative-feedback']) {
+    'rememberNone']) {
     ok(ui.includes(f), 'S6 ui/index.ts 含 ' + f);
   }
+  // note 字面量的权威生成点在 rules 层（Rules.rememberNone，05 票契约）；ui 仅消费 API
+  const rulesSrc = readFileSync(join(ROOT, 'src', 'rules', 'index.ts'), 'utf8');
+  ok(rulesSrc.includes('panel-negative-feedback'), 'S6 rules/index.ts 含 panel-negative-feedback（note 权威生成点）');
   const zhKeys = ["feedback:'这不是区号字段'", "rules:'站点规则'", "ruleExempt:'在本站禁用'",
     "rulesEmpty:'本站暂无规则'", "ruleDeleted:'已删除规则'", "lowkeyStyle:'低调样式（中置信）'"];
   const enKeys = ["feedback:'Not a country-code field'", "rules:'Site rules'", "ruleExempt:'Disable on this site'",

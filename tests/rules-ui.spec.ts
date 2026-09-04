@@ -10,10 +10,16 @@ type Seed = { rules?: unknown; prefs?: unknown };
 // GM 种子必须在 userscript 注入前写入（localStorage 桶在 GM_STUB 首次读取前就绪）
 async function boot(page: Page, seed: Seed = {}): Promise<void> {
   await page.addInitScript((s) => {
-    const bucket: Record<string, string> = {};
+    // 种子只在首次导航生效：addInitScript 每次导航都会重跑，无条件覆写会把
+    // 同测试内（负反馈/豁免开关/规则删除）写入的 GM 状态在 reload 时洗掉或回灌
+    // （07-fix 取证）。一次性标记存 localStorage，随测试上下文自然隔离。
+    if (!s.rules && !s.prefs) return;
+    if (localStorage.getItem('__cch_seed_done__')) return;
+    const bucket = JSON.parse(localStorage.getItem('__cch_gm__') || '{}');
     if (s.rules) bucket['cch_site_rules_v1'] = JSON.stringify(s.rules);
     if (s.prefs) bucket['cch_ui_prefs_v1'] = JSON.stringify(s.prefs);
     localStorage.setItem('__cch_gm__', JSON.stringify(bucket));
+    localStorage.setItem('__cch_seed_done__', '1');
   }, { rules: seed.rules ?? null, prefs: seed.prefs ?? null });
   await installUserscript(page);
   await page.goto('/fixtures/rules-ui.html');
@@ -140,7 +146,8 @@ test('验收1 低调样式切换即时迁移：hidden 拆图标转召唤，dim �
   await page.locator('#cch-lowkey-tg').click(); // dim → hidden
   await expect(wrapperFor(page, '#cc-mid')).toHaveCount(0);
   expect((await gmPrefs(page)).lowkeyMode).toBe('hidden');
-  // 重开面板 → 召唤入口可见（登记恢复）
+  // 面板仍开着（同 anchor 再点=切换关闭），先点外部关闭再重开 → 召唤入口可见（登记恢复）
+  await page.locator('h1').click();
   await openPanel(page, '#cc-strong');
   await expect(page.locator('#cch-summon')).toBeVisible();
   await page.locator('#cch-summon').click();

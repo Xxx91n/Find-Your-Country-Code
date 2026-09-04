@@ -1,0 +1,7 @@
+票 07-fix 反事实探针（rules._own 修复 + rebuild 后）：预期 toast=已记住 / overrides=1 / wrappedAfter=false
+exit=0
+
+STATE1={"btns":2,"ccStrongWrapped":true}
+POP_OPEN=true
+RESULT={"toast":"已记住：本页此字段不再提示","overrides":1,"wrappedAfter":false}
+PAGEERR=[]
