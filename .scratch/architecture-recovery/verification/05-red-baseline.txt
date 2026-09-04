@@ -1,0 +1,28 @@
+── S0 02 票回归自证 ──
+FAIL S0 空规则时 02 评分引擎照常工作（kw select 进状态） | got=undefined want=1
+FAIL S0 createDetect(UI) 单参兼容 | got=undefined want=1
+── S1 持久化 / 刷新 / 跨标签页 ──
+FAIL S1 子域点边界命中 www.example.com
+FAIL S1 裸域名命中
+FAIL S1 location.href 命中
+FAIL S1 刷新后豁免仍生效（GM 重读）
+── S2 引擎语义 ──
+FAIL S2 页面级 lowkey 覆盖生效 | got="auto" want="lowkey"
+FAIL S2 移除后无覆盖 | got="auto" want=null
+FAIL S2 none 覆盖不参与分档覆盖 | got="auto" want=null
+FAIL S2 自身 UI 不写规则 | got="rmtmrqsem7ulo48" want=null
+FAIL S2 未新增规则 | got=7 want=6
+── S3 检测入口接线 ──
+FAIL S3 豁免后 scan 完全跳过 | got=2 want=1
+FAIL S3 解除豁免恢复注入 | got=3 want=2
+FAIL S3 强制选择器命中元素被注入
+FAIL S3 强制注入档位 = 规则声明档 | got=undefined want="auto"
+FAIL S3 引擎 auto 被页面规则压成 lowkey | got="auto" want="lowkey"
+FAIL S4 低分字段在 auto 覆盖下注入
+FAIL S4 覆盖提升档位 auto | got=undefined want="auto"
+── S4 格式契约 + CRUD 边界 ──
+FAIL S4 i18n ruleNoneRemembered 存在
+FAIL S4 i18n ruleExemptAdded 存在
+FAIL S4 i18n ruleExemptRemoved 存在
+══════════════════════════════════════════════════
+ticket-05 单元门: 54/75 pass | FAIL=21
