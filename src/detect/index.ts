@@ -8,6 +8,8 @@
 //   （双向：误挂移除 / 漏挂补上）；SPA 路由 hook（pushState/replaceState/popstate）定向重扫
 // 蓝图出处：research/industry-models.md §④ + M8 + atomcode-industry-models.md 核心结论1/2/3/10
 // 误报标定：research/misdetection-root-causes.md §2 五类 + 25 例 harness（FP 全落 none 档）
+// 站点规则接线（票 05）：规则匹配先于检测 —— scan 入口查豁免（=完全跳过）；
+//   _process 评分前查强制选择器/页面级分档覆盖（Rules 引擎，见 ../rules；Rules 缺省时行为=无规则）
 // ════════════════════════════════════════════════════════
 import {
   L0_TOKEN_SCORE, L0_TEL_TOKENS, L0_TEL_HINT_SCORE, L0_INPUTMODE_TEL_SCORE,
@@ -94,7 +96,7 @@ const SCAN_SELECTORS = [
   'input[type="tel"],input[type="text"],input:not([type]),input[type="number"]',
 ];
 
-export function createDetect(UI) {
+export function createDetect(UI, Rules) {
   const Detect = {
     // 票 04：WeakSet 终态 → 属性指纹快照。fp 只判"变没变"；attach 真值以 DOM 实况为准
     // （el.closest('.cch-wrapper')），state.attached 仅供跳过路径的自愈补挂。
@@ -285,6 +287,12 @@ export function createDetect(UI) {
     scan(root) {
       root = root || document.body;
       if (!root) return;
+      // 票 05：豁免域名 = 完全跳过检测（[AM 结论5] 1Password data-1p-ignore 心智：
+      // 用户显式干预压过一切启发式；不评分/不注入/不登记召唤）
+      if (Rules && typeof Rules.isPageExcluded === 'function' && Rules.isPageExcluded()) {
+        if (typeof UI._pruneLow === 'function') UI._pruneLow();
+        return;
+      }
       const t0 = Date.now();
       this._pruneWatchers();
       const roots = this._deepRoots(root);
@@ -396,6 +404,47 @@ export function createDetect(UI) {
 
     _process(el) {
       if (this._own(el)) return;
+      // 票 05：规则介入先于评分（[AM 结论5] Bitwarden linked field 强制锚定 +
+      // KeePassXC Site Preferences 分档心智）。自身 UI 已被 _own 拦截，规则永不作用。
+      let pageTier = null;
+      if (Rules && typeof Rules.forcedTier === 'function') {
+        let forced = null;
+        try { forced = Rules.forcedTier(el); } catch {}
+        try { pageTier = Rules.pageTierOverride(); } catch {}
+        const wrapElR = el.closest ? el.closest('.' + WRAPPER_CLASS) : null;
+        if (forced) {
+          // 强制选择器命中：按规则档注入/移除，不评分；指纹含规则档，档位变化自动重评
+          const kind = el.tagName === 'SELECT' ? 'select' : (el.tagName === 'INPUT' ? 'input' : null);
+          if (!kind) return;
+          const fp = this._fingerprint(el) + '|rule:' + forced;
+          const st = this._state.get(el);
+          if (st && st.fp === fp) {
+            if (st.attached && !wrapElR) UI.attach(el, kind, forced, 0, []);
+            return;
+          }
+          const rec = { fp, kind, tier: forced, score: 0, signals: [{ layer: 'R', name: 'rule:forced', pts: 0 }], attached: false };
+          this._state.set(el, rec);
+          if (forced === 'none') {
+            if (wrapElR) UI.detach(el);
+            return;
+          }
+          if (wrapElR) {
+            const btn = wrapElR.querySelector ? wrapElR.querySelector('.cch-btn') : null;
+            const prevTier = btn && btn.getAttribute('data-cch-tier');
+            if (prevTier && prevTier !== forced) { UI.detach(el); UI.attach(el, kind, forced, 0, []); }
+            rec.attached = true;
+            return;
+          }
+          UI.attach(el, kind, forced, 0, []);
+          rec.attached = true;
+          return;
+        }
+        if (pageTier === 'none') {
+          // 页面级 none 覆盖：等同引擎判 none（撤图标；不登记召唤）
+          if (wrapElR) UI.detach(el);
+          return;
+        }
+      }
       const wrapEl = el.closest ? el.closest('.' + WRAPPER_CLASS) : null;
       const fp = this._fingerprint(el);
       const st = this._state.get(el);
@@ -418,6 +467,14 @@ export function createDetect(UI) {
         kind = 'iti'; // iti 字段走适配层填充（Fill.run 三策略分发），不可回落 input 策略
       } else {
         res = this.scoreElement(el);
+        // 票 05：页面级分档覆盖（auto/lowkey 双向重映射）——页面档即「本页注入档位下限」：
+        // auto 覆盖把 lowkey/none 全部提升注入（用户显式规则自担误报风险，对标
+        // KeePassXC Site Preferences 用户干预压过启发式）；lowkey 覆盖同理；
+        // none 覆盖已在上方短路（撤图标不登记）。
+        if (Rules && (pageTier === 'auto' || pageTier === 'lowkey') && res.tier !== pageTier) {
+          res = { score: res.score, tier: pageTier,
+            signals: (res.signals || []).concat([{ layer: 'R', name: 'rule:tier-override', pts: 0 }]) };
+        }
       }
       kind = kind || (el.tagName === 'SELECT' ? 'select' : (el.tagName === 'INPUT' ? 'input' : null));
       const rec = { fp, kind, tier: res.tier, score: res.score, signals: res.signals, attached: false };
