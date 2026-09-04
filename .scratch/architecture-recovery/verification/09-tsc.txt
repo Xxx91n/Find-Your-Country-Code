@@ -1,0 +1,27 @@
+src/detect/index.ts(297,58): error TS2339: Property '__cchPerfHook' does not exist on type 'Window & typeof globalThis'.
+src/detect/index.ts(298,22): error TS2339: Property '__cchPerfHook' does not exist on type 'Window & typeof globalThis'.
+src/fill/index.ts(51,19): error TS2339: Property 'value' does not exist on type 'unknown'.
+src/fill/index.ts(55,10): error TS2339: Property 'getAttribute' does not exist on type 'unknown'.
+src/fill/index.ts(56,10): error TS2339: Property 'getAttribute' does not exist on type 'unknown'.
+src/fill/index.ts(59,9): error TS2339: Property 'text' does not exist on type 'unknown'.
+src/fill/index.ts(60,9): error TS2339: Property 'text' does not exist on type 'unknown'.
+src/fill/index.ts(61,9): error TS2339: Property 'text' does not exist on type 'unknown'.
+src/fill/index.ts(63,33): error TS2339: Property 'value' does not exist on type 'unknown'.
+src/iti-adapter/index.ts(22,30): error TS2339: Property 'intlTelInputGlobals' does not exist on type 'Window & typeof globalThis'.
+src/iti-adapter/index.ts(24,30): error TS2339: Property 'intlTelInput' does not exist on type 'Window & typeof globalThis'.
+src/iti-adapter/index.ts(53,34): error TS2339: Property 'intlTelInputGlobals' does not exist on type 'Window & typeof globalThis'.
+src/iti-adapter/index.ts(54,34): error TS2339: Property 'intlTelInput' does not exist on type 'Window & typeof globalThis'.
+src/iti-adapter/index.ts(63,26): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/iti-adapter/index.ts(63,43): error TS2339: Property '$' does not exist on type 'Window & typeof globalThis'.
+src/iti-adapter/index.ts(144,26): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/iti-adapter/index.ts(144,43): error TS2339: Property '$' does not exist on type 'Window & typeof globalThis'.
+src/main.ts(15,33): error TS2554: Expected 1 arguments, but got 2.
+src/store/index.ts(51,37): error TS2304: Cannot find name 'GM_addValueChangeListener'.
+src/store/index.ts(53,28): error TS2304: Cannot find name 'GM_addValueChangeListener'.
+src/store/index.ts(73,17): error TS2304: Cannot find name 'GM_setValue'.
+src/store/index.ts(78,40): error TS2304: Cannot find name 'GM_addValueChangeListener'.
+src/store/index.ts(80,31): error TS2304: Cannot find name 'GM_addValueChangeListener'.
+src/store/index.ts(121,32): error TS2304: Cannot find name 'GM_getValue'.
+src/store/index.ts(127,5): error TS2304: Cannot find name 'GM_setValue'.
+src/store/index.ts(187,28): error TS2304: Cannot find name 'GM_getValue'.
+src/store/index.ts(247,11): error TS2304: Cannot find name 'GM_setValue'.

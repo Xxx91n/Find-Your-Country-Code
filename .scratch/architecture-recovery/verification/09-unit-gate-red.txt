@@ -1,0 +1,39 @@
+[PASS] R1:ret 
+[PASS] R1:value value="+86" expect="+86"
+[PASS] R1:seq events=["input","change","blur"]
+[FAIL] R1:meta meta={"bubbles":true,"composed":false}
+[FAIL] R1:react reactLog=[]
+[FAIL] R1:tracker-stale tracker="+86" dom="+86"（tracker 未随原型 setter 同步 → React diff 可感知）
+[PASS] R2:ret 
+[PASS] R2:value value="+81" expect="+81"
+[PASS] R2:seq events=["input","change","blur"]
+[FAIL] R2:meta meta={"bubbles":true,"composed":false}
+[FAIL] R2:react reactLog=[]
+[FAIL] R2:tracker-stale tracker="+81" dom="+81"（tracker 未随原型 setter 同步 → React diff 可感知）
+[PASS] R3:value value="+86" expect="+86"
+[PASS] R3:seq events=["input","change","blur"]
+[FAIL] R3:meta meta={"bubbles":true,"composed":false}
+[PASS] R4:value value="+81" expect="+81"
+[PASS] R4:seq events=["input","change","blur"]
+[FAIL] R4:meta meta={"bubbles":true,"composed":false}
+[PASS] R5:value value="+86" expect="+86"
+[PASS] R5:seq events=["input","change","blur"]
+[FAIL] R5:meta meta={"bubbles":true,"composed":false}
+[PASS] R6:value value="+44" expect="+44"
+[PASS] R6:seq events=["input","change","blur"]
+[FAIL] R6:meta meta={"bubbles":true,"composed":false}
+[FAIL] R6:react reactLog=[]
+[FAIL] R6:tracker-stale tracker="+44" dom="+44"（tracker 未随原型 setter 同步 → React diff 可感知）
+[PASS] R7:ret 
+[PASS] R7:value value="+81" expect="+81"
+[PASS] R7:seq events=["input","change","blur"]
+[FAIL] R7:meta meta={"bubbles":true,"composed":false}
+[FAIL] R7:react reactLog=[]
+[FAIL] R7:tracker-stale tracker="+81" dom="+81"（tracker 未随原型 setter 同步 → React diff 可感知）
+[PASS] C1:suppressed reactLog=[]（tracker 已随实例赋值同步 → diff 不出变化）
+[PASS] C2:fires 
+[FAIL] S1:fill-single-assign src/fill 直接赋值 2 次（应仅 _inject 兜底 1 次）
+[FAIL] S2:adapter-zero-assign src/iti-adapter 直接赋值 2 次（应为 0，兜底走注入回调）
+[FAIL] S3:single-inject-fn _inject 为唯一注入函数
+
+19/37 pass | FAILURES: R1:meta, R1:react, R1:tracker-stale, R2:meta, R2:react, R2:tracker-stale, R3:meta, R4:meta, R5:meta, R6:meta, R6:react, R6:tracker-stale, R7:meta, R7:react, R7:tracker-stale, S1:fill-single-assign, S2:adapter-zero-assign, S3:single-inject-fn

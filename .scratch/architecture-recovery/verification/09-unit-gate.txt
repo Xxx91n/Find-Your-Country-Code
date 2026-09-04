@@ -1,0 +1,38 @@
+[PASS] R1:ret 
+[PASS] R1:value value="+86" expect="+86"
+[PASS] R1:seq events=["input","change","blur"]
+[PASS] R1:meta meta={"bubbles":true,"composed":true}
+[PASS] R1:react reactLog=["onChange"]
+[PASS] R2:ret 
+[PASS] R2:value value="+81" expect="+81"
+[PASS] R2:seq events=["input","change","blur"]
+[PASS] R2:meta meta={"bubbles":true,"composed":true}
+[PASS] R2:react reactLog=["onChange"]
+[PASS] R3:value value="+86" expect="+86"
+[PASS] R3:seq events=["input","change","blur"]
+[PASS] R3:meta meta={"bubbles":true,"composed":true}
+[PASS] R4:value value="+81" expect="+81"
+[PASS] R4:seq events=["input","change","blur"]
+[PASS] R4:meta meta={"bubbles":true,"composed":true}
+[PASS] R5:value value="+86" expect="+86"
+[PASS] R5:seq events=["input","change","blur"]
+[PASS] R5:meta meta={"bubbles":true,"composed":true}
+[PASS] R6:value value="+44" expect="+44"
+[PASS] R6:seq events=["input","change","blur"]
+[PASS] R6:meta meta={"bubbles":true,"composed":true}
+[PASS] R6:react reactLog=["onChange"]
+[PASS] R7:ret 
+[PASS] R7:value value="+81" expect="+81"
+[PASS] R7:seq events=["input","change","blur"]
+[PASS] R7:meta meta={"bubbles":true,"composed":true}
+[PASS] R7:react reactLog=["onChange"]
+[PASS] C1:suppressed reactLog=[]（tracker 已随实例赋值同步 → diff 不出变化）
+[PASS] C2:fires 
+[PASS] A1:select-contract log=["onChange:+86","touched"]
+[PASS] A2:input-contract log=["onChange:+81","touched"]
+[PASS] A3:textarea-contract log=["onChange:+44","touched"]
+[PASS] S1:fill-single-assign src/fill 直接赋值 1 次（应仅 _inject 兜底 1 次）
+[PASS] S2:adapter-zero-assign src/iti-adapter 直接赋值 0 次（应为 0，兜底走注入回调）
+[PASS] S3:single-inject-fn _inject 为唯一注入函数
+
+36/36 pass
