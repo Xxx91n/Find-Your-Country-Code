@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>DOM 复用重评 fixture（票 04）</title>
+</head>
+<body>
+<h1>DOM 复用（框架复用节点改属性）→ 指纹重评双向纠正</h1>
+<form id="reuse-form">
+  <input id="reuse-tel" type="tel" name="phone" placeholder="手机号（锚）">
+  <label for="reuse-sel" id="reuse-label">国家区号</label>
+  <select id="reuse-sel" name="country_code">
+    <option value="+86">+86 中国</option>
+    <option value="+1">+1 美国</option>
+    <option value="+44">+44 英国</option>
+    <option value="+81">+81 日本</option>
+  </select>
+  <label for="late-sel" id="late-label">普通字段</label>
+  <select id="late-sel" name="late_field">
+    <option value="1">一</option>
+    <option value="2">二</option>
+  </select>
+</form>
+<button id="to-excluded" type="button">复用 #reuse-sel 节点改为月份枚举（误挂 → 移除）</button>
+<button id="to-included" type="button">复用 #late-sel 节点改为区号字段（漏挂 → 补上）</button>
+<script>
+  // 模拟框架 DOM 复用：节点不变，仅改 options / name / label 文案（属性指纹必然变化）
+  document.getElementById('to-excluded').addEventListener('click', () => {
+    const sel = document.getElementById('reuse-sel');
+    sel.setAttribute('name', 'valid_month');
+    sel.innerHTML = '';
+    for (let i = 1; i <= 12; i++) {
+      const o = document.createElement('option');
+      o.value = String(i); o.textContent = i + ' 个月';
+      sel.appendChild(o);
+    }
+    document.getElementById('reuse-label').textContent = '有效期（月份）';
+  });
+  document.getElementById('to-included').addEventListener('click', () => {
+    const sel = document.getElementById('late-sel');
+    sel.setAttribute('name', 'country_code');
+    sel.innerHTML = '';
+    for (const v of ['+86', '+1', '+44', '+81']) {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v;
+      sel.appendChild(o);
+    }
+    document.getElementById('late-label').textContent = '国家区号';
+  });
+</script>
+</body>
+</html>

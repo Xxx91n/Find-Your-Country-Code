@@ -1,9 +1,12 @@
 // ════════════════════════════════════════════════════════
-// 多信号加权评分检测引擎（票 02 核心）
+// 多信号加权评分检测引擎（票 02）+ 可重评估扫描机制（票 04）
 // 五层信号瀑布：L0 autocomplete/inputmode 标准信号 → L1 词表/label 加权（歧义词降权组）
 //   → L2 锚→目标关联 → L3 select options 内容验证（值域整体分布）→ L4 排除词负分
 // 输出 {score, tier, signals}；分级行动：auto=自动注入 / lowkey=低调注入 / none=不注入（可召唤）
-// 蓝图出处：research/industry-models.md §④ + atomcode-industry-models.md 核心结论1/2/3
+// 扫描机制（票 04）：open shadowRoot 递归穿透（每 root 单独 querySelectorAll）+ 每 shadow root
+//   单独 MutationObserver + 统一 350ms 防抖；元素判定 WeakSet 终态 → 属性指纹快照重评
+//   （双向：误挂移除 / 漏挂补上）；SPA 路由 hook（pushState/replaceState/popstate）定向重扫
+// 蓝图出处：research/industry-models.md §④ + M8 + atomcode-industry-models.md 核心结论1/2/3/10
 // 误报标定：research/misdetection-root-causes.md §2 五类 + 25 例 harness（FP 全落 none 档）
 // ════════════════════════════════════════════════════════
 import {
@@ -15,6 +18,7 @@ import {
   L3_NUMERIC_MIN_RATE, L3_NUMERIC_PENALTY,
   L4_EXCLUDE_PENALTY,
   SCORE_AUTO, SCORE_LOWKEY,
+  RESCAN_DEBOUNCE_MS,
   OWN_ROOT_ID, WRAPPER_CLASS,
 } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
@@ -78,19 +82,41 @@ function optStats(el) {
   return { total: opts.length, plusDial, parenDial, isoName, numeric };
 }
 
+// 票 04：observer 配置与指纹属性面（两者对齐 —— 指纹读什么，observer 就监听什么）
+const OBSERVED_ATTRS = ['name', 'id', 'class', 'type', 'placeholder', 'aria-label',
+  'data-name', 'title', 'autocomplete', 'inputmode', 'disabled', 'readonly'];
+const MO_OPTS = { childList: true, subtree: true, attributes: true, attributeFilter: OBSERVED_ATTRS };
+// 候选选择器组（顺序：select → iti 容器 → input 组合；与 v1.3.4 迁移基线一致）
+const SCAN_SELECTORS = [
+  'select',
+  '.iti input',
+  '.intl-tel-input input',
+  'input[type="tel"],input[type="text"],input:not([type]),input[type="number"]',
+];
+
 export function createDetect(UI) {
   const Detect = {
-    _done: new WeakSet(),
+    // 票 04：WeakSet 终态 → 属性指纹快照。fp 只判"变没变"；attach 真值以 DOM 实况为准
+    // （el.closest('.cch-wrapper')），state.attached 仅供跳过路径的自愈补挂。
+    _state: new WeakMap(),
+    // 票 04：per-shadow-root observer 登记（host 断连时 prune，防 MutationObserver 强引用泄漏）
+    _shadowWatchers: new Map(),
+    _scanTimer: null,
+    _watched: false,
 
     _own(el) {
+      // 票 04：移除 closest('.cch-wrapper') 检查 —— 旧实现依赖 _done 先短路，指纹重评下该检查
+      // 会把已挂图标字段永久挡在重评之外。own 判定收敛为自身 UI 容器/按钮。
       return !!el.closest('#' + OWN_ROOT_ID) ||
-             !!el.closest('.' + WRAPPER_CLASS) ||
-             el.id === 'cch-search';
+             el.id === 'cch-search' || el.id === 'cch-si' ||
+             !!(el.classList && el.classList.contains && el.classList.contains('cch-btn'));
     },
 
     _label(el) {
+      // 票 04：getRootNode() 覆盖 shadow 内 label[for]（ShadowRoot/Document 均有 querySelector/getElementById）
+      const rootNode = (el.getRootNode && el.getRootNode()) || el.ownerDocument || document;
       if (el.id) {
-        const l = (el.ownerDocument || document).querySelector('label[for="' + el.id + '"]');
+        const l = rootNode.querySelector('label[for="' + el.id + '"]');
         if (l) return l.textContent;
       }
       const lp = el.closest('label');
@@ -99,7 +125,7 @@ export function createDetect(UI) {
       if (lid) {
         // N2 修复：aria-labelledby 多 id 空格分隔逐一解析（旧实现 getElementById('lb1 lb2') 永远 null）
         for (const p of lid.split(/\s+/).filter(Boolean)) {
-          const l = (el.ownerDocument || document).getElementById(p);
+          const l = rootNode.getElementById ? rootNode.getElementById(p) : null;
           if (l) return l.textContent;
         }
       }
@@ -254,42 +280,169 @@ export function createDetect(UI) {
       return false;
     },
 
+    // ══ 票 04：扫描机制 ══
+
     scan(root) {
       root = root || document.body;
-      this._collect(root, 'select').forEach(el => this._process(el));
-      ['.iti input', '.intl-tel-input input'].forEach(sel => {
-        this._collect(root, sel).forEach(el => this._process(el));
-      });
-      this._collect(root, 'input[type="tel"],input[type="text"],input:not([type]),input[type="number"]')
-        .forEach(el => this._process(el));
+      if (!root) return;
+      const t0 = Date.now();
+      this._pruneWatchers();
+      const roots = this._deepRoots(root);
+      for (const sel of SCAN_SELECTORS) {
+        this._collect(roots, sel).forEach(el => this._process(el));
+      }
+      if (typeof UI._pruneLow === 'function') UI._pruneLow();
+      const ms = Date.now() - t0;
+      // 可选性能探针（票 04 基线）：页面不设置 __cchPerfHook 即零开销
+      if (typeof window !== 'undefined' && typeof window.__cchPerfHook === 'function') {
+        try { window.__cchPerfHook(ms); } catch {}
+      }
     },
 
-    // 测试缝：collect 与 scan 分离 —— shadow 穿透（票 04）只替换 _collect
-    _collect(root, sel) {
-      return Array.from(root.querySelectorAll(sel));
+    // open shadowRoot 递归穿透：BFS 收集 [根, ...全部 open shadowRoot]，逐个挂 per-root observer
+    _deepRoots(root) {
+      const roots = [root];
+      const seen = new Set(roots); // 防御性去重：正常 DOM 无环，病态结构下幂等
+      const queue = [root];
+      while (queue.length) {
+        const cur = queue.shift();
+        let els;
+        try { els = cur.querySelectorAll('*'); } catch { continue; }
+        for (let i = 0; i < els.length; i++) {
+          const sr = els[i].shadowRoot; // 仅 open root 可读；closed 属性为 null（spec Out of Scope [AM 结论10]）
+          if (sr && !seen.has(sr)) {
+            seen.add(sr);
+            roots.push(sr);
+            queue.push(sr);
+            this._observeShadow(sr);
+          }
+        }
+      }
+      return roots;
+    },
+
+    // 测试缝：collect 与 scan 分离（票 02 预留，票 04 替换实现为跨根集合查询）
+    _collect(roots, sel) {
+      const list = Array.isArray(roots) ? roots : [roots];
+      const out = [];
+      for (const r of list) {
+        try { out.push(...r.querySelectorAll(sel)); } catch {}
+      }
+      return out;
+    },
+
+    _observeShadow(root) {
+      // node 单测环境无 MutationObserver；同一 root 只挂一个
+      if (typeof MutationObserver !== 'function' || this._shadowWatchers.has(root)) return;
+      const mo = new MutationObserver(() => this.scheduleScan());
+      try { mo.observe(root, MO_OPTS); } catch { return; }
+      this._shadowWatchers.set(root, { mo, host: root.host || null });
+    },
+
+    // 泄漏防护：host 已断连的 shadow root → disconnect（observer 对被观察节点持强引用）
+    _pruneWatchers() {
+      for (const [root, rec] of this._shadowWatchers) {
+        if (!root.host || !root.host.isConnected) {
+          rec.mo.disconnect();
+          this._shadowWatchers.delete(root);
+        }
+      }
+    },
+
+    // 统一防抖入口：顶层/shadow mutation、路由 hook 全部汇入；350ms 窗口后全量重扫
+    scheduleScan() {
+      clearTimeout(this._scanTimer);
+      this._scanTimer = setTimeout(() => this.scan(document.body), RESCAN_DEBOUNCE_MS);
+    },
+
+    // 票 04：观测总装（替代旧 main.ts 内联 observe + 8×500ms 轮询）
+    watch() {
+      if (this._watched || typeof MutationObserver !== 'function') return;
+      this._watched = true;
+      new MutationObserver(() => this.scheduleScan()).observe(document.body, MO_OPTS);
+      this._deepRoots(document.body); // 预挂 watch 时已存在的 shadow root observer
+      // SPA 路由 hook：pushState/replaceState 包装（保 this/透参/返回值）+ popstate 监听
+      if (typeof history !== 'undefined') {
+        const self = this;
+        ['pushState', 'replaceState'].forEach(name => {
+          const orig = history[name];
+          if (typeof orig !== 'function') return;
+          history[name] = function () {
+            const r = orig.apply(this, arguments);
+            self.scheduleScan();
+            return r;
+          };
+        });
+      }
+      window.addEventListener('popstate', () => this.scheduleScan());
+    },
+
+    // 票 04：属性指纹快照 —— 评分引擎实际读取的信号面（不含 value/位置/尺寸：
+    // 输入过程不改判"是否区号字段"，避免打字触发无谓重评）
+    _fingerprint(el) {
+      const parts = [el.tagName, el.getAttribute('name'), el.id, el.getAttribute('class'),
+        el.getAttribute('type'), el.getAttribute('placeholder'), el.getAttribute('aria-label'),
+        el.getAttribute('data-name'), el.getAttribute('title'), el.getAttribute('autocomplete'),
+        el.getAttribute('inputmode'), el.disabled ? 'd' : '', el.readOnly ? 'r' : '',
+        this._isIti(el) ? 'iti' : '', this._label(el) || ''];
+      if (el.tagName === 'SELECT' && el.options) {
+        for (let i = 0; i < el.options.length; i++) {
+          const o = el.options[i];
+          parts.push((o.value || '') + '=' + (o.text || ''));
+        }
+      }
+      return parts.join('|');
     },
 
     _process(el) {
-      if (this._done.has(el)) return;
       if (this._own(el)) return;
-      if (el.disabled || el.readOnly) return;
+      const wrapEl = el.closest ? el.closest('.' + WRAPPER_CLASS) : null;
+      const fp = this._fingerprint(el);
+      const st = this._state.get(el);
 
-      let kind = null, res = null;
-      if (this._isIti(el)) {
-        kind = 'iti';
+      // 指纹未变：跳过重评（等价旧 _done 短路）；已 attached 但 wrapper 被站点剥离 → 用缓存自愈补挂
+      if (st && st.fp === fp) {
+        if (st.attached && st.kind && !wrapEl) {
+          UI.attach(el, st.kind, st.tier, st.score, st.signals);
+        }
+        return;
+      }
+
+      // 新元素或指纹变化 → 全量重评（_isIti 结果亦入指纹，插件初始化晚于首扫也能补挂）
+      let kind = null, res;
+      if (el.disabled || el.readOnly) {
+        // 禁用/只读：视同 none 档撤图标；重新启用时属性变化会再触发补挂
+        res = { score: 0, tier: 'none', signals: [{ layer: 'L0', name: 'gate:disabled', pts: 0 }] };
+      } else if (this._isIti(el)) {
         res = { score: L0_TOKEN_SCORE, tier: 'auto', signals: [] };
+        kind = 'iti'; // iti 字段走适配层填充（Fill.run 三策略分发），不可回落 input 策略
       } else {
         res = this.scoreElement(el);
-        kind = el.tagName === 'SELECT' ? 'select' : (el.tagName === 'INPUT' ? 'input' : null);
       }
+      kind = kind || (el.tagName === 'SELECT' ? 'select' : (el.tagName === 'INPUT' ? 'input' : null));
+      const rec = { fp, kind, tier: res.tier, score: res.score, signals: res.signals, attached: false };
+      this._state.set(el, rec);
+
       if (!kind) return;
+
       if (res.tier === 'none') {
-        // 低置信/国家语义字段：不注入，登记为可召唤（score≥25 才登记，纯负分排除字段不打扰）
+        if (wrapEl) UI.detach(el); // 误挂移除
         if (res.score >= 25) UI.rememberLow(el, kind, res.score, res.signals);
         return;
       }
-      this._done.add(el);
-      UI.attach(el, kind, res.tier, res.score, res.signals);
+      // auto / lowkey
+      if (wrapEl) {
+        const btn = wrapEl.querySelector ? wrapEl.querySelector('.cch-btn') : null;
+        const prevTier = btn && btn.getAttribute('data-cch-tier');
+        if (prevTier && prevTier !== res.tier) {
+          UI.detach(el); // 档位变化：拆了重挂，样式与 data-cch-tier 同步
+          UI.attach(el, kind, res.tier, res.score, res.signals);
+        }
+        rec.attached = true;
+        return;
+      }
+      UI.attach(el, kind, res.tier, res.score, res.signals); // 漏挂补上
+      rec.attached = true;
     },
   };
 
