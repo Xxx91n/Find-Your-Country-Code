@@ -11,6 +11,7 @@
 # docx
 docs/*
 !docs/adr/
+!docs/architecture-recovery-*.md
 
 # worktrees
 .worktrees/
