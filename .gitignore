@@ -9,7 +9,8 @@
 !test/
 
 # docx
-docs/
+docs/*
+!docs/adr/
 
 # worktrees
 .worktrees/
