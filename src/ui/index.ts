@@ -108,6 +108,33 @@ border-radius:8px;cursor:pointer;text-align:center}
       this.open(el, kind, btn);
     });
     wrap.appendChild(btn);
+    // 票 04：字段在 open shadow root 内时，document 级样式表不生效 → 把样式表克隆进该 root
+    try {
+      const rn = el.getRootNode ? el.getRootNode() : null;
+      if (rn && rn.nodeType === 11 && rn.host && !rn.querySelector('#cch-style')) {
+        const st = document.getElementById('cch-style');
+        if (st) rn.appendChild(st.cloneNode(true));
+      }
+    } catch {}
+  },
+
+  // 票 04：与 attach 对称的拆除（重评判 none 档 → 误挂图标移除）。失败安全：无 wrapper 直接返回。
+  detach(el) {
+    this._lowFields.delete(el);
+    const wrap = el.closest('.' + WRAPPER_CLASS);
+    if (!wrap) return;
+    if (this._popup && this._anchor && wrap.contains(this._anchor)) this._closePopup();
+    const parent = wrap.parentNode;
+    if (!parent) return;
+    parent.insertBefore(el, wrap);
+    wrap.remove();
+  },
+
+  // 票 04：低置信登记里的强引用清理（元素已断连 → 移除，防 Map 泄漏与幽灵召唤项）
+  _pruneLow() {
+    for (const k of [...this._lowFields.keys()]) {
+      if (!k.isConnected) this._lowFields.delete(k);
+    }
   },
 
   // 低置信字段登记（不注入图标；面板「手动召唤」入口 [SP US18]）

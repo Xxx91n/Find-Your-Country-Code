@@ -2,17 +2,18 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>Shadow DOM 漏检 fixture</title>
+<title>Shadow DOM 穿透 fixture（票 04）</title>
 </head>
 <body>
-<h1>Shadow DOM fixture（open shadow root）</h1>
-<p>open shadow root 内的真区号下拉。当前引擎 querySelectorAll 不穿透 → 漏检（用例默认红）；
-待票 04（rescan + shadow DOM 穿透）转绿。</p>
+<h1>Shadow DOM fixture（open shadow root：单层 + 嵌套两层）</h1>
+<p>票 04 起 _deepRoots 递归穿透 open shadowRoot（每 root 单独 querySelectorAll + per-root observer）。</p>
+<input id="anchor-tel" type="tel" name="phone" placeholder="手机号（主号锚）">
 <div id="host"></div>
+<div id="host2"></div>
 <script>
-  const host = document.getElementById('host');
-  const root = host.attachShadow({ mode: 'open' });
-  root.innerHTML = `
+  // 单层：区号 select + shadow 内 label[for]（_label 走 getRootNode）
+  const root1 = document.getElementById('host').attachShadow({ mode: 'open' });
+  root1.innerHTML = `
     <label for="shadow-code">国家区号（shadow DOM 内，应注入图标）</label>
     <select id="shadow-code" name="country_code">
       <option value="+86">+86 中国</option>
@@ -20,6 +21,22 @@
       <option value="+44">+44 英国</option>
       <option value="+81">+81 日本</option>
     </select>
+    <input id="shadow-plain" name="remark" type="text" placeholder="备注（负例，不注入）">
+  `;
+  // 嵌套两层：host2 → shadow → host-inner → shadow-inner 内的 select/input
+  const root2 = document.getElementById('host2').attachShadow({ mode: 'open' });
+  root2.innerHTML = '<div id="host-inner"></div>';
+  const rootInner = root2.getElementById('host-inner').attachShadow({ mode: 'open' });
+  rootInner.innerHTML = `
+    <select id="nested-code" name="country_code">
+      <option value="+86">+86</option>
+      <option value="+1">+1</option>
+      <option value="+44">+44</option>
+      <option value="+81">+81</option>
+    </select>
+    <input id="nested-input" name="phone_code" type="text">
+    <label for="nested-label-input">国家区号</label>
+    <input id="nested-label-input" type="text">
   `;
 </script>
 </body>

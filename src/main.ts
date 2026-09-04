@@ -13,7 +13,8 @@ const UI = createUI(Store, deps);
 const Fill = createFill(UI);
 deps.Fill = Fill;
 const Detect = createDetect(UI);
-function observe() { let tid = null; new MutationObserver(() => { clearTimeout(tid); tid = setTimeout(() => Detect.scan(document.body), 350); }).observe(document.body, { childList: true, subtree: true }); }
-function init() { Store.init(); UI.css(); Store.subscribe(() => { if (!UI._popup) return; const q = UI._popup.querySelector('#cch-si')?.value || ''; UI._render(q); }); Detect.scan(document.body); let n = 0; const poll = setInterval(() => { Detect.scan(document.body); if (++n >= 8) clearInterval(poll); }, 500); observe(); }
+// 票 04：观测总装收口到 Detect.watch()——顶层 body observer + 每 shadow root observer
+// （scan 穿透时自动挂）+ SPA 路由 hook（pushState/replaceState/popstate），统一 350ms 防抖
+function init() { Store.init(); UI.css(); Store.subscribe(() => { if (!UI._popup) return; const q = UI._popup.querySelector('#cch-si')?.value || ''; UI._render(q); }); Detect.scan(document.body); Detect.watch(); }
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

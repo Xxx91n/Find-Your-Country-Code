@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>性能基线 fixture（票 04：1000 节点级防抖窗口）</title>
+</head>
+<body>
+<h1>性能基线（静态 ~1200 节点 + 注入 200 节点）</h1>
+<form id="perf-form">
+  <label for="perf-code">国家区号</label>
+  <select id="perf-code" name="country_code">
+    <option value="+86">+86 中国</option>
+    <option value="+1">+1 美国</option>
+    <option value="+44">+44 英国</option>
+    <option value="+81">+81 日本</option>
+    <option value="+91">+91 印度</option>
+    <option value="+49">+49 德国</option>
+  </select>
+  <input id="perf-phone" type="tel" name="phone" placeholder="手机号">
+</form>
+<button id="perf-add" type="button">注入 200 节点（含 1 个区号字段）</button>
+<div id="perf-extra"></div>
+<div id="perf-bulk"></div>
+<script>
+  // scan 计时探针：Detect.scan 每次执行后回传耗时 ms（未设置此 hook 时零开销）
+  window.__cchPerf = { scans: 0, totalMs: 0, maxMs: 0, samples: [] };
+  window.__cchPerfHook = function (ms) {
+    const p = window.__cchPerf;
+    p.scans++; p.totalMs += ms; p.maxMs = Math.max(p.maxMs, ms); p.samples.push(ms);
+  };
+  // 静态填充：40 卡片 × 表格 5 行 4 列（无触发关键词，纯节点量）
+  (function fill() {
+    const bulk = document.getElementById('perf-bulk');
+    const frag = document.createDocumentFragment();
+    for (let c = 0; c < 40; c++) {
+      const card = document.createElement('div');
+      card.className = 'perf-card';
+      const h = document.createElement('h3'); h.textContent = '卡片 ' + c;
+      card.appendChild(h);
+      const tbl = document.createElement('table'); const tb = document.createElement('tbody');
+      for (let r = 0; r < 5; r++) {
+        const tr = document.createElement('tr');
+        for (let d = 0; d < 4; d++) {
+          const td = document.createElement('td'); td.textContent = 'r' + r + 'c' + d;
+          tr.appendChild(td);
+        }
+        tb.appendChild(tr);
+      }
+      tbl.appendChild(tb); card.appendChild(tbl); frag.appendChild(card);
+    }
+    bulk.appendChild(frag);
+  })();
+  document.getElementById('perf-add').addEventListener('click', () => {
+    const extra = document.getElementById('perf-extra');
+    for (let i = 0; i < 100; i++) {
+      const row = document.createElement('div'); row.className = 'perf-row';
+      row.textContent = 'extra row ' + i;
+      extra.appendChild(row);
+    }
+    const wrap = document.createElement('div');
+    wrap.innerHTML = '<select id="perf-code2" name="country_code">' +
+      ['+86', '+1', '+44', '+81', '+91', '+49'].map(v => '<option value="' + v + '">' + v + '</option>').join('') +
+      '</select>';
+    extra.appendChild(wrap.firstChild);
+  });
+</script>
+</body>
+</html>

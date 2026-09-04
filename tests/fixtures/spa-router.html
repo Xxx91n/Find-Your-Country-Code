@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SPA 路由重扫 fixture（票 04）</title>
+</head>
+<body>
+<h1>SPA 路由 fixture（pushState / replaceState / popstate 三 API）</h1>
+<div id="view-ps" class="route-view" style="display:none"></div>
+<div id="view-rs" class="route-view" style="display:none"></div>
+<div id="view-po" class="route-view" style="display:none"></div>
+<button id="ps-btn" type="button">pushState → route-b（懒渲染区号字段）</button>
+<button id="rs-btn" type="button">replaceState → route-c（懒渲染区号字段）</button>
+<script>
+  function codeHtml(id) {
+    return '<label for="' + id + '">国家区号</label>' +
+      '<select id="' + id + '" name="country_code">' +
+      ['+86', '+1', '+44', '+81'].map(v => '<option value="' + v + '">' + v + '</option>').join('') +
+      '</select>';
+  }
+  function activate(viewId, fieldId) {
+    document.querySelectorAll('.route-view').forEach(v => { v.style.display = 'none'; });
+    const view = document.getElementById(viewId);
+    view.style.display = '';
+    if (!view.dataset.filled) { view.innerHTML = codeHtml(fieldId); view.dataset.filled = '1'; }
+  }
+  document.getElementById('ps-btn').addEventListener('click', () => {
+    history.pushState({ route: 'b' }, '', '?route=b');
+    activate('view-ps', 'ps-code');
+  });
+  document.getElementById('rs-btn').addEventListener('click', () => {
+    history.replaceState({ route: 'c' }, '', '?route=c');
+    activate('view-rs', 'rs-code');
+  });
+  window.addEventListener('popstate', () => activate('view-po', 'po-code'));
+</script>
+</body>
+</html>

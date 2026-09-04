@@ -46,5 +46,24 @@ export const SCORE_LOWKEY = 35;           // ≥ 中置信：低调注入；< �
 
 // ════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════
+
+// ── 重扫机制常量（票 04）[IM M8 每 root observer + 旧 observe() 350ms 防抖心智保留] ──
+export const RESCAN_DEBOUNCE_MS = 350;    // 重扫防抖窗口；1000 节点级单次 scan 实测须 < 此窗口（票 04 报告 §4）
+
 export const OWN_ROOT_ID = 'cch-root';
 export const WRAPPER_CLASS = 'cch-wrapper';
+
+// ════════════════════════════════════════════════════════
+// 站点规则引擎常量（票 05）
+// [AM] atomcode-industry-models.md 核心结论5：用户可干预后门是行业标配
+//      （KeePassXC sites.js Site Preferences / Bitwarden linked custom field / 1Password data-1p-ignore）
+// [SP] spec.md Implementation Decisions「站点规则引擎：GM 存储站点级规则（豁免域名 / 强制选择器 / 置信度覆盖）」
+// 数据格式与 CRUD 函数边界的权威定义见 src/store/index.ts 头注 +
+// research/window-reports/05-site-rules-engine-report.md（07 票接口契约）
+// ════════════════════════════════════════════════════════
+export const RULES_KEY = 'cch_site_rules_v1';        // 规则文档独立 GM 键（与 favs 键 cch_v33 解耦）
+export const RULES_BROADCAST = 'cch-rules-sync-v1';  // 规则跨标签页广播通道名
+export const RULE_TIERS = ['auto', 'lowkey', 'none']; // 规则可用分档（强制选择器命中统一按规则声明档注入）
+export const RULE_FORCE_TIER = 'auto';               // 强制选择器默认注入档（高置信 [issue 验收2]）
+export const RULES_MAX_OVERRIDES = 500;              // 文档内覆盖规则上限（防御异常增长；Ponytail 无导入导出场景）

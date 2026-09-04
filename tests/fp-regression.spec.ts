@@ -1,8 +1,8 @@
 // 误报回归组：
 // 误报 5 类样本断言“不插图标”——票 02（五层评分引擎）落地后已转绿，test.fail 标记已按
 // 06 报告 §6.2 的维护契约摘除（引擎级证据：research/scripts/verify-ticket-02.mjs 36/36）。
-// shadow DOM 样本断言“穿透识别”，默认红保留，待票 04 转绿。
-// iti v18.2.1 填充缺口，默认红保留，待票 03 转绿。
+// shadow DOM 样本断言“穿透识别”，票 04（rescan + shadow DOM 穿透）落地后已转绿，test.fail 标记摘除。
+// iti v18.2.1 联动断言：票 03 适配层落地后已转绿（aee9374）。
 // 证据源：.scratch/architecture-recovery/research/misdetection-root-causes.md §2/§4（reproduced 样本）。
 import { test, expect } from 'playwright/test';
 import { installUserscript, wrapperFor, openPanel } from './helpers/userscript';
@@ -31,11 +31,16 @@ test.describe('误报 5 类（票 02 评分引擎，已转绿）', () => {
   }
 });
 
-test.describe('shadow DOM 漏检（默认红，待票 04 转绿）', () => {
-  test.fail('open shadow root 内的区号下拉应被识别并注入图标', async ({ page }) => {
+test.describe('shadow DOM 穿透（票 04，已转绿）', () => {
+  test('open shadow root 内的区号下拉应被识别并注入图标', async ({ page }) => {
     await page.goto('/fixtures/shadow-dom.html');
     // Playwright locator 自动穿透 open shadow root
-    await expect(page.locator('.cch-btn')).toHaveCount(1, { timeout: 3000 });
+    await expect(page.locator('.cch-btn')).toHaveCount(4, { timeout: 3000 });
+    // 单层与嵌套两层 shadow 内的区号 select 均注入（anchor-tel 提供主号锚）
+    await expect(wrapperFor(page, '#shadow-code')).toHaveCount(1);
+    await expect(wrapperFor(page, '#nested-code')).toHaveCount(1);
+    // shadow 内负例不注入
+    await expect(wrapperFor(page, '#shadow-plain')).toHaveCount(0);
   });
 });
 
