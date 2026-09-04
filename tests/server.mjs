@@ -22,6 +22,10 @@ const ROUTES = [
   { prefix: '/test/', dir: path.join(ROOT, 'test') },
   { prefix: '/fixtures/', dir: path.join(ROOT, 'tests', 'fixtures') },
   { prefix: '/vendor/intl-tel-input/', dir: path.join(ROOT, 'node_modules', 'intl-tel-input') },
+  // 票 09 框架 fixture 本地 vendored（hermetic：E2E 无外部网络依赖）
+  { prefix: '/vendor/react/', dir: path.join(ROOT, 'node_modules', 'react') },
+  { prefix: '/vendor/react-dom/', dir: path.join(ROOT, 'node_modules', 'react-dom') },
+  { prefix: '/vendor/vue/', dir: path.join(ROOT, 'node_modules', 'vue', 'dist') },
 ];
 
 const CDN_PREFIX = 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/';
