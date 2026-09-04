@@ -9,7 +9,7 @@
 //   （#cch-root / .cch-wrapper / #cch-search）永不生效 —— Rules._own 前置拦截。
 // 数据格式 v1 与 CRUD 函数边界：见 ../store/index.ts 头注（权威契约，报告同步）。
 // ════════════════════════════════════════════════════════
-import { SCORE_AUTO, SCORE_LOWKEY, OWN_ROOT_ID, WRAPPER_CLASS, RULE_FORCE_TIER, RULE_TIERS } from '../config';
+import { SCORE_AUTO, SCORE_LOWKEY, OWN_ROOT_ID, RULE_FORCE_TIER, RULE_TIERS } from '../config';
 
 export function createRules(Store) {
   const Rules = {
@@ -17,10 +17,15 @@ export function createRules(Store) {
 
     // ── 内部：自身 UI 判定（与 Detect._own 同语义；规则引擎独立持有，避免 UI 依赖）──
     _own(el) {
+      // 票 04 语义（07-fix 同步到 rules 层，04 报告 §1.3 附带修复 1 的遗漏面）：移除
+      // closest('.cch-wrapper') 检查 —— wrapper 是脚本自建的包裹层，字段本身不是 UI；
+      // 按包裹判定会把全部已挂图标字段挡在负反馈之外（brain-probe-07-fb 取证 confirmed：
+      // 真实页面负反馈主路径 100% 失效）。own 判定收敛为自身 UI 容器/按钮，与 Detect._own 同语义：
+      // #cch-root 内元素 / cch-btn 按钮 / cch-si 搜索框 / cch-search。
       if (!el || typeof el.closest !== 'function') return true;
       return !!el.closest('#' + OWN_ROOT_ID) ||
-             !!el.closest('.' + WRAPPER_CLASS) ||
-             el.id === 'cch-search';
+             el.id === 'cch-search' || el.id === 'cch-si' ||
+             !!(el.classList && el.classList.contains && el.classList.contains('cch-btn'));
     },
 
     // ── 内部：CSS 选择器安全匹配（非法选择器静默不命中，不抛错污染检测主路径）──
