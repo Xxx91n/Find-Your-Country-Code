@@ -2,7 +2,7 @@
 
 > 子窗口（fresh context）实施 | 日期：2026-09-04 | 分支：cch/02-scoring-engine
 > 开工复述：Blocked by: 01 —— 已确认解除（`research/window-reports/01-modular-skeleton-report.md` 落盘、验收全过）；必读 7 份（prompt → issue → handoff → misdetection-root-causes → industry-models → atomcode-industry-models → spec → WORKFLOW）已按序读全。
-> 版本控制遵循 WORKFLOW §4.2（GitButler，票分支 `cch/02-scoring-engine`，与 01/03/06 并行分支不堆叠）。
+> 版本控制遵循 WORKFLOW §4.2（GitButler，票分支 `cch/02-scoring-engine`）。分支落位说明：非堆叠建分支被 GitButler 拒绝（本票 tests/fp-regression.spec.ts、tests/scenarios.e2e.spec.ts 的变更分块依赖 cch/06 已提交内容，src 变更依赖 cch/01）——按 §4.2「确有依赖按堆叠」执行：`but branch new cch/02-scoring-engine --above cch/06-playwright-e2e`，票内两个 commit（ssk 代码 / wqk 文档证据）落堆叠之上。
 
 ## 1. 信号层实现说明（L0–L4）
 
