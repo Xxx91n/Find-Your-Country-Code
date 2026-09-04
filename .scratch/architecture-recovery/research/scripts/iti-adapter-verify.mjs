@@ -159,21 +159,29 @@ async function runScenarioC(browser, server) {
   const itiInputs = await page.locator('#scenario-intl .iti input').count();
   const bodyText = await page.locator('#scenario-intl').innerText();
   const buttons = await page.locator('#scenario-intl .cch-btn').count();
-  let selectedDial = null;
+  let beforeIso = null;
+  let afterState = null;
   if (buttons > 0) {
     await page.locator('#scenario-intl .cch-btn').first().click();
-    await page.locator('#cch-si').fill('China');
-    const row = page.locator('#cch-pop .cch-row', { hasText: 'China' }).first();
-    await row.click();
-    await page.waitForTimeout(250);
-    selectedDial = await page.evaluate(() => {
+    beforeIso = await page.evaluate(() => {
       const input = document.querySelector('#iti-phone-1');
       const g = window.intlTelInputGlobals || window.intlTelInput;
-      const inst = g && typeof g.getInstance === 'function' && g.getInstance(input);
-      return inst && inst.getSelectedCountryData ? '+' + inst.getSelectedCountryData().dialCode : null;
+      const inst = g && g.getInstance(input);
+      return inst && inst.getSelectedCountryData ? inst.getSelectedCountryData().iso2 : null;
+    });
+    await page.locator('#cch-si').fill('Japan');
+    const row = page.locator('#cch-pop .cch-row', { hasText: 'Japan' }).first();
+    await row.click();
+    await page.waitForTimeout(350);
+    afterState = await page.evaluate(() => {
+      const input = document.querySelector('#iti-phone-1');
+      const g = window.intlTelInputGlobals || window.intlTelInput;
+      const inst = g && g.getInstance(input);
+      const data = inst && inst.getSelectedCountryData ? inst.getSelectedCountryData() : null;
+      return { iso2: data && data.iso2, dialCode: data && data.dialCode, inputValue: input && input.value };
     });
   }
-  record('场景 C iti@18.2.1 injection + fill linkage', buttons >= 1 && selectedDial === '+86' && errors.length === 0, JSON.stringify({ pluginReady, itiInputs, buttons, selectedDial, errors, bodyText: bodyText.slice(0, 80) }));
+  record('场景 C iti@18.2.1 injection + fill linkage', pluginReady && itiInputs >= 3 && buttons >= 3 && beforeIso === 'cn' && afterState && afterState.iso2 === 'jp' && afterState.dialCode === '81' && errors.length === 0, JSON.stringify({ pluginReady, itiInputs, buttons, beforeIso, afterState, errors, bodyText: bodyText.slice(0, 80) }));
   await page.close();
 }
 
