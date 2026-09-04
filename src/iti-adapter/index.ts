@@ -14,7 +14,14 @@
 export function createItiAdapter() {
   const Adapter = {
     _global() {
-      return window.intlTelInput || window.intlTelInputGlobals || null;
+      // v18 exposes the factory function on window.intlTelInput and the static
+      // instance registry on window.intlTelInputGlobals. Prefer the object
+      // with getInstance; only accept the factory when it exposes that API.
+      const globals = window.intlTelInputGlobals;
+      if (this._isFn(globals, 'getInstance')) return globals;
+      const factory = window.intlTelInput;
+      if (this._isFn(factory, 'getInstance')) return factory;
+      return null;
     },
 
     _isFn(obj, name) {
@@ -41,8 +48,10 @@ export function createItiAdapter() {
       try {
         const id = el.dataset && el.dataset.intlTelInputId;
         if (id) {
-          const g = this._global();
-          const inst = g && g.instances && g.instances[id];
+          const globals = window.intlTelInputGlobals;
+          const factory = window.intlTelInput;
+          const inst = (globals && globals.instances && globals.instances[id]) ||
+            (factory && factory.instances && factory.instances[id]);
           if (inst) return inst;
         }
       } catch {}
@@ -95,15 +104,15 @@ export function createItiAdapter() {
       if (!wrapper) return false;
 
       const btn = wrapper.querySelector(
-        '.iti__selected-country, .selected-flag, .iti__flag-container'
+        '.iti__selected-country, .iti__selected-flag, .selected-flag, .iti__flag-container'
       );
       if (btn) btn.click();
 
       const clickItem = () => {
         const item = wrapper.querySelector(
-          '[data-country-code="' + iso + '"], [data-dial-code="' + country.code.replace('+', '') + '"]'
+          'li[data-country-code="' + iso + '"], .iti__country[data-country-code="' + iso + '"], .country[data-country-code="' + iso + '"], [data-dial-code="' + country.code.replace('+', '') + '"]'
         ) || document.querySelector(
-          '.iti__country[data-country-code="' + iso + '"], .country[data-country-code="' + iso + '"]'
+          'li[data-country-code="' + iso + '"], .iti__country[data-country-code="' + iso + '"], .country[data-country-code="' + iso + '"]'
         );
         if (item) {
           item.click();
