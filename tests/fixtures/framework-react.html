@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>React 18 受控组件 fixture — 票 09 注入安全层</title>
+</head>
+<body>
+<h1>React 18 受控组件（native prototype setter + input→change→blur [AM 核心结论9]）</h1>
+<p>受控 select 与受控 input 的填充必须经 React onChange 同步进组件状态；
+直接赋值会被 react-dom 的 value tracker 去重吞掉 input 事件（react#11488 同心智）。</p>
+<div id="root"></div>
+<script src="/vendor/react/umd/react.production.min.js"></script>
+<script src="/vendor/react-dom/umd/react-dom.production.min.js"></script>
+<script>
+(function () {
+  var e = React.createElement;
+  function App() {
+    var formSt = React.useState({ code: '', phone: '' });
+    var form = formSt[0], setForm = formSt[1];
+    var subSt = React.useState(null);
+    var sub = subSt[0], setSub = subSt[1];
+    return e('form', {
+      onSubmit: function (ev) { ev.preventDefault(); setSub(JSON.stringify(form)); }
+    },
+      e('label', null, '国家区号',
+        e('select', {
+          id: 'r-select', name: 'countryCode', value: form.code,
+          onChange: function (ev) { setForm({ code: ev.target.value, phone: form.phone }); }
+        },
+          e('option', { value: '' }, '选择…'),
+          e('option', { value: '+86' }, '+86'),
+          e('option', { value: '+81' }, '+81'),
+          e('option', { value: '+1' }, '+1')
+        )
+      ),
+      e('input', {
+        id: 'r-input', name: 'dialCode', type: 'text', placeholder: '+86',
+        value: form.phone,
+        onChange: function (ev) { setForm({ code: form.code, phone: ev.target.value }); }
+      }),
+      e('input', { id: 'r-tel', type: 'tel', name: 'phone', placeholder: '手机号' }),
+      e('button', { id: 'r-submit', type: 'submit' }, '提交'),
+      e('pre', { id: 'r-state' }, JSON.stringify(form)),
+      sub ? e('pre', { id: 'r-submitted' }, sub) : null
+    );
+  }
+  ReactDOM.createRoot(document.getElementById('root')).render(e(App));
+})();
+</script>
+</body>
+</html>

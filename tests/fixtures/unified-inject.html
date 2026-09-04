@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>统一注入函数 fixture — 票 09：INPUT/SELECT/TEXTAREA 三类元素事件序列一致</title>
+</head>
+<body>
+<h1>三类元素统一注入（HTMLInputElement/HTMLSelectElement/HTMLTextAreaElement prototype setter + input→change→blur）</h1>
+<form id="f">
+  <label>国家区号（select）
+    <select id="s-dial" name="countryCode">
+      <option value="">选择…</option>
+      <option value="+86">+86</option>
+      <option value="+81">+81</option>
+      <option value="+44">+44</option>
+    </select>
+  </label>
+  <label>国家区号（input）
+    <input id="i-dial" name="dialCode" type="text" placeholder="+86">
+  </label>
+  <label>附言（textarea，区号后缀场景）
+    <textarea id="t-note" name="dialNote" placeholder="+86 备注"></textarea>
+  </label>
+  <input type="tel" name="phone" placeholder="手机号">
+</form>
+<script>
+// 三类元素各自记录事件序列 + 冒泡/composed 事实（报告「事件冒泡与 composed 行为」的运行时证据源）
+(function () {
+  window.__seq = {};
+  window.__bubbles = {};
+  window.__composed = {};
+  [['s-dial', document.getElementById('s-dial')],
+   ['i-dial', document.getElementById('i-dial')],
+   ['t-note', document.getElementById('t-note')]].forEach(function (pair) {
+    var id = pair[0], el = pair[1];
+    window.__seq[id] = [];
+    ['input', 'change', 'blur'].forEach(function (t) {
+      el.addEventListener(t, function () { window.__seq[id].push(t); });
+    });
+  });
+  // 在 form（祖先节点）监听，验证冒泡；在 document 监听 composed 事实（Event 无 composedPath 时以 composed 属性为准）
+  var form = document.getElementById('f');
+  ['input', 'change', 'blur'].forEach(function (t) {
+    form.addEventListener(t, function (ev) {
+      if (ev.target && ev.target.id && window.__bubbles[ev.target.id] === undefined) {
+        window.__bubbles[ev.target.id] = ev.bubbles;
+        window.__composed[ev.target.id] = ev.composed;
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

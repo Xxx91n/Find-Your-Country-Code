@@ -8,7 +8,9 @@
 //        .iti__flag-container > .selected-flag
 // 实例获取链（spec「iti 适配层」节）：
 //   getInstance 稳锚（v16–v29 从未断代）→ el.iti → dataset.intlTelInputId + instances 表
-//   → jQuery data → jQuery 插件方法 → DOM 兜底 → 裸赋值
+//   → jQuery data → jQuery 插件方法 → DOM 兜底 → 注入回调兜底（票 09：native setter
+//   + input→change→blur 经 Fill._inject，不再直接赋值）
+// dispatch 回调签名（票 09）：dispatch(value) —— 接收兜底值并由注入层统一赋值+派发事件
 // ════════════════════════════════════════════════════════
 
 export function createItiAdapter() {
@@ -123,10 +125,7 @@ export function createItiAdapter() {
 
       if (clickItem()) return true;
       setTimeout(() => {
-        if (!clickItem()) {
-          el.value = country.code;
-          dispatch();
-        }
+        if (!clickItem()) dispatch(country.code); // 票 09：兜底赋值经注入回调（native setter + 事件序列）
       }, 120);
       return true;
     },
@@ -162,9 +161,8 @@ export function createItiAdapter() {
       // 层3：DOM 双代类名兜底
       if (this._fillByDom(el, country, dispatch)) return true;
 
-      // 最终兜底：裸赋值 + 事件
-      el.value = country.code;
-      dispatch();
+      // 最终兜底：经注入回调（票 09：native setter + input→change→blur，不再直接赋值）
+      dispatch(country.code);
       return true;
     },
   };

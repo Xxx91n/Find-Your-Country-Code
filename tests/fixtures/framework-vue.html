@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Vue 3 v-model fixture — 票 09 注入安全层</title>
+</head>
+<body>
+<h1>Vue 3 v-model（change/input 事件同步，无 tracker 去重）</h1>
+<div id="app">
+  <form @submit.prevent="submit">
+    <label>国家区号
+      <select id="v-select" name="countryCode" v-model="code">
+        <option value="">选择…</option>
+        <option value="+86">+86</option>
+        <option value="+81">+81</option>
+        <option value="+1">+1</option>
+      </select>
+    </label>
+    <input id="v-input" name="dialCode" type="text" placeholder="+86" v-model="phone">
+    <input type="tel" name="phone" placeholder="手机号">
+    <button id="v-submit" type="submit">提交</button>
+    <pre id="v-state">{{ JSON.stringify({ code: code, phone: phone }) }}</pre>
+    <pre id="v-submitted" v-if="submitted">{{ submitted }}</pre>
+  </form>
+</div>
+<script src="/vendor/vue/vue.global.prod.js"></script>
+<script>
+Vue.createApp({
+  data: function () { return { code: '', phone: '', submitted: null }; },
+  methods: {
+    submit: function () { this.submitted = JSON.stringify({ code: this.code, phone: this.phone }); }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
