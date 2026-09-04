@@ -1,0 +1,78 @@
+name: Release Dry Run
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/10-release-pipeline'
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build userscript
+        run: npm run build
+
+      - name: Extract version from build artifact
+        id: extract_version
+        run: |
+          VERSION=$(grep -m1 '// @version' dist/find-your-country-code.user.js | awk '{print $NF}' | tr -d '\r')
+          if [ -z "$VERSION" ]; then
+            echo "::error::@version not found in dist/find-your-country-code.user.js"
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Cross-check version sources
+        run: |
+          CONFIG_VERSION=$(grep -oP "version:\s*'\K[0-9][^']*" vite.config.ts | head -1)
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          echo "artifact=${{ steps.extract_version.outputs.VERSION }} vite.config.ts=$CONFIG_VERSION package.json=$PKG_VERSION"
+          if [ "${{ steps.extract_version.outputs.VERSION }}" != "$CONFIG_VERSION" ]; then
+            echo "::error::vite.config.ts version ($CONFIG_VERSION) differs from artifact @version (${{ steps.extract_version.outputs.VERSION }})"
+            exit 1
+          fi
+          if [ "${{ steps.extract_version.outputs.VERSION }}" != "$PKG_VERSION" ]; then
+            echo "::warning::package.json version ($PKG_VERSION) differs from artifact @version (${{ steps.extract_version.outputs.VERSION }}) - consider bumping both"
+          fi
+
+      - name: Report tag state
+        run: |
+          if git ls-remote --tags origin "refs/tags/${{ steps.extract_version.outputs.TAG }}" | grep -q .; then
+            echo "Tag ${{ steps.extract_version.outputs.TAG }} already exists - a push-to-main run would skip the release (tag dedup)"
+          else
+            echo "Tag ${{ steps.extract_version.outputs.TAG }} does not exist - a push-to-main run WOULD create release ${{ steps.extract_version.outputs.TAG }}"
+          fi
+
+      - name: Upload build artifact as evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: find-your-country-code-${{ steps.extract_version.outputs.VERSION }}-dry-run
+          path: dist/find-your-country-code.user.js
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## Release dry run'
+            echo "- artifact version: ${{ steps.extract_version.outputs.VERSION }}"
+            echo "- tag: ${{ steps.extract_version.outputs.TAG }}"
+            echo "- no release was created: this workflow validates the release pipeline only"
+          } >> $GITHUB_STEP_SUMMARY
