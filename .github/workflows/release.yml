@@ -5,7 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'src/Find-Your-Country-Code.js'
+      - 'src/**'
+      - 'vite.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
 
 permissions:
   contents: write
@@ -18,10 +21,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract version from JS script
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build userscript
+        run: npm run build
+
+      - name: Extract version from build artifact
         id: extract_version
         run: |
-          VERSION=$(grep -m1 '// @version' src/Find-Your-Country-Code.js | awk '{print $NF}' | tr -d '\r')
+          VERSION=$(grep -m1 '// @version' dist/find-your-country-code.user.js | awk '{print $NF}' | tr -d '\r')
+          if [ -z "$VERSION" ]; then
+            echo "::error::@version not found in dist/find-your-country-code.user.js"
+            exit 1
+          fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "TAG=v$VERSION" >> $GITHUB_OUTPUT
 
@@ -66,4 +85,4 @@ jobs:
             ---
 
             ${{ steps.changelog_en.outputs.CONTENT }}
-          files: src/Find-Your-Country-Code.js
+          files: dist/find-your-country-code.user.js
