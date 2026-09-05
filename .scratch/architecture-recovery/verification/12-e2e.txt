@@ -1,0 +1,12 @@
+票 12 E2E CI 证据 | run 33978323212 | 2026-09-05T16:35Z | branch cch/12-iframe-governance @ 341a390
+结论: success, 49 passed (19.4s) —— 基线 42 例无回归 + 本票新增 7 例全绿
+工作流: .github/workflows/e2e.yml (push cch/**) | 红转绿: 首跑 33978168355 红灯(server.mjs handler 提取孤儿引用),返修 amend 后全绿
+
+本票新增 7 例(CI log 摘录):
+✓ tests/iframe.e2e.spec.ts:19 平台元数据 — 产物头 @match 全帧 + 无 @noframes + GM_registerMenuCommand 入 grant
+✓ tests/iframe.e2e.spec.ts:29 iframe-same-origin — 顶层与子帧各自检测注入;面板宿主仅顶层渲染
+✓ tests/iframe.e2e.spec.ts:44 iframe-same-origin — 子帧填充 远程面板→postMessage 回子帧→值+事件序列
+✓ tests/iframe.e2e.spec.ts:29 iframe-cross-origin — 同上(跨域)
+✓ tests/iframe.e2e.spec.ts:44 iframe-cross-origin — 子帧填充(跨域)
+✓ tests/iframe.e2e.spec.ts:61 跨帧存储一致性 — 顶层收藏→子帧远程面板可见同一份收藏
+✓ tests/iframe.e2e.spec.ts:78 菜单命令注册 — GM_registerMenuCommand 仅顶层注册一次
