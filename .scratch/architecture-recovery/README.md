@@ -63,3 +63,23 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 ## 回滚
 
 本目录整体未纳入版本跟踪（git 未跟踪 `.scratch/`），删除 `.scratch/architecture-recovery/` 即完全回滚大脑侧产物；代码侧回滚遵循 WORKFLOW §4.2（GitButler `but undo` / `but discard`）。
+
+## 第二周期(心智模型 v2,2026-09-05)
+
+> 输入: .scratch/mental-model-v2/report.md 宏观调查报告 | spec: spec.md(上一周期 spec 归档为 spec-cycle-v1.4.0-2026-09.md)
+> 波次由 issue 的 Blocked by 字段推导,未新造顺序。发布门禁: 19 票完成 + 用户确认后执行发布动作(遵循 WORKFLOW §4.2)。
+
+| Wave | 票 | Blocked by | 并行性 | 窗口启动器(相对本目录) |
+|---|---|---|---|---|
+| 1 | 11 | 无 | 同波互不堆叠,可并行 | `prompts/11-mental-model-docs.md`  |
+| 1 | 12 | 无 | 同波互不堆叠,可并行 | `prompts/12-iframe-governance.md`  |
+| 1 | 14 | 无 | 同波互不堆叠,可并行 | `prompts/14-calibration-corpus.md`  |
+| 1 | 15 | 无 | 同波互不堆叠,可并行 | `prompts/15-react19-fill-probe.md`  |
+| 1 | 16 | 无 | 同波互不堆叠,可并行 | `prompts/16-scoring-consistency.md`  |
+| 1 | 17 | 无 | 同波互不堆叠,可并行 | `prompts/17-pseudo-select-forensics.md`  |
+| 2 | 13 | 16 | 同波互不堆叠,可并行 | `prompts/13-visibility-l3-hardening.md`  |
+| 3 | 18 | 13, 16, 17 | 同波互不堆叠,可并行 | `prompts/18-pseudo-select-e2e.md`  |
+| 4 | 19 | 12, 13, 14, 15, 16, 18 | 同波互不堆叠,可并行 | `prompts/19-release-links.md` (发版波: 大脑/用户执行;发布前需全部实施票复核通过) |
+
+票据 11–19 状态随窗口报告落盘更新;报告路径统一为 `research/window-reports/NN-slug-report.md`。自检报告: `research/launcher-selfcheck.md`。
+
