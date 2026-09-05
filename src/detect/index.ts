@@ -19,7 +19,7 @@ import {
   L3_PLUS_DIAL_SCORE, L3_PLUS_PAREN_SCORE, L3_DIAL_CAP, L3_ISO_BONUS,
   L3_NUMERIC_MIN_RATE, L3_NUMERIC_PENALTY,
   L4_EXCLUDE_PENALTY,
-  SCORE_AUTO, SCORE_LOWKEY,
+  SCORE_AUTO, SCORE_LOWKEY, ITI_CONTAINER_SCORE, ITI_LOW_REGISTER_SCORE,
   RESCAN_DEBOUNCE_MS,
   OWN_ROOT_ID, WRAPPER_CLASS,
 } from '../config';
@@ -164,6 +164,12 @@ export function createDetect(UI, Rules) {
         score += add('L0', 'inputmode=tel', L0_INPUTMODE_TEL_SCORE);
       }
       if (tag === 'INPUT' && type === 'tel') score += add('L0', 'type=tel', L0_TEL_HINT_SCORE);
+
+      // ── iti 容器信号（票 16）：容器证据计入评分（US10），L1/L4 罚分同等生效
+      //    （handoff 16 检查点一）；原 _process 无条件 100 分短路移除 ──
+      if (tag === 'INPUT' && this._isIti(el)) {
+        score += add('L0', 'iti:container', ITI_CONTAINER_SCORE);
+      }
 
       // ── 语料：自身属性（name/id/class/placeholder/aria-label/data-name/title）+ label ──
       // 父级容器类名不参与（F7 country-form 污染路径移除 [MD §2④]）
@@ -462,10 +468,9 @@ export function createDetect(UI, Rules) {
       if (el.disabled || el.readOnly) {
         // 禁用/只读：视同 none 档撤图标；重新启用时属性变化会再触发补挂
         res = { score: 0, tier: 'none', signals: [{ layer: 'L0', name: 'gate:disabled', pts: 0 }] };
-      } else if (this._isIti(el)) {
-        res = { score: L0_TOKEN_SCORE, tier: 'auto', signals: [] };
-        kind = 'iti'; // iti 字段走适配层填充（Fill.run 三策略分发），不可回落 input 策略
       } else {
+        // 票 16：iti 容器信号已并入 scoreElement（US10 取消评分外无条件 100 分短路）
+        res = this.scoreElement(el);
         res = this.scoreElement(el);
         // 票 05：页面级分档覆盖（auto/lowkey 双向重映射）——页面档即「本页注入档位下限」：
         // auto 覆盖把 lowkey/none 全部提升注入（用户显式规则自担误报风险，对标
@@ -476,7 +481,10 @@ export function createDetect(UI, Rules) {
             signals: (res.signals || []).concat([{ layer: 'R', name: 'rule:tier-override', pts: 0 }]) };
         }
       }
-      kind = kind || (el.tagName === 'SELECT' ? 'select' : (el.tagName === 'INPUT' ? 'input' : null));
+      // kind 分发（票 04 教训：先枚举下游消费方 UI.attach / UI.rememberLow / Fill.run 三策略）：
+      // iti 字段仍走适配层填充，不可回落 input 策略
+      kind = kind || (el.tagName === 'SELECT' ? 'select'
+        : (el.tagName === 'INPUT' ? (this._isIti(el) ? 'iti' : 'input') : null));
       const rec = { fp, kind, tier: res.tier, score: res.score, signals: res.signals, attached: false };
       this._state.set(el, rec);
 
@@ -484,7 +492,7 @@ export function createDetect(UI, Rules) {
 
       if (res.tier === 'none') {
         if (wrapEl) UI.detach(el); // 误挂移除
-        if (res.score >= 25) UI.rememberLow(el, kind, res.score, res.signals);
+        if (res.score >= ITI_LOW_REGISTER_SCORE) UI.rememberLow(el, kind, res.score, res.signals);
         return;
       }
       // auto / lowkey

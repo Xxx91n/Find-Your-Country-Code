@@ -44,6 +44,14 @@ export const L4_EXCLUDE_PENALTY = -70;    // 拉丁词按词边界整词匹配�
 export const SCORE_AUTO = 70;             // ≥ 高置信：自动注入
 export const SCORE_LOWKEY = 35;           // ≥ 中置信：低调注入；< 不注入（面板可召唤）
 
+// ── iti 容器信号（票 16：iti 识别并入评分，取消评分外无条件最高分短路）[SP「评分一致性」/ US10] ──
+// iti 容器证据计入评分而非直接定档：容器内无关字段仍受 L1/L4 词表与既有误报防线拦截。
+// 取值标定（语料依据见 research/window-reports/16-scoring-consistency-report.md）：
+//   60 + type=tel(10) + L2 锚(18) = 88 稳达 auto（E2E cch-test-page2 场景 C 实际形态）；
+//   无锚时 60+10=70 恰达 auto；L4 排除(-70)可完全压过 → 防线对 iti 同等生效。
+export const ITI_CONTAINER_SCORE = 60;    // .iti/.intl-tel-input 容器内 input 的结构强信号
+export const ITI_LOW_REGISTER_SCORE = 25; // none 档登记「面板召唤」最低分 [SP US18]（票 16 自 detect/index.ts:487 收编魔法数 25，值不变）
+
 // ════════════════════════════════════════════════════════
 
 // ════════════════════════════════════════════════════════
