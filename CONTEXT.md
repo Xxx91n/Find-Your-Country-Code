@@ -1,6 +1,6 @@
 # Find-Your-Country-Code
 
-浏览器油猴脚本，在任意网页识别电话国家区号字段并提供快速选择面板。本词汇表定义检测、注入与用户干预的核心领域词汇，供后续架构工作与 ADR 引用。
+浏览器油猴脚本，在任意网页识别电话国家区号字段并提供快速选择面板。本词汇表定义检测、注入与用户干预的核心领域词汇，供后续架构工作与 ADR 引用；文末"行业心智模型对照"章固化行业调研对标结论与证据出处，新窗口读此对齐，不重复调研。
 
 ## 检测
 
@@ -35,6 +35,22 @@ _Avoid_: 强制注入
 扫描不再以"处理过"为终态：元素以属性指纹快照记录，指纹变化或 DOM 实况与记录不符时重新评分，图标不残留也不漏挂。
 _Avoid_: 去重、跳过
 
+**帧治理**：
+脚本对 iframe 的存在与分工策略：元数据显式声明全帧启用，每帧各自检测与填充，选择面板只在顶层渲染，收藏与站点规则跨帧读同一份 GM 存储。
+_Avoid_: @noframes、iframe 兼容（泛称，无分工语义）
+
+**可见性闸门**：
+只作用于注入档位的几何/样式闸门：display:none、零尺寸、opacity:0、clip-path、content-visibility、被遮挡的字段降为登记 + 手动召唤；隐藏但承载值的原生 select（视觉替换型）不受闸门阻断。
+_Avoid_: 隐藏字段过滤、display 检查（只覆盖单一隐藏形态）
+
+**ARIA 语义层**：
+读取 role=combobox/listbox、aria-expanded/aria-controls/aria-activedescendant、label 语义与 shadow 内列表文本作为检测信号的层，并入既有信号瀑布，是伪 select 取证与识别的语义入口。
+_Avoid_: 无障碍扫描、aria 修补（那是替页面补语义的别家心智）
+
+**校准语料**：
+fixtures 固化的正负例语料体系：manifest 索引 + CI 上的 precision/recall 回归基线 + 阈值标定脚本，评分阈值与权重以它为数据依据，任何改动不得悄悄引入回归。
+_Avoid_: 样本集、测试数据（泛称，无基线与标定语义）
+
 ## 注入与填充
 
 **图标注入**：
@@ -57,6 +73,10 @@ _Avoid_: iti hack、版本分支
 框架安全注入的固定手法：按元素原型上的原生 value setter 写值，随后派发 input→change→blur，保证 React/Vue 等受控组件状态真实同步。
 _Avoid_: 直接赋值、模拟点击（兜底路径除外）
 
+**伪 select（组件库下拉）**：
+MUI/AntD/Element/react-select/Radix 等组件库的下拉控件：值存组件 state，选项渲染为 div 列表或 portal，DOM 无原生 select；识别先取证 + 探测、只登记不注入，端到端实现与否由 ADR 裁决；填充分 select-only 型（开面板后键盘/点击选值）与可编辑型（隐藏输入原生 setter + 事件）两形态。
+_Avoid_: 自定义下拉（泛称，易与视觉替换型混同——那是隐藏原生 select 承载值的另一形态）
+
 ## 用户干预
 
 **站点规则**：
@@ -78,3 +98,25 @@ _Avoid_: 阈值调整
 **负反馈**：
 用户对误报字段声明"这不是区号字段"，脚本把它记为该字段的 none 档规则，下次不再提示。
 _Avoid_: 举报、上报
+
+## 行业心智模型对照
+
+本节固化 2026-09 心智模型 v2 周期的行业对标结论：每个论断一行，证据出处以仓库相对路径标注，调研全文按路径溯源，不在此复制。
+
+### 检测骨架三支柱（行业三方交集）
+
+- **Chromium 分层预测**：字段语义识别采用"autocomplete token 最高优先 → 启发式加权 → 内容验证（rationalization）"的多层瀑布，本脚本落为 L0–L4 五层信号瀑布与置信度分数。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M1/M2、`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`）
+- **Fathom 连续评分**：识别结果输出"类型 + 置信度分数 + 说明"的连续值而非布尔命中，分数驱动分级行动。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M5、`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`）
+- **密码管理器降级兜底**：识别失败不硬猜，降级到用户手动兜底，本脚本对应低置信登记 + 手动召唤 + 负反馈。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M4）
+
+### 工程支柱三件（本周期采纳）
+
+- **可见性正确性**：隐藏字段误注入是正确性/安全问题而非体验问题，clip-path 与 content-visibility 隐藏字段曾使全部密码管理器中招（CCS-20/ACSAC-24），几何/样式可见性闸门是行业标配。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`、`.scratch/architecture-recovery/research/misdetection-root-causes.md`）
+- **数据驱动校准**：权重与阈值不由人工拍定，以正负例语料的 precision/recall 基线与阈值标定脚本为数据依据，CI 执行。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`）
+- **可解释反馈回路**：每次注入决策输出信号明细，可观测、可归因，低置信走手动召唤，用户负反馈沉淀为站点规则。（证据：`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`、`.scratch/architecture-recovery/research/industry-models.md` §M2）
+
+### 对标结论
+
+- 本模型是上述三支柱的交集，方向正确，已被 Chromium 与密码管理器两套生产实现独立验证；油猴/扩展领域无成熟同类竞品。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`、`.scratch/mental-model-v2/report.md`）
+- autocomplete 属性只是强先验，下拉语义必须由选项内容裁决，共享区号需文本消歧。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`）
+- 伪 select 先取证不仓促注入，实现与否由 ADR 裁决。（证据：`docs/adr/0004-pseudo-select-recognition-deferred.md`）
