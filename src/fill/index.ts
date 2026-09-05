@@ -14,6 +14,44 @@ import { createItiAdapter } from '../iti-adapter';
 // ════════════════════════════════════════════════════════
 const VALUE_PROTO_BY_TAG = { INPUT: 'HTMLInputElement', SELECT: 'HTMLSelectElement', TEXTAREA: 'HTMLTextAreaElement' };
 
+// ════════════════════════════════════════════════════════
+// React 19 填充能力探测兜底（票 15）：受控组件实例被框架安装了 value 拦截层
+// （own accessor）且带 _valueTracker 时，事件派发前走「强制 diff」兜底——把 tracker
+// 快照回拨为填充前值，保证 React updateValueIfChanged 感知 lastValue≠nextValue
+// （react#11488 同心智 [AM 核心结论9]）。探测只读；任何一步缺失或抛出即判不命中，
+// 安全降级为既有路径（探测本身不引入新失败面）。React 19.2.8 npm 包
+// react-dom-client.production.js 实读：_valueTracker / updateValueIfChanged 语义
+// 与 16–18 逐字同构（observed，2026-09-06）。
+// ════════════════════════════════════════════════════════
+const _probe = {
+  // 能力探测：实例级 value setter 补丁（own accessor）+ valueTracker 存在性，两者同时满足才命中
+  hit(el) {
+    try {
+      const own = Object.getOwnPropertyDescriptor(el, 'value');
+      if (!own || typeof own.get !== 'function' || typeof own.set !== 'function') return false;
+      const tracker = el._valueTracker;
+      if (!tracker || typeof tracker.getValue !== 'function' || typeof tracker.setValue !== 'function') return false;
+      return true;
+    } catch { return false; }
+  },
+  // 强制 diff：仅当 tracker 快照已等于填充值（updateValueIfChanged 将判「无变化」吞掉
+  // 事件）时干预——回拨快照为填充前值使 diff 非空；填充前值与填充值相同（站点 JS 直接
+  // 赋值但 React state 滞后的 react#11488 经典形态）则以哨兵保证 diff 非空。其余情形
+  // （快照本就落后于填充值）原生 setter 路径已保证 diff，不动快照（最小干预）。
+  forceDiff(el, prevValue, nextValue) {
+    try {
+      const tracker = el._valueTracker;
+      if (!tracker || typeof tracker.getValue !== 'function' || typeof tracker.setValue !== 'function') return false;
+      const next = String(nextValue);
+      if (String(tracker.getValue()) !== next) return false;
+      const prev = String(prevValue);
+      tracker.setValue(prev === next ? next + '\u200b' : prev);
+      return true;
+    } catch { return false; }
+  },
+};
+
+
 export function createFill(UI) {
 const Fill = {
   _itiAdapter: createItiAdapter(),
@@ -22,6 +60,10 @@ const Fill = {
   // 兜底）的赋值与事件派发都收敛到这里；fillSelect/fillInput/adapter 不再直接写 el.value。
   _inject(el, value) {
     let applied = false;
+    let prevValue = '';
+
+    try { prevValue = String(el.value); } catch {}
+
     try {
       const view = (el.ownerDocument && el.ownerDocument.defaultView) ||
         (typeof window !== 'undefined' ? window : null);
@@ -30,6 +72,9 @@ const Fill = {
       if (desc && desc.set) { desc.set.call(el, value); applied = true; }
     } catch {}
     if (!applied) el.value = value; // 非常规宿主（mock/异构元素）兜底
+    // 票 15：探测命中（React 受控跟踪形态）→ 派发前强制 diff；不命中或探测抛错 = 既有路径
+
+    if (_probe.hit(el)) _probe.forceDiff(el, prevValue, value);
     ['input', 'change', 'blur'].forEach(type => {
       let ev;
       try { ev = new Event(type, { bubbles: true, composed: true }); }

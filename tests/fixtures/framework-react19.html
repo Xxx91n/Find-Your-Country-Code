@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>React 19 受控组件 fixture — 票 15 能力探测兜底</title>
+</head>
+<body>
+<h1>React 19 受控组件（能力探测 + 强制 diff 兜底 [AM 核心结论9]）</h1>
+<p>React 19 不再发布 UMD，本页依赖由 tests/server.mjs 现场把 npm 生产构建（react19/react-dom19 别名包）
+转译为 ESM 供给（/gen/react19/*），hermetic 无外部 CDN。受控 select/input 的填充必须经 React onChange
+同步进组件状态；探测命中时注入层在事件派发前强制 tracker 快照 diff（票 15）。</p>
+<pre id="r19-boot-error" hidden></pre>
+<div id="root"></div>
+<script>
+window.addEventListener('error', function (ev) {
+  var box = document.getElementById('r19-boot-error');
+  box.hidden = false;
+  box.textContent = 'BOOT-ERROR: ' + (ev.message || ev.type);
+});
+</script>
+<script type="module">
+import { createElement, useState } from '/gen/react19/react';
+import { createRoot } from '/gen/react19/react-dom-client';
+(function () {
+  var e = createElement;
+  function App() {
+    var formSt = useState({ code: '', phone: '' });
+    var form = formSt[0], setForm = formSt[1];
+    var subSt = useState(null);
+    var sub = subSt[0], setSub = subSt[1];
+    return e('form', {
+      onSubmit: function (ev) { ev.preventDefault(); setSub(JSON.stringify(form)); }
+    },
+      e('label', null, '国家区号',
+        e('select', {
+          id: 'r19-select', name: 'countryCode', value: form.code,
+          onChange: function (ev) { setForm({ code: ev.target.value, phone: form.phone }); }
+        },
+          e('option', { value: '' }, '选择…'),
+          e('option', { value: '+86' }, '+86'),
+          e('option', { value: '+81' }, '+81'),
+          e('option', { value: '+1' }, '+1')
+        )
+      ),
+      e('input', {
+        id: 'r19-input', name: 'dialCode', type: 'text', placeholder: '+86',
+        value: form.phone,
+        onChange: function (ev) { setForm({ code: form.code, phone: ev.target.value }); }
+      }),
+      e('input', { id: 'r19-tel', type: 'tel', name: 'phone', placeholder: '手机号' }),
+      e('button', { id: 'r19-submit', type: 'submit' }, '提交'),
+      e('pre', { id: 'r19-state' }, JSON.stringify(form)),
+      sub ? e('pre', { id: 'r19-submitted' }, sub) : null
+    );
+  }
+  createRoot(document.getElementById('root')).render(e(App));
+})();
+</script>
+</body>
+</html>

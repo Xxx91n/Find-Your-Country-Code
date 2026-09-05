@@ -13,6 +13,8 @@
     "playwright": "^1.62.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-dom19": "npm:react-dom@^19.2.8",
+    "react19": "npm:react@^19.2.8",
     "typescript": "latest",
     "vite": "latest",
     "vite-plugin-monkey": "latest",
