@@ -1,0 +1,32 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>forensics sample: Radix Select</title>
+<script type="importmap">
+{"imports":{
+  "react":"https://esm.sh/react@18.3.1",
+  "react-dom/client":"https://esm.sh/react-dom@18.3.1/client",
+  "@radix-ui/react-select":"https://esm.sh/@radix-ui/react-select@2.2.2?deps=react@18.3.1"
+}}
+</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+window.__fycMeta = { lib: 'radix', cdnVersion: '2.2.2 (esm.sh ESM)' };
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import * as Select from '@radix-ui/react-select';
+var COUNTRIES = [{iso2:'US',name:'United States'},{iso2:'GB',name:'United Kingdom'},{iso2:'CA',name:'Canada'},{iso2:'AU',name:'Australia'},{iso2:'DE',name:'Germany'},{iso2:'JP',name:'Japan'}];
+var h = React.createElement;
+var items = COUNTRIES.map(function(c){
+  return h(Select.Item, { key: c.iso2, value: c.iso2 }, h(Select.ItemText, null, c.name));
+});
+var tree = h('div', null,
+  h('label', { htmlFor: 'cc-trigger' }, 'Country code'),
+  h(Select.Root, { name: 'country', defaultValue: 'US' },
+    h(Select.Trigger, { id: 'cc-trigger' },
+      h(Select.Value, { placeholder: 'Select' }), h(Select.Icon, null, '\u25BE')),
+    h(Select.Portal, null,
+      h(Select.Content, null, h(Select.Viewport, null, items)))));
+createRoot(document.getElementById('root')).render(tree);
+</script>
+</body></html>

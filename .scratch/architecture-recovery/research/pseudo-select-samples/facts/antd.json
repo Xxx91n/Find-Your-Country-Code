@@ -1,0 +1,287 @@
+{
+  "lib": "antd",
+  "capturedAt": "2026-09-05T16:32:14.523Z",
+  "errors": [],
+  "meta": {
+    "lib": "antd",
+    "cdnVersion": "5.27.4 (UMD)"
+  },
+  "comboboxClosed": {
+    "tag": "INPUT",
+    "id": "country",
+    "cls": "ant-select-selection-search-input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "search",
+      "aria-expanded": "false",
+      "aria-haspopup": "listbox",
+      "aria-owns": "country_list",
+      "aria-autocomplete": "list",
+      "aria-controls": "country_list",
+      "readonly": ""
+    }
+  },
+  "roleCensusClosed": [
+    {
+      "role": "combobox",
+      "tag": "INPUT",
+      "id": "country",
+      "cls": "ant-select-selection-search-input",
+      "text": ""
+    },
+    {
+      "role": "img",
+      "tag": "SPAN",
+      "id": null,
+      "cls": "anticon anticon-down ant-select-suffix",
+      "text": ""
+    }
+  ],
+  "carriersClosed": [
+    {
+      "tag": "INPUT",
+      "type": "search",
+      "name": null,
+      "id": "country",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": null,
+      "readonly": "",
+      "cls": "ant-select-selection-search-input"
+    }
+  ],
+  "popupOpen": true,
+  "comboboxOpen": {
+    "tag": "INPUT",
+    "id": "country",
+    "cls": "ant-select-selection-search-input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "search",
+      "aria-expanded": "true",
+      "aria-haspopup": "listbox",
+      "aria-owns": "country_list",
+      "aria-autocomplete": "list",
+      "aria-controls": "country_list",
+      "readonly": "",
+      "aria-activedescendant": "country_list_0"
+    }
+  },
+  "roleCensusOpen": [
+    {
+      "role": "combobox",
+      "tag": "INPUT",
+      "id": "country",
+      "cls": "ant-select-selection-search-input",
+      "text": ""
+    },
+    {
+      "role": "img",
+      "tag": "SPAN",
+      "id": null,
+      "cls": "anticon anticon-down ant-select-suffix",
+      "text": ""
+    },
+    {
+      "role": "listbox",
+      "tag": "DIV",
+      "id": "country_list",
+      "cls": "",
+      "text": "USGB"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "country_list_0",
+      "cls": "",
+      "text": "US"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "country_list_1",
+      "cls": "",
+      "text": "GB"
+    }
+  ],
+  "carriersOpen": [
+    {
+      "tag": "INPUT",
+      "type": "search",
+      "name": null,
+      "id": "country",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": null,
+      "readonly": "",
+      "cls": "ant-select-selection-search-input"
+    }
+  ],
+  "popup": {
+    "id": "country_list",
+    "tag": "DIV",
+    "cls": "",
+    "ariaAndData": {},
+    "parentChain": [
+      "DIV",
+      "DIV.ant-select-dropdown.ant-slide-up-appear",
+      "DIV",
+      "BODY"
+    ]
+  },
+  "popupAriaSnapshot": "- listbox:\n  - option \"United States\" [selected]: US\n  - option \"United Kingdom\": GB",
+  "optionsOpen": [
+    {
+      "id": "country_list_0",
+      "tag": "DIV",
+      "text": "US",
+      "ariaSelected": "true",
+      "ariaDisabled": null,
+      "ariaLabel": "United States",
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": ""
+    },
+    {
+      "id": "country_list_1",
+      "tag": "DIV",
+      "text": "GB",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": "United Kingdom",
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": ""
+    }
+  ],
+  "focusAfterArrows": {
+    "active": {
+      "tag": "INPUT",
+      "id": "country",
+      "role": "combobox",
+      "cls": "ant-select-selection-search-input"
+    },
+    "candidates": [
+      {
+        "tag": "INPUT",
+        "role": "combobox",
+        "id": "country",
+        "activeDescendant": "country_list_2",
+        "expanded": "true",
+        "controls": "country_list"
+      },
+      {
+        "tag": "DIV",
+        "role": "listbox",
+        "id": "country_list",
+        "activeDescendant": null,
+        "expanded": null,
+        "controls": null
+      }
+    ]
+  },
+  "comboboxAfterSelect": {
+    "tag": "INPUT",
+    "id": "country",
+    "cls": "ant-select-selection-search-input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "search",
+      "aria-expanded": "false",
+      "aria-haspopup": "listbox",
+      "aria-owns": "country_list",
+      "aria-autocomplete": "list",
+      "aria-controls": "country_list",
+      "readonly": ""
+    }
+  },
+  "optionsAfterSelect": [
+    {
+      "id": "country_list_1",
+      "tag": "DIV",
+      "text": "GB",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": "United Kingdom",
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": ""
+    },
+    {
+      "id": "country_list_2",
+      "tag": "DIV",
+      "text": "CA",
+      "ariaSelected": "true",
+      "ariaDisabled": null,
+      "ariaLabel": "Canada",
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": ""
+    },
+    {
+      "id": "country_list_3",
+      "tag": "DIV",
+      "text": "AU",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": "Australia",
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": ""
+    }
+  ],
+  "carriersAfterSelect": [
+    {
+      "tag": "INPUT",
+      "type": "search",
+      "name": null,
+      "id": "country",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": null,
+      "readonly": "",
+      "cls": "ant-select-selection-search-input"
+    }
+  ],
+  "focusAfterSelect": {
+    "active": {
+      "tag": "INPUT",
+      "id": "country",
+      "role": "combobox",
+      "cls": "ant-select-selection-search-input"
+    },
+    "candidates": [
+      {
+        "tag": "INPUT",
+        "role": "combobox",
+        "id": "country",
+        "activeDescendant": null,
+        "expanded": "false",
+        "controls": "country_list"
+      },
+      {
+        "tag": "DIV",
+        "role": "listbox",
+        "id": "country_list",
+        "activeDescendant": null,
+        "expanded": null,
+        "controls": null
+      }
+    ]
+  },
+  "valueEvents": []
+}

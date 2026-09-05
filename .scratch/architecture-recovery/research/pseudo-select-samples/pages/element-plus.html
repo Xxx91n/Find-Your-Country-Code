@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>forensics sample: Element-Plus Select</title>
+<link rel="stylesheet" href="https://unpkg.com/element-plus@2.9.3/dist/index.css">
+</head>
+<body>
+<div id="app">
+  <el-form label-position="top">
+    <el-form-item label="Country code">
+      <el-select v-model="v" name="country" placeholder="Select" data-testid="trigger">
+        <el-option v-for="c in countries" :key="c.iso2" :label="c.name" :value="c.iso2"></el-option>
+      </el-select>
+    </el-form-item>
+  </el-form>
+</div>
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/element-plus@2.9.3/dist/index.full.min.js"></script>
+<script>
+window.__fycMeta = { lib: 'element-plus', cdnVersion: '2.9.3' };
+Vue.createApp({
+  setup: function(){
+    var v = Vue.ref('US');
+    var countries = [{iso2:'US',name:'United States'},{iso2:'GB',name:'United Kingdom'},{iso2:'CA',name:'Canada'},{iso2:'AU',name:'Australia'},{iso2:'DE',name:'Germany'},{iso2:'JP',name:'Japan'}];
+    return { v: v, countries: countries };
+  }
+}).use(ElementPlus).mount('#app');
+</script>
+</body></html>

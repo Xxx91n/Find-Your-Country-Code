@@ -1,0 +1,452 @@
+{
+  "lib": "element-plus",
+  "capturedAt": "2026-09-05T16:32:23.954Z",
+  "errors": [],
+  "meta": {
+    "lib": "element-plus",
+    "cdnVersion": "2.9.3"
+  },
+  "comboboxClosed": {
+    "tag": "INPUT",
+    "id": "el-id-2765-9",
+    "cls": "el-select__input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "text",
+      "name": "country",
+      "readonly": "",
+      "aria-activedescendant": "",
+      "aria-controls": "el-id-2765-1",
+      "aria-expanded": "false",
+      "aria-autocomplete": "none",
+      "aria-haspopup": "listbox"
+    }
+  },
+  "roleCensusClosed": [
+    {
+      "role": "combobox",
+      "tag": "INPUT",
+      "id": "el-id-2765-9",
+      "cls": "el-select__input",
+      "text": ""
+    },
+    {
+      "role": "tooltip",
+      "tag": "DIV",
+      "id": "el-id-2765-2",
+      "cls": "el-popper is-pure is-light el-select__popper",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "listbox",
+      "tag": "UL",
+      "id": "el-id-2765-1",
+      "cls": "el-scrollbar__view el-select-dropdown__list",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-3",
+      "cls": "el-select-dropdown__item is-selected",
+      "text": "United States"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-4",
+      "cls": "el-select-dropdown__item",
+      "text": "United Kingdom"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-5",
+      "cls": "el-select-dropdown__item",
+      "text": "Canada"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-6",
+      "cls": "el-select-dropdown__item",
+      "text": "Australia"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-7",
+      "cls": "el-select-dropdown__item",
+      "text": "Germany"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-8",
+      "cls": "el-select-dropdown__item",
+      "text": "Japan"
+    }
+  ],
+  "carriersClosed": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": "country",
+      "id": "el-id-2765-9",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": "0",
+      "readonly": "",
+      "cls": "el-select__input"
+    }
+  ],
+  "popupOpen": true,
+  "comboboxOpen": {
+    "tag": "INPUT",
+    "id": "el-id-2765-9",
+    "cls": "el-select__input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "text",
+      "name": "country",
+      "readonly": "",
+      "aria-activedescendant": "el-id-2765-3",
+      "aria-controls": "el-id-2765-1",
+      "aria-expanded": "true",
+      "aria-autocomplete": "none",
+      "aria-haspopup": "listbox"
+    }
+  },
+  "roleCensusOpen": [
+    {
+      "role": "combobox",
+      "tag": "INPUT",
+      "id": "el-id-2765-9",
+      "cls": "el-select__input",
+      "text": ""
+    },
+    {
+      "role": "tooltip",
+      "tag": "DIV",
+      "id": "el-id-2765-2",
+      "cls": "el-popper is-pure is-light el-select__popper el-zo",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "listbox",
+      "tag": "UL",
+      "id": "el-id-2765-1",
+      "cls": "el-scrollbar__view el-select-dropdown__list",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-3",
+      "cls": "el-select-dropdown__item is-selected is-hovering",
+      "text": "United States"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-4",
+      "cls": "el-select-dropdown__item",
+      "text": "United Kingdom"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-5",
+      "cls": "el-select-dropdown__item",
+      "text": "Canada"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-6",
+      "cls": "el-select-dropdown__item",
+      "text": "Australia"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-7",
+      "cls": "el-select-dropdown__item",
+      "text": "Germany"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": "el-id-2765-8",
+      "cls": "el-select-dropdown__item",
+      "text": "Japan"
+    }
+  ],
+  "carriersOpen": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": "country",
+      "id": "el-id-2765-9",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": "0",
+      "readonly": "",
+      "cls": "el-select__input"
+    }
+  ],
+  "popup": {
+    "id": "el-id-2765-1",
+    "tag": "UL",
+    "cls": "el-scrollbar__view el-select-dropdown__list",
+    "ariaAndData": {
+      "aria-orientation": "vertical"
+    },
+    "parentChain": [
+      "DIV.el-select-dropdown__wrap.el-scrollbar__wrap",
+      "DIV.el-scrollbar",
+      "DIV.el-select-dropdown",
+      "DIV#el-id-2765-2.el-popper.is-pure"
+    ]
+  },
+  "popupAriaSnapshot": "- listbox:\n  - option \"United States\" [selected]\n  - option \"United Kingdom\"\n  - option \"Canada\"\n  - option \"Australia\"\n  - option \"Germany\"\n  - option \"Japan\"",
+  "optionsOpen": [
+    {
+      "id": "el-id-2765-3",
+      "tag": "LI",
+      "text": "United States",
+      "ariaSelected": "true",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item is-selected is-hovering"
+    },
+    {
+      "id": "el-id-2765-4",
+      "tag": "LI",
+      "text": "United Kingdom",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-5",
+      "tag": "LI",
+      "text": "Canada",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-6",
+      "tag": "LI",
+      "text": "Australia",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-7",
+      "tag": "LI",
+      "text": "Germany",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-8",
+      "tag": "LI",
+      "text": "Japan",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    }
+  ],
+  "focusAfterArrows": {
+    "active": {
+      "tag": "INPUT",
+      "id": "el-id-2765-9",
+      "role": "combobox",
+      "cls": "el-select__input"
+    },
+    "candidates": [
+      {
+        "tag": "INPUT",
+        "role": "combobox",
+        "id": "el-id-2765-9",
+        "activeDescendant": "el-id-2765-5",
+        "expanded": "true",
+        "controls": "el-id-2765-1"
+      },
+      {
+        "tag": "UL",
+        "role": "listbox",
+        "id": "el-id-2765-1",
+        "activeDescendant": null,
+        "expanded": null,
+        "controls": null
+      }
+    ]
+  },
+  "comboboxAfterSelect": {
+    "tag": "INPUT",
+    "id": "el-id-2765-9",
+    "cls": "el-select__input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "text",
+      "name": "country",
+      "readonly": "",
+      "aria-activedescendant": "el-id-2765-5",
+      "aria-controls": "el-id-2765-1",
+      "aria-expanded": "false",
+      "aria-autocomplete": "none",
+      "aria-haspopup": "listbox"
+    }
+  },
+  "optionsAfterSelect": [
+    {
+      "id": "el-id-2765-3",
+      "tag": "LI",
+      "text": "United States",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-4",
+      "tag": "LI",
+      "text": "United Kingdom",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-5",
+      "tag": "LI",
+      "text": "Canada",
+      "ariaSelected": "true",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item is-selected is-hovering"
+    },
+    {
+      "id": "el-id-2765-6",
+      "tag": "LI",
+      "text": "Australia",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-7",
+      "tag": "LI",
+      "text": "Germany",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    },
+    {
+      "id": "el-id-2765-8",
+      "tag": "LI",
+      "text": "Japan",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": null,
+      "cls": "el-select-dropdown__item"
+    }
+  ],
+  "carriersAfterSelect": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": "country",
+      "id": "el-id-2765-9",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": "0",
+      "readonly": "",
+      "cls": "el-select__input"
+    }
+  ],
+  "focusAfterSelect": {
+    "active": {
+      "tag": "INPUT",
+      "id": "el-id-2765-9",
+      "role": "combobox",
+      "cls": "el-select__input"
+    },
+    "candidates": [
+      {
+        "tag": "INPUT",
+        "role": "combobox",
+        "id": "el-id-2765-9",
+        "activeDescendant": "el-id-2765-5",
+        "expanded": "false",
+        "controls": "el-id-2765-1"
+      },
+      {
+        "tag": "UL",
+        "role": "listbox",
+        "id": "el-id-2765-1",
+        "activeDescendant": null,
+        "expanded": null,
+        "controls": null
+      }
+    ]
+  },
+  "valueEvents": []
+}

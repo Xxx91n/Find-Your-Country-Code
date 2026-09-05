@@ -1,0 +1,350 @@
+{
+  "lib": "react-select",
+  "capturedAt": "2026-09-05T16:32:46.187Z",
+  "errors": [],
+  "meta": {
+    "lib": "react-select",
+    "cdnVersion": "5.10.0 (esm.sh ESM)"
+  },
+  "comboboxClosed": {
+    "tag": "INPUT",
+    "id": "cc-input",
+    "cls": "rs__input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "text",
+      "aria-autocomplete": "list",
+      "aria-expanded": "false",
+      "aria-haspopup": "true",
+      "aria-activedescendant": ""
+    }
+  },
+  "roleCensusClosed": [
+    {
+      "role": "log",
+      "tag": "SPAN",
+      "id": null,
+      "cls": "css-7pg0cj-a11yText",
+      "text": ""
+    },
+    {
+      "role": "combobox",
+      "tag": "INPUT",
+      "id": "cc-input",
+      "cls": "rs__input",
+      "text": ""
+    }
+  ],
+  "carriersClosed": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": null,
+      "id": "cc-input",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": "0",
+      "readonly": null,
+      "cls": "rs__input"
+    },
+    {
+      "tag": "INPUT",
+      "type": "hidden",
+      "name": "country",
+      "id": null,
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": null,
+      "readonly": null,
+      "cls": ""
+    }
+  ],
+  "popupOpen": true,
+  "comboboxOpen": {
+    "tag": "INPUT",
+    "id": "cc-input",
+    "cls": "rs__input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "text",
+      "aria-autocomplete": "list",
+      "aria-expanded": "true",
+      "aria-haspopup": "true",
+      "aria-activedescendant": "react-select-2-option-0",
+      "aria-controls": "react-select-2-listbox"
+    }
+  },
+  "roleCensusOpen": [
+    {
+      "role": "log",
+      "tag": "SPAN",
+      "id": null,
+      "cls": "css-7pg0cj-a11yText",
+      "text": "6 results available.Use Up"
+    },
+    {
+      "role": "combobox",
+      "tag": "INPUT",
+      "id": "cc-input",
+      "cls": "rs__input",
+      "text": ""
+    },
+    {
+      "role": "listbox",
+      "tag": "DIV",
+      "id": "react-select-2-listbox",
+      "cls": "rs__menu-list css-qr46ko",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "react-select-2-option-0",
+      "cls": "rs__option rs__option--is-focused css-d7l1ni-optio",
+      "text": "United States"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "react-select-2-option-1",
+      "cls": "rs__option css-10wo9uf-option",
+      "text": "United Kingdom"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "react-select-2-option-2",
+      "cls": "rs__option css-10wo9uf-option",
+      "text": "Canada"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "react-select-2-option-3",
+      "cls": "rs__option css-10wo9uf-option",
+      "text": "Australia"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "react-select-2-option-4",
+      "cls": "rs__option css-10wo9uf-option",
+      "text": "Germany"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": "react-select-2-option-5",
+      "cls": "rs__option css-10wo9uf-option",
+      "text": "Japan"
+    }
+  ],
+  "carriersOpen": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": null,
+      "id": "cc-input",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": "0",
+      "readonly": null,
+      "cls": "rs__input"
+    },
+    {
+      "tag": "INPUT",
+      "type": "hidden",
+      "name": "country",
+      "id": null,
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": null,
+      "readonly": null,
+      "cls": ""
+    }
+  ],
+  "popup": {
+    "id": "react-select-2-listbox",
+    "tag": "DIV",
+    "cls": "rs__menu-list css-qr46ko",
+    "ariaAndData": {
+      "aria-multiselectable": "false"
+    },
+    "parentChain": [
+      "DIV.rs__menu.css-1nmdiq5-menu",
+      "DIV.css-b62m3t-container",
+      "DIV",
+      "DIV#root"
+    ]
+  },
+  "popupAriaSnapshot": "- listbox:\n  - option \"United States\"\n  - option \"United Kingdom\"\n  - option \"Canada\"\n  - option \"Australia\"\n  - option \"Germany\"\n  - option \"Japan\"",
+  "optionsOpen": [
+    {
+      "id": "react-select-2-option-0",
+      "tag": "DIV",
+      "text": "United States",
+      "ariaSelected": "false",
+      "ariaDisabled": "false",
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "rs__option rs__option--is-focused css-d7l1ni-option"
+    },
+    {
+      "id": "react-select-2-option-1",
+      "tag": "DIV",
+      "text": "United Kingdom",
+      "ariaSelected": "false",
+      "ariaDisabled": "false",
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "rs__option css-10wo9uf-option"
+    },
+    {
+      "id": "react-select-2-option-2",
+      "tag": "DIV",
+      "text": "Canada",
+      "ariaSelected": "false",
+      "ariaDisabled": "false",
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "rs__option css-10wo9uf-option"
+    },
+    {
+      "id": "react-select-2-option-3",
+      "tag": "DIV",
+      "text": "Australia",
+      "ariaSelected": "false",
+      "ariaDisabled": "false",
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "rs__option css-10wo9uf-option"
+    },
+    {
+      "id": "react-select-2-option-4",
+      "tag": "DIV",
+      "text": "Germany",
+      "ariaSelected": "false",
+      "ariaDisabled": "false",
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "rs__option css-10wo9uf-option"
+    },
+    {
+      "id": "react-select-2-option-5",
+      "tag": "DIV",
+      "text": "Japan",
+      "ariaSelected": "false",
+      "ariaDisabled": "false",
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "rs__option css-10wo9uf-option"
+    }
+  ],
+  "focusAfterArrows": {
+    "active": {
+      "tag": "INPUT",
+      "id": "cc-input",
+      "role": "combobox",
+      "cls": "rs__input"
+    },
+    "candidates": [
+      {
+        "tag": "INPUT",
+        "role": "combobox",
+        "id": "cc-input",
+        "activeDescendant": "react-select-2-option-2",
+        "expanded": "true",
+        "controls": "react-select-2-listbox"
+      },
+      {
+        "tag": "DIV",
+        "role": "listbox",
+        "id": "react-select-2-listbox",
+        "activeDescendant": null,
+        "expanded": null,
+        "controls": null
+      }
+    ]
+  },
+  "comboboxAfterSelect": {
+    "tag": "INPUT",
+    "id": "cc-input",
+    "cls": "rs__input",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "",
+    "attrs": {
+      "type": "text",
+      "aria-autocomplete": "list",
+      "aria-expanded": "false",
+      "aria-haspopup": "true",
+      "aria-activedescendant": ""
+    }
+  },
+  "optionsAfterSelect": [],
+  "carriersAfterSelect": [
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "name": null,
+      "id": "cc-input",
+      "value": "",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": "0",
+      "readonly": null,
+      "cls": "rs__input"
+    },
+    {
+      "tag": "INPUT",
+      "type": "hidden",
+      "name": "country",
+      "id": null,
+      "value": "CA",
+      "ariaHidden": null,
+      "htmlHidden": false,
+      "tabindex": null,
+      "readonly": null,
+      "cls": ""
+    }
+  ],
+  "focusAfterSelect": {
+    "active": {
+      "tag": "INPUT",
+      "id": "cc-input",
+      "role": "combobox",
+      "cls": "rs__input"
+    },
+    "candidates": [
+      {
+        "tag": "INPUT",
+        "role": "combobox",
+        "id": "cc-input",
+        "activeDescendant": "",
+        "expanded": "false",
+        "controls": null
+      }
+    ]
+  },
+  "valueEvents": []
+}

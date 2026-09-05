@@ -1,0 +1,7 @@
+- listbox "Country code":
+  - option "United States" [selected]
+  - option "United Kingdom"
+  - option "Canada"
+  - option "Australia"
+  - option "Germany"
+  - option "Japan"

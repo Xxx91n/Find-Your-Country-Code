@@ -1,0 +1,27 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>forensics sample: react-select</title>
+<script type="importmap">
+{"imports":{
+  "react":"https://esm.sh/react@18.3.1",
+  "react-dom/client":"https://esm.sh/react-dom@18.3.1/client",
+  "react-select":"https://esm.sh/react-select@5.10.0?deps=react@18.3.1,react-dom@18.3.1"
+}}
+</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+window.__fycMeta = { lib: 'react-select', cdnVersion: '5.10.0 (esm.sh ESM)' };
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import Select from 'react-select';
+var COUNTRIES = [{iso2:'US',name:'United States'},{iso2:'GB',name:'United Kingdom'},{iso2:'CA',name:'Canada'},{iso2:'AU',name:'Australia'},{iso2:'DE',name:'Germany'},{iso2:'JP',name:'Japan'}];
+var h = React.createElement;
+var el = h('div', null,
+  h('label', { htmlFor: 'cc-input' }, 'Country code'),
+  h(Select, { inputId: 'cc-input', name: 'country', classNamePrefix: 'rs',
+    options: COUNTRIES.map(function(c){ return { value: c.iso2, label: c.name }; }),
+    defaultValue: COUNTRIES[0] }));
+createRoot(document.getElementById('root')).render(el);
+</script>
+</body></html>

@@ -1,0 +1,266 @@
+{
+  "lib": "radix",
+  "capturedAt": "2026-09-05T16:32:37.813Z",
+  "errors": [],
+  "meta": {
+    "lib": "radix",
+    "cdnVersion": "2.2.2 (esm.sh ESM)"
+  },
+  "comboboxClosed": {
+    "tag": "BUTTON",
+    "id": "cc-trigger",
+    "cls": "",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "United States▾",
+    "attrs": {
+      "type": "button",
+      "aria-controls": "radix-:r0:",
+      "aria-expanded": "false",
+      "aria-autocomplete": "none",
+      "data-state": "closed"
+    }
+  },
+  "roleCensusClosed": [
+    {
+      "role": "combobox",
+      "tag": "BUTTON",
+      "id": "cc-trigger",
+      "cls": "",
+      "text": "United States▾"
+    }
+  ],
+  "carriersClosed": [],
+  "popupOpen": true,
+  "comboboxOpen": {
+    "tag": "BUTTON",
+    "id": "cc-trigger",
+    "cls": "",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "United States▾",
+    "attrs": {
+      "type": "button",
+      "aria-controls": "radix-:r0:",
+      "aria-expanded": "true",
+      "aria-autocomplete": "none",
+      "data-state": "open"
+    }
+  },
+  "roleCensusOpen": [
+    {
+      "role": "combobox",
+      "tag": "BUTTON",
+      "id": "cc-trigger",
+      "cls": "",
+      "text": "United States▾"
+    },
+    {
+      "role": "listbox",
+      "tag": "DIV",
+      "id": "radix-:r0:",
+      "cls": "",
+      "text": "[data-radix-select-viewpor"
+    },
+    {
+      "role": "presentation",
+      "tag": "DIV",
+      "id": null,
+      "cls": "",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": null,
+      "cls": "",
+      "text": "United States"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": null,
+      "cls": "",
+      "text": "United Kingdom"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": null,
+      "cls": "",
+      "text": "Canada"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": null,
+      "cls": "",
+      "text": "Australia"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": null,
+      "cls": "",
+      "text": "Germany"
+    },
+    {
+      "role": "option",
+      "tag": "DIV",
+      "id": null,
+      "cls": "",
+      "text": "Japan"
+    }
+  ],
+  "carriersOpen": [],
+  "popup": {
+    "id": "radix-:r0:",
+    "tag": "DIV",
+    "cls": "",
+    "ariaAndData": {
+      "data-state": "open"
+    },
+    "parentChain": [
+      "DIV",
+      "BODY",
+      "HTML"
+    ]
+  },
+  "popupAriaSnapshot": "- listbox:\n  - option \"United States\" [selected]\n  - option \"United Kingdom\"\n  - option \"Canada\"\n  - option \"Australia\"\n  - option \"Germany\"\n  - option \"Japan\"",
+  "optionsOpen": [
+    {
+      "id": null,
+      "tag": "DIV",
+      "text": "United States",
+      "ariaSelected": "true",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": "",
+      "tabindex": "-1",
+      "cls": ""
+    },
+    {
+      "id": null,
+      "tag": "DIV",
+      "text": "United Kingdom",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": ""
+    },
+    {
+      "id": null,
+      "tag": "DIV",
+      "text": "Canada",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": ""
+    },
+    {
+      "id": null,
+      "tag": "DIV",
+      "text": "Australia",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": ""
+    },
+    {
+      "id": null,
+      "tag": "DIV",
+      "text": "Germany",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": ""
+    },
+    {
+      "id": null,
+      "tag": "DIV",
+      "text": "Japan",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": null,
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": ""
+    }
+  ],
+  "focusAfterArrows": {
+    "active": {
+      "tag": "DIV",
+      "id": null,
+      "role": "option",
+      "cls": ""
+    },
+    "candidates": [
+      {
+        "tag": "BUTTON",
+        "role": "combobox",
+        "id": "cc-trigger",
+        "activeDescendant": null,
+        "expanded": "true",
+        "controls": "radix-:r0:"
+      },
+      {
+        "tag": "DIV",
+        "role": "listbox",
+        "id": "radix-:r0:",
+        "activeDescendant": null,
+        "expanded": null,
+        "controls": null
+      }
+    ]
+  },
+  "comboboxAfterSelect": {
+    "tag": "BUTTON",
+    "id": "cc-trigger",
+    "cls": "",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "Canada▾",
+    "attrs": {
+      "type": "button",
+      "aria-controls": "radix-:r0:",
+      "aria-expanded": "false",
+      "aria-autocomplete": "none",
+      "data-state": "closed"
+    }
+  },
+  "optionsAfterSelect": [],
+  "carriersAfterSelect": [],
+  "focusAfterSelect": {
+    "active": {
+      "tag": "BUTTON",
+      "id": "cc-trigger",
+      "role": "combobox",
+      "cls": ""
+    },
+    "candidates": [
+      {
+        "tag": "BUTTON",
+        "role": "combobox",
+        "id": "cc-trigger",
+        "activeDescendant": null,
+        "expanded": "false",
+        "controls": "radix-:r0:"
+      }
+    ]
+  },
+  "valueEvents": []
+}

@@ -1,0 +1,303 @@
+{
+  "lib": "mui",
+  "capturedAt": "2026-09-05T16:32:32.915Z",
+  "errors": [],
+  "meta": {
+    "lib": "mui",
+    "cdnVersion": "5.16.7 (UMD, @mui/material; UMD builds stopped at v5)"
+  },
+  "comboboxClosed": {
+    "tag": "DIV",
+    "id": "mui-component-select-country",
+    "cls": "MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input css-qiwgdb",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "United States",
+    "attrs": {
+      "aria-controls": ":r0:",
+      "aria-expanded": "false",
+      "aria-haspopup": "listbox",
+      "aria-labelledby": "cc-label mui-component-select-country"
+    }
+  },
+  "roleCensusClosed": [
+    {
+      "role": "combobox",
+      "tag": "DIV",
+      "id": "mui-component-select-country",
+      "cls": "MuiSelect-select MuiSelect-outlined MuiInputBase-i",
+      "text": "United States"
+    }
+  ],
+  "carriersClosed": [
+    {
+      "tag": "INPUT",
+      "type": null,
+      "name": "country",
+      "id": null,
+      "value": "US",
+      "ariaHidden": "true",
+      "htmlHidden": false,
+      "tabindex": "-1",
+      "readonly": null,
+      "cls": "MuiSelect-nativeInput css-1k3x8v3"
+    }
+  ],
+  "popupOpen": true,
+  "comboboxOpen": {
+    "tag": "DIV",
+    "id": "mui-component-select-country",
+    "cls": "MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input css-qiwgdb",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "United States",
+    "attrs": {
+      "aria-controls": ":r0:",
+      "aria-expanded": "true",
+      "aria-haspopup": "listbox",
+      "aria-labelledby": "cc-label mui-component-select-country"
+    }
+  },
+  "roleCensusOpen": [
+    {
+      "role": "combobox",
+      "tag": "DIV",
+      "id": "mui-component-select-country",
+      "cls": "MuiSelect-select MuiSelect-outlined MuiInputBase-i",
+      "text": "United States"
+    },
+    {
+      "role": "presentation",
+      "tag": "DIV",
+      "id": "menu-country",
+      "cls": "MuiPopover-root MuiMenu-root MuiModal-root css-1su",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "listbox",
+      "tag": "UL",
+      "id": ":r0:",
+      "cls": "MuiList-root MuiList-padding MuiMenu-list css-r8u8",
+      "text": "United StatesUnited Kingdo"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": null,
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gu",
+      "text": "United States"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": null,
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gu",
+      "text": "United Kingdom"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": null,
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gu",
+      "text": "Canada"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": null,
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gu",
+      "text": "Australia"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": null,
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gu",
+      "text": "Germany"
+    },
+    {
+      "role": "option",
+      "tag": "LI",
+      "id": null,
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gu",
+      "text": "Japan"
+    }
+  ],
+  "carriersOpen": [
+    {
+      "tag": "INPUT",
+      "type": null,
+      "name": "country",
+      "id": null,
+      "value": "US",
+      "ariaHidden": "true",
+      "htmlHidden": false,
+      "tabindex": "-1",
+      "readonly": null,
+      "cls": "MuiSelect-nativeInput css-1k3x8v3"
+    }
+  ],
+  "popup": {
+    "id": ":r0:",
+    "tag": "UL",
+    "cls": "MuiList-root MuiList-padding MuiMenu-list css-r8u8y9",
+    "ariaAndData": {
+      "aria-labelledby": "cc-label"
+    },
+    "parentChain": [
+      "DIV.MuiPaper-root.MuiPaper-elevation",
+      "DIV#menu-country.MuiPopover-root.MuiMenu-root",
+      "BODY",
+      "HTML"
+    ]
+  },
+  "popupAriaSnapshot": "- listbox \"Country code\":\n  - option \"United States\" [selected]\n  - option \"United Kingdom\"\n  - option \"Canada\"\n  - option \"Australia\"\n  - option \"Germany\"\n  - option \"Japan\"",
+  "optionsOpen": [
+    {
+      "id": null,
+      "tag": "LI",
+      "text": "United States",
+      "ariaSelected": "true",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": "US",
+      "dataHighlighted": null,
+      "tabindex": "0",
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gutters Mui-"
+    },
+    {
+      "id": null,
+      "tag": "LI",
+      "text": "United Kingdom",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": "GB",
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gutters MuiM"
+    },
+    {
+      "id": null,
+      "tag": "LI",
+      "text": "Canada",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": "CA",
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gutters MuiM"
+    },
+    {
+      "id": null,
+      "tag": "LI",
+      "text": "Australia",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": "AU",
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gutters MuiM"
+    },
+    {
+      "id": null,
+      "tag": "LI",
+      "text": "Germany",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": "DE",
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gutters MuiM"
+    },
+    {
+      "id": null,
+      "tag": "LI",
+      "text": "Japan",
+      "ariaSelected": "false",
+      "ariaDisabled": null,
+      "ariaLabel": null,
+      "dataValue": "JP",
+      "dataHighlighted": null,
+      "tabindex": "-1",
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gutters MuiM"
+    }
+  ],
+  "focusAfterArrows": {
+    "active": {
+      "tag": "LI",
+      "id": null,
+      "role": "option",
+      "cls": "MuiButtonBase-root MuiMenuItem-root MuiMenuItem-gutters Mui-"
+    },
+    "candidates": [
+      {
+        "tag": "DIV",
+        "role": "combobox",
+        "id": "mui-component-select-country",
+        "activeDescendant": null,
+        "expanded": "true",
+        "controls": ":r0:"
+      },
+      {
+        "tag": "UL",
+        "role": "listbox",
+        "id": ":r0:",
+        "activeDescendant": null,
+        "expanded": null,
+        "controls": null
+      }
+    ]
+  },
+  "comboboxAfterSelect": {
+    "tag": "DIV",
+    "id": "mui-component-select-country",
+    "cls": "MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOutlinedInput-input css-qiwgdb",
+    "role": "combobox",
+    "tabIndex": 0,
+    "text": "Canada",
+    "attrs": {
+      "aria-controls": ":r0:",
+      "aria-expanded": "false",
+      "aria-haspopup": "listbox",
+      "aria-labelledby": "cc-label mui-component-select-country"
+    }
+  },
+  "optionsAfterSelect": [],
+  "carriersAfterSelect": [
+    {
+      "tag": "INPUT",
+      "type": null,
+      "name": "country",
+      "id": null,
+      "value": "CA",
+      "ariaHidden": "true",
+      "htmlHidden": false,
+      "tabindex": "-1",
+      "readonly": null,
+      "cls": "MuiSelect-nativeInput css-1k3x8v3"
+    }
+  ],
+  "focusAfterSelect": {
+    "active": {
+      "tag": "DIV",
+      "id": "mui-component-select-country",
+      "role": "combobox",
+      "cls": "MuiSelect-select MuiSelect-outlined MuiInputBase-input MuiOu"
+    },
+    "candidates": [
+      {
+        "tag": "DIV",
+        "role": "combobox",
+        "id": "mui-component-select-country",
+        "activeDescendant": null,
+        "expanded": "false",
+        "controls": ":r0:"
+      }
+    ]
+  },
+  "valueEvents": []
+}

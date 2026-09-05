@@ -1,0 +1,4 @@
+- text: Country code
+- combobox "Country code"
+- text: United States
+- img

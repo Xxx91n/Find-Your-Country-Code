@@ -1,0 +1,10 @@
+- text: Country code
+- log: 6 results available.Use Up and Down to choose options, press Enter to select the currently focused option, press Escape to exit the menu, press Tab to select the option and exit the menu.
+- combobox "Country code" [expanded]
+- listbox:
+  - option "United States"
+  - option "United Kingdom"
+  - option "Canada"
+  - option "Australia"
+  - option "Germany"
+  - option "Japan"

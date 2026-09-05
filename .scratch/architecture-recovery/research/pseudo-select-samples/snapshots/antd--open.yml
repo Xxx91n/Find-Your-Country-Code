@@ -1,0 +1,6 @@
+- text: Country code
+- combobox "Country code" [expanded]:
+  - listbox:
+    - option "United States" [selected]: US
+    - option "United Kingdom": GB
+- text: United States United States United Kingdom Canada Australia Germany Japan

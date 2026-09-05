@@ -1,0 +1,22 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>forensics sample: MUI Select</title></head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@mui/material@5.16.7/umd/material-ui.production.min.js"></script>
+<script>
+(function(){
+  window.__fycMeta = { lib: 'mui', cdnVersion: '5.16.7 (UMD, @mui/material; UMD builds stopped at v5)' };
+  var COUNTRIES = [{iso2:'US',name:'United States'},{iso2:'GB',name:'United Kingdom'},{iso2:'CA',name:'Canada'},{iso2:'AU',name:'Australia'},{iso2:'DE',name:'Germany'},{iso2:'JP',name:'Japan'}];
+  var h = React.createElement;
+  var items = COUNTRIES.map(function(c){ return h(MaterialUI.MenuItem, { key: c.iso2, value: c.iso2 }, c.name); });
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    h(MaterialUI.FormControl, { style: { minWidth: 240 } },
+      h(MaterialUI.InputLabel, { id: 'cc-label' }, 'Country code'),
+      h(MaterialUI.Select, { labelId: 'cc-label', name: 'country', defaultValue: 'US', autoWidth: true }, items)
+    )
+  );
+})();
+</script>
+</body></html>
