@@ -9,14 +9,7 @@ test/
 # docx
 docs/*
 !docs/adr/
+!docs/architecture-recovery-*.md
 
 # worktrees
 .worktrees/
-
-# build
-node_modules/
-dist/
-
-# e2e
-test-results/
-playwright-report/
