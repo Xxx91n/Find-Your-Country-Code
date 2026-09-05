@@ -1,0 +1,41 @@
+name: E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/**'
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Line-ending guard (CRLF in tracked text)
+        run: |
+          bad=$(git ls-files | grep -vE '\.(bat|ps1|cmd|png|ico|icns|jpg|jpeg|gif|webp|exe|dll|node|pdb|msi|so|dylib|bin|zip|gz|tar|7z)$' | xargs -r grep -lU "$(printf '\r')" 2>/dev/null || true)
+          if [ -n "$bad" ]; then echo "::error::CRLF found in tracked text files: $bad"; exit 1; fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build userscript
+        run: npm run build
+
+      - name: Run E2E
+        run: npx playwright test

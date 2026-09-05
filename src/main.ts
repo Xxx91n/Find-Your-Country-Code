@@ -4,6 +4,8 @@ import { createFill } from './fill';
 import { createUI } from './ui';
 import { createRules } from './rules';
 import { t } from './i18n';
+import { ISO2_MAP } from './data/countries';
+import { IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from './config';
 // GM_registerMenuCommand 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零）
 declare function GM_registerMenuCommand(title: string, fn: () => void): void;
 (function () {
@@ -33,9 +35,33 @@ function init() { Store.init(); UI.css(); Store.subscribe(() => {
     }
   } catch {}
   if (!UI._popup) return; const q = UI._popup.querySelector('#cch-si')?.value || ''; UI._render(q); }); Detect.scan(document.body); Detect.watch(); }
-// 票 07：豁免恢复 hatch —— 全站禁用后图标与面板均不可达，脚本管理器菜单提供解禁入口
-// （对标 1Password 扩展菜单的全站忽略恢复路径；GM_registerMenuCommand 缺省时静默降级）
-if (typeof GM_registerMenuCommand === 'function') {
+// 票 12 帧治理：每帧各自检测与填充（行为同源）；面板宿主仅顶层渲染。
+// 子帧图标点击 → postMessage 请求顶层代开面板；选中国家 → postMessage 回子帧执行 Fill.run。
+// 跨帧存储一致性（收藏/站点规则）复用既有 GM 存储 + BroadcastChannel + GM_addValueChangeListener（不新造第二套）。
+if (IS_TOP_FRAME) {
+  // 顶层：监听子帧开面板请求，代开远程面板（合成居中锚点，无本地目标字段）
+  window.addEventListener('message', e => {
+    const m = e && e.data;
+    if (!m || m.__cch !== FRAME_TAG || m.type !== FRAME_OPEN_MSG) return;
+    if (e.source === window) return; // 忽略自身
+    UI.open(null, null, null, { remoteSource: e.source });
+  });
+} else {
+  // 子帧：监听顶层回传的填充/负反馈指令，对 _requestRemoteOpen 登记的 pending 字段执行
+  window.addEventListener('message', e => {
+    if (e.source !== window.top) return; // 只接受顶层指令
+    const m = e && e.data;
+    if (!m || m.__cch !== FRAME_TAG) return;
+    if (m.type === FRAME_FILL_MSG) {
+      const c = ISO2_MAP[(m.iso || '').toLowerCase()];
+      if (c && UI._target) Fill.run(UI._target, UI._kind, c);
+    } else if (m.type === FRAME_FEEDBACK_MSG) {
+      if (UI._target) { try { UI._feedback(); } catch {} }
+    }
+  });
+}
+// 票 12：菜单命令为面板/图标不可达时的解禁入口——仅顶层注册（避免多帧菜单项重复刷屏）
+if (IS_TOP_FRAME && typeof GM_registerMenuCommand === 'function') {
   try { GM_registerMenuCommand(t('ruleExemptRemoved'), () => { Rules.setExempt(location.href, false); }); } catch {}
 }
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();

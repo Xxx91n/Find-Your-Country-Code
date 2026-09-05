@@ -1,5 +1,5 @@
 import { t } from '../i18n';
-import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES } from '../config';
+import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
 // GM_* 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零；与 store 的声明互不冲突）
 declare function GM_getValue(key: string, defaultValue?: string): string;
@@ -20,6 +20,7 @@ export function createUI(Store, deps) {
 const UI = {
   _root: null, _popup: null, _target: null, _kind: null,
   _toastTimer: null, _closeHandler: null, _anchor: null,
+  _remoteSource: null,
   _viewportHandler: null, _rafPending: false,
   _lowFields: new Map(),
   _prefs: null, _view: 'list',
@@ -252,8 +253,16 @@ border-radius:8px;cursor:pointer;text-align:center}
     return true;
   },
 
-  open(target, kind, anchor) {
-    if (this._popup && this._anchor === anchor) {
+  open(target, kind, anchor, opts) {
+    opts = opts || {};
+    // 票 12:子帧不渲染面板宿主——图标点击经 postMessage 请求顶层代开
+    if (!IS_TOP_FRAME && !opts.remoteSource) {
+      return this._requestRemoteOpen(target, kind);
+    }
+    // 顶层代开(远程):无 toggle,直接关旧面板后构建
+    if (opts.remoteSource) {
+      if (this._popup) this._closePopup();
+    } else if (this._popup && this._anchor === anchor) {
       this._closePopup();
       return;
     }
@@ -265,7 +274,8 @@ border-radius:8px;cursor:pointer;text-align:center}
       this._root.id = OWN_ROOT_ID;
       document.body.appendChild(this._root);
     }
-    this._closePopup();
+    if (!opts.remoteSource) this._closePopup();
+    this._remoteSource = opts.remoteSource || null; // 关旧面板后设(关时会清)
     this._view = 'list'; // 每次开面板重置为列表视图（召唤/负反馈入口常显）
     this._anchor = anchor;
 
@@ -384,6 +394,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
     this._rafPending = false;
     this._anchor = null;
+    this._remoteSource = null;
   },
 
   // 票 07：负反馈 [SP US9] —— 把当前目标字段记为 none 规则并即时拆图标（不等 350ms 重扫）。
@@ -391,6 +402,12 @@ border-radius:8px;cursor:pointer;text-align:center}
   // 先删后写（后到用户意图优先，避免文档序让旧规则压住负反馈）。
   _feedback() {
     const el = this._target;
+    // 票 12:远程面板负反馈 → postMessage 回子帧本地执行(规则按子帧 host 写入)
+    if (this._remoteSource) {
+      try { this._remoteSource.postMessage({ __cch: FRAME_TAG, type: FRAME_FEEDBACK_MSG }, '*'); } catch {}
+      if (this._popup) this._closePopup();
+      return;
+    }
     if (!el) return;
     const R = this._rules();
     let remembered = false;
@@ -412,6 +429,13 @@ border-radius:8px;cursor:pointer;text-align:center}
     if (this._popup) this._closePopup();
   },
 
+
+  // 票 12:子帧图标点击 → 保存目标字段 + 请求顶层代开面板(postMessage 跨域可达)
+  _requestRemoteOpen(target, kind) {
+    this._target = target;
+    this._kind = kind;
+    try { window.top.postMessage({ __cch: FRAME_TAG, type: FRAME_OPEN_MSG }, '*'); } catch {}
+  },
   // 票 07：规则管理渲染 —— 豁免开关（当前站点）+ 豁免域名删除 + 覆盖规则查看/删除 +
   // 低调样式切换。只消费 Rules/Store 公共 API（listRules/pageOverrides/setExempt/removeOverride），不直改存储。
   _renderRules() {
@@ -571,12 +595,28 @@ border-radius:8px;cursor:pointer;text-align:center}
       const iso = (row.dataset.iso || '').toLowerCase();
       const c = ISO2_MAP[iso];
       if (!c) return;
+      // 票 12:远程面板 → postMessage 回子帧执行 Fill.run(每帧各自填充,行为同源)
+      if (this._remoteSource) {
+        try { this._remoteSource.postMessage({ __cch: FRAME_TAG, type: FRAME_FILL_MSG, iso: c.iso }, '*'); } catch {}
+        this._closePopup();
+        return;
+      }
       deps.Fill.run(this._target, this._kind, c);
       this._closePopup();
     });
   },
 
   _pos(pop, anchor) {
+    if (!anchor) {
+      // 票 12:远程面板(子帧图标点击经顶层代开)无本地锚点 → 居中定位
+      const pw = pop.offsetWidth || 320;
+      const ph = pop.offsetHeight || 440;
+      const m = 8;
+      let l = Math.max(m, (innerWidth - pw) / 2);
+      let tp = Math.max(m, (innerHeight - ph) / 2);
+      pop.style.cssText += ';left:' + l + 'px;top:' + tp + 'px;position:fixed';
+      return;
+    }
     const r = anchor.getBoundingClientRect();
     const pw = pop.offsetWidth || 320;
     const ph = pop.offsetHeight || 440;
