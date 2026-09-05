@@ -1,0 +1,52 @@
+# 票 16 验证 workflow：引擎门（36 例）+ harness（25 例）+ 全量 E2E，一次 push 全跑。
+# 触发：本票验证分支 push（票 10 先例：ticket-scoped workflow）或手动 workflow_dispatch。
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/16-scoring-consistency'
+
+permissions:
+  contents: read
+
+jobs:
+  engine-gates:
+    name: Engine gate (36) + harness (25)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Engine gate (verify-ticket-02.mjs)
+        run: node .scratch/architecture-recovery/research/scripts/verify-ticket-02.mjs
+      - name: Harness (misdetect-repro-v2.mjs)
+        run: node .scratch/architecture-recovery/research/scripts/misdetect-repro-v2.mjs
+
+  e2e:
+    name: Build + Playwright E2E (full suite)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build userscript
+        run: npm run build
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E (full suite)
+        run: npx playwright test
+      - name: Upload build artifact as evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-userscript-verify-16
+          path: dist/find-your-country-code.user.js
