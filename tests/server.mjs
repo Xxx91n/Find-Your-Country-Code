@@ -48,32 +48,52 @@ const REACT19_FILES = {
 
 const REACT19_CACHE = new Map();
 
-function react19Esm(name, stack = []) {
+async function react19Esm(name, stack = []) {
   if (REACT19_CACHE.has(name)) return REACT19_CACHE.get(name);
   if (stack.includes(name)) throw new Error('react19 dependency cycle: ' + stack.concat(name).join(' -> '));
   const rel = REACT19_FILES[name];
   if (!rel) throw new Error('react19 module unknown: ' + name);
-  const src = readFile(path.join(ROOT, 'node_modules', rel), 'utf8');
+  const src = await readFile(path.join(ROOT, 'node_modules', rel), 'utf8');
   const imports = [];
-  const body = src
+  const names = [];
+  let body = src
     .replace(/require\("([\w-]+)"\)/g, (_, dep) => {
       imports.push(dep);
       return '__r19_' + dep.replace(/-/g, '_') + '__';
     })
-    .replace(/^exports\.([A-Za-z_$][\w$]*)\s*=/gm, 'export const $1 =');
+    .replace(/^[ \t]*exports\.([A-Za-z_$][\w$]*)\s*=/gm, (_, n) => {
+      names.push(n);
+      return '__r19exports.' + n + ' =';
+    });
+  // sweep:函数体内的 exports.X 读取（非行首赋值）也统一改写为运行时对象前缀
+  body = body.replace(/(?<![.\w$])exports\./g, '__r19exports.');
+  const exportNames = [...new Set(names)]; // cjs 允许重复赋值（后者生效），footer 读运行时对象取终值
+  // guard: real cjs api leftovers rejected (fail loud, never serve broken modules)
+  const leftoverModule = (body.match(/(?<![.\w])module\s*\./g) || []).length;
+  const leftoverExports = (body.match(/(?<![.\w$])exports(?![\w$])/g) || []).length; // __r19exports 前缀之外的一切 exports token 都算残留（含 exports.X 读取）
+  if (leftoverModule || leftoverExports) throw new Error('react19 unrewritten cjs refs: module=' + leftoverModule + ' exports=' + leftoverExports);
   const uniq = [...new Set(imports)];
-  const header = uniq.map(dep =>
-    "import * as __r19_" + dep.replace(/-/g, '_') + "__ from '/gen/react19/" + dep + "';").join("\n");
-  return header + '\n' + body;
+  const header = uniq
+    .map(dep => `import * as __r19_${dep.replace(/-/g, '_')}__ from '/gen/react19/${dep}';`)
+    .join('\n');
+  const footer = exportNames
+    .map((n, i) => `const __r19e${i} = __r19exports.${n};\nexport { __r19e${i} as ${n} };`)
+    .join('\n');
+  const code = `const __r19exports = {};\n${header}\n${body}\n${footer}`;
+  REACT19_CACHE.set(name, code);
+  return code;
 }
-
 async function serveReact19Gen(pathname, res) {
   try {
     const name = pathname.slice('/gen/react19/'.length).replace(/\/+$/, '');
     if (!(name in REACT19_FILES)) { res.writeHead(404); res.end('not found'); return; }
+    // 先 await 转译再写响应头：转译失败走 500，绝不出现「已写 200 头再抛错」的双写头崩溃
+    const code = await react19Esm(name);
     res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
-    res.end(react19Esm(name));
+    res.end(code);
   } catch (e) {
+    // headersSent 防御：响应已开始则只收尾，不再 writeHead（防 ERR_HTTP_HEADERS_SENT 杀进程）
+    if (res.headersSent) { res.end(); return; }
     res.writeHead(500);
     res.end('react19 gen error: ' + (e && e.message));
   }
