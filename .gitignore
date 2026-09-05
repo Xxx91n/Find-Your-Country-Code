@@ -4,7 +4,9 @@
 *.code-workspace
 
 # test
-test/
+# 票 16：test/ 手工测试页是 E2E webServer 健康检查与 iti/分档场景 fixture 依赖，收编入库
+# （test-results/ 与 playwright-report/ 仍为运行产物，保持忽略）
+!test/
 
 # docx
 docs/
