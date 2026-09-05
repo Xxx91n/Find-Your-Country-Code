@@ -1,0 +1,20 @@
+{
+  "ticket": 14,
+  "corpus": "tests/corpus/manifest.json",
+  "cases": 39,
+  "TP": 18,
+  "FP": 1,
+  "TN": 20,
+  "FN": 0,
+  "precision": 0.9473684210526315,
+  "recall": 1,
+  "f1": 0.972972972972973,
+  "accuracy": 0.9743589743589743,
+  "gate": "pass",
+  "gateMismatches": [],
+  "knownResidual": [
+    "mm2-neg-itires"
+  ],
+  "appendOnly": "新样本只加不删；修正语义用新增字段/状态位表达（如 knownResidual 翻转），禁止删除或重写既有条目。",
+  "engine": "src/detect/index.ts (function-bundle, no build)"
+}
