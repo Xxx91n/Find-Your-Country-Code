@@ -100,7 +100,7 @@ const C = (id, expect, desc, build, ctx) => CASES.push({ id, expect, desc, build
 C('P1',  'auto',   'c1_code：name=countrycode + 6 个 +NN（cch Case1）', () => new El('SELECT', { name: 'countrycode', options: ['+86', '+1', '+44', '+81', '+82', '+852'] }), { anchorHasTel: true });
 C('P2',  'auto',   'sel-a2：name=dial_code_country + ISO 值/EN 名', () => new El('SELECT', { name: 'dial_code_country', options: [{ value: 'US', text: 'United States' }, { value: 'GB', text: 'United Kingdom' }, { value: 'CN', text: 'China' }, { value: 'JP', text: 'Japan' }] }), { anchorHasTel: true });
 C('P3',  'lowkey', 'inp-b1：input name=country_code（B1）', () => new El('INPUT', { name: 'country_code', type: 'text' }), { anchorHasTel: true });
-C('P4',  'auto',   'input type=tel 在 .iti 容器（iti 通道）', () => { const i = new El('INPUT', { type: 'tel' }); return under(i, div('iti')); }, { iti: true });
+C('P4',  'auto',   'input type=tel 在 .iti 容器（票 16：经评分通道；容器 60 + 锚 18 = 78）', () => { const i = new El('INPUT', { type: 'tel' }); return under(i, div('iti')); }, { anchorHasTel: true });
 C('P6',  'auto',   'Case3：class=phone-code-selector 裸NN 值', () => new El('SELECT', { className: 'phone-code-selector', options: ['86', '1', '44', '81', '82', '65'] }), { anchorHasTel: true });
 C('P7',  'lowkey', 'Case6：label「Mobile Country Code」+ +NN 值', () => { addLabel('c6', 'Mobile Country Code'); return new El('SELECT', { id: 'c6', options: ['+86', '+1', '+44', '+852', '+81'] }); }, { anchorHasTel: true });
 C('P8',  'lowkey', 'Case4：aria-label「Select country calling code」', () => new El('SELECT', { attrs: { 'aria-label': 'Select country calling code' }, options: [{ value: '+86', text: '🇨🇳 +86' }, { value: '+1', text: '🇺🇸 +1' }, { value: '+44', text: '🇬🇧 +44' }, { value: '+33', text: '🇫🇷 +33' }, { value: '+49', text: '🇩🇪 +49' }] }), { anchorHasTel: true });
@@ -146,8 +146,8 @@ const failures = [];
 for (const c of CASES) {
   const el = c.build();
   let res;
-  if (c.ctx.iti) res = { tier: Detect._isIti(el) ? 'auto' : 'none', score: null, signals: [] };
-  else res = Detect.scoreElement(el, { anchorHasTel: c.ctx.anchorHasTel });
+  // 票 16：iti 并入评分后，P4 与普通用例同走 scoreElement（容器信号在引擎内加分）
+  res = Detect.scoreElement(el, { anchorHasTel: c.ctx.anchorHasTel });
   const ok = res.tier === c.expect;
   if (ok) pass++; else { fail++; failures.push(`${c.id}(expect=${c.expect},got=${res.tier},score=${res.score})`); }
   console.log(`[${ok ? 'PASS' : 'FAIL'}] ${c.id}  expect=${c.expect} got=${res.tier} score=${res.score}`);

@@ -100,8 +100,8 @@ C('P2', 'CTRL+', 'inject', 'select name=dial_code_country + ISO 值（测试页 
   () => new El('SELECT', { name: 'dial_code_country', options: [{ value: 'US', text: 'United States' }, { value: 'GB', text: 'United Kingdom' }, { value: 'CN', text: 'China' }] }));
 C('P3', 'CTRL+', 'inject', 'input name=country_code type=text（测试页 B1；页面含 tel 主号锚）',
   () => new El('INPUT', { name: 'country_code', type: 'text' }), { anchorHasTel: true });
-C('P4', 'CTRL+', 'inject', 'input type=tel 在 .iti 容器（iti v18 wrapper）',
-  () => { const i = new El('INPUT', { type: 'tel' }); return under(i, div('iti')); }, { iti: true });
+C('P4', 'CTRL+', 'inject', 'input type=tel 在 .iti 容器（iti v18 wrapper；票 16 经评分通道）',
+  () => { const i = new El('INPUT', { type: 'tel' }); return under(i, div('iti')); }, { anchorHasTel: true });
 // 对照组负向
 C('N0a', 'CTRL-', 'none', 'select name=province 省份码（测试页 Case9）',
   () => new El('SELECT', { name: 'province', options: [{ value: '11', text: '北京' }, { value: '12', text: '天津' }, { value: '31', text: '上海' }] }));
@@ -159,8 +159,8 @@ const failures = [];
 for (const c of CASES) {
   const el = c.build();
   let tier;
-  if (c.ctx.iti) tier = Detect._isIti(el) ? 'auto' : 'none';
-  else tier = Detect.scoreElement(el, { anchorHasTel: c.ctx.anchorHasTel }).tier;
+  // 票 16：iti 并入评分后，P4 与普通用例同走 scoreElement（容器信号在引擎内加分）
+  tier = Detect.scoreElement(el, { anchorHasTel: c.ctx.anchorHasTel }).tier;
   const injected = tier === 'auto' || tier === 'lowkey';
   const ok = (c.expect === 'inject') === injected;
   if (ok) pass++; else failures.push(c.id);
