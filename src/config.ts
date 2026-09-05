@@ -78,3 +78,18 @@ export const RULES_MAX_OVERRIDES = 500;              // 文档内覆盖规则上
 // ── 面板 UI 常量（票 07）[SP US17「低调样式可配置」/ US18「低置信手动召唤」] ──
 export const UI_PREFS_KEY = 'cch_ui_prefs_v1';          // UI 偏好 GM 键（独立键，与收藏/规则解耦）
 export const LOWKEY_MODES = ['dim', 'hidden'];           // 中置信注入样式：dim=低调可见；hidden=不注入仅面板召唤
+// ════════════════════════════════════════════════════════
+// 帧治理常量（票 12）[SP Implementation Decisions「帧治理」]
+// userscript 元数据无正向 all-frames 键;@match 命中 + 不设 @noframes = 全帧注入。
+// 顶层/子帧分工:每帧各自检测与填充(行为同源);面板宿主仅顶层渲染;
+// 子帧图标点击经 postMessage 请求顶层代开面板,选中国家后回传子帧执行 Fill.run。
+// 跨帧存储一致性复用既有 GM 存储 + BroadcastChannel + GM_addValueChangeListener(不新造第二套)。
+// ════════════════════════════════════════════════════════
+export const IS_TOP_FRAME = (() => {
+  try { return window.self === window.top; } catch { return false; }
+})();
+export const FRAME_TAG = 'cch-frame-v1';
+export const FRAME_OPEN_MSG = 'open';
+export const FRAME_FILL_MSG = 'fill';
+export const FRAME_FEEDBACK_MSG = 'feedback';
+
