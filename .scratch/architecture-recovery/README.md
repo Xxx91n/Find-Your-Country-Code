@@ -88,11 +88,11 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 | 票 | 状态 | 复核结论(首脑,2026-09-05) |
 |---|---|---|
 | 13 可见性闸门 + L3 加码 | done(复核通过,含检查点四 iti 防线 + residual 翻转) | verify-13.mjs 28 全 PASS + 3 CI run 全绿 + precision 1.0 |
-| 18 伪 select e2e | **可开工(下一波)** | 13/16/17 全闭;按 ADR-0005 登记+手动召唤档位 |
+| 18 伪 select 端到端 | done(复核通过) | verify-ticket-18 35 PASS + CI 双绿(59 passed)+ ADR-0005 档位实证(登记不注入) |
 | 14 校准语料 | done(复核通过) | 39 例语料 + CI 基线(precision 0.9474/recall 1.0)实证 |
 | 15 React 19 兜底 | done(复核通过) | CI 33981972381 绿(52 例)+ _probe/forceDiff 实测 |
 | 16 评分一致性 | done(复核通过,附 16-fix) | 短路摘除/L3 独立叠加/常量集中实证;语料再基线转跟进 |
 | 17 伪 select 取证 | done(复核通过) | 样本库 5/15/5 + ADR-0005 实证;atomcode 交叉轮挂起(串行护栏) |
 | 13 / 18 / 19 | pending | 13 可开工(16 已过);18 待 13+16+17;19 收口 |
 
-**frontier(第二周期)**: 11/12/13/14/15/16/17 + 三个修复票全闭环。下一波 = 18(单票)。之后 19 收口 -> push。复核链: verification/review-mmv2-wave1.md + wave2-fix.md + wave3.md。
+**frontier(第二周期)**: 11-18 全部实施票 + 三修复票 = 全闭环。下一波 = 19(发版波,大脑/用户执行)。复核链: verification/review-mmv2-wave1.md + wave2-fix.md + wave3.md + wave4.md。
