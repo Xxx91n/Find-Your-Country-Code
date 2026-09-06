@@ -6,6 +6,10 @@
 // 扫描机制（票 04）：open shadowRoot 递归穿透（每 root 单独 querySelectorAll）+ 每 shadow root
 //   单独 MutationObserver + 统一 350ms 防抖；元素判定 WeakSet 终态 → 属性指纹快照重评
 //   （双向：误挂移除 / 漏挂补上）；SPA 路由 hook（pushState/replaceState/popstate）定向重扫
+// 可见性闸门（票 13）：隐藏/不可达字段（display:none/零尺寸/opacity:0/clip 全裁剪/
+//   content-visibility:hidden）只降注入档位为 none 并保留登记召唤（Bitwarden
+//   dom-element-visibility / KeePassXC #2184 可见性教训）；L3 加码（票 13）：ISO2
+//   全集成员测试 + 占位首项剔除计分；iti 容器唯一证据防线（票 13 检查点四 = 16-fix §5①）。
 // 蓝图出处：research/industry-models.md §④ + M8 + atomcode-industry-models.md 核心结论1/2/3/10
 // 误报标定：research/misdetection-root-causes.md §2 五类 + 25 例 harness（FP 全落 none 档）
 // 站点规则接线（票 05）：规则匹配先于检测 —— scan 入口查豁免（=完全跳过）；
@@ -27,6 +31,25 @@ import { COUNTRIES, ISO2_MAP } from '../data/countries';
 
 // 真实拨号前缀集合（源自 COUNTRIES 国家数据；内容验证的值域基准 [MD §5-0② 整体分布判定]）
 const DIAL_SET = new Set(COUNTRIES.map(c => c.code.slice(1)));
+
+// ISO2 全集成员域（票 13 [issue 验收3]）：「值是否 ISO2」只看数据全集键集，不再做
+// 「像 2 字母」形态学预筛 [SP US8；whatwg#8597 select 语义由选项内容裁决]
+const ISO2_SET = new Set(Object.keys(ISO2_MAP));
+// 占位首项词表（票 13 [issue 验收5]）：请选择类首项只可能是占位；命中词表且值域无
+// 区号/ISO2 证据才剔除（+86/+86 类实义首项不受影响）
+const PLACEHOLDER_TEXT_RE = /^(?:please\s+select|select\b|choose\b|pick\b|请选择|請選擇|选择|選擇|点击选择|[-—–…]+\s*$)/i;
+
+// 占位首项判定：仅首项参审；文本命中占位词表且值不含区号/ISO2 证据 → 剔除出计分。
+// 剔除仅作用于本统计（计分域），不影响填充匹配（fill 侧独立枚举 options）[handoff 13 检查点二]
+function isPlaceholderOpt(o) {
+  const v = String(o.value || '').trim();
+  const t = String(o.text || '').trim();
+  if (!t) return true; // 有值无文本的首项 = 纯占位
+  if (!PLACEHOLDER_TEXT_RE.test(t)) return false;
+  const bare = v.replace(/^\+/, '').replace(/^00/, '');
+  if (DIAL_SET.has(bare) || ISO2_SET.has(v.toLowerCase())) return false;
+  return true;
+}
 
 // 拉丁词匹配：camelCase 拆分 → token 等值；≥6 字符词允许 joined/token 子串。
 // 3-4 字符短词（idd/npa/lang）只做等值匹配 —— F6「hidden→idd」子串撞库的根因即无长度护栏 [MD §2⑤]。
@@ -57,7 +80,7 @@ const LABEL_PHRASES_STRONG = ['country code', 'dial code', 'calling code', 'phon
 const LABEL_COMPOUND = ['国家/地区区号', '国家地区区号', '手机区号'];
 const LABEL_EXCLUDE = ['语言', '语种', '本地化', '翻译', '省份', '城市', '区县', '县区', '行政区'];
 
-// ── L3 选项分布统计（一次性扫描；value 与 text 双证据口径） ──
+// ── L3 选项分布统计（一次性扫描；value 与 text 双证据口径；票 13：占位首项剔除 + ISO2 全集域） ──
 function optStats(el) {
   // 宿主 DOM/单测 mock 均为鸭子类型（仓库无类型门禁，vite 构建为准）
   const raw = el.options || [];
@@ -66,22 +89,29 @@ function optStats(el) {
     const o = raw[i];
     if ((o.value || '').trim()) opts.push(o);
   }
-  let plusDial = 0, parenDial = 0, isoName = 0, numeric = 0;
-  for (const o of opts) {
+  let plusDial = 0, parenDial = 0, isoName = 0, numeric = 0, placeholder = 0;
+  for (let i = 0; i < opts.length; i++) {
+    const o = opts[i];
+    // 票 13 [issue 验收5]：占位首项（请选择类）剔除出计分 —— 不进 total、不进任何分布
+    // 计数；剔除仅作用于本统计，不影响填充匹配（fill 侧独立枚举 options）[handoff 检查点二]
+    if (i === 0 && isPlaceholderOpt(o)) { placeholder++; continue; }
     const v = (o.value || '').trim();
     const t = (o.text || '').trim();
     const bare = v.replace(/^\+/, '').replace(/^00/, '');
     if (DIAL_SET.has(bare)) plusDial++;
     else if (/^\d{1,4}$/.test(v)) numeric++;
     if (/\(\+\d{1,4}\)/.test(t) && DIAL_SET.has((t.match(/\(\+(\d{1,4})\)/) || [])[1] || '')) parenDial++;
+    // 票 13 [issue 验收3]：ISO2 成员测试以数据全集为域（ISO2_SET），替换「像 2 字母」
+    // 形态学预筛；文本↔国家名互证保留（假两字母不撞库 [MD §4]）
     const vi = v.toLowerCase();
-    if (/^[a-z]{2}$/.test(vi) && ISO2_MAP[vi] && t.length > 2 &&
-        /^[A-Za-z\s.'-]+$/.test(t)) {
+    if (ISO2_SET.has(vi) && t.length > 2 && /^[A-Za-z\s.'-]+$/.test(t)) {
       const en = ISO2_MAP[vi].countryEn.toLowerCase();
       if (t.toLowerCase().includes(en.split(' ')[0]) || en.includes(t.toLowerCase())) isoName++;
     }
   }
-  return { total: opts.length, plusDial, parenDial, isoName, numeric };
+  // total = 有效选项数（占位首项剔除后）；规模门槛与各分布占比均以有效计数为分母
+  const total = opts.length - placeholder;
+  return { total, plusDial, parenDial, isoName, numeric };
 }
 
 // 票 04：observer 配置与指纹属性面（两者对齐 —— 指纹读什么，observer 就监听什么）
@@ -153,23 +183,24 @@ export function createDetect(UI, Rules) {
       // ── L0 语义标准层 ──
       const ac = (el.getAttribute('autocomplete') || '').toLowerCase().trim();
       const acTok = ac.split(/\s+/).filter(Boolean);
+      let strong = null, acTelHint = false, imTel = false;
       if (ac && !acTok.includes('off')) {
-        const strong = acTok.find(t => L0_TEL_TOKENS.includes(t));
+        strong = acTok.find(t => L0_TEL_TOKENS.includes(t));
         if (strong) score += add('L0', 'autocomplete:' + strong, L0_TOKEN_SCORE);
         else if (acTok.some(t => t === 'tel' || t.includes('tel'))) {
+          acTelHint = true;
           score += add('L0', 'autocomplete:tel-hint', L0_TEL_HINT_SCORE);
         }
       }
       if ((el.getAttribute('inputmode') || '').toLowerCase() === 'tel') {
+        imTel = true;
         score += add('L0', 'inputmode=tel', L0_INPUTMODE_TEL_SCORE);
       }
       if (tag === 'INPUT' && type === 'tel') score += add('L0', 'type=tel', L0_TEL_HINT_SCORE);
 
-      // ── iti 容器信号（票 16）：容器证据计入评分（US10），L1/L4 罚分同等生效
-      //    （handoff 16 检查点一）；原 _process 无条件 100 分短路移除 ──
-      if (tag === 'INPUT' && this._isIti(el)) {
-        score += add('L0', 'iti:container', ITI_CONTAINER_SCORE);
-      }
+      // ── iti 容器证据登记（票 16 并入评分；票 13 检查点四：结算移至 L1 之后，
+      //    容器唯一证据需最低佐证，见下方 iti:container 结算块）──
+      const itiContainer = tag === 'INPUT' && this._isIti(el);
 
       // ── 语料：自身属性（name/id/class/placeholder/aria-label/data-name/title）+ label ──
       // 父级容器类名不参与（F7 country-form 污染路径移除 [MD §2④]）
@@ -201,6 +232,21 @@ export function createDetect(UI, Rules) {
       else if (kw === 'prefix')  score += add('L1', 'kw:prefix', L1_PREFIX_KW_SCORE);
       else if (kw === 'npa')     score += add('L1', 'kw:npa', L1_NPA_KW_SCORE);
 
+      // ── iti 容器信号结算（票 16 并入评分；票 13 检查点四防线 [16-fix §5①]）──
+      // 容器分（60）单独即越过 lowkey 阈（35），.iti 容器内无关 input（如国家下拉搜索框）
+      // 仅凭容器证据即误注入（CI 实测 mm2-neg-itires 60/lowkey）——要求最低佐证
+      // （type=tel / autocomplete tel 系 / inputmode=tel / 任一正向 L1 信号）才保留容器分；
+      // 佐证缺失 → 容器分不入账，0 分信号留痕。真 iti 字段标准形态 type=tel 不受影响
+      // （60+10=70 auto，E2E cch-test-page2 场景 C 口径不变）。
+      if (itiContainer) {
+        const l1Positive = sig.some(s => s.layer === 'L1' && s.pts > 0);
+        if (type === 'tel' || strong || acTelHint || imTel || l1Positive) {
+          score += add('L0', 'iti:container', ITI_CONTAINER_SCORE);
+        } else {
+          sig.push({ layer: 'L0', name: 'iti:container-unattested', pts: 0 });
+        }
+      }
+
       // ── L3 内容验证层（select 专属；值域整体分布，非单值判定 [MD §5-0②]） ──
       let st = null;
       if (tag === 'SELECT') {
@@ -215,7 +261,10 @@ export function createDetect(UI, Rules) {
           if (st.parenDial > 0) {
             score += add('L3', 'opts:(+NN)-text', Math.min(st.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
           }
-        } else if (st.numeric / st.total >= L3_NUMERIC_MIN_RATE) {
+        }
+        // 票 16：数字占比罚分独立叠加（不再与区号加分互斥短路）——混入高占比数字枚举的
+        // 下拉两条证据同时入账，交由总分与分档裁决 [issue 16 验收2]
+        if (st.numeric / st.total >= L3_NUMERIC_MIN_RATE) {
           score += add('L3', 'opts:numeric-enum', L3_NUMERIC_PENALTY);
         }
         const isoRate = st.isoName / st.total;
@@ -270,6 +319,43 @@ export function createDetect(UI, Rules) {
       if (score >= SCORE_AUTO) return 'auto';
       if (score >= SCORE_LOWKEY) return 'lowkey';
       return 'none';
+    },
+
+    // ══ 票 13：可见性闸门判定（[AM 结论4] Bitwarden dom-element-visibility /
+    // KeePassXC #2184 教训同构）══
+    // 只负责「元素当前是否不可见」；注入档位降级在 _process（闸门只改注入档位，
+    // 不改检测登记 [handoff 13 检查点一]）。判定面 = 无歧义不可渲染态的保守集合：
+    // display:none / visibility:hidden|collapse / opacity<0.01 / content-visibility:hidden /
+    // clip:rect(0,0,0,0) / clip-path 全裁剪形态（inset(0)|inset(50%)|inset(100%)|circle(0)|
+    // rect(0)）/ 零尺寸（宽高同为 0）。遮挡（overlay 遮盖）的 elementFromPoint 探测在
+    // shadow DOM 与动态浮层下误杀率高（Bitwarden 亦未采用），以零尺寸 + 全裁剪形态
+    // 近似覆盖 sr-only/视觉替换型隐藏，显式遮挡探测登记为未做项（报告偏离点）。
+    // fail-open：无法测量（无 getComputedStyle/无布局信息的 mock 宿主）一律视为可见 ——
+    // 宁可漏闸不可误杀（检查点一「不误杀隐藏承值 select」优先）。
+    _hiddenByStyle(el) {
+      try {
+        const view = (el.ownerDocument && el.ownerDocument.defaultView) ||
+          (typeof window !== 'undefined' ? window : null);
+        if (view && typeof view.getComputedStyle === 'function') {
+          const cs = view.getComputedStyle(el);
+          if (cs) {
+            if (cs.display === 'none') return true;
+            if (cs.visibility === 'hidden' || cs.visibility === 'collapse') return true;
+            if (parseFloat(cs.opacity || '1') < 0.01) return true;
+            if (cs.contentVisibility === 'hidden') return true;
+            const clip = String(cs.clip || '').replace(/\s+/g, '');
+            if (/^rect\(0(?:px)?,0(?:px)?,0(?:px)?,0(?:px)?\)$/.test(clip)) return true;
+            const cp = String(cs.clipPath || '').replace(/\s+/g, '');
+            if (cp !== 'none' &&
+                /^(?:inset\(0(?:px)?\)|inset\(50%\)|inset\(100%\)|circle\(0|rect\(0)/.test(cp)) return true;
+          }
+        }
+        if (typeof el.getBoundingClientRect === 'function') {
+          const r = el.getBoundingClientRect();
+          if (r && r.width === 0 && r.height === 0) return true;
+        }
+      } catch { return false; }
+      return false;
     },
 
     _isIti(el) {
@@ -398,7 +484,9 @@ export function createDetect(UI, Rules) {
         el.getAttribute('type'), el.getAttribute('placeholder'), el.getAttribute('aria-label'),
         el.getAttribute('data-name'), el.getAttribute('title'), el.getAttribute('autocomplete'),
         el.getAttribute('inputmode'), el.disabled ? 'd' : '', el.readOnly ? 'r' : '',
-        this._isIti(el) ? 'iti' : '', this._label(el) || ''];
+        this._isIti(el) ? 'iti' : '', this._label(el) || '',
+      // 票 13：可见性判定入指纹 —— 显隐翻转（路由切换/样式类变更）即触发重评
+      this._hiddenByStyle(el) ? 'v0' : 'v1'];
       if (el.tagName === 'SELECT' && el.options) {
         for (let i = 0; i < el.options.length; i++) {
           const o = el.options[i];
@@ -454,6 +542,10 @@ export function createDetect(UI, Rules) {
       const wrapEl = el.closest ? el.closest('.' + WRAPPER_CLASS) : null;
       const fp = this._fingerprint(el);
       const st = this._state.get(el);
+      // 票 13：用户显式召唤标记（UI.attach force 路径写入 data-cch-summon）——
+      // 召唤图标是用户显式行为，可见性闸门不回拆
+      const summonedWrap = !!(wrapEl && wrapEl.querySelector &&
+        wrapEl.querySelector('.cch-btn[data-cch-summon="1"]'));
 
       // 指纹未变：跳过重评（等价旧 _done 短路）；已 attached 但 wrapper 被站点剥离 → 用缓存自愈补挂
       if (st && st.fp === fp) {
@@ -471,7 +563,6 @@ export function createDetect(UI, Rules) {
       } else {
         // 票 16：iti 容器信号已并入 scoreElement（US10 取消评分外无条件 100 分短路）
         res = this.scoreElement(el);
-        res = this.scoreElement(el);
         // 票 05：页面级分档覆盖（auto/lowkey 双向重映射）——页面档即「本页注入档位下限」：
         // auto 覆盖把 lowkey/none 全部提升注入（用户显式规则自担误报风险，对标
         // KeePassXC Site Preferences 用户干预压过启发式）；lowkey 覆盖同理；
@@ -479,6 +570,15 @@ export function createDetect(UI, Rules) {
         if (Rules && (pageTier === 'auto' || pageTier === 'lowkey') && res.tier !== pageTier) {
           res = { score: res.score, tier: pageTier,
             signals: (res.signals || []).concat([{ layer: 'R', name: 'rule:tier-override', pts: 0 }]) };
+        }
+        // ── 票 13 可见性闸门（注入档位最终裁决）[AM 结论4 / SP US4]：只降注入档位，
+        // 不动评分与检测登记 —— 隐藏字段走下方 none 分支按分登记（≥ITI_LOW_REGISTER_SCORE
+        // 即进面板召唤），评分信号原样保留（gate:visibility-hidden 0 分留痕）。
+        // forced/pageTier 规则是用户显式干预，已在上方生效；召唤图标（data-cch-summon）
+        // 是用户显式行为，不被闸门回拆（summonedWrap 检查）。
+        if (!summonedWrap && res.tier !== 'none' && this._hiddenByStyle(el)) {
+          res = { score: res.score, tier: 'none',
+            signals: (res.signals || []).concat([{ layer: 'VIS', name: 'gate:visibility-hidden', pts: 0 }]) };
         }
       }
       // kind 分发（票 04 教训：先枚举下游消费方 UI.attach / UI.rememberLow / Fill.run 三策略）：
@@ -491,7 +591,7 @@ export function createDetect(UI, Rules) {
       if (!kind) return;
 
       if (res.tier === 'none') {
-        if (wrapEl) UI.detach(el); // 误挂移除
+        if (wrapEl && !summonedWrap) UI.detach(el); // 误挂移除（用户召唤图标除外 [票 13]）
         if (res.score >= ITI_LOW_REGISTER_SCORE) UI.rememberLow(el, kind, res.score, res.signals);
         return;
       }

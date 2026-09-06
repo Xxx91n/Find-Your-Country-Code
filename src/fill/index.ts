@@ -58,7 +58,7 @@ const Fill = {
 
   // 唯一注入函数：原生 setter 赋值 + input→change→blur。所有 fill 路径（select/input/iti
   // 兜底）的赋值与事件派发都收敛到这里；fillSelect/fillInput/adapter 不再直接写 el.value。
-  _inject(el, value) {
+  _inject(el, value, opts) {
     let applied = false;
     let prevValue = '';
 
@@ -69,7 +69,16 @@ const Fill = {
         (typeof window !== 'undefined' ? window : null);
       const protoName = VALUE_PROTO_BY_TAG[el.tagName];
       const desc = view && protoName && Object.getOwnPropertyDescriptor(view[protoName].prototype, 'value');
-      if (desc && desc.set) { desc.set.call(el, value); applied = true; }
+      if (desc && desc.set) {
+        desc.set.call(el, value);
+        // 票 13 共享区号消歧落点：select 值 setter 只会命中首个同值选项（+1 多国共享），
+        // 消歧后的目标选项经 selectedIndex 校正落点，再派发事件序列
+        if (el.tagName === 'SELECT' && opts && typeof opts.selectedIndex === 'number' &&
+            el.options && el.options[opts.selectedIndex]) {
+          el.selectedIndex = opts.selectedIndex;
+        }
+        applied = true;
+      }
     } catch {}
     if (!applied) el.value = value; // 非常规宿主（mock/异构元素）兜底
     // 票 15：探测命中（React 受控跟踪形态）→ 派发前强制 diff；不命中或探测抛错 = 既有路径
@@ -91,21 +100,39 @@ const Fill = {
     const opts   = Array.from(el.options);
     const digits = country.code.replace(/\D/g, '');
     const iso    = country.iso.toLowerCase();
-
-    let m = opts.find(o => {
-      const v = o.value.trim();
+    const enName = (country.countryEn || '').toLowerCase();
+    const cnName = country.country || '';
+    const valueMatch = (o) => {
+      const v = (o.value || '').trim();
       return v === country.code || v === digits || v === '00' + digits || v.toLowerCase() === iso;
-    });
+    };
+    const nameInText = (o) => {
+      const t = (o.text || '').trim();
+      if (!t) return false;
+      const tl = t.toLowerCase();
+      return (!!enName && tl.includes(enName)) || (!!cnName && t.includes(cnName));
+    };
+
+    // 票 13 共享区号消歧 [issue 13 验收4]：+1/+44 等多国共享同一值，纯值匹配必撞首个
+    // 命中（选 Canada 落到 United States）——「值命中 + 选项文本含国家名」双证据优先；
+    // 裸值下拉（无文本证据，如仅 +86/+1/+44）退回旧行为首值命中。
+    let m = opts.find(o => valueMatch(o) && nameInText(o));
+    if (!m) m = opts.find(valueMatch);
     if (!m) m = opts.find(o =>
       (o.getAttribute('data-country-code') || '').toLowerCase() === iso ||
       (o.getAttribute('data-iso') || '').toLowerCase() === iso
     );
     if (!m) m = opts.find(o =>
       o.text.includes(country.code) ||
-      o.text.toLowerCase().includes(country.countryEn.toLowerCase()) ||
-      o.text.includes(country.country)
+      o.text.toLowerCase().includes(enName) ||
+      o.text.includes(cnName)
     );
-    if (m) { this._inject(el, m.value); return true; }
+    if (m) {
+      // 消歧目标经 selectedIndex 传递（select 值 setter 只命中首个同值选项）
+      const idx = opts.indexOf(m);
+      this._inject(el, m.value, { selectedIndex: idx >= 0 ? idx : undefined });
+      return true;
+    }
     return false;
   },
 
