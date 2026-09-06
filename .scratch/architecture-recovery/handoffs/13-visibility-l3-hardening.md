@@ -20,6 +20,7 @@
 - 检查点一: 闸门只改「注入档位」,不改「检测登记」——隐藏但承载值的原生 select 必须仍可面板填充(视觉替换型站点是正样本)。
 - 检查点二: ISO2 成员测试以数据全集为域;共享区号消歧走文本+国家名;占位首项剔除仅作用于计分,不影响填充匹配。
 - 检查点三: 与 16 票共享检测文件——开工前确认 16 已完成(Blocked by),基于其代码基座之上修改;冲突一律走 WORKFLOW §4.2 的 resolve 流程。
+- 检查点四(16-fix 交接): iti 容器唯一证据防线——CI 实测 .iti 容器内无其它正信号的 input 得 60/lowkey 注入(mm2-neg-itires,expect=none 仍不通过)。防线三选一或组合(16-fix 报告 §5): 容器内 input 除容器分外零正信号时要求最低佐证(type=tel/autocomplete/inputmode/L1 任一)才保留容器分;或容器分单独封顶低于 lowkey 阈;或与 type=tel 组合计分。落地后 dispatch 校准 workflow 重测,若该例转通过则按 appendOnly 翻转 knownResidual 并刷新基线数字。
 - 专属验收: issue 内 6 条验收项全部真实执行并留证据(CI run)。
 - 完成定义: 遵循上方 issue 内验收清单全部勾选 + 报告落盘。
 

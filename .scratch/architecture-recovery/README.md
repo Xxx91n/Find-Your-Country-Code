@@ -87,12 +87,12 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 
 | 票 | 状态 | 复核结论(首脑,2026-09-05) |
 |---|---|---|
-| 11 心智模型文档化 | done(复核通过,附 11-fix) | 对照章/五术语/路径全过;verify-ticket-11 的 EOL 检查口径缺陷转修复 |
-| 12 iframe 帧治理 | done(复核通过,附 12-fix) | CI 33978323212 绿 + 代码实测;e2e.yml 裸 npm ci 缺陷转修复 |
+| 13 | **可开工(下一波)** | 阻塞 16 已闭环;新增检查点四(iti 容器唯一证据防线) |
+| 18 / 19 | pending | 18 待 13+16+17;19 收口 |
 | 14 校准语料 | done(复核通过) | 39 例语料 + CI 基线(precision 0.9474/recall 1.0)实证 |
 | 15 React 19 兜底 | done(复核通过) | CI 33981972381 绿(52 例)+ _probe/forceDiff 实测 |
 | 16 评分一致性 | done(复核通过,附 16-fix) | 短路摘除/L3 独立叠加/常量集中实证;语料再基线转跟进 |
 | 17 伪 select 取证 | done(复核通过) | 样本库 5/15/5 + ADR-0005 实证;atomcode 交叉轮挂起(串行护栏) |
 | 13 / 18 / 19 | pending | 13 可开工(16 已过);18 待 13+16+17;19 收口 |
 
-**frontier(第二周期)**: Wave 1 = 6/6 复核通过。修复波次: 12-fix 先行(解锁 cch/** CI 载体)→ 13 + 11-fix + 16-fix 并行 → 18 → 19。过程违规与拓扑风险见 verification/review-mmv2-wave1.md §3/§4。
+**frontier(第二周期)**: Wave 1 = 6/6 复核通过,三修复票(11-fix/12-fix/16-fix)闭环。下一波 = 13(单票,阻塞已解除)。之后 18 → 19。复核链: verification/review-mmv2-wave1.md + review-mmv2-wave2-fix.md。

@@ -7,7 +7,7 @@
 [OK]   prompt 12-iframe-governance: 30 lines (<=60)
 [OK]   prompt 12-iframe-governance paths resolvable: 10 checked
 [OK]   prompt 12-iframe-governance: no acceptance restatement
-[OK]   prompt 13-visibility-l3-hardening: 30 lines (<=60)
+[OK]   prompt 13-visibility-l3-hardening: 31 lines (<=60)
 [OK]   prompt 13-visibility-l3-hardening paths resolvable: 10 checked
 [OK]   prompt 13-visibility-l3-hardening: no acceptance restatement
 [OK]   prompt 14-calibration-corpus: 29 lines (<=60)
