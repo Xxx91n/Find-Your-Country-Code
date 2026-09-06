@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - 'cch/14-calibration-corpus'
 
 permissions:
