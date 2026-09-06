@@ -1,0 +1,608 @@
+{
+  "generatedAt": "2026-09-03T10:26:56.855Z",
+  "missing": [],
+  "rootNames": {
+    "C:/Users/Administrator/.agents/skills": [
+      "1mcp",
+      "agent-reach",
+      "android",
+      "android-cli",
+      "android-reverse-engineering-skill",
+      "atomcode-research",
+      "code-vulnscan",
+      "git",
+      "gitbutler",
+      "grill",
+      "khazix",
+      "odl",
+      "perplexity-web-mcp",
+      "perseus",
+      "security-review-orchestrator",
+      "sqlite-utils-skill",
+      "ui-ux-pro-max"
+    ],
+    "C:/Users/Administrator/.codex/skills": [
+      ".system",
+      "agents-md-edit",
+      "atomcode-research",
+      "gitbutler"
+    ]
+  },
+  "skills": [
+    {
+      "name": "ask-matt",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\ask-matt\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\ask-matt.md",
+      "bytes": 11615,
+      "headings": [
+        "# Ask Matt",
+        "## The main flow: idea → ship",
+        "### Context hygiene",
+        "## On-ramps",
+        "## Codebase health",
+        "## Vocabulary underneath",
+        "## Phase boundaries",
+        "## Standalone",
+        "## Precondition"
+      ]
+    },
+    {
+      "name": "atomcode-research-agents",
+      "source": "C:/Users/Administrator/.agents/skills/atomcode-research/SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\atomcode-research-agents.md",
+      "bytes": 10799,
+      "headings": [
+        "# AtomCode Research",
+        "## Serialized research (hard guardrail — read before dispatching)",
+        "## The only command (MUST run inside ctx via ctx_batch_execute)",
+        "### Fallback if ctx_batch_execute is unreachable",
+        "## Resume anchoring (续跑锚定 — 失败即续，完成前不开新调研)",
+        "## Timeout (10 minutes = 600000 ms, fixed, no negotiation)",
+        "## Success signal (dual, version-resilient)",
+        "## Monitoring & failure (trigger → detection → action)",
+        "## ctx integration",
+        "## Mode hints (phrase into the -p prompt)",
+        "## Rules"
+      ]
+    },
+    {
+      "name": "atomcode-research-codex",
+      "source": "C:/Users/Administrator/.codex/skills/atomcode-research/SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\atomcode-research-codex.md",
+      "bytes": 10799,
+      "headings": [
+        "# AtomCode Research",
+        "## Serialized research (hard guardrail — read before dispatching)",
+        "## The only command (MUST run inside ctx via ctx_batch_execute)",
+        "### Fallback if ctx_batch_execute is unreachable",
+        "## Resume anchoring (续跑锚定 — 失败即续，完成前不开新调研)",
+        "## Timeout (10 minutes = 600000 ms, fixed, no negotiation)",
+        "## Success signal (dual, version-resilient)",
+        "## Monitoring & failure (trigger → detection → action)",
+        "## ctx integration",
+        "## Mode hints (phrase into the -p prompt)",
+        "## Rules"
+      ]
+    },
+    {
+      "name": "but-gitbutler",
+      "source": "C:/Users/Administrator/.agents/skills/gitbutler/SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\but-gitbutler.md",
+      "bytes": 22068,
+      "headings": [
+        "# GitButler CLI Skill",
+        "## Start Here",
+        "# Selected dirty files/hunks:",
+        "# Commit order, branch/stack placement, conflict overview:",
+        "# File/hunk IDs, per-commit files, amend/split details:",
+        "# Details for one known branch or commit:",
+        "## IDs",
+        "## Non-Negotiable Rules",
+        "## Command Patterns",
+        "## Task Recipes",
+        "### Update workspace from main",
+        "### Commit selected files or hunks",
+        "### Amend into existing commit",
+        "### Split an existing commit",
+        "### Reorder commits",
+        "### Squash commits",
+        "### Stack existing branches",
+        "### Create or manage pull requests",
+        "### Dependency conflict with another branch",
+        "### Resolve conflicted commits (after pull, move, or reorder)",
+        "### Conflicts in uncommitted files",
+        "## Git-to-But Map",
+        "## Notes"
+      ]
+    },
+    {
+      "name": "claude-handoff",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\in-progress\\claude-handoff\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\claude-handoff.md",
+      "bytes": 1301,
+      "headings": []
+    },
+    {
+      "name": "code-review",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\code-review\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\code-review.md",
+      "bytes": 6649,
+      "headings": [
+        "## Process",
+        "### 1. Pin the fixed point",
+        "### 2. Identify the spec source",
+        "### 3. Identify the standards sources",
+        "### 4. Spawn both sub-agents in parallel",
+        "### 5. Aggregate",
+        "## Why two axes"
+      ]
+    },
+    {
+      "name": "codebase-design",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\codebase-design\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\codebase-design.md",
+      "bytes": 6488,
+      "headings": [
+        "# Codebase Design",
+        "## Glossary",
+        "## Deep vs shallow",
+        "## Principles",
+        "## Designing for testability",
+        "## Relationships",
+        "## Rejected framings",
+        "## Going deeper"
+      ]
+    },
+    {
+      "name": "diagnosing-bugs",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\diagnosing-bugs\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\diagnosing-bugs.md",
+      "bytes": 8614,
+      "headings": [
+        "# Diagnosing Bugs",
+        "## Redact",
+        "## Phase 1 — Build a feedback loop",
+        "### Ways to construct one — try them in roughly this order",
+        "### Tighten the loop",
+        "### Non-deterministic bugs",
+        "### When you genuinely cannot build a loop",
+        "### Completion criterion — a tight loop that goes red",
+        "## Phase 2 — Reproduce + minimise",
+        "### Minimise",
+        "## Phase 3 — Hypothesise",
+        "## Phase 4 — Instrument",
+        "## Phase 5 — Fix + regression test",
+        "## Phase 6 — Cleanup"
+      ]
+    },
+    {
+      "name": "domain-modeling",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\domain-modeling\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\domain-modeling.md",
+      "bytes": 3361,
+      "headings": [
+        "# Domain Modeling",
+        "## File structure",
+        "## During the session",
+        "### Challenge against the glossary",
+        "### Sharpen fuzzy language",
+        "### Discuss concrete scenarios",
+        "### Cross-reference with code",
+        "### Update CONTEXT.md inline",
+        "### Offer ADRs sparingly"
+      ]
+    },
+    {
+      "name": "git-guardrails-claude-code",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\misc\\git-guardrails-claude-code\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\git-guardrails-claude-code.md",
+      "bytes": 2312,
+      "headings": [
+        "# Setup Git Guardrails",
+        "## What Gets Blocked",
+        "## Steps",
+        "### 1. Ask scope",
+        "### 2. Copy the hook script",
+        "### 3. Add hook to settings",
+        "### 4. Ask about customization",
+        "### 5. Verify"
+      ]
+    },
+    {
+      "name": "grill-me",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\productivity\\grill-me\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\grill-me.md",
+      "bytes": 157,
+      "headings": []
+    },
+    {
+      "name": "grill-with-docs",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\grill-with-docs\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\grill-with-docs.md",
+      "bytes": 247,
+      "headings": []
+    },
+    {
+      "name": "grilling",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\productivity\\grilling\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\grilling.md",
+      "bytes": 1857,
+      "headings": []
+    },
+    {
+      "name": "handoff",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\productivity\\handoff\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\handoff.md",
+      "bytes": 894,
+      "headings": []
+    },
+    {
+      "name": "implement",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\implement\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\implement.md",
+      "bytes": 433,
+      "headings": []
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\improve-codebase-architecture\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\improve-codebase-architecture.md",
+      "bytes": 6049,
+      "headings": [
+        "# Improve Codebase Architecture",
+        "## Process",
+        "### 1. Explore",
+        "### 2. Present candidates as an HTML report",
+        "### 3. Grilling loop"
+      ]
+    },
+    {
+      "name": "loop-me",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\in-progress\\loop-me\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\loop-me.md",
+      "bytes": 2560,
+      "headings": [
+        "## The loop lens",
+        "## Vocabulary",
+        "## Definition of done",
+        "## The workspace"
+      ]
+    },
+    {
+      "name": "migrate-to-shoehorn",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\misc\\migrate-to-shoehorn\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\migrate-to-shoehorn.md",
+      "bytes": 2795,
+      "headings": [
+        "# Migrate to Shoehorn",
+        "## Why shoehorn?",
+        "## Install",
+        "## Migration patterns",
+        "### Large objects with few needed properties",
+        "### `as Type` → `fromPartial()`",
+        "### `as unknown as Type` → `fromAny()`",
+        "## When to use each",
+        "## Workflow"
+      ]
+    },
+    {
+      "name": "ponytail",
+      "source": "C:/Users/Administrator/.codex/plugins/cache/ponytail/ponytail/4.9.0/skills/ponytail/SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\ponytail.md",
+      "bytes": 6757,
+      "headings": [
+        "# Ponytail",
+        "## Persistence",
+        "## The ladder",
+        "## Rules",
+        "## Output",
+        "## Intensity",
+        "## When NOT to be lazy",
+        "## Boundaries"
+      ]
+    },
+    {
+      "name": "prototype",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\prototype\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\prototype.md",
+      "bytes": 2954,
+      "headings": [
+        "# Prototype",
+        "## Pick a branch",
+        "## Rules that apply to both"
+      ]
+    },
+    {
+      "name": "research",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\research\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\research.md",
+      "bytes": 799,
+      "headings": []
+    },
+    {
+      "name": "resolving-merge-conflicts",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\resolving-merge-conflicts\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\resolving-merge-conflicts.md",
+      "bytes": 921,
+      "headings": []
+    },
+    {
+      "name": "scaffold-exercises",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\misc\\scaffold-exercises\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\scaffold-exercises.md",
+      "bytes": 3589,
+      "headings": [
+        "# Scaffold Exercises",
+        "## Directory naming",
+        "## Exercise variants",
+        "## Required files",
+        "# Exercise Title",
+        "## Workflow",
+        "## Lint rules summary",
+        "## Moving/renaming exercises",
+        "## Example: stubbing from a plan"
+      ]
+    },
+    {
+      "name": "setup-matt-pocock-skills",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\setup-matt-pocock-skills\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\setup-matt-pocock-skills.md",
+      "bytes": 6922,
+      "headings": [
+        "# Setup Matt Pocock's Skills",
+        "## Process",
+        "### 1. Explore",
+        "### 2. Present findings and ask",
+        "### 3. Confirm and edit",
+        "### 4. Write",
+        "## Agent skills",
+        "### Issue tracker",
+        "### Triage labels",
+        "### Domain docs",
+        "### 5. Done"
+      ]
+    },
+    {
+      "name": "setup-pre-commit",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\misc\\setup-pre-commit\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\setup-pre-commit.md",
+      "bytes": 2261,
+      "headings": [
+        "# Setup Pre-Commit Hooks",
+        "## What This Sets Up",
+        "## Steps",
+        "### 1. Detect package manager",
+        "### 2. Install dependencies",
+        "### 3. Initialize Husky",
+        "### 4. Create `.husky/pre-commit`",
+        "### 5. Create `.lintstagedrc`",
+        "### 6. Create `.prettierrc` (if missing)",
+        "### 7. Verify",
+        "### 8. Commit",
+        "## Notes"
+      ]
+    },
+    {
+      "name": "setup-ts-deep-modules",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\in-progress\\setup-ts-deep-modules\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\setup-ts-deep-modules.md",
+      "bytes": 7612,
+      "headings": [
+        "# Setup TS Deep Modules",
+        "## The shape this enforces",
+        "## Steps",
+        "### 1. Detect the environment",
+        "### 2. Install dependency-cruiser",
+        "### 3. Write the config",
+        "### 4. Wire it into the checks",
+        "### 5. Scaffold the example package",
+        "### 6. Prove the rules bite",
+        "### 7. Document the convention",
+        "## Notes"
+      ]
+    },
+    {
+      "name": "tdd",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\tdd\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\tdd.md",
+      "bytes": 3578,
+      "headings": [
+        "# Test-Driven Development",
+        "## What a good test is",
+        "## Seams — where tests go",
+        "## Anti-patterns",
+        "## Rules of the loop"
+      ]
+    },
+    {
+      "name": "teach",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\productivity\\teach\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\teach.md",
+      "bytes": 9507,
+      "headings": [
+        "## Teaching Workspace",
+        "## Philosophy",
+        "### Fluency vs Storage Strength",
+        "## Lessons",
+        "## Assets",
+        "## The Mission",
+        "## Zone Of Proximal Development",
+        "## Knowledge",
+        "## Skills",
+        "## Acquiring Wisdom",
+        "## Reference Documents",
+        "## `NOTES.md`"
+      ]
+    },
+    {
+      "name": "to-questionnaire",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\productivity\\to-questionnaire\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\to-questionnaire.md",
+      "bytes": 2921,
+      "headings": [
+        "## Document structure",
+        "# <Questionnaire title>",
+        "## Context",
+        "## How to answer",
+        "## <Theme heading>",
+        "### What load is the system expected to handle at launch?",
+        "## Anything else?"
+      ]
+    },
+    {
+      "name": "to-spec",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\to-spec\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\to-spec.md",
+      "bytes": 3050,
+      "headings": [
+        "## Process",
+        "## Problem Statement",
+        "## Solution",
+        "## User Stories",
+        "## Implementation Decisions",
+        "## Testing Decisions",
+        "## Out of Scope",
+        "## Further Notes"
+      ]
+    },
+    {
+      "name": "to-tickets",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\to-tickets\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\to-tickets.md",
+      "bytes": 5722,
+      "headings": [
+        "# To Tickets",
+        "## Process",
+        "### 1. Gather context",
+        "### 2. Explore the codebase (optional)",
+        "### 3. Draft vertical slices",
+        "### 4. Quiz the user",
+        "### 5. Publish the tickets to the configured tracker",
+        "# <NN> — <Ticket title>",
+        "## Parent",
+        "## What to build",
+        "## Acceptance criteria",
+        "## Blocked by"
+      ]
+    },
+    {
+      "name": "triage",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\triage\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\triage.md",
+      "bytes": 6604,
+      "headings": [
+        "# Triage",
+        "## Reference docs",
+        "## Roles",
+        "## Invocation",
+        "## Show what needs attention",
+        "## Triage a specific issue or PR",
+        "## Quick state override",
+        "## Needs-info template",
+        "## Triage Notes",
+        "## Resuming a previous session"
+      ]
+    },
+    {
+      "name": "wait-what",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\productivity\\wait-what\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\wait-what.md",
+      "bytes": 325,
+      "headings": []
+    },
+    {
+      "name": "wayfinder",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\wayfinder\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\wayfinder.md",
+      "bytes": 12056,
+      "headings": [
+        "## Plan, don't do",
+        "## Refer by name",
+        "## The Map",
+        "### The map body",
+        "## Destination",
+        "## Notes",
+        "## Decisions so far",
+        "## Not yet specified",
+        "## Out of scope",
+        "### Tickets",
+        "## Question",
+        "## Ticket Types",
+        "## Fog of war",
+        "## Out of scope",
+        "## Invocation",
+        "### Chart the map",
+        "### Work through the map"
+      ]
+    },
+    {
+      "name": "wizard",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\engineering\\wizard\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\wizard.md",
+      "bytes": 4163,
+      "headings": [
+        "# Wizard",
+        "## Process",
+        "### 1. Scope the procedure",
+        "### 2. Map each stage's journey",
+        "### 3. Author the wizard",
+        "### 4. Verify and hand off"
+      ]
+    },
+    {
+      "name": "writing-beats",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\in-progress\\writing-beats\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\writing-beats.md",
+      "bytes": 4905,
+      "headings": [
+        "## Grounding",
+        "## What is a beat",
+        "## Pulling from the pile",
+        "## Ending the journey",
+        "## Writing rhythm"
+      ]
+    },
+    {
+      "name": "writing-for-agents",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\productivity\\writing-for-agents\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\writing-for-agents.md",
+      "bytes": 10966,
+      "headings": [
+        "## Context pointers",
+        "## The two loads",
+        "## Information hierarchy",
+        "## Steps and completion criteria",
+        "## When to split",
+        "## Leading words",
+        "## Pruning"
+      ]
+    },
+    {
+      "name": "writing-fragments",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\in-progress\\writing-fragments\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\writing-fragments.md",
+      "bytes": 3579,
+      "headings": [
+        "## What is a fragment",
+        "## File format",
+        "# Working title",
+        "## Writing rhythm"
+      ]
+    },
+    {
+      "name": "writing-shape",
+      "source": "C:\\Users\\Administrator\\.agents\\skills\\grill\\in-progress\\writing-shape\\SKILL.md",
+      "copy": "D:\\Aworker\\mozilla\\choose-your-country\\.scratch\\architecture-recovery\\research\\skills\\writing-shape.md",
+      "bytes": 5970,
+      "headings": [
+        "## The loop",
+        "## Grounding",
+        "## Conversational feel",
+        "## Pulling from the pile",
+        "## Format arguments to actually have",
+        "## Writing rhythm",
+        "## Out of scope"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+100644 blob 1e378c65e98740b2fe0874df3ff9dbb88c6eb787	.gitignore
+100644 blob c93cd01e1d9c5d790057e5d80c7b05a6959e67f2	.scratch/architecture-recovery/README.md
+100644 blob e07c0caccc62be1caad07645f4a82be5e3420a94	.scratch/architecture-recovery/WORKFLOW.md
+100644 blob be2eaa85d4e8b27e395af9a9fb7e3c962df4cdfe	docs/architecture-recovery-2026-09.md

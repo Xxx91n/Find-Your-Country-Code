@@ -33,3 +33,7 @@
 6. [done] atomcode 串行深度调研x3(伪select / 油猴工程化 / 2026框架+iframe)
 7. [done] anysearch MCP 广泛搜索(1mcp 网关重启恢复后 batch_searchx4)
 8. [done] 输出宏观调查报告 -> report.md(本目录)
+9. [done] 票据化: atomcode 决策调研#4 -> spec v2 + issues 11-19 + handoffs x9 + prompts x9
+10. [done] 自检 0 FAIL(mm v2 自检脚本可重复运行)+ 波次表(W1-W4)写入 .scratch README
+11. [done] but 提交(cch/mmv2-tickets, 堆叠 cch/10)
+12. [wait] push: 待全部票据实施完成(用户排定: 票据做完再 push)
