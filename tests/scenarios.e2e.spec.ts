@@ -97,27 +97,36 @@ test.describe('cch-test-page.html（检测矩阵 + Case11 动态）', () => {
 });
 
 test.describe('cch-test-page2.html（场景 A–E）', () => {
-  test('场景 A/B/C/E 检测矩阵：13 个字段注入（intl-tel-input 走本地 vendored 18.2.1）', async ({ page }) => {
+  test('场景 A/B/C/E 检测矩阵：激活 tab 字段注入，隐藏 tab 字段降档登记（票 13 闸门语义）', async ({ page }) => {
     await page.goto('/test/cch-test-page2.html');
-    // A：原生 select（+XX 值 / ISO 值 / 横排电话行）
+    // 票 13 基线改写：本页 5 个 scenario tab 仅激活者可见，其余 display:none ——
+    // 旧口径（13 字段 load 即注入，含隐藏 tab 里的不可见图标）正是可见性闸门
+    // 要消除的形态；新口径 = 各 tab 可见后经属性指纹重评补挂。
+    // A（激活 tab）：原生 select（+XX 值 / ISO 值 / 横排电话行）
     await expect(wrapperFor(page, '#sel-a1')).toHaveCount(1);
     await expect(wrapperFor(page, '#sel-a2')).toHaveCount(1);
     await expect(wrapperFor(page, '#sel-a3')).toHaveCount(1);
-    // B：input 关键词
-    await expect(wrapperFor(page, '#inp-b1')).toHaveCount(1);
+    await expect(page.locator('.cch-btn')).toHaveCount(3, { timeout: 10_000 });
+    // B：input 关键词（切 tab 可见 → 注入）
+    await page.getByRole('button', { name: 'Input 文本框' }).click();
+    await expect(wrapperFor(page, '#inp-b1')).toHaveCount(1, { timeout: 10_000 });
     await expect(wrapperFor(page, '#inp-b2')).toHaveCount(1);
     await expect(wrapperFor(page, '#callingCode')).toHaveCount(1);
     // 票 02 起基线 12→13：#phonePrefix 由漏检（harness N4：INPUT_KW 无 prefix）转为低调注入
     await expect(wrapperFor(page, '#phonePrefix')).toHaveCount(1);
+    await expect(page.locator('.cch-btn')).toHaveCount(4, { timeout: 10_000 });
     // C：intl-tel-input 实例（C1 单个 + C2 双实例）
-    await expect(wrapperFor(page, '#iti-phone-1')).toHaveCount(1);
+    await page.getByRole('button', { name: 'intl-tel-input' }).click();
+    await expect(wrapperFor(page, '#iti-phone-1')).toHaveCount(1, { timeout: 10_000 });
     await expect(wrapperFor(page, '#iti-phone-2')).toHaveCount(1);
     await expect(wrapperFor(page, '#iti-phone-3')).toHaveCount(1);
+    await expect(page.locator('.cch-btn')).toHaveCount(3, { timeout: 10_000 });
     // E：综合注册表单（select + input + iti 各一）
-    await expect(wrapperFor(page, '#reg-sel')).toHaveCount(1);
+    await page.getByRole('button', { name: '综合表单' }).click();
+    await expect(wrapperFor(page, '#reg-sel')).toHaveCount(1, { timeout: 10_000 });
     await expect(wrapperFor(page, '#reg-dialcode')).toHaveCount(1);
     await expect(wrapperFor(page, '#reg-iti')).toHaveCount(1);
-    await expect(page.locator('.cch-btn')).toHaveCount(13, { timeout: 10_000 });
+    await expect(page.locator('.cch-btn')).toHaveCount(3, { timeout: 10_000 });
   });
 
   test('场景 C 填充链路：面板选 Japan → toast 提示 +81、面板关闭（v18.2.1 基线）', async ({ page }) => {

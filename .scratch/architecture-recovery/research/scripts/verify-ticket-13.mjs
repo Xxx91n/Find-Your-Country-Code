@@ -35,6 +35,9 @@ function toModuleBody(src) {
 // ── 装载真实 fill 模块（fill + i18n + iti-adapter，剥 import 后函数束） ──
 function bundleFill() {
   const bundle = [
+    // Node 20 无 navigator/window 全局（i18n.ts 顶层读 navigator.language）
+    'if (typeof navigator === "undefined") { try { globalThis.navigator = { language: "zh-CN" }; } catch {} }',
+    'if (typeof window === "undefined") { try { globalThis.window = undefined; } catch {} }',
     toModuleBody(readFileSync(join(ROOT, 'src', 'i18n.ts'), 'utf8')),
     toModuleBody(readFileSync(join(ROOT, 'src', 'iti-adapter', 'index.ts'), 'utf8')),
     toModuleBody(readFileSync(join(ROOT, 'src', 'fill', 'index.ts'), 'utf8')),
