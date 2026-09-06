@@ -1,0 +1,22 @@
+{
+  "ticket": 14,
+  "corpus": "tests/corpus/manifest.json",
+  "cases": 41,
+  "TP": 20,
+  "FP": 0,
+  "TN": 21,
+  "FN": 0,
+  "precision": 1,
+  "recall": 1,
+  "f1": 1,
+  "accuracy": 1,
+  "gate": "pass",
+  "gateMismatches": [],
+  "knownResidual": [],
+  "appendOnly": "新样本只加不删；修正语义用新增字段/状态位表达（如 knownResidual 翻转），禁止删除或重写既有条目。",
+  "engine": "src/detect/index.ts (function-bundle, no build)",
+  "evidenceRun": "https://github.com/Xxx91n/Find-Your-Country-Code/actions/runs/34017498607",
+  "ref": "cch/13-visibility-l3-hardening",
+  "headSha": "589ff3162702631df47c2ed1aa212fd069558a57",
+  "note": "票 13 append-only 证据副本：iti 容器唯一证据佐证防线落地后，mm2-neg-itires 由 knownResidual=true（60/lowkey 误注入）转通过（score=0/none），manifest 状态位已按 appendOnly 翻转；原件 baseline-summary.json/baseline-report.md 未改动（票 14）。对比基线：票 14 run 33973341795（precision 0.9474）与票 16-fix run 34012435513（precision 0.9474，itires residual 未翻转）。"
+}
