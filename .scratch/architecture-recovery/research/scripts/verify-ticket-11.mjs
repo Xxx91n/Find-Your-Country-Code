@@ -2,6 +2,9 @@
 // 方法:提取全文反引号内形如仓库相对路径的 token(含 / 且以 .md 结尾),逐一 existsSync(仓库根)。
 // 自证护栏(§5 教训:验收工具先自证):断言本票引用的 6 份证据文件全部被提取到,
 // 防止正则漏提取造成「0 检查全过」的假绿;另机检章/五术语/_Avoid_ 就位。
+// 修复(review-mmv2-wave1 §2-1):EOL 检查改 blob 口径(git cat-file -p HEAD:CONTEXT.md)——
+// autocrlf 宿主会把工作树物化成 CRLF,工作树 EOL 断言恒红;blob 是入库事实,BOM 检查保留工作树口径。
+import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -51,9 +54,15 @@ for (const t of ['帧治理', '可见性闸门', 'ARIA 语义层', '校准语料
 }
 if (!fail) console.log('AVOID-OK: 五条新术语均含 _Avoid_ 项');
 
-// 4) 编码/EOL 卫生(与 windows_file_integrity_protocol 对齐)
+// 4) 编码/EOL 卫生(BOM 看工作树;EOL 看 blob 口径,经 git cat-file -p 原样读出,不受 autocrlf smudge 影响)
 if (text.charCodeAt(0) === 0xfeff) { console.log('BOM-FAIL: CONTEXT.md 带 BOM'); fail++; }
-if (text.includes('\r\n')) { console.log('EOL-FAIL: CONTEXT.md 混入 CRLF'); fail++; }
+try {
+  const blob = execSync('git cat-file -p HEAD:CONTEXT.md', { cwd: root, encoding: 'utf8' });
+  if (blob.includes('\r\n')) { console.log('EOL-FAIL: HEAD:CONTEXT.md blob 含 CRLF'); fail++; }
+  else console.log('EOL-OK: HEAD:CONTEXT.md blob 为 LF(工作树 CRLF 属 autocrlf 物化,不入库)');
+} catch {
+  console.log('EOL-FAIL: git cat-file -p HEAD:CONTEXT.md 读取失败'); fail++;
+}
 
 console.log(fail ? `RESULT: FAIL(${fail})` : 'RESULT: PASS');
 process.exit(fail ? 1 : 0);
