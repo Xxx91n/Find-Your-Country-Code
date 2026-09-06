@@ -87,12 +87,12 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 
 | 票 | 状态 | 复核结论(首脑,2026-09-05) |
 |---|---|---|
-| 13 | **可开工(下一波)** | 阻塞 16 已闭环;新增检查点四(iti 容器唯一证据防线) |
-| 18 / 19 | pending | 18 待 13+16+17;19 收口 |
+| 13 可见性闸门 + L3 加码 | done(复核通过,含检查点四 iti 防线 + residual 翻转) | verify-13.mjs 28 全 PASS + 3 CI run 全绿 + precision 1.0 |
+| 18 伪 select e2e | **可开工(下一波)** | 13/16/17 全闭;按 ADR-0005 登记+手动召唤档位 |
 | 14 校准语料 | done(复核通过) | 39 例语料 + CI 基线(precision 0.9474/recall 1.0)实证 |
 | 15 React 19 兜底 | done(复核通过) | CI 33981972381 绿(52 例)+ _probe/forceDiff 实测 |
 | 16 评分一致性 | done(复核通过,附 16-fix) | 短路摘除/L3 独立叠加/常量集中实证;语料再基线转跟进 |
 | 17 伪 select 取证 | done(复核通过) | 样本库 5/15/5 + ADR-0005 实证;atomcode 交叉轮挂起(串行护栏) |
 | 13 / 18 / 19 | pending | 13 可开工(16 已过);18 待 13+16+17;19 收口 |
 
-**frontier(第二周期)**: Wave 1 = 6/6 复核通过,三修复票(11-fix/12-fix/16-fix)闭环。下一波 = 13(单票,阻塞已解除)。之后 18 → 19。复核链: verification/review-mmv2-wave1.md + review-mmv2-wave2-fix.md。
+**frontier(第二周期)**: 11/12/13/14/15/16/17 + 三个修复票全闭环。下一波 = 18(单票)。之后 19 收口 -> push。复核链: verification/review-mmv2-wave1.md + wave2-fix.md + wave3.md。
