@@ -52,6 +52,14 @@ export const SCORE_LOWKEY = 35;           // ≥ 中置信：低调注入；< �
 export const ITI_CONTAINER_SCORE = 60;    // .iti/.intl-tel-input 容器内 input 的结构强信号
 export const ITI_LOW_REGISTER_SCORE = 25; // none 档登记「面板召唤」最低分 [SP US18]（票 16 自 detect/index.ts:487 收编魔法数 25，值不变）
 
+// ── ARIA combobox 语义层（票 18，ADR-0005「登记 + 手动召唤」档）──
+// 结构组合信号: role=combobox + aria-expanded 属性存在（EP closed 态空串容忍）+
+// aria-controls/owns 可解 [role=listbox]。取值标定: 单独 20 < 登记线 25（无国家语义上下文
+// 的结构信号不进召唤面，站内搜索框不登记）; +L1 country kw(14)=34、+label phrase(26)=46
+// 稳过登记线; 档位经 _process cap 强制 none（ADR-0005: 不自动注入图标、不自动填充），
+// 分数仅服务登记与信号审计。内容验证分值全部复用 L3 既有常量（口径单一来源）。
+export const ARIA_COMBO_STRUCT_SCORE = 20;
+
 // ════════════════════════════════════════════════════════
 
 // ════════════════════════════════════════════════════════
