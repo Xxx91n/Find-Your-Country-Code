@@ -35,11 +35,12 @@ test.describe('可见性闸门（票 13）', () => {
     await page.locator('#cch-summon').click();
     // 召唤后隐藏承值 select 挂上图标（force 路径，闸门不回拆）
     await expect(wrapperFor(page, '#vis-hidden-carrier')).toHaveCount(1);
-    // 面板选加拿大 → 值写入 CA（值匹配 + 文本国家名消歧）
+    // 点击召唤出的图标换锚重开面板（面板 _target 绑定该字段本身）
+    await openPanel(page, '#vis-hidden-carrier');
+    // 面板选加拿大 → 消歧落点 CA 选项 → 值写入
     await page.locator('#cch-si').fill('Canada');
     await page.locator('.cch-row[data-iso="ca" i]').click();
     await expect(page.locator('#cch-pop')).toHaveCount(0);
-    const val = await page.locator('#vis-hidden-carrier').inputValue();
-    expect(['CA', '+1']).toContain(val);
+    await expect(page.locator('#vis-hidden-carrier')).toHaveValue('CA');
   });
 });
