@@ -6,6 +6,12 @@
 - Improved: dynamic page compatibility — MutationObserver scanning + SPA route-change re-evaluation, traversing open Shadow DOM.
 - Improved: configurable low-key styles for the 🌐 trigger (dim/hidden).
 - Improved: engineering migrated to the vite-plugin-monkey modular build — same release artifact, better maintainability.
+- New: iframe-split form support — detection and filling run in every frame, the panel appears on the top frame only, favorites and site rules stay consistent across frames.
+- New: component-library pseudo-dropdowns (MUI/AntD/Element/react-select/Radix etc.) — registered first, manually summonable from the panel; both combobox flavors (editable / select-only) can be filled.
+- New: React 19 controlled-component fill fallback — capability probing falls back to a forced-sync path so submitted values really apply.
+- Improved: hidden/decorative fields (clip-path, content-visibility, occlusion, zero-size) no longer get icons; still summonable from the panel.
+- Improved: content verification hardened — shared dial codes (+1/+44) disambiguated by country name, placeholder options excluded from scoring; fewer false positives.
+- Improved: intl-tel-input recognition joins the unified scoring engine — unrelated fields inside iti containers no longer get icons unconditionally.
 
 ## v1.3.4 Changelog
 
