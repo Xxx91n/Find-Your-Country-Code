@@ -125,7 +125,11 @@ border-radius:8px;cursor:pointer;text-align:center}
     const wrap = document.createElement('div');
     wrap.className = WRAPPER_CLASS;
     const cs = getComputedStyle(el);
-    wrap.style.display = cs.display === 'inline' ? 'inline-block' : cs.display;
+    // 票 13 [handoff 检查点一]：display:none 的隐藏原生 select（视觉替换型自定义下拉）
+    // 经面板召唤时 wrapper 不可继承 none —— 强制 inline-block 让召唤图标可达；
+    // 填充仍写原生 select（值 setter + 事件序列与可见字段一致）。
+    wrap.style.display =
+      (cs.display === 'inline' || cs.display === 'none') ? 'inline-block' : cs.display;
 
     // 仅宽度可测时设显式宽，否则继承父容器
     if (el.offsetWidth > 0) {
@@ -142,6 +146,8 @@ border-radius:8px;cursor:pointer;text-align:center}
     btn.title = 'Country Code Helper';
     btn.setAttribute('aria-label', 'Country Code Helper');
     btn.setAttribute('data-cch-tier', tier);
+    // 票 13：召唤挂载标记 —— detect 闸门识别该图标为用户显式行为，不回拆（summonedWrap）
+    if (opts && opts.force) btn.setAttribute('data-cch-summon', '1');
     if (score) btn.setAttribute('data-cch-score', String(score));
     btn.textContent = '🌐';
     btn.addEventListener('click', e => {
