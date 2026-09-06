@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>pseudo editable fixture (ticket 18)</title>
+<style>
+  #rs-lb { border: 1px solid #ccc; width: 240px; display: none; }
+  #rs-lb.open { display: block; }
+  #rs-lb [role="option"] { padding: 6px 10px; cursor: pointer; }
+  #rs-lb [role="option"]:hover { background: #eef; }
+</style>
+</head>
+<body>
+  <h1>伪 select 可编辑型（票 18, react-select 结构复刻）</h1>
+
+  <label for="anchor-cc">Anchor country code</label>
+  <select id="anchor-cc" name="country_code">
+    <option value="">请选择</option>
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+    <option value="+44">+44</option>
+  </select>
+
+  <!-- react-select 形态 [票 17 observed]: 可编辑 INPUT[role=combobox] + aria-haspopup=true +
+       aria-autocomplete=list + 内联 listbox（无 aria-selected）+ form 内隐藏承值 input -->
+  <form id="rs-form">
+    <label for="rs-input">Country code</label>
+    <div class="rs-control">
+      <input id="rs-input" type="text" role="combobox" aria-expanded="false" aria-haspopup="true"
+             aria-controls="rs-lb" aria-autocomplete="list" autocomplete="off">
+    </div>
+    <input id="rs-carrier" type="hidden" name="country" value="">
+  </form>
+
+  <div id="rs-lb" role="listbox">
+    <div role="option" data-value="US">United States (+1)</div>
+    <div role="option" data-value="CA">Canada (+1)</div>
+    <div role="option" data-value="GB">United Kingdom (+44)</div>
+    <div role="option" data-value="CN">China (+86)</div>
+  </div>
+
+  <script>
+    (function () {
+      var input = document.getElementById('rs-input');
+      var lb = document.getElementById('rs-lb');
+      var carrier = document.getElementById('rs-carrier');
+      input.addEventListener('mousedown', function () {
+        lb.classList.add('open');
+        input.setAttribute('aria-expanded', 'true');
+      });
+      var opts = document.querySelectorAll('#rs-lb [role="option"]');
+      Array.prototype.forEach.call(opts, function (o) {
+        o.addEventListener('click', function () {
+          carrier.value = o.getAttribute('data-value');
+          lb.classList.remove('open');
+          input.setAttribute('aria-expanded', 'false');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
