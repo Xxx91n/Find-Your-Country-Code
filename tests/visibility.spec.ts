@@ -1,7 +1,7 @@
 // 票 13 E2E：可见性闸门（issue 验收1/2）+ 占位首项 + 隐藏承值 select 面板填充。
 // 基线口径：注入 = .cch-wrapper 出现；none 档登记召唤 = 面板「召唤」按钮出现。
 import { test, expect } from 'playwright/test';
-import { installUserscript, wrapperFor } from './helpers/userscript';
+import { installUserscript, wrapperFor, openPanel } from './helpers/userscript';
 
 test.beforeEach(async ({ page }) => {
   await installUserscript(page);
