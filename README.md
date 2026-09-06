@@ -43,14 +43,15 @@
 
 **方法一：点击直接安装**
 
-- [GreasyFork](https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js)  |  [Jsdelivr CDN](https://cdn.jsdelivr.net/gh/Xxx91n/Find-Your-Country-Code@refs/heads/main/src/Find-Your-Country-Code.js)
+- [GreasyFork](https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js)
+- [GitHub Release](https://github.com/Xxx91n/Find-Your-Country-Code/releases/download/v1.4.0/find-your-country-code.user.js)
 
 **方法二：手动安装**
 
-1. 复制 [Find-Your-Country-Code.js](./src/Find-Your-Country-Code.js) 的内容。
+1. 自行构建：克隆仓库后执行 `npm install && npm run build`，产物为 `dist/find-your-country-code.user.js`。
 2. 打开 Tampermonkey 管理面板。
 3. 点击 添加新脚本。
-4. 粘贴代码并保存。
+4. 粘贴产物代码并保存。
 
 ## 贡献
 
