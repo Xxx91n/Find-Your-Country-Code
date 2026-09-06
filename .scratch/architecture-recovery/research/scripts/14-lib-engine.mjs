@@ -4,8 +4,9 @@
 // 函数束转换，零依赖零构建）+ 按 manifest 用例构建 mock DOM + 执行用例 + 汇总指标。
 // mock DOM 接口面沿用 misdetect-repro-v2.mjs（已对引擎消费面验证过），支持
 // configOverrides（阈值/权重标定用：正则替换 config.ts 常量后重新实例化，不写回源文件）。
-// 用例执行口径：镜像 _process 分发——ctx.iti 走 _isIti 短路（固定 100/auto），
-// 其余走 scoreElement(el, {anchorHasTel})；injected = tier ∈ {auto, lowkey}。
+// 用例执行口径：镜像 _process 分发——票 16 后 iti 容器并入评分（16-fix 同步镜像），
+// ctx.iti 与其余用例同走 scoreElement(el, {anchorHasTel})，容器信号由引擎内 iti:container 加分；
+// injected = tier ∈ {auto, lowkey}。
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -152,10 +153,7 @@ export function buildElement(caseDef) {
 export function evaluateCase(caseDef, Detect) {
   const el = buildElement(caseDef);
   const ctx = caseDef.ctx || {};
-  if (ctx.iti) {
-    const hit = Detect._isIti(el);
-    return { score: hit ? 100 : 0, tier: hit ? 'auto' : 'none', injected: hit, signals: [{ layer: 'L0', name: 'iti-short-circuit' }] };
-  }
+  // 16-fix：_process 已无 iti 短路（容器信号在 scoreElement 内加分），镜像同步走评分通道
   const r = Detect.scoreElement(el, { anchorHasTel: ctx.anchorHasTel });
   return { score: r.score, tier: r.tier, injected: r.tier === 'auto' || r.tier === 'lowkey', signals: r.signals };
 }
