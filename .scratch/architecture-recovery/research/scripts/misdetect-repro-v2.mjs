@@ -38,6 +38,7 @@ class El {
   constructor(tag, props = {}) {
     this.tagName = tag.toUpperCase();
     this.attrs = props.attrs || {};
+    if (props.type) this.attrs.type = props.type; // mock 保真同步（票 13）：type 必须经 getAttribute 可见（真实 DOM 形态）
     this._id = props.id || '';
     this._class = props.className || '';
     this._name = props.name || '';
