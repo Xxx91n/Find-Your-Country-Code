@@ -61,6 +61,8 @@ const spec = fs.readFileSync(ar + '/spec.md', 'utf8'); ok('spec.md exists, ' + s
 const refs = [ar + '/research/atomcode-mental-model-v2.md', 'D:/Aworker/mozilla/choose-your-country/.scratch/mental-model-v2/report.md', ar + '/spec-cycle-v1.4.0-2026-09.md'];
 for (const r of refs) { if (!fs.existsSync(r)) bad('spec reference missing: ' + r); else ok('spec reference exists: ' + r.split('/').pop()); }
 const readme = ar + '/README.md';
+const sm = '## 票务状态与 frontier(第二周期)';
+const statusTail = fs.readFileSync(readme, 'utf8').includes(sm) ? fs.readFileSync(readme, 'utf8').slice(fs.readFileSync(readme, 'utf8').indexOf(sm)) : '';
 let rc = fs.readFileSync(readme, 'utf8');
 const marker = '## 第二周期(心智模型 v2,2026-09-05)';
 if (rc.includes(marker)) rc = rc.slice(0, rc.indexOf(marker));
@@ -72,7 +74,7 @@ sec.push(''); sec.push('| Wave | 票 | Blocked by | 并行性 | 窗口启动器(
 const wd = Object.keys(waves).sort((a,b) => a - b);
 for (const w of wd) { for (const t of waves[w]) { const nn = t.split('-')[0]; const blk = graph[t].length ? graph[t].map(x => x.split('-')[0]).join(', ') : '无'; const note = nn === '19' ? '(发版波: 大脑/用户执行;发布前需全部实施票复核通过)' : ''; sec.push('| ' + w + ' | ' + nn + ' | ' + blk + ' | 同波互不堆叠,可并行 | `prompts/' + t + '.md` ' + note + ' |'); } }
 sec.push(''); sec.push('票据 11–19 状态随窗口报告落盘更新;报告路径统一为 `research/window-reports/NN-slug-report.md`。自检报告: `research/launcher-selfcheck.md`。'); sec.push('');
-fs.writeFileSync(readme, rc.replace(/\s*$/, '\n\n') + sec.join('\n') + '\n', { encoding: 'utf8' });
+fs.writeFileSync(readme, rc.replace(/\s*$/, '\n\n') + sec.join('\n') + '\n' + statusTail, { encoding: 'utf8' });
 ok('wave table regenerated in .scratch/architecture-recovery/README.md');
 fs.writeFileSync(ar + '/research/launcher-selfcheck.md', ['# 启动器与票据自检报告(心智模型 v2 周期)','','> 生成: 2026-09-05 | 自检脚本: research/scripts/mmv2-selfcheck.mjs(可重复运行,node 执行)',''].join('\n') + out.join('\n') + '\n', { encoding: 'utf8' });
 console.log(out.join('\n')); console.log('\nTOTAL FAILS: ' + fails);

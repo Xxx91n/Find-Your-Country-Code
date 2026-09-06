@@ -47,7 +47,7 @@ for (const t of tickets) {
 for (const t of tickets) {
   const iss = read(ar + '/issues/' + t + '.md');
   const pr = read(ar + '/prompts/' + t + '.md');
-  const cnt = iss.split('\n').filter(l => l.startsWith('- [ ]')).length;
+  const cnt = iss.split('\n').filter(l => (/^- \[([ x])\]/.test(l))).length;
   const dm = pr.match(/issue 内 (\d+) 条验收项/);
   if (!dm) { bad('prompt ' + t + ' missing acceptance-count declaration'); continue; }
   if (Number(dm[1]) !== cnt) bad('ticket ' + t + ' acceptance count drift: issue=' + cnt + ' prompt=' + dm[1]);
@@ -141,7 +141,7 @@ for (const t of tickets) {
   const iss = read(ar + '/issues/' + t + '.md');
   const pr = read(ar + '/prompts/' + t + '.md');
   const ho = read(ar + '/handoffs/' + t + '.md');
-  const acc = iss.split('\n').filter(l => l.startsWith('- [ ]')).map(l => l.slice(5).trim());
+  const acc = iss.split('\n').filter(l => (/^- \[([ x])\]/.test(l))).map(l => l.replace(/^- \[[ x]\] /, '').trim());
   for (const a of acc) {
     for (let i = 0; i + 20 <= a.length; i++) {
       const frag = a.slice(i, i + 20);

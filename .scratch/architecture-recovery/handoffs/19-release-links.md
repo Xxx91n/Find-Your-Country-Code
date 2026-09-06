@@ -19,6 +19,7 @@
 - 检查点一: 全部实施票(12/13/14/15/16/18)窗口报告落盘并经大脑复核后才可执行发布动作。
 - 检查点二: 发布动作遵循 WORKFLOW §4.2;版本三处一致以 CI dry-run 绿为准。
 - 检查点三: 链接验证四条(README/GreasyFork/Release/安装直达)全 200,附验证方法。
+- 检查点四: 收口前统一 workflow 触发面与 install 口径(e2e.yml --legacy-peer-deps、calibration-baseline 触发面扩 main),并按栈序合并 Wave1 实施链(拓扑与 lkq 风险见 verification/review-mmv2-wave1.md §4)。
 - 专属验收: issue 内 5 条验收项全部真实执行并留证据。
 - 完成定义: 遵循上方 issue 内验收清单全部勾选 + 报告落盘。
 
