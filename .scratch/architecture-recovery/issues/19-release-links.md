@@ -6,8 +6,8 @@
 
 **Status:** ready-for-agent
 
-- [ ] 版本决策落地(package.json / vite.config / 变更日志三处一致),CI dry-run 验证通过
-- [ ] 发布动作完成(遵循 WORKFLOW §4.2),Release 产物存在且可下载
-- [ ] GreasyFork 同步状态核对,README 下载链接更新为可达目标
-- [ ] 链接验证(README + GreasyFork + Release)全部 200
-- [ ] 波次表勾销与本周期总结落盘
+- [x] 版本决策落地(package.json / vite.config / 变更日志三处一致),CI dry-run 验证通过
+- [x] 发布动作完成(遵循 WORKFLOW §4.2),Release 产物存在且可下载
+- [x] GreasyFork 同步状态核对,README 下载链接更新为可达目标
+- [x] 链接验证(README + GreasyFork + Release)全部 200
+- [x] 波次表勾销与本周期总结落盘

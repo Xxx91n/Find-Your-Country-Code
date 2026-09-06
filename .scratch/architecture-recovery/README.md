@@ -62,7 +62,7 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 
 ## 回滚
 
-本目录整体未纳入版本跟踪（git 未跟踪 `.scratch/`），删除 `.scratch/architecture-recovery/` 即完全回滚大脑侧产物；代码侧回滚遵循 WORKFLOW §4.2（GitButler `but undo` / `but discard`）。
+本目录产物已随 19 票收口归档入库（cch-19 归档提交，2026-09-06）；回滚 = revert 对应归档提交；代码侧回滚遵循 WORKFLOW §4.2（GitButler `but undo` / `but discard`）。
 
 ## 第二周期(心智模型 v2,2026-09-05)
 
@@ -93,6 +93,13 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 | 15 React 19 兜底 | done(复核通过) | CI 33981972381 绿(52 例)+ _probe/forceDiff 实测 |
 | 16 评分一致性 | done(复核通过,附 16-fix) | 短路摘除/L3 独立叠加/常量集中实证;语料再基线转跟进 |
 | 17 伪 select 取证 | done(复核通过) | 样本库 5/15/5 + ADR-0005 实证;atomcode 交叉轮挂起(串行护栏) |
-| 13 / 18 / 19 | pending | 13 可开工(16 已过);18 待 13+16+17;19 收口 |
+| 19 发版与发布链接恢复 | done(2026-09-06,大脑执行) | 检查点一~四全过;v1.4.0 已发布(Latest): dry-run 34035726335 三处一致 + release run 34035951623 success + 四链接 200;GreasyFork 站内 @1.3.4 待维护者手动同步 |
 
-**frontier(第二周期)**: 11-18 全部实施票 + 三修复票 = 全闭环。下一波 = 19(发版波,大脑/用户执行)。复核链: verification/review-mmv2-wave1.md + wave2-fix.md + wave3.md + wave4.md。
+**frontier(第二周期)**: **19 闭环 = 心智模型 v2 周期收官 ✅**(11-19 + 11fix/12fix/16fix 全闭环)。发布: v1.4.0(2026-09-06,GitHub Release Latest)。复核链: verification/review-mmv2-wave1.md + wave2-fix.md + wave3.md + wave4.md。收口报告: research/window-reports/19-release-links-report.md。
+
+### 周期总结(2026-09-06,大脑收口)
+
+- **交付**: 五层评分引擎检测(v1.3.4 布尔版 → 评分版)之上,补齐 iframe 帧治理(12)、可见性闸门 + L3 加码(13)、校准语料与 precision/recall 基线(14)、React 19 填充兜底(15)、评分一致性收尾(16)、伪 select 取证 + ADR-0005(17)与 ARIA 语义层端到端(18),文档沉淀(11),最终发布 v1.4.0(19)。
+- **发布证据链**: 版本三处一致 dry-run 34035726335 → 发布 run 34035951623 → Release v1.4.0(附件 @version 1.4.0 实测)→ 四链接 200(README/GF 页/Release+附件/安装直达)。
+- **CI 门禁**: 每票 ticket-scoped verify workflow + 全量 E2E;收口时 main 上 Calibration Baseline 首跑绿(34035796148,触发面扩 main 生效)。
+- **遗留(用户/后续)**: ① GreasyFork 站内同步(@1.3.4 → 1.4.0,维护者手动,凭证门控);② 真实站点冒烟(18 报告建议);③ 17 票 atomcode 交叉验证轮(串行护栏挂起,可选);④ 本地 main ref 与 origin/main 分叉待对齐(见 19 报告 §6);⑤ .gitattributes CRLF 规范化(01 票遗留,未动)。
