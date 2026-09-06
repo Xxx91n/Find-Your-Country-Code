@@ -148,10 +148,133 @@ const Fill = {
     return true;
   },
 
+  // ══ 票 18: 伪 select（ARIA combobox）填充 [ADR-0005 / 17 票取证 observed] ══
+  // 两形态分发（issue 验收2）:
+  //   select-only 型（DIV/BUTTON 触发器或 readonly input 触发器）→ 开面板 + 点击/键盘选值:
+  //     驱动站点自身组件 UI（点击 option 由组件自己更新 state）——observed 5/5 库选值无
+  //     原生 change/input 事件，事件监听/直接写 state 均不可行，唯一通路是组件自身交互。
+  //   可编辑型（非 readonly INPUT 触发器，react-select 形态）→ 隐藏承值 input 原生 setter
+  //     + input/change/blur 事件（复用 _inject 注入安全层）。
+  // 值承载探测三级回退 [17 票 §1.5]: 隐藏 native input → 触发器可见文本 → 展开态
+  // option[aria-selected]。antd/EP 无 DOM 承载（组件 state）→ 走 listbox 交互路径。
+  // 承值探测只在结构容器内（form + 5 层祖先），不上溯到 document 全域——防 CSRF 等页级
+  // 隐藏 input 被误当承值面。
+  _carrier(el) {
+    const scopes = [];
+    try { if (el.form) scopes.push(el.form); } catch {}
+    let p = el;
+    for (let i = 0; i < 5 && p; i++) {
+      try { p = p.parentElement || p.host || null; } catch { p = null; }
+      if (p) scopes.push(p);
+    }
+    for (const sc of scopes) {
+      if (!sc || !sc.querySelectorAll) continue;
+      let list = [];
+      try { list = Array.prototype.slice.call(sc.querySelectorAll('input[name], select[name]')); } catch {}
+      for (const n of list) {
+        if (n === el) continue;
+        let hidden = false;
+        try { hidden = n.getAttribute('aria-hidden') === 'true' || n.type === 'hidden'; } catch {}
+        if (!hidden) continue;
+        let v = '';
+        try { v = String(n.value || ''); } catch {}
+        // 承值语义护栏: 现值应为空或 ISO2 形态（2 字母），防误写 csrf/token 类隐藏域
+        if (v === '' || /^[a-zA-Z]{2}$/.test(v.trim())) return n;
+      }
+    }
+    return null;
+  },
+
+  _listboxOf(el) {
+    const idStr = [el.getAttribute('aria-controls'), el.getAttribute('aria-owns')]
+      .filter(Boolean).join(' ');
+    if (!idStr) return null;
+    for (const id of idStr.split(/\s+/).filter(Boolean)) {
+      let n = null;
+      try {
+        const rn = el.getRootNode && el.getRootNode();
+        if (rn && rn.getElementById) n = rn.getElementById(id);
+        if (!n) {
+          const doc = el.ownerDocument || (typeof document !== 'undefined' ? document : null);
+          if (doc && doc.getElementById) n = doc.getElementById(id);
+        }
+      } catch {}
+      if (n && n.getAttribute && n.getAttribute('role') === 'listbox') return n;
+    }
+    return null;
+  },
+
+  // option↔国家匹配: 值属性（data-value/value）+ 文本/aria-label 双面（antd observed:
+  // 文本=ISO2、国名在 aria-label），全部大小写不敏感；国家名互证吃 EN/CN 双语
+  _pseudoOptMatch(o, country) {
+    let v = '', t = '', lab = '';
+    try { v = String(o.getAttribute('data-value') || o.getAttribute('value') || '').trim(); } catch {}
+    try { t = String(o.textContent || '').trim(); } catch {}
+    try { lab = String(o.getAttribute('aria-label') || '').trim(); } catch {}
+    const iso = country.iso.toLowerCase();
+    const en = (country.countryEn || '').toLowerCase();
+    const cn = country.country || '';
+    const hay = (t + ' ' + lab).toLowerCase();
+    return v.toLowerCase() === iso || t.toLowerCase() === iso || lab.toLowerCase() === iso ||
+      (!!en && hay.includes(en)) || (!!cn && hay.includes(cn));
+  },
+
+  // 点击选值: listbox 未挂载（关闭态）先点触发器展开再找（单次，同步渲染库直接命中）
+  _pseudoFillByListbox(el, country) {
+    let find = () => {
+      const lb = this._listboxOf(el);
+      if (!lb || !lb.querySelectorAll) return null;
+      let opts = [];
+      try { opts = Array.prototype.slice.call(lb.querySelectorAll('[role="option"]')); } catch {}
+      return opts.find(o => this._pseudoOptMatch(o, country)) || null;
+    };
+    let m = find();
+    if (!m) {
+      try { if (el.getAttribute('aria-expanded') !== 'true') el.click(); } catch {}
+      m = find();
+    }
+    if (!m) return false;
+    try { m.click(); } catch { return false; }
+    return true;
+  },
+
+  // 键盘选值（select-only 备援）: focus → ArrowDown 展开 → 逐项导航到目标 → Enter。
+  // 导航起点假设为首个 option（高亮复位形态）；起点不确定的库可能偏移，点击路径优先。
+  _pseudoFillByKeys(el, country) {
+    const fire = (key) => {
+      try { el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })); } catch {}
+    };
+    try { if (el.focus) el.focus(); } catch {}
+    let lb = this._listboxOf(el);
+    try { if (!lb && el.getAttribute('aria-expanded') !== 'true') fire('ArrowDown'); } catch {}
+    lb = this._listboxOf(el);
+    if (!lb || !lb.querySelectorAll) return false;
+    let opts = [];
+    try { opts = Array.prototype.slice.call(lb.querySelectorAll('[role="option"]')); } catch {}
+    const idx = opts.findIndex(o => this._pseudoOptMatch(o, country));
+    if (idx < 0) return false;
+    for (let i = 0; i <= idx; i++) fire('ArrowDown');
+    fire('Enter');
+    return true;
+  },
+
+  fillPseudo(el, country) {
+    // 可编辑型: 非 readonly INPUT 触发器（react-select 形态）→ 隐藏承值 input 原生 setter
+    const editable = el.tagName === 'INPUT' && el.getAttribute('readonly') === null;
+    if (editable) {
+      const carrier = this._carrier(el);
+      if (carrier) { this._inject(carrier, country.iso, {}); return true; }
+    }
+    // select-only 型（及无承值可编辑型回退）: 开面板 + 点击/键盘选值
+    if (this._pseudoFillByListbox(el, country)) return true;
+    return this._pseudoFillByKeys(el, country);
+  },
+
   run(el, kind, country) {
     let ok = false;
     if (kind === 'iti')         ok = this.fillIti(el, country);
     else if (kind === 'select') ok = this.fillSelect(el, country);
+    else if (kind === 'pseudo') ok = this.fillPseudo(el, country);
     else                        ok = this.fillInput(el, country);
     if (ok) UI.toast(t('ok') + ': ' + country.flag + ' ' + country.code);
     else {

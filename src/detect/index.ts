@@ -19,7 +19,7 @@ import {
   L0_TOKEN_SCORE, L0_TEL_TOKENS, L0_TEL_HINT_SCORE, L0_INPUTMODE_TEL_SCORE,
   L1_STRONG_KW_SCORE, L1_COUNTRY_KW_SCORE, L1_PREFIX_KW_SCORE, L1_NPA_KW_SCORE,
   L1_LABEL_PHRASE_SCORE, L1_BARE_QU_SCORE, L1_LOCAL_FIXED_PENALTY, L1_COMPOUND_SCORE,
-  L2_ANCHOR_TEL_SCORE,
+  L2_ANCHOR_TEL_SCORE, ARIA_COMBO_STRUCT_SCORE,
   L3_PLUS_DIAL_SCORE, L3_PLUS_PAREN_SCORE, L3_DIAL_CAP, L3_ISO_BONUS,
   L3_NUMERIC_MIN_RATE, L3_NUMERIC_PENALTY,
   L4_EXCLUDE_PENALTY,
@@ -49,6 +49,90 @@ function isPlaceholderOpt(o) {
   const bare = v.replace(/^\+/, '').replace(/^00/, '');
   if (DIAL_SET.has(bare) || ISO2_SET.has(v.toLowerCase())) return false;
   return true;
+}
+
+// ══ 票 18: ARIA combobox（伪 select）证据探测 [ADR-0005 / 17 票逐库取证 observed] ══
+// 触发器三形态 DIV(MUI)/INPUT(antd/EP/react-select)/BUTTON(Radix)[role=combobox];
+// aria-expanded 判属性存在性（EP closed 态为空串）；弹出层 4/5 库 portal 到 body ——
+// 解引用必须沿 aria-controls/owns 的 id（触发器 root + ownerDocument），不得在触发器
+// 子树内找列表。检测侧信号面独立实现（fill 侧交互辅助在 ../pseudo，跨模块 import
+// 约束见 verify-ticket-01：fill/ui 不 import detect）。
+function resolveAriaIds(el, idsStr) {
+  const out = [];
+  for (const id of String(idsStr || '').split(/\s+/).filter(Boolean)) {
+    let n = null;
+    try {
+      const rn = el.getRootNode && el.getRootNode();
+      if (rn && rn.getElementById) n = rn.getElementById(id);
+      if (!n) {
+        const doc = el.ownerDocument || (typeof document !== 'undefined' ? document : null);
+        if (doc && doc.getElementById) n = doc.getElementById(id);
+      }
+    } catch {}
+    if (n) out.push(n);
+  }
+  return out;
+}
+
+// 选项内容验证沿用 L3 口径（值域整体分布判定）：值证据 = data-value/value 属性；文本证据 =
+// textContent 与 aria-label 双面（antd observed: 文本=ISO2、国名在 aria-label）。ISO2 判定同
+// L3：数据全集成员测试（ISO2_SET）+ 国家名互证；数字枚举/括号区号同口径；分值全部复用
+// L3 既有常量（检查点二：不为新控件类型开新误报后门）。
+function pseudoNameHit(iso, text) {
+  const c = ISO2_MAP[iso];
+  if (!c || !text) return false;
+  const t = String(text).toLowerCase();
+  const en = c.countryEn.toLowerCase();
+  const first = en.split(' ')[0];
+  if (first.length >= 4 && t.indexOf(first) >= 0) return true;
+  if (t.indexOf(en) >= 0) return true;
+  if (c.country && t.indexOf(c.country) >= 0) return true;
+  return false;
+}
+
+function pseudoOptionStats(opts) {
+  let plusDial = 0, parenDial = 0, isoName = 0, numeric = 0;
+  for (let i = 0; i < opts.length; i++) {
+    const o = opts[i];
+    const val = String((o.getAttribute && (o.getAttribute('data-value') || o.getAttribute('value'))) || '').trim();
+    const txt = String(o.textContent || '').trim();
+    const lab = String((o.getAttribute && o.getAttribute('aria-label')) || '').trim();
+    const cands = [val, txt, lab].filter(Boolean);
+    if (cands.some(s => DIAL_SET.has(s.replace(/^\+/, '').replace(/^00/, '')))) plusDial++;
+    const pm = (txt + ' ' + lab).match(/\(\+(\d{1,4})\)/);
+    if (pm && DIAL_SET.has(pm[1])) parenDial++;
+    let iso = '';
+    let nameText = '';
+    if (val && ISO2_SET.has(val.toLowerCase())) { iso = val.toLowerCase(); nameText = txt + ' ' + lab; }
+    else if (txt && ISO2_SET.has(txt.toLowerCase())) { iso = txt.toLowerCase(); nameText = lab || txt; }
+    if (iso && pseudoNameHit(iso, nameText)) isoName++;
+    if (/^\d{1,4}$/.test(val || txt)) numeric++;
+  }
+  return { total: opts.length, plusDial, parenDial, isoName, numeric };
+}
+
+function comboboxEvidence(el) {
+  if (!el.getAttribute || el.getAttribute('role') !== 'combobox') return null;
+  if (el.getAttribute('aria-expanded') === null) return null;
+  const idStr = [el.getAttribute('aria-controls'), el.getAttribute('aria-owns')].filter(Boolean).join(' ');
+  if (!idStr) return null;
+  let listbox = null;
+  for (const n of resolveAriaIds(el, idStr)) {
+    if (n.getAttribute && n.getAttribute('role') === 'listbox') { listbox = n; break; }
+  }
+  let stats = null;
+  if (listbox && listbox.querySelectorAll) {
+    let opts = [];
+    try { opts = Array.prototype.slice.call(listbox.querySelectorAll('[role="option"]')); } catch {}
+    if (opts.length) stats = pseudoOptionStats(opts);
+  }
+  // 否决组 [17 票策略 §2]: 搜索型 typeahead —— aria-autocomplete=list|both 且选项内容与
+  // 国家数据零命中（区号/ISO2/括号区号全空）→ 站内搜索补全，整体判 none 不登记。
+  const ac = String(el.getAttribute('aria-autocomplete') || '').toLowerCase();
+  let veto = '';
+  if ((ac === 'list' || ac === 'both') && stats && stats.total >= 2 &&
+      stats.plusDial === 0 && stats.parenDial === 0 && stats.isoName === 0) veto = 'search-typeahead';
+  return { listbox, stats, veto };
 }
 
 // 拉丁词匹配：camelCase 拆分 → token 等值；≥6 字符词允许 joined/token 子串。
@@ -116,7 +200,8 @@ function optStats(el) {
 
 // 票 04：observer 配置与指纹属性面（两者对齐 —— 指纹读什么，observer 就监听什么）
 const OBSERVED_ATTRS = ['name', 'id', 'class', 'type', 'placeholder', 'aria-label',
-  'data-name', 'title', 'autocomplete', 'inputmode', 'disabled', 'readonly'];
+  'data-name', 'title', 'autocomplete', 'inputmode', 'disabled', 'readonly',
+  'role', 'aria-expanded', 'aria-controls', 'aria-owns'];
 const MO_OPTS = { childList: true, subtree: true, attributes: true, attributeFilter: OBSERVED_ATTRS };
 // 候选选择器组（顺序：select → iti 容器 → input 组合；与 v1.3.4 迁移基线一致）
 const SCAN_SELECTORS = [
@@ -124,6 +209,8 @@ const SCAN_SELECTORS = [
   '.iti input',
   '.intl-tel-input input',
   'input[type="tel"],input[type="text"],input:not([type]),input[type="number"]',
+  // 票 18: 伪 select 触发器三形态 DIV/INPUT/BUTTON[role=combobox]（MUI/antd/EP/react-select/Radix observed）
+  '[role="combobox"]',
 ];
 
 export function createDetect(UI, Rules) {
@@ -170,15 +257,25 @@ export function createDetect(UI, Rules) {
       const sig = [];
       const add = (layer, name, pts) => { sig.push({ layer, name, pts }); return pts; };
       const tag = el.tagName;
+      // 票 18: aria-hidden input（MUI/react-select 隐藏承值 native input 形态 [票 17 observed]）
+      // 不在可访问树内、非交互目标 —— 硬排除（防承值 input 凭 name 之类混入登记召唤面）
+      if (el.getAttribute && el.getAttribute('aria-hidden') === 'true' && el.getAttribute('role') !== 'combobox') {
+        return { score: 0, tier: 'none', signals: [{ layer: 'L0', name: 'gate:aria-hidden', pts: 0 }] };
+      }
       // INPUT 类型闸门：hidden/email/search/url/date 等永非区号字段（N6 [MD §3-N6]；email/type=tel 同页共存常见）
       if (tag === 'INPUT') {
         const t = (el.getAttribute('type') || 'text').toLowerCase();
-        if (['hidden', 'email', 'search', 'url', 'password', 'date', 'color', 'range', 'file', 'checkbox', 'radio', 'submit', 'button', 'reset', 'image'].includes(t)) {
+        // 票 18: antd 触发器形态 type=search + readonly + role=combobox（observed）—— 豁免
+        // search 类型闸门进 ARIA combobox 层；闸门后仍有否决组 + 档位 cap，非误报后门
+        const comboTrigger = (el.getAttribute('role') || '').toLowerCase() === 'combobox';
+        if (['hidden', 'email', 'search', 'url', 'password', 'date', 'color', 'range', 'file', 'checkbox', 'radio', 'submit', 'button', 'reset', 'image'].includes(t) &&
+            !(comboTrigger && t === 'search' && el.getAttribute('readonly') !== null)) {
           return { score: 0, tier: 'none', signals: [{ layer: 'L0', name: 'gate:input-type:' + t, pts: 0 }] };
         }
       }
       const type = (el.getAttribute('type') || (tag === 'INPUT' ? 'text' : '')).toLowerCase();
       let score = 0;
+      let pseudoHit = false;
 
       // ── L0 语义标准层 ──
       const ac = (el.getAttribute('autocomplete') || '').toLowerCase().trim();
@@ -277,6 +374,33 @@ export function createDetect(UI, Rules) {
         }
       }
 
+      // ── ARIA combobox 语义层（票 18 [ADR-0005]；信号源: 17 票逐库取证 + 探测策略 §2）──
+      // 组合结构信号（相当于 L2 关联层）+ L3 口径内容验证复用 + 搜索型否决组。
+      // 档位上限「登记 + 手动召唤」在 _process 结算；两形态（可编辑型 INPUT / select-only
+      // DIV|BUTTON）同层识别，填充形态在 fill 侧按触发器与承值探测分发。
+      if (tag !== 'SELECT') {
+        const combo = comboboxEvidence(el);
+        if (combo) {
+          if (combo.veto) {
+            sig.push({ layer: 'L2', name: 'pseudo:veto:' + combo.veto, pts: 0 });
+            return { score: 0, tier: 'none', signals: sig };
+          }
+          pseudoHit = true;
+          score += add('L2', 'pseudo:combobox', ARIA_COMBO_STRUCT_SCORE);
+          const st2 = combo.stats;
+          if (st2) {
+            if (st2.total < 2) {
+              sig.push({ layer: 'L3', name: 'pseudo:gate:options<2', pts: 0 });
+            } else {
+              if (st2.plusDial > 0) score += add('L3', 'pseudo:opts:plus-dial', Math.min(st2.plusDial * L3_PLUS_DIAL_SCORE, L3_DIAL_CAP));
+              if (st2.plusDial > 0 && st2.parenDial > 0) score += add('L3', 'pseudo:opts:(+NN)-text', Math.min(st2.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
+              if (st2.numeric / st2.total >= L3_NUMERIC_MIN_RATE) score += add('L3', 'pseudo:opts:numeric-enum', L3_NUMERIC_PENALTY);
+              if (st2.isoName / st2.total >= 0.5) score += add('L3', 'pseudo:opts:country-identity', L3_ISO_BONUS);
+            }
+          }
+        }
+      }
+
       // ── L4 排除层（负分制；拉丁词边界匹配、CJK 短语包含；复合短语白名单优先 [MD §5-0①]） ──
       if (!compoundHit) {
         const cjkExcl = LABEL_EXCLUDE.find(p => label.includes(p));
@@ -312,7 +436,7 @@ export function createDetect(UI, Rules) {
         sig.push({ layer: 'L2', name: 'country-semantic:suppress', pts: 0 });
       }
 
-      return { score, tier, signals: sig };
+      return { score, tier, signals: sig, pseudo: pseudoHit };
     },
 
     tierOf(score) {
@@ -483,7 +607,12 @@ export function createDetect(UI, Rules) {
       const parts = [el.tagName, el.getAttribute('name'), el.id, el.getAttribute('class'),
         el.getAttribute('type'), el.getAttribute('placeholder'), el.getAttribute('aria-label'),
         el.getAttribute('data-name'), el.getAttribute('title'), el.getAttribute('autocomplete'),
-        el.getAttribute('inputmode'), el.disabled ? 'd' : '', el.readOnly ? 'r' : '',
+        el.getAttribute('inputmode'),
+        // 票 18: ARIA combobox 信号面入指纹 —— 面板开合（expanded/controls 翻转）触发重评，
+        // 展开态 option 内容证据可入账（关闭态 MUI 悬空 id 静态证据口径 [17 票]）
+        el.getAttribute('role'), el.getAttribute('aria-expanded'),
+        el.getAttribute('aria-controls'), el.getAttribute('aria-owns'),
+        el.disabled ? 'd' : '', el.readOnly ? 'r' : '',
         this._isIti(el) ? 'iti' : '', this._label(el) || '',
       // 票 13：可见性判定入指纹 —— 显隐翻转（路由切换/样式类变更）即触发重评
       this._hiddenByStyle(el) ? 'v0' : 'v1'];
@@ -508,7 +637,9 @@ export function createDetect(UI, Rules) {
         const wrapElR = el.closest ? el.closest('.' + WRAPPER_CLASS) : null;
         if (forced) {
           // 强制选择器命中：按规则档注入/移除，不评分；指纹含规则档，档位变化自动重评
-          const kind = el.tagName === 'SELECT' ? 'select' : (el.tagName === 'INPUT' ? 'input' : null);
+          const kind = el.tagName === 'SELECT' ? 'select'
+            : ((el.getAttribute('role') || '') === 'combobox') ? 'pseudo'
+            : (el.tagName === 'INPUT' ? 'input' : null);
           if (!kind) return;
           const fp = this._fingerprint(el) + '|rule:' + forced;
           const st = this._state.get(el);
@@ -557,7 +688,9 @@ export function createDetect(UI, Rules) {
 
       // 新元素或指纹变化 → 全量重评（_isIti 结果亦入指纹，插件初始化晚于首扫也能补挂）
       let kind = null, res;
-      if (el.disabled || el.readOnly) {
+      // 票 18: combobox 触发器 readonly 是 select-only 形态的常态（antd/EP observed）——
+      // readonly 不再判死，disabled 照旧；非 combobox 的 readonly 语义不变
+      if (el.disabled || (el.readOnly && (el.getAttribute('role') || '') !== 'combobox')) {
         // 禁用/只读：视同 none 档撤图标；重新启用时属性变化会再触发补挂
         res = { score: 0, tier: 'none', signals: [{ layer: 'L0', name: 'gate:disabled', pts: 0 }] };
       } else {
@@ -568,7 +701,7 @@ export function createDetect(UI, Rules) {
         // KeePassXC Site Preferences 用户干预压过启发式）；lowkey 覆盖同理；
         // none 覆盖已在上方短路（撤图标不登记）。
         if (Rules && (pageTier === 'auto' || pageTier === 'lowkey') && res.tier !== pageTier) {
-          res = { score: res.score, tier: pageTier,
+          res = { score: res.score, tier: pageTier, pseudo: res.pseudo,
             signals: (res.signals || []).concat([{ layer: 'R', name: 'rule:tier-override', pts: 0 }]) };
         }
         // ── 票 13 可见性闸门（注入档位最终裁决）[AM 结论4 / SP US4]：只降注入档位，
@@ -577,13 +710,21 @@ export function createDetect(UI, Rules) {
         // forced/pageTier 规则是用户显式干预，已在上方生效；召唤图标（data-cch-summon）
         // 是用户显式行为，不被闸门回拆（summonedWrap 检查）。
         if (!summonedWrap && res.tier !== 'none' && this._hiddenByStyle(el)) {
-          res = { score: res.score, tier: 'none',
+          res = { score: res.score, tier: 'none', pseudo: res.pseudo,
             signals: (res.signals || []).concat([{ layer: 'VIS', name: 'gate:visibility-hidden', pts: 0 }]) };
+        }
+        // ── 票 18 [ADR-0005]: 伪 select 档位上限 =「登记 + 手动召唤」——不自动注入图标、
+        // 不自动填充。分数与信号原样保留（≥25 走 rememberLow 登记召唤面），档位强制 none
+        // + 0 分留痕；用户显式规则覆盖已在上方生效，不受此限。
+        if (res.pseudo && res.tier !== 'none') {
+          res = { score: res.score, tier: 'none', pseudo: true,
+            signals: (res.signals || []).concat([{ layer: 'L2', name: 'gate:adr-0005-register-only', pts: 0 }]) };
         }
       }
       // kind 分发（票 04 教训：先枚举下游消费方 UI.attach / UI.rememberLow / Fill.run 三策略）：
       // iti 字段仍走适配层填充，不可回落 input 策略
-      kind = kind || (el.tagName === 'SELECT' ? 'select'
+      kind = kind || (res.pseudo ? 'pseudo'
+        : el.tagName === 'SELECT' ? 'select'
         : (el.tagName === 'INPUT' ? (this._isIti(el) ? 'iti' : 'input') : null));
       const rec = { fp, kind, tier: res.tier, score: res.score, signals: res.signals, attached: false };
       this._state.set(el, rec);

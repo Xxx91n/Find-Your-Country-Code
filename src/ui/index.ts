@@ -552,7 +552,10 @@ border-radius:8px;cursor:pointer;text-align:center}
       if (!btn || btn.getAttribute('data-cch-tier') !== 'lowkey') continue;
       const field = this._fieldOf(wrap);
       if (!field) continue;
-      const kind = field.tagName === 'SELECT' ? 'select' : 'input';
+      // 票 18: kind 分发与 detect/_process 对齐（pseudo 触发器低调样式迁移不回落 input）
+      const kind = field.tagName === 'SELECT' ? 'select'
+        : ((field.getAttribute && field.getAttribute('role')) === 'combobox') ? 'pseudo'
+        : 'input';
       const score = Number(btn.getAttribute('data-cch-score')) || 0;
       this._lowFields.set(field, { kind, score, signals: [] });
       const parent = wrap.parentNode;
