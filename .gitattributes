@@ -1,0 +1,32 @@
+# Text file EOL normalization (CRLF 卫生)
+# 仓库明确声明:入库存 LF,工作树也保持 LF;core.autocrlf=false 时直接保留 blob 原样。
+# Chromium/FF/JS 生态零 EOL 争议,统一 LF。
+* text=auto eol=lf
+
+# Windows-native 脚本保留 CRLF(保留兼容 cmd.exe / PowerShell 5.x 等旧宿主)
+*.bat    text eol=crlf
+*.ps1    text eol=crlf
+*.cmd    text eol=crlf
+
+# 二进制(随仓库演化补,当前列表与 crlf_lf_repository_policy 章节一致)
+*.png    binary
+*.ico    binary
+*.icns   binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.exe    binary
+*.dll    binary
+*.node   binary
+*.pdb    binary
+*.msi    binary
+*.so     binary
+*.dylib  binary
+*.bin    binary
+*.zip    binary
+*.gz     binary
+*.tar    binary
+*.7z     binary
+</content>
+</invoke>
