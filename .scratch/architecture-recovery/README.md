@@ -93,9 +93,9 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 | 15 React 19 兜底 | done(复核通过) | CI 33981972381 绿(52 例)+ _probe/forceDiff 实测 |
 | 16 评分一致性 | done(复核通过,附 16-fix) | 短路摘除/L3 独立叠加/常量集中实证;语料再基线转跟进 |
 | 17 伪 select 取证 | done(复核通过) | 样本库 5/15/5 + ADR-0005 实证;atomcode 交叉轮挂起(串行护栏) |
-| 19 发版与发布链接恢复 | done(2026-09-06,大脑执行) | 检查点一~四全过;v1.4.0 已发布(Latest): dry-run 34035726335 三处一致 + release run 34035951623 success + 四链接 200;GreasyFork 站内 @1.3.4 待维护者手动同步 |
+| 19 发版与发布链接恢复 | done(复核通过,周期收官,2026-09-06) | gh release v1.4.0 Latest(2026-09-06T13:23:45Z,附件 @version 1.4.0 实测);版本三处一致(pkg 1.4.0 / vite 1.4.0 / Glog 双语 v1.4.0 12 条);4 链接 200(README raw/GF 页/Release 页/GF install);4 CI run success(dry-run 34035726335 + release 34035951623 + E2E 34035724870 + calibration 34035796148);workflow 口径统一(calibration 零依赖已澄清);origin/main 领先本地 43 提交;GreasyFork @1.3.4 待维护者手动 |
 
-**frontier(第二周期)**: **19 闭环 = 心智模型 v2 周期收官 ✅**(11-19 + 11fix/12fix/16fix 全闭环)。发布: v1.4.0(2026-09-06,GitHub Release Latest)。复核链: verification/review-mmv2-wave1.md + wave2-fix.md + wave3.md + wave4.md。收口报告: research/window-reports/19-release-links-report.md。
+**frontier(第二周期)**: **19 闭环 = 心智模型 v2 周期收官 ✅**(11-19 + 11fix/12fix/16fix 全闭环)。发布: v1.4.0(2026-09-06,GitHub Release Latest)。复核链: verification/review-mmv2-wave1.md + wave2-fix.md + wave3.md + wave4.md + wave5.md。收口报告: research/window-reports/19-release-links-report.md。
 
 ### 周期总结(2026-09-06,大脑收口)
 
