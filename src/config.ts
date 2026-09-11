@@ -35,7 +35,6 @@ export const L3_DIAL_CAP = 45;            // 内容验证分量上限（Chromium
 export const L3_ISO_BONUS = 30;           // ISO2 值 + EN 国家名文本双占比 ≥50% → 国家选择器语义 [SP US7]
 export const L3_NUMERIC_MIN_RATE = 0.6;   // 纯数字枚举占比 ≥60% 且无区号命中 → 排除 [MD §2③ "1-3个月内有效"]
 export const L3_NUMERIC_PENALTY = -40;
-export const L3_PLUS_LIKE_MIN_RATE = 0.5; // +NN 形似值占比门槛（旧 0.4 被 GMT+8 时区击穿 [MD F5]；现仅作旁证不单独定案）
 
 // ── L4 排除层负分制 [IM §④ L4；MD §5-0① 词边界匹配 + 复合短语白名单优先] ─
 export const L4_EXCLUDE_PENALTY = -70;    // 拉丁词按词边界整词匹配、CJK 按短语包含（hidden→idd 子串撞库教训 [MD F6]）
