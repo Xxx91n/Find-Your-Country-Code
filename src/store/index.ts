@@ -59,6 +59,8 @@ const Store = {
       try {
         this._bc = new BroadcastChannel('cch-favs-sync-v1');
         this._bc.addEventListener('message', e => {
+          // 票 24 安全加固：只信任同源广播（BroadcastChannel 按 origin 天然隔离，此为纵深防御校验）
+          if (e.origin !== location.origin) return;
           const msg = e && e.data;
           if (!msg || msg.sid === this._sid || msg.type !== 'favs-sync') return;
           if (!Array.isArray(msg.favs)) return;
@@ -87,6 +89,8 @@ const Store = {
       try {
         this._rulesBC = new BroadcastChannel(RULES_BROADCAST);
         this._rulesBC.addEventListener('message', e => {
+          // 票 24 安全加固：只信任同源广播（BroadcastChannel 按 origin 天然隔离，此为纵深防御校验）
+          if (e.origin !== location.origin) return;
           const msg = e && e.data;
           if (!msg || msg.sid === this._sid || msg.type !== RULES_BROADCAST) return;
           if (!this._normRulesDoc(msg.rules)) return;

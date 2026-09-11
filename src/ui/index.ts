@@ -411,6 +411,8 @@ border-radius:8px;cursor:pointer;text-align:center}
   _feedback(): void {
     const el = this._target;
     // 票 12:远程面板负反馈 → postMessage 回子帧本地执行(规则按子帧 host 写入)
+    // 票 24:targetOrigin '*' 不可避免——remoteSource 可能为跨域子帧，顶层无法预知其 origin；
+    // 子帧接收端(main.ts 票 24)以 e.source===window.top + 同源强校验把关。
     if (this._remoteSource) {
       try { this._remoteSource.postMessage({ __cch: FRAME_TAG, type: FRAME_FEEDBACK_MSG }, '*'); } catch {}
       if (this._popup) this._closePopup();
@@ -439,6 +441,8 @@ border-radius:8px;cursor:pointer;text-align:center}
 
 
   // 票 12:子帧图标点击 → 保存目标字段 + 请求顶层代开面板(postMessage 跨域可达)
+  // 票 24:targetOrigin '*' 不可避免——顶层可能跨域，子帧无法枚举其 origin；顶层接收端
+  // (main.ts 票 24)已做 origin 校验 + 本页面嵌入 iframe 来源锚点。
   _requestRemoteOpen(target: AnyEl | null, kind: FillKind | null): void {
     this._target = target;
     this._kind = kind;
@@ -607,6 +611,7 @@ border-radius:8px;cursor:pointer;text-align:center}
       const c = ISO2_MAP[iso];
       if (!c) return;
       // 票 12:远程面板 → postMessage 回子帧执行 Fill.run(每帧各自填充,行为同源)
+      // 票 24:targetOrigin '*' 不可避免——remoteSource 可能为跨域子帧；子帧接收端把关见 main.ts。
       if (this._remoteSource) {
         try { this._remoteSource.postMessage({ __cch: FRAME_TAG, type: FRAME_FILL_MSG, iso: c.iso }, '*'); } catch {}
         this._closePopup();

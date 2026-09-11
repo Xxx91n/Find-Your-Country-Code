@@ -213,6 +213,9 @@ const SCAN_SELECTORS = [
   // 票 18: 伪 select 触发器三形态 DIV/INPUT/BUTTON[role=combobox]（MUI/antd/EP/react-select/Radix observed）
   '[role="combobox"]',
 ];
+// 票 24 安全加固：候选选择器存在覆盖重叠（.iti input ⊂ input[type="tel"] 组合项），
+// 迭代 Set 去重版避免同一 selector 字符串被重复 querySelectorAll（数组顺序不变，仅收敛唯一集合）
+const SCAN_SELECTOR_SET = new Set(SCAN_SELECTORS);
 
 export function createDetect(UI: CchUI, Rules: CchRules | null) {
   const Detect = {
@@ -506,7 +509,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       const t0 = Date.now();
       this._pruneWatchers();
       const roots = this._deepRoots(root);
-      for (const sel of SCAN_SELECTORS) {
+      for (const sel of SCAN_SELECTOR_SET) {
         this._collect(roots, sel).forEach(el => this._process(el));
       }
       if (typeof UI._pruneLow === 'function') UI._pruneLow();
