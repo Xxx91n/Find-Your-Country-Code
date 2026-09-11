@@ -26,13 +26,13 @@ jobs:
       # harness 为零依赖 node 脚本（函数束装载引擎，零构建），无需 npm ci
       - name: Run precision/recall harness
         run: |
-          node .scratch/architecture-recovery/research/scripts/14-calibration-harness.mjs \
+          node tests/scripts/14-calibration-harness.mjs \
             --out calibration-out/baseline-report.md \
             --json calibration-out/baseline-summary.json
 
       - name: Run threshold calibration
         run: |
-          node .scratch/architecture-recovery/research/scripts/14-threshold-calibration.mjs \
+          node tests/scripts/14-threshold-calibration.mjs \
             --out calibration-out/calibration-report.md
 
       - name: Assert baseline produced numbers
