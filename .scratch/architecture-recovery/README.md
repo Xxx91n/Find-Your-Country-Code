@@ -128,7 +128,7 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 | 23 TS strict + typecheck | **done（复核通过）** | research/window-reports/23-ts-strict-typecheck-report.md | — | W1 |
 | 24 安全加固 | **done（复核通过）** ✅ | research/window-reports/24-security-hardening-report.md | — | W1 |
 | 25 依赖/目录卫生 | **done（复核通过）** | research/window-reports/25-dependency-directory-hygiene-report.md | — | W1 |
-| 26 ADR + 文档收口 | **done（窗口实施完成，待大脑复核）** | research/window-reports/26-adr-docs-closure-report.md | ADR-0006 落库（accepted，五项决策+反证条件）+ CONTEXT.md 工程门禁节 5 术语（23 旧术语零回归）+ 票 20-26 状态表更新；遗留登记 F-1/typecheck flag/lockfile | W3 |
+| 26 ADR + 文档收口 | **done（复核通过）** ✅ | research/window-reports/26-adr-docs-closure-report.md | ADR-0006 落库（accepted，五项决策+反证条件）+ CONTEXT.md 工程门禁节 5 术语（23 旧术语零回归）+ 票 20-26 状态表更新；遗留登记 F-1/typecheck flag/lockfile | W3 |
 
 ### 发起窗口的 prompts
 
@@ -147,3 +147,22 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 本周期可复用的 atomcode 提示词位于：
 - `.scratch/architecture-recovery/research/atomcode-testing-strategies.md` — 油猴测试策略全景调研（11 原文 + 8 搜索级参考，Exa+Tavily+AnySearch 三引擎交叉验证）
 - `.scratch/architecture-recovery/research/cycle3-investigation.md` — 锐评1.txt 16 条指控取证记录
+
+## Backlog (跨周期遗留 + Cycle-3 新增遗留 — 等用户决定是否立票)
+
+### 跨周期遗留（mmv2）
+1. GreasyFork 站内同步（@1.3.4 → 1.4.0，凭证门控）
+2. 本地 main ref 对齐（3ccfee2 vs origin 0759913+）
+3. 真实站点冒烟（iframe / 伪 select / React 19）
+4. 票 17 atomcode 交叉验证轮（可选）
+
+### Cycle-3 新增遗留（F-1 / F-2 / F-3）
+5. **F-1**: verify-15 S4 预存门漂移（main baseline run 34606594163 failure）
+6. **F-2**: typecheck.yml --legacy-peer-deps 残留 1 处
+7. **F-3**: lockfile 待 CI 实证
+
+### 合并待办（PAUSED — 等用户明确指令）
+8. but pull 同步远端最新
+9. 按栈序逐支合并：cch/20 → 22 → 23 → 25 → 24 → 21 → 26
+10. but push 到 origin — **PAUSED**
+11. but land 到 main — **PAUSED**
