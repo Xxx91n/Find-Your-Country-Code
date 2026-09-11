@@ -375,7 +375,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     this._render('');
 
     const close = (e: MouseEvent) => {
-      if (!pop.contains(e.target) && e.target !== anchor) {
+      if (!pop.contains(e.target as Node) && e.target !== anchor) {
         this._closePopup();
       }
     };

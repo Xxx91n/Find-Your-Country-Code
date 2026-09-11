@@ -49,7 +49,7 @@ export interface OverrideRule {
   selector: string;
   action: { tier: Tier };
   note: string;
-  createdAt: number;
+  createdAt?: number;
   updatedAt: number;
 }
 
