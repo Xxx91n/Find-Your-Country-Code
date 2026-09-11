@@ -63,7 +63,7 @@ function resolveAriaIds(el: AnyEl, idsStr: string): AnyEl[] {
   for (const id of String(idsStr || '').split(/\s+/).filter(Boolean)) {
     let n = null;
     try {
-      const rn = el.getRootNode && el.getRootNode();
+      const rn = (el.getRootNode && el.getRootNode()) as Document | ShadowRoot | null;
       if (rn && rn.getElementById) n = rn.getElementById(id);
       if (!n) {
         const doc = el.ownerDocument || (typeof document !== 'undefined' ? document : null);
@@ -234,7 +234,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
 
     _label(el: AnyEl) {
       // 票 04：getRootNode() 覆盖 shadow 内 label[for]（ShadowRoot/Document 均有 querySelector/getElementById）
-      const rootNode = (el.getRootNode && el.getRootNode()) || el.ownerDocument || document;
+      const rootNode = ((el.getRootNode && el.getRootNode()) as Document | ShadowRoot | null) || el.ownerDocument || document;
       if (el.id) {
         const l = rootNode.querySelector('label[for="' + el.id + '"]');
         if (l) return l.textContent;
@@ -253,7 +253,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
     },
 
     // ══ 评分核心：纯函数（元素 + 可选锚上下文 → 分数/分档/信号明细；不触碰 UI/存储） ══
-    scoreElement(el: AnyEl, ctx: { anchorHasTel?: boolean } | null): ScoreResult {
+    scoreElement(el: AnyEl, ctx?: { anchorHasTel?: boolean } | null): ScoreResult {
       ctx = ctx || {};
       const sig: Signal[] = [];
       const add = (layer: string, name: string, pts: number): number => { sig.push({ layer, name, pts }); return pts; };
@@ -424,7 +424,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       if (anchorHasTel) score += add('L2', 'anchor:tel', L2_ANCHOR_TEL_SCORE);
 
       // ── 分档 ──
-      let tier;
+      let tier: Tier;
       if (score >= SCORE_AUTO) tier = 'auto';
       else if (score >= SCORE_LOWKEY) tier = 'lowkey';
       else tier = 'none';
@@ -549,7 +549,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       return out;
     },
 
-    _observeShadow(root: AnyEl): void {
+    _observeShadow(root: AnyEl | ShadowRoot): void {
       // node 单测环境无 MutationObserver；同一 root 只挂一个
       if (typeof MutationObserver !== 'function' || this._shadowWatchers.has(root)) return;
       const mo = new MutationObserver(() => this.scheduleScan());
@@ -586,8 +586,8 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
         ['pushState', 'replaceState'].forEach(name => {
           const orig = hist[name];
           if (typeof orig !== 'function') return;
-          hist[name] = function (this: unknown) {
-            const r = orig.apply(this, arguments);
+          hist[name] = function (this: unknown, ...args: unknown[]) {
+            const r = orig.apply(this, args);
             self.scheduleScan();
             return r;
           };

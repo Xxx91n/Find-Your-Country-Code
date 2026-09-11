@@ -1,7 +1,7 @@
 import { t } from '../i18n';
 import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
-import type { AnyEl, AnyRoot, CchFill, CchRules, CchStore, Country, FillKind, OverrideRule, PrefsDoc, Signal, Tier } from '../types';
+import type { AnyEl, AnyRoot, CchFill, CchRules, CchStore, CchUI, Country, FillKind, OverrideRule, PrefsDoc, Signal, Tier } from '../types';
 // GM_* 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零；与 store 的声明互不冲突）
 declare function GM_getValue(key: string, defaultValue?: string): string;
 declare function GM_setValue(key: string, value: string): void;
@@ -139,7 +139,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
 
     // 不论宽度是否为 0，都立即插入
-    el.parentNode.insertBefore(wrap, el);
+    el.parentNode!.insertBefore(wrap, el);
     wrap.appendChild(el);
 
     const btn = document.createElement('button');
@@ -160,7 +160,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     wrap.appendChild(btn);
     // 票 04：字段在 open shadow root 内时，document 级样式表不生效 → 把样式表克隆进该 root
     try {
-      const rn = el.getRootNode ? el.getRootNode() : null;
+      const rn = el.getRootNode ? el.getRootNode() as ShadowRoot | null : null;
       if (rn && rn.nodeType === 11 && rn.host && !rn.querySelector('#cch-style')) {
         const st = document.getElementById('cch-style');
         if (st) rn.appendChild(st.cloneNode(true));
@@ -364,7 +364,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     const rulesSec = document.createElement('section');
     rulesSec.className = 'cch-sec cch-sec-rules';
     rulesSec.id = 'cch-rules-view';
-    rulesSec.hidden = this._view !== 'rules';
+    rulesSec.hidden = (this._view as 'list' | 'rules') !== 'rules';
     body.appendChild(rulesSec);
     pop.appendChild(body);
 
@@ -374,7 +374,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     this._bindPopupEvents(pop);
     this._render('');
 
-    const close = e => {
+    const close = (e: MouseEvent) => {
       if (!pop.contains(e.target) && e.target !== anchor) {
         this._closePopup();
       }
@@ -591,7 +591,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
     pop.addEventListener('click', e => {
       if (this._popup !== pop) return;
-      const favBtn = (e.target as HTMLElement).closest('.cch-fav');
+      const favBtn = (e.target as HTMLElement).closest<HTMLElement>('.cch-fav');
       if (favBtn) {
         e.stopPropagation();
         const iso = (favBtn.dataset.iso || '').toLowerCase();
@@ -601,7 +601,7 @@ border-radius:8px;cursor:pointer;text-align:center}
         else Store.addFav(entry);
         return;
       }
-      const row = (e.target as HTMLElement).closest('.cch-row');
+      const row = (e.target as HTMLElement).closest<HTMLElement>('.cch-row');
       if (!row) return;
       const iso = (row.dataset.iso || '').toLowerCase();
       const c = ISO2_MAP[iso];
