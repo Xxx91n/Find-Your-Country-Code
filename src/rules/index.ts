@@ -13,8 +13,6 @@ import { SCORE_AUTO, SCORE_LOWKEY, OWN_ROOT_ID, RULE_FORCE_TIER, RULE_TIERS } fr
 
 export function createRules(Store) {
   const Rules = {
-    _subs: new Set(),
-
     // ── 内部：自身 UI 判定（与 Detect._own 同语义；规则引擎独立持有，避免 UI 依赖）──
     _own(el) {
       // 票 04 语义（07-fix 同步到 rules 层，04 报告 §1.3 附带修复 1 的遗漏面）：移除
@@ -128,13 +126,6 @@ export function createRules(Store) {
       } catch { return null; }
     },
 
-    // 订阅规则变更（远端 GM / 广播 / 本端写都会触发）
-    subscribe(fn) {
-      if (typeof fn !== 'function') return () => {};
-      this._subs.add(fn);
-      return () => this._subs.delete(fn);
-    },
-    _notifySubs() { this._subs.forEach(fn => { try { fn(); } catch {} }); },
   };
   return Rules;
 }

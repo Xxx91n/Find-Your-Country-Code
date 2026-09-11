@@ -439,12 +439,6 @@ export function createDetect(UI, Rules) {
       return { score, tier, signals: sig, pseudo: pseudoHit };
     },
 
-    tierOf(score) {
-      if (score >= SCORE_AUTO) return 'auto';
-      if (score >= SCORE_LOWKEY) return 'lowkey';
-      return 'none';
-    },
-
     // ══ 票 13：可见性闸门判定（[AM 结论4] Bitwarden dom-element-visibility /
     // KeePassXC #2184 教训同构）══
     // 只负责「元素当前是否不可见」；注入档位降级在 _process（闸门只改注入档位，

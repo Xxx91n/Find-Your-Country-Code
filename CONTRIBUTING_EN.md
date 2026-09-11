@@ -48,5 +48,5 @@ Note: GreasyFork updates are driven by its own ingestion of the submitted source
 
 ## Boundaries
 
-- `src/Find-Your-Country-Code.js` is the frozen v1.3.4 behavior baseline — read-only.
+- The frozen v1.3.4 behavior baseline was `src/Find-Your-Country-Code.js` (deleted by ticket 22); to compare against legacy behavior, consult git history: `git show v1.3.4:src/Find-Your-Country-Code.js`.
 - Publishing actions (tags, Releases, GreasyFork updates) face real users and are outbound: CI automation runs per the workflows above, but beta/production releases require maintainer confirmation.

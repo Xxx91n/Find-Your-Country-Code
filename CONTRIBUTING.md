@@ -48,5 +48,5 @@ npm run e2e        # 构建 + Playwright 端到端测试
 
 ## 边界
 
-- `src/Find-Your-Country-Code.js` 为 v1.3.4 冻结行为基准，只读不改。
+- v1.3.4 冻结行为基准原为 `src/Find-Your-Country-Code.js`（票 22 已删除该文件），需要对照旧行为时走 git 历史：`git show v1.3.4:src/Find-Your-Country-Code.js`。
 - 发布动作（tag、Release、GreasyFork 站内更新）面向真实用户，属外发动作：CI 自动化部分按上述 workflow 执行，beta/正式版本的最终发布需维护者确认。
