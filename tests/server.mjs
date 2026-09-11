@@ -1,4 +1,4 @@
-// E2E 静态 fixture 服务器：test/ 三个手工测试页 + tests/fixtures/ 回归 fixture + 本地 vendored intl-tel-input。
+// E2E 静态 fixture 服务器：tests/manual/ 三个手工测试页 + tests/fixtures/ 回归 fixture + 本地 vendored intl-tel-input。
 // Hermetic：cch-test-page2.html 里的 jsdelivr CDN 引用在响应中改写到 /vendor/ 路径，离线可复现。
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -19,7 +19,7 @@ const MIME = {
 };
 
 const ROUTES = [
-  { prefix: '/test/', dir: path.join(ROOT, 'test') },
+  { prefix: '/test/', dir: path.join(ROOT, 'tests/manual') },
   { prefix: '/fixtures/', dir: path.join(ROOT, 'tests', 'fixtures') },
   { prefix: '/vendor/intl-tel-input/', dir: path.join(ROOT, 'node_modules', 'intl-tel-input') },
   // 票 09 框架 fixture 本地 vendored（hermetic：E2E 无外部网络依赖）
@@ -118,7 +118,7 @@ const handler = async (req, res) => {
   try {
     const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
     let pathname = decodeURIComponent(url.pathname);
-    if (pathname === '/') pathname = '/test/test-page.html';
+    if (pathname === '/') pathname = '/test/test-page.html'; // served from tests/manual/ after ticket 25 migration
     const route = ROUTES.find(r => pathname.startsWith(r.prefix));
     if (!route) { res.writeHead(404); res.end('not found'); return; }
     if (route.handler) { await route.handler(pathname, res); return; }

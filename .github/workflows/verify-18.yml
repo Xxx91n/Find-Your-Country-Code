@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 20
       - name: Ticket-18 acceptance gate
-        run: node .scratch/architecture-recovery/research/scripts/verify-ticket-18.mjs
+        run: node tests/scripts/verify-ticket-18.mjs
 
   engine-gates:
     name: Engine gate (36) + harness (25)
@@ -35,9 +35,9 @@ jobs:
         with:
           node-version: 20
       - name: Engine gate (verify-ticket-02.mjs)
-        run: node .scratch/architecture-recovery/research/scripts/verify-ticket-02.mjs
+        run: node tests/scripts/verify-ticket-02.mjs
       - name: Harness (misdetect-repro-v2.mjs)
-        run: node .scratch/architecture-recovery/research/scripts/misdetect-repro-v2.mjs
+        run: node tests/scripts/misdetect-repro-v2.mjs
 
   e2e:
     name: Build + Playwright E2E (full suite)
@@ -51,7 +51,7 @@ jobs:
           node-version: 20
           cache: npm
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+ run: npm ci
       - name: Build userscript
         run: npm run build
       - name: Install Playwright chromium
