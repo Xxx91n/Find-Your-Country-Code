@@ -69,7 +69,7 @@ const Fill = {
       const view = (el.ownerDocument && el.ownerDocument.defaultView) ||
         (typeof window !== 'undefined' ? window : null);
       const protoName = VALUE_PROTO_BY_TAG[el.tagName];
-      const desc = view && protoName && Object.getOwnPropertyDescriptor(view[protoName].prototype, 'value');
+      const desc = view && protoName && Object.getOwnPropertyDescriptor((view as unknown as Record<string, { prototype: object }>)[protoName].prototype, 'value');
       if (desc && desc.set) {
         desc.set.call(el, value);
         // 票 13 共享区号消歧落点：select 值 setter 只会命中首个同值选项（+1 多国共享），
@@ -98,7 +98,7 @@ const Fill = {
   },
 
   fillSelect(el: AnyEl, country: Country): boolean {
-    const opts   = Array.from(el.options);
+    const opts   = Array.from(el.options) as AnyEl[];
     const digits = country.code.replace(/\D/g, '');
     const iso    = country.iso.toLowerCase();
     const enName = (country.countryEn || '').toLowerCase();
@@ -193,7 +193,7 @@ const Fill = {
     for (const id of idStr.split(/\s+/).filter(Boolean)) {
       let n = null;
       try {
-        const rn = el.getRootNode && el.getRootNode();
+        const rn = (el.getRootNode && el.getRootNode()) as Document | ShadowRoot | null;
         if (rn && rn.getElementById) n = rn.getElementById(id);
         if (!n) {
           const doc = el.ownerDocument || (typeof document !== 'undefined' ? document : null);

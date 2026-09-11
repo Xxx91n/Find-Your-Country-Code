@@ -110,7 +110,7 @@ export function createItiAdapter(): ItiAdapter {
       const btn = wrapper.querySelector(
         '.iti__selected-country, .iti__selected-flag, .selected-flag, .iti__flag-container'
       );
-      if (btn) btn.click();
+      if (btn) (btn as HTMLElement).click();
 
       const clickItem = () => {
         const item = wrapper.querySelector(
@@ -119,7 +119,7 @@ export function createItiAdapter(): ItiAdapter {
           'li[data-country-code="' + iso + '"], .iti__country[data-country-code="' + iso + '"], .country[data-country-code="' + iso + '"]'
         );
         if (item) {
-          item.click();
+          (item as HTMLElement).click();
           return true;
         }
         return false;
