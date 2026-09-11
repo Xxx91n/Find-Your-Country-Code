@@ -2,6 +2,7 @@
 # + 引擎门 + harness + 全量 E2E，一次 push 全跑。
 # 触发：本票验证分支 push 或手动 workflow_dispatch。
 on:
+  pull_request:
   workflow_dispatch:
   push:
     branches:
