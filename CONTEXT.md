@@ -99,6 +99,29 @@ _Avoid_: 阈值调整
 用户对误报字段声明"这不是区号字段"，脚本把它记为该字段的 none 档规则，下次不再提示。
 _Avoid_: 举报、上报
 
+## 工程门禁与仓库卫生
+
+**CI 门禁（CI gate）**：
+CI 上可阻断合入的自动化检查集合：类型门禁、E2E、校准基线与票级 verify-* 回归。触发面 = pull_request + push(main, cch/**)；证据只认 CI run/artifact，不认本地输出。
+_Avoid_: 持续集成（泛称，无阻断语义）、跑 CI（动作而非门禁实体）
+
+**PR 门控（PR gating）**：
+所有非发版 workflow 必须声明 pull_request 触发的仓库策略，使未经检查的变更无法静默进 main；发版系 workflow（release/release-dry-run）例外，只由发版事件与手动触发。
+_Avoid_: 代码评审（那是人的行为，门控是机器前置）
+
+**密封 E2E（hermetic E2E）**：
+E2E 仅依赖仓库内 fixtures/corpus 与本地 server 供给、不触真实站点与外网的供给边界，保证任意 CI 环境结果可复现。
+_Avoid_: 离线测试（只描述网络状态，无供给边界语义）
+
+**类型门禁（typecheck gate）**：
+tsconfig `strict: true` + `npm run typecheck`（tsc --noEmit）+ CI typecheck workflow 构成的三件套；类型修复必须 types-only，以同提交 E2E 双绿证明无运行时行为变更。
+_Avoid_: 静态检查（泛称，不含 types-only 承诺与阻断语义）
+
+**依赖钉死（dependency pinning）**：
+依赖以显式 semver 范围写入 package.json（禁 `latest` 浮动）、经 package-lock.json + `npm ci` 复现安装的策略；`--legacy-peer-deps` 属登记在案的临时例外而非策略。
+_Avoid_: 版本锁定（指 lockfile 机制本身；钉死含范围书写纪律）
+
+（决策记录见 `docs/adr/0006-ci-hygiene-policy.md`。）
 ## 行业心智模型对照
 
 本节固化 2026-09 心智模型 v2 周期的行业对标结论：每个论断一行，证据出处以仓库相对路径标注，调研全文按路径溯源，不在此复制。
