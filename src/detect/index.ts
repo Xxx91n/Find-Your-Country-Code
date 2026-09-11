@@ -28,6 +28,7 @@ import {
   OWN_ROOT_ID, WRAPPER_CLASS,
 } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
+import type { AnyEl, AnyRoot, CchRules, CchUI, FillKind, OptionStats, ScoreResult, Signal, Tier } from '../types';
 
 // 真实拨号前缀集合（源自 COUNTRIES 国家数据；内容验证的值域基准 [MD §5-0② 整体分布判定]）
 const DIAL_SET = new Set(COUNTRIES.map(c => c.code.slice(1)));
@@ -41,7 +42,7 @@ const PLACEHOLDER_TEXT_RE = /^(?:please\s+select|select\b|choose\b|pick\b|请选
 
 // 占位首项判定：仅首项参审；文本命中占位词表且值不含区号/ISO2 证据 → 剔除出计分。
 // 剔除仅作用于本统计（计分域），不影响填充匹配（fill 侧独立枚举 options）[handoff 13 检查点二]
-function isPlaceholderOpt(o) {
+function isPlaceholderOpt(o: AnyEl): boolean {
   const v = String(o.value || '').trim();
   const t = String(o.text || '').trim();
   if (!t) return true; // 有值无文本的首项 = 纯占位
@@ -57,8 +58,8 @@ function isPlaceholderOpt(o) {
 // 解引用必须沿 aria-controls/owns 的 id（触发器 root + ownerDocument），不得在触发器
 // 子树内找列表。检测侧信号面独立实现（fill 侧交互辅助在 ../pseudo，跨模块 import
 // 约束见 verify-ticket-01：fill/ui 不 import detect）。
-function resolveAriaIds(el, idsStr) {
-  const out = [];
+function resolveAriaIds(el: AnyEl, idsStr: string): AnyEl[] {
+  const out: AnyEl[] = [];
   for (const id of String(idsStr || '').split(/\s+/).filter(Boolean)) {
     let n = null;
     try {
@@ -78,7 +79,7 @@ function resolveAriaIds(el, idsStr) {
 // textContent 与 aria-label 双面（antd observed: 文本=ISO2、国名在 aria-label）。ISO2 判定同
 // L3：数据全集成员测试（ISO2_SET）+ 国家名互证；数字枚举/括号区号同口径；分值全部复用
 // L3 既有常量（检查点二：不为新控件类型开新误报后门）。
-function pseudoNameHit(iso, text) {
+function pseudoNameHit(iso: string, text: string): boolean {
   const c = ISO2_MAP[iso];
   if (!c || !text) return false;
   const t = String(text).toLowerCase();
@@ -90,7 +91,7 @@ function pseudoNameHit(iso, text) {
   return false;
 }
 
-function pseudoOptionStats(opts) {
+function pseudoOptionStats(opts: AnyEl[]): OptionStats {
   let plusDial = 0, parenDial = 0, isoName = 0, numeric = 0;
   for (let i = 0; i < opts.length; i++) {
     const o = opts[i];
@@ -111,18 +112,18 @@ function pseudoOptionStats(opts) {
   return { total: opts.length, plusDial, parenDial, isoName, numeric };
 }
 
-function comboboxEvidence(el) {
+function comboboxEvidence(el: AnyEl) {
   if (!el.getAttribute || el.getAttribute('role') !== 'combobox') return null;
   if (el.getAttribute('aria-expanded') === null) return null;
   const idStr = [el.getAttribute('aria-controls'), el.getAttribute('aria-owns')].filter(Boolean).join(' ');
   if (!idStr) return null;
-  let listbox = null;
+  let listbox: AnyEl | null = null;
   for (const n of resolveAriaIds(el, idStr)) {
     if (n.getAttribute && n.getAttribute('role') === 'listbox') { listbox = n; break; }
   }
-  let stats = null;
+  let stats: OptionStats | null = null;
   if (listbox && listbox.querySelectorAll) {
-    let opts = [];
+    let opts: AnyEl[] = [];
     try { opts = Array.prototype.slice.call(listbox.querySelectorAll('[role="option"]')); } catch {}
     if (opts.length) stats = pseudoOptionStats(opts);
   }
@@ -137,7 +138,7 @@ function comboboxEvidence(el) {
 
 // 拉丁词匹配：camelCase 拆分 → token 等值；≥6 字符词允许 joined/token 子串。
 // 3-4 字符短词（idd/npa/lang）只做等值匹配 —— F6「hidden→idd」子串撞库的根因即无长度护栏 [MD §2⑤]。
-function matchLatin(text, kw) {
+function matchLatin(text: string, kw: string): boolean {
   const k = String(kw).toLowerCase();
   if (!k) return false;
   const camel = String(text || '').replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
@@ -148,7 +149,7 @@ function matchLatin(text, kw) {
   const toks = camel.split(/[^a-z0-9]+/).filter(Boolean);
   return toks.some(t => t === k || (k.length >= 6 && t.includes(k)));
 }
-function matchAny(text, list) { return list.some(k => matchLatin(text, k)); }
+function matchAny(text: string, list: string[]): boolean { return list.some(k => matchLatin(text, k)); }
 
 // ── L1 词表（显式分组，权重见 config.ts；组间互斥取最高档） ──
 const KW_STRONG = ['countrycode', 'dialcode', 'dialingcode', 'callingcode', 'phonecode',
@@ -165,10 +166,10 @@ const LABEL_COMPOUND = ['国家/地区区号', '国家地区区号', '手机区�
 const LABEL_EXCLUDE = ['语言', '语种', '本地化', '翻译', '省份', '城市', '区县', '县区', '行政区'];
 
 // ── L3 选项分布统计（一次性扫描；value 与 text 双证据口径；票 13：占位首项剔除 + ISO2 全集域） ──
-function optStats(el) {
+function optStats(el: AnyEl): OptionStats {
   // 宿主 DOM/单测 mock 均为鸭子类型（仓库无类型门禁，vite 构建为准）
   const raw = el.options || [];
-  const opts = [];
+  const opts: AnyEl[] = [];
   for (let i = 0; i < raw.length; i++) {
     const o = raw[i];
     if ((o.value || '').trim()) opts.push(o);
@@ -213,17 +214,17 @@ const SCAN_SELECTORS = [
   '[role="combobox"]',
 ];
 
-export function createDetect(UI, Rules) {
+export function createDetect(UI: CchUI, Rules: CchRules | null) {
   const Detect = {
     // 票 04：WeakSet 终态 → 属性指纹快照。fp 只判"变没变"；attach 真值以 DOM 实况为准
     // （el.closest('.cch-wrapper')），state.attached 仅供跳过路径的自愈补挂。
     _state: new WeakMap(),
     // 票 04：per-shadow-root observer 登记（host 断连时 prune，防 MutationObserver 强引用泄漏）
     _shadowWatchers: new Map(),
-    _scanTimer: null,
+    _scanTimer: undefined as number | undefined,
     _watched: false,
 
-    _own(el) {
+    _own(el: AnyEl): boolean {
       // 票 04：移除 closest('.cch-wrapper') 检查 —— 旧实现依赖 _done 先短路，指纹重评下该检查
       // 会把已挂图标字段永久挡在重评之外。own 判定收敛为自身 UI 容器/按钮。
       return !!el.closest('#' + OWN_ROOT_ID) ||
@@ -231,7 +232,7 @@ export function createDetect(UI, Rules) {
              !!(el.classList && el.classList.contains && el.classList.contains('cch-btn'));
     },
 
-    _label(el) {
+    _label(el: AnyEl) {
       // 票 04：getRootNode() 覆盖 shadow 内 label[for]（ShadowRoot/Document 均有 querySelector/getElementById）
       const rootNode = (el.getRootNode && el.getRootNode()) || el.ownerDocument || document;
       if (el.id) {
@@ -252,10 +253,10 @@ export function createDetect(UI, Rules) {
     },
 
     // ══ 评分核心：纯函数（元素 + 可选锚上下文 → 分数/分档/信号明细；不触碰 UI/存储） ══
-    scoreElement(el, ctx) {
+    scoreElement(el: AnyEl, ctx: { anchorHasTel?: boolean } | null): ScoreResult {
       ctx = ctx || {};
-      const sig = [];
-      const add = (layer, name, pts) => { sig.push({ layer, name, pts }); return pts; };
+      const sig: Signal[] = [];
+      const add = (layer: string, name: string, pts: number): number => { sig.push({ layer, name, pts }); return pts; };
       const tag = el.tagName;
       // 票 18: aria-hidden input（MUI/react-select 隐藏承值 native input 形态 [票 17 observed]）
       // 不在可访问树内、非交互目标 —— 硬排除（防承值 input 凭 name 之类混入登记召唤面）
@@ -319,7 +320,7 @@ export function createDetect(UI, Rules) {
       if (/(固话|本地|local)/.test(label)) {
         score += add('L1', 'label:local-fixed', L1_LOCAL_FIXED_PENALTY);
       }
-      let kw = null;
+      let kw: string | null = null;
       if (matchAny(attrStr, KW_STRONG)) kw = 'strong';
       else if (matchAny(attrStr, KW_COUNTRY)) kw = 'country';
       else if (matchAny(attrStr, KW_PREFIX)) kw = 'prefix';
@@ -345,7 +346,7 @@ export function createDetect(UI, Rules) {
       }
 
       // ── L3 内容验证层（select 专属；值域整体分布，非单值判定 [MD §5-0②]） ──
-      let st = null;
+      let st: OptionStats | null = null;
       if (tag === 'SELECT') {
         st = optStats(el);
         // 规模门槛 [IM P4-3；对齐旧行为 opts<2 硬排除，Case10]
@@ -450,7 +451,7 @@ export function createDetect(UI, Rules) {
     // 近似覆盖 sr-only/视觉替换型隐藏，显式遮挡探测登记为未做项（报告偏离点）。
     // fail-open：无法测量（无 getComputedStyle/无布局信息的 mock 宿主）一律视为可见 ——
     // 宁可漏闸不可误杀（检查点一「不误杀隐藏承值 select」优先）。
-    _hiddenByStyle(el) {
+    _hiddenByStyle(el: AnyEl): boolean {
       try {
         const view = (el.ownerDocument && el.ownerDocument.defaultView) ||
           (typeof window !== 'undefined' ? window : null);
@@ -476,14 +477,13 @@ export function createDetect(UI, Rules) {
       return false;
     },
 
-    _isIti(el) {
+    _isIti(el: AnyEl): boolean {
       if (el.tagName !== 'INPUT') return false;
       if (el.closest('.iti') || el.closest('.intl-tel-input')) return true;
       if (el.dataset && el.dataset.intlTelInputId) return true;
       if (typeof window !== 'undefined') {
         try {
-          // 无 DOM lib 类型声明；window 上的 jQuery 属鸭子类型（@ts-expect-error 仅此一处）
-          // @ts-expect-error userscript 宿主注入的全局，无类型声明
+          // window.jQuery / window.$ 经 types.ts declare global 声明（iti/jQuery 探测面）
           const jq = window.jQuery;
           const pluginData = jq && (jq(el).data('plugin_intlTelInput') || jq(el).data('intlTelInput'));
           if (pluginData) return true;
@@ -494,7 +494,7 @@ export function createDetect(UI, Rules) {
 
     // ══ 票 04：扫描机制 ══
 
-    scan(root) {
+    scan(root?: AnyRoot | null): void {
       root = root || document.body;
       if (!root) return;
       // 票 05：豁免域名 = 完全跳过检测（[AM 结论5] 1Password data-1p-ignore 心智：
@@ -518,14 +518,14 @@ export function createDetect(UI, Rules) {
     },
 
     // open shadowRoot 递归穿透：BFS 收集 [根, ...全部 open shadowRoot]，逐个挂 per-root observer
-    _deepRoots(root) {
+    _deepRoots(root: AnyRoot): AnyRoot[] {
       const roots = [root];
       const seen = new Set(roots); // 防御性去重：正常 DOM 无环，病态结构下幂等
       const queue = [root];
       while (queue.length) {
-        const cur = queue.shift();
-        let els;
-        try { els = cur.querySelectorAll('*'); } catch { continue; }
+        const cur = queue.shift()!;
+        let els: NodeListOf<AnyEl>;
+        try { els = cur.querySelectorAll<AnyEl>('*'); } catch { continue; }
         for (let i = 0; i < els.length; i++) {
           const sr = els[i].shadowRoot; // 仅 open root 可读；closed 属性为 null（spec Out of Scope [AM 结论10]）
           if (sr && !seen.has(sr)) {
@@ -540,16 +540,16 @@ export function createDetect(UI, Rules) {
     },
 
     // 测试缝：collect 与 scan 分离（票 02 预留，票 04 替换实现为跨根集合查询）
-    _collect(roots, sel) {
+    _collect(roots: AnyRoot[], sel: string): AnyEl[] {
       const list = Array.isArray(roots) ? roots : [roots];
-      const out = [];
+      const out: AnyEl[] = [];
       for (const r of list) {
-        try { out.push(...r.querySelectorAll(sel)); } catch {}
+        try { out.push(...r.querySelectorAll<AnyEl>(sel)); } catch {}
       }
       return out;
     },
 
-    _observeShadow(root) {
+    _observeShadow(root: AnyEl): void {
       // node 单测环境无 MutationObserver；同一 root 只挂一个
       if (typeof MutationObserver !== 'function' || this._shadowWatchers.has(root)) return;
       const mo = new MutationObserver(() => this.scheduleScan());
@@ -558,7 +558,7 @@ export function createDetect(UI, Rules) {
     },
 
     // 泄漏防护：host 已断连的 shadow root → disconnect（observer 对被观察节点持强引用）
-    _pruneWatchers() {
+    _pruneWatchers(): void {
       for (const [root, rec] of this._shadowWatchers) {
         if (!root.host || !root.host.isConnected) {
           rec.mo.disconnect();
@@ -568,13 +568,13 @@ export function createDetect(UI, Rules) {
     },
 
     // 统一防抖入口：顶层/shadow mutation、路由 hook 全部汇入；350ms 窗口后全量重扫
-    scheduleScan() {
+    scheduleScan(): void {
       clearTimeout(this._scanTimer);
       this._scanTimer = setTimeout(() => this.scan(document.body), RESCAN_DEBOUNCE_MS);
     },
 
     // 票 04：观测总装（替代旧 main.ts 内联 observe + 8×500ms 轮询）
-    watch() {
+    watch(): void {
       if (this._watched || typeof MutationObserver !== 'function') return;
       this._watched = true;
       new MutationObserver(() => this.scheduleScan()).observe(document.body, MO_OPTS);
@@ -582,10 +582,11 @@ export function createDetect(UI, Rules) {
       // SPA 路由 hook：pushState/replaceState 包装（保 this/透参/返回值）+ popstate 监听
       if (typeof history !== 'undefined') {
         const self = this;
+        const hist = history as unknown as Record<string, (...args: unknown[]) => unknown>;
         ['pushState', 'replaceState'].forEach(name => {
-          const orig = history[name];
+          const orig = hist[name];
           if (typeof orig !== 'function') return;
-          history[name] = function () {
+          hist[name] = function (this: unknown) {
             const r = orig.apply(this, arguments);
             self.scheduleScan();
             return r;
@@ -597,7 +598,7 @@ export function createDetect(UI, Rules) {
 
     // 票 04：属性指纹快照 —— 评分引擎实际读取的信号面（不含 value/位置/尺寸：
     // 输入过程不改判"是否区号字段"，避免打字触发无谓重评）
-    _fingerprint(el) {
+    _fingerprint(el: AnyEl): string {
       const parts = [el.tagName, el.getAttribute('name'), el.id, el.getAttribute('class'),
         el.getAttribute('type'), el.getAttribute('placeholder'), el.getAttribute('aria-label'),
         el.getAttribute('data-name'), el.getAttribute('title'), el.getAttribute('autocomplete'),
@@ -619,13 +620,13 @@ export function createDetect(UI, Rules) {
       return parts.join('|');
     },
 
-    _process(el) {
+    _process(el: AnyEl): void {
       if (this._own(el)) return;
       // 票 05：规则介入先于评分（[AM 结论5] Bitwarden linked field 强制锚定 +
       // KeePassXC Site Preferences 分档心智）。自身 UI 已被 _own 拦截，规则永不作用。
-      let pageTier = null;
+      let pageTier: Tier | null = null;
       if (Rules && typeof Rules.forcedTier === 'function') {
-        let forced = null;
+        let forced: Tier | null = null;
         try { forced = Rules.forcedTier(el); } catch {}
         try { pageTier = Rules.pageTierOverride(); } catch {}
         const wrapElR = el.closest ? el.closest('.' + WRAPPER_CLASS) : null;
@@ -681,7 +682,7 @@ export function createDetect(UI, Rules) {
       }
 
       // 新元素或指纹变化 → 全量重评（_isIti 结果亦入指纹，插件初始化晚于首扫也能补挂）
-      let kind = null, res;
+      let kind: FillKind | null = null, res: ScoreResult;
       // 票 18: combobox 触发器 readonly 是 select-only 形态的常态（antd/EP observed）——
       // readonly 不再判死，disabled 照旧；非 combobox 的 readonly 语义不变
       if (el.disabled || (el.readOnly && (el.getAttribute('role') || '') !== 'combobox')) {

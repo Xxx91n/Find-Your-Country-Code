@@ -1,5 +1,6 @@
 import { t } from '../i18n';
 import { createItiAdapter } from '../iti-adapter';
+import type { AnyEl, CchFill, CchUI, Country, FillKind } from '../types';
 
 // ════════════════════════════════════════════════════════
 // 注入安全层（票 09）：单一注入函数 _inject —— INPUT/SELECT/TEXTAREA 统一
@@ -12,7 +13,7 @@ import { createItiAdapter } from '../iti-adapter';
 // SELECT 原生 setter 缺口补齐 [MD §5-6]；TEXTAREA 分支当前无检测路径（detect 只产出
 // select/input kind），此处按 spec「注入安全」节先行统一，供后续票复用。
 // ════════════════════════════════════════════════════════
-const VALUE_PROTO_BY_TAG = { INPUT: 'HTMLInputElement', SELECT: 'HTMLSelectElement', TEXTAREA: 'HTMLTextAreaElement' };
+const VALUE_PROTO_BY_TAG: Record<string, string> = { INPUT: 'HTMLInputElement', SELECT: 'HTMLSelectElement', TEXTAREA: 'HTMLTextAreaElement' };
 
 // ════════════════════════════════════════════════════════
 // React 19 填充能力探测兜底（票 15）：受控组件实例被框架安装了 value 拦截层
@@ -25,7 +26,7 @@ const VALUE_PROTO_BY_TAG = { INPUT: 'HTMLInputElement', SELECT: 'HTMLSelectEleme
 // ════════════════════════════════════════════════════════
 const _probe = {
   // 能力探测：实例级 value setter 补丁（own accessor）+ valueTracker 存在性，两者同时满足才命中
-  hit(el) {
+  hit(el: AnyEl): boolean {
     try {
       const own = Object.getOwnPropertyDescriptor(el, 'value');
       if (!own || typeof own.get !== 'function' || typeof own.set !== 'function') return false;
@@ -38,7 +39,7 @@ const _probe = {
   // 事件）时干预——回拨快照为填充前值使 diff 非空；填充前值与填充值相同（站点 JS 直接
   // 赋值但 React state 滞后的 react#11488 经典形态）则以哨兵保证 diff 非空。其余情形
   // （快照本就落后于填充值）原生 setter 路径已保证 diff，不动快照（最小干预）。
-  forceDiff(el, prevValue, nextValue) {
+  forceDiff(el: AnyEl, prevValue: string, nextValue: string): boolean {
     try {
       const tracker = el._valueTracker;
       if (!tracker || typeof tracker.getValue !== 'function' || typeof tracker.setValue !== 'function') return false;
@@ -52,13 +53,13 @@ const _probe = {
 };
 
 
-export function createFill(UI) {
+export function createFill(UI: CchUI): CchFill {
 const Fill = {
   _itiAdapter: createItiAdapter(),
 
   // 唯一注入函数：原生 setter 赋值 + input→change→blur。所有 fill 路径（select/input/iti
   // 兜底）的赋值与事件派发都收敛到这里；fillSelect/fillInput/adapter 不再直接写 el.value。
-  _inject(el, value, opts) {
+  _inject(el: AnyEl, value: string, opts?: { selectedIndex?: number }): void {
     let applied = false;
     let prevValue = '';
 
@@ -92,21 +93,21 @@ const Fill = {
     });
   },
 
-  fillIti(el, country) {
+  fillIti(el: AnyEl, country: Country): boolean {
     return this._itiAdapter.fill(el, country, (v) => this._inject(el, v));
   },
 
-  fillSelect(el, country) {
+  fillSelect(el: AnyEl, country: Country): boolean {
     const opts   = Array.from(el.options);
     const digits = country.code.replace(/\D/g, '');
     const iso    = country.iso.toLowerCase();
     const enName = (country.countryEn || '').toLowerCase();
     const cnName = country.country || '';
-    const valueMatch = (o) => {
+    const valueMatch = (o: AnyEl) => {
       const v = (o.value || '').trim();
       return v === country.code || v === digits || v === '00' + digits || v.toLowerCase() === iso;
     };
-    const nameInText = (o) => {
+    const nameInText = (o: AnyEl) => {
       const t = (o.text || '').trim();
       if (!t) return false;
       const tl = t.toLowerCase();
@@ -136,7 +137,7 @@ const Fill = {
     return false;
   },
 
-  fillInput(el, country) {
+  fillInput(el: AnyEl, country: Country): boolean {
     const ph  = (el.placeholder || '').trim();
     let fmt = 'plus';
     if (/^00\d/.test(ph))  fmt = 'double0';
@@ -159,17 +160,17 @@ const Fill = {
   // option[aria-selected]。antd/EP 无 DOM 承载（组件 state）→ 走 listbox 交互路径。
   // 承值探测只在结构容器内（form + 5 层祖先），不上溯到 document 全域——防 CSRF 等页级
   // 隐藏 input 被误当承值面。
-  _carrier(el) {
-    const scopes = [];
+  _carrier(el: AnyEl): AnyEl | null {
+    const scopes: AnyEl[] = [];
     try { if (el.form) scopes.push(el.form); } catch {}
-    let p = el;
+    let p: AnyEl | null = el;
     for (let i = 0; i < 5 && p; i++) {
       try { p = p.parentElement || p.host || null; } catch { p = null; }
       if (p) scopes.push(p);
     }
     for (const sc of scopes) {
       if (!sc || !sc.querySelectorAll) continue;
-      let list = [];
+      let list: AnyEl[] = [];
       try { list = Array.prototype.slice.call(sc.querySelectorAll('input[name], select[name]')); } catch {}
       for (const n of list) {
         if (n === el) continue;
@@ -185,7 +186,7 @@ const Fill = {
     return null;
   },
 
-  _listboxOf(el) {
+  _listboxOf(el: AnyEl): AnyEl | null {
     const idStr = [el.getAttribute('aria-controls'), el.getAttribute('aria-owns')]
       .filter(Boolean).join(' ');
     if (!idStr) return null;
@@ -206,7 +207,7 @@ const Fill = {
 
   // option↔国家匹配: 值属性（data-value/value）+ 文本/aria-label 双面（antd observed:
   // 文本=ISO2、国名在 aria-label），全部大小写不敏感；国家名互证吃 EN/CN 双语
-  _pseudoOptMatch(o, country) {
+  _pseudoOptMatch(o: AnyEl, country: Country): boolean {
     let v = '', t = '', lab = '';
     try { v = String(o.getAttribute('data-value') || o.getAttribute('value') || '').trim(); } catch {}
     try { t = String(o.textContent || '').trim(); } catch {}
@@ -220,11 +221,11 @@ const Fill = {
   },
 
   // 点击选值: listbox 未挂载（关闭态）先点触发器展开再找（单次，同步渲染库直接命中）
-  _pseudoFillByListbox(el, country) {
+  _pseudoFillByListbox(el: AnyEl, country: Country): boolean {
     let find = () => {
       const lb = this._listboxOf(el);
       if (!lb || !lb.querySelectorAll) return null;
-      let opts = [];
+      let opts: AnyEl[] = [];
       try { opts = Array.prototype.slice.call(lb.querySelectorAll('[role="option"]')); } catch {}
       return opts.find(o => this._pseudoOptMatch(o, country)) || null;
     };
@@ -240,8 +241,8 @@ const Fill = {
 
   // 键盘选值（select-only 备援）: focus → ArrowDown 展开 → 逐项导航到目标 → Enter。
   // 导航起点假设为首个 option（高亮复位形态）；起点不确定的库可能偏移，点击路径优先。
-  _pseudoFillByKeys(el, country) {
-    const fire = (key) => {
+  _pseudoFillByKeys(el: AnyEl, country: Country): boolean {
+    const fire = (key: string) => {
       try { el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })); } catch {}
     };
     try { if (el.focus) el.focus(); } catch {}
@@ -249,7 +250,7 @@ const Fill = {
     try { if (!lb && el.getAttribute('aria-expanded') !== 'true') fire('ArrowDown'); } catch {}
     lb = this._listboxOf(el);
     if (!lb || !lb.querySelectorAll) return false;
-    let opts = [];
+    let opts: AnyEl[] = [];
     try { opts = Array.prototype.slice.call(lb.querySelectorAll('[role="option"]')); } catch {}
     const idx = opts.findIndex(o => this._pseudoOptMatch(o, country));
     if (idx < 0) return false;
@@ -258,7 +259,7 @@ const Fill = {
     return true;
   },
 
-  fillPseudo(el, country) {
+  fillPseudo(el: AnyEl, country: Country): boolean {
     // 可编辑型: 非 readonly INPUT 触发器（react-select 形态）→ 隐藏承值 input 原生 setter
     const editable = el.tagName === 'INPUT' && el.getAttribute('readonly') === null;
     if (editable) {
@@ -270,7 +271,7 @@ const Fill = {
     return this._pseudoFillByKeys(el, country);
   },
 
-  run(el, kind, country) {
+  run(el: AnyEl, kind: FillKind | null, country: Country): void {
     let ok = false;
     if (kind === 'iti')         ok = this.fillIti(el, country);
     else if (kind === 'select') ok = this.fillSelect(el, country);

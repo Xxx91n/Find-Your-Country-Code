@@ -6,6 +6,7 @@ import { createRules } from './rules';
 import { t } from './i18n';
 import { ISO2_MAP } from './data/countries';
 import { IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from './config';
+import type { CchFill, CchRules } from './types';
 // GM_registerMenuCommand 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零）
 declare function GM_registerMenuCommand(title: string, fn: () => void): void;
 (function () {
@@ -13,7 +14,7 @@ declare function GM_registerMenuCommand(title: string, fn: () => void): void;
 const Store = createStore();
 Store.init();
 const Rules = createRules(Store);
-const deps = { Fill: null, Rules: null };
+const deps: { Fill: CchFill | null; Rules: CchRules | null } = { Fill: null, Rules: null };
 const UI = createUI(Store, deps);
 const Fill = createFill(UI);
 deps.Fill = Fill;
@@ -34,7 +35,7 @@ function init() { Store.init(); UI.css(); Store.subscribe(() => {
       if (typeof Detect.scheduleScan === 'function') Detect.scheduleScan();
     }
   } catch {}
-  if (!UI._popup) return; const q = UI._popup.querySelector('#cch-si')?.value || ''; UI._render(q); }); Detect.scan(document.body); Detect.watch(); }
+  if (!UI._popup) return; const q = UI._popup.querySelector<HTMLInputElement>('#cch-si')?.value || ''; UI._render(q); }); Detect.scan(document.body); Detect.watch(); }
 // 票 12 帧治理：每帧各自检测与填充（行为同源）；面板宿主仅顶层渲染。
 // 子帧图标点击 → postMessage 请求顶层代开面板；选中国家 → postMessage 回子帧执行 Fill.run。
 // 跨帧存储一致性（收藏/站点规则）复用既有 GM 存储 + BroadcastChannel + GM_addValueChangeListener（不新造第二套）。
@@ -44,7 +45,7 @@ if (IS_TOP_FRAME) {
     const m = e && e.data;
     if (!m || m.__cch !== FRAME_TAG || m.type !== FRAME_OPEN_MSG) return;
     if (e.source === window) return; // 忽略自身
-    UI.open(null, null, null, { remoteSource: e.source });
+    UI.open(null, null, null, { remoteSource: e.source as Window | null });
   });
 } else {
   // 子帧：监听顶层回传的填充/负反馈指令，对 _requestRemoteOpen 登记的 pending 字段执行

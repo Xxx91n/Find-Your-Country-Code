@@ -1,13 +1,14 @@
 import { t } from '../i18n';
 import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
+import type { AnyEl, AnyRoot, CchFill, CchRules, CchStore, Country, FillKind, OverrideRule, PrefsDoc, Signal, Tier } from '../types';
 // GM_* 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零；与 store 的声明互不冲突）
 declare function GM_getValue(key: string, defaultValue?: string): string;
 declare function GM_setValue(key: string, value: string): void;
 
 // 票 07：元素命中的覆盖规则副本列表（负反馈幂等/冲突清理共用；非法选择器静默不命中）
-export function matchingOverrides(el, overrides) {
-  const out = [];
+export function matchingOverrides(el: AnyEl | null, overrides: unknown): OverrideRule[] {
+  const out: OverrideRule[] = [];
   if (!el || typeof el.matches !== 'function' || !Array.isArray(overrides)) return out;
   for (const o of overrides) {
     if (!o || typeof o.selector !== 'string' || !o.selector) continue;
@@ -16,16 +17,17 @@ export function matchingOverrides(el, overrides) {
   return out;
 }
 
-export function createUI(Store, deps) {
+export function createUI(Store: CchStore, deps: { Fill: CchFill | null; Rules: CchRules | null }): CchUI {
 const UI = {
-  _root: null, _popup: null, _target: null, _kind: null,
-  _toastTimer: null, _closeHandler: null, _anchor: null,
-  _remoteSource: null,
-  _viewportHandler: null, _rafPending: false,
-  _lowFields: new Map(),
-  _prefs: null, _view: 'list',
+  _root: null as HTMLElement | null, _popup: null as HTMLElement | null,
+  _target: null as AnyEl | null, _kind: null as FillKind | null,
+  _toastTimer: undefined as number | undefined, _closeHandler: null as ((e: MouseEvent) => void) | null, _anchor: null as AnyEl | null,
+  _remoteSource: null as Window | null,
+  _viewportHandler: null as (() => void) | null, _rafPending: false,
+  _lowFields: new Map<AnyEl, { kind: FillKind; score: number; signals: Signal[] }>(),
+  _prefs: null as PrefsDoc | null, _view: 'list' as 'list' | 'rules',
 
-  css() {
+  css(): void {
     if (document.getElementById('cch-style')) return;
     const s = document.createElement('style');
     s.id = 'cch-style';
@@ -104,7 +106,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     document.head.appendChild(s);
   },
 
-  toast(msg) {
+  toast(msg: string): void {
     let el = document.getElementById('cch-toast');
     if (!el) { el = document.createElement('div'); el.id = 'cch-toast'; document.body.appendChild(el); }
     el.textContent = msg;
@@ -113,7 +115,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     this._toastTimer = setTimeout(() => el.classList.remove('on'), 2000);
   },
 
-  attach(el, kind, tier = 'auto', score = 0, signals = [], opts = {}) {
+  attach(el: AnyEl, kind: FillKind, tier: Tier = 'auto', score: number = 0, signals: Signal[] = [], opts: { force?: boolean } = {}): void {
     if (el.closest('.' + WRAPPER_CLASS)) return;
     // 票 07 [SP US17/18]：中置信样式可配置 —— hidden 偏好下低调档不注入，转为可召唤登记；
     // 用户显式召唤（summon，force=true）不受该偏好拦截
@@ -167,7 +169,7 @@ border-radius:8px;cursor:pointer;text-align:center}
   },
 
   // 票 04：与 attach 对称的拆除（重评判 none 档 → 误挂图标移除）。失败安全：无 wrapper 直接返回。
-  detach(el) {
+  detach(el: AnyEl): void {
     this._lowFields.delete(el);
     const wrap = el.closest('.' + WRAPPER_CLASS);
     if (!wrap) return;
@@ -180,7 +182,7 @@ border-radius:8px;cursor:pointer;text-align:center}
 
   // 票 07：豁免即时生效 —— 拆除本页全部图标（含 open shadow root 内），清空召唤登记。
   // 检测入口的豁免短路只阻止新注入（05 报告偏离点 4 移交本票收尾），已挂图标由这里拆除。
-  detachAll() {
+  detachAll(): void {
     for (const wrap of this._allWrappers(document)) {
       const field = this._fieldOf(wrap);
       const parent = wrap.parentNode;
@@ -192,22 +194,22 @@ border-radius:8px;cursor:pointer;text-align:center}
   },
 
   // wrapper 内的目标字段（首个非 cch-btn 子元素）
-  _fieldOf(wrap) {
+  _fieldOf(wrap: AnyEl): AnyEl | null {
     for (const k of wrap.children) {
-      if (!(k.classList && k.classList.contains('cch-btn'))) return k;
+      if (!(k.classList && k.classList.contains('cch-btn'))) return k as AnyEl;
     }
     return null;
   },
 
   // open shadow root 递归收集全部 wrapper（与 Detect._deepRoots 同遍历心智，UI 自有轻量版）
-  _allWrappers(root) {
-    const out = [];
-    const walk = r => {
-      let els = [];
-      try { els = Array.from(r.querySelectorAll('.' + WRAPPER_CLASS)); } catch {}
+  _allWrappers(root: AnyRoot): AnyEl[] {
+    const out: AnyEl[] = [];
+    const walk = (r: AnyRoot): void => {
+      let els: AnyEl[] = [];
+      try { els = Array.from(r.querySelectorAll<AnyEl>('.' + WRAPPER_CLASS)); } catch {}
       out.push(...els);
-      let all = [];
-      try { all = r.querySelectorAll('*'); } catch { return; }
+      let all: NodeListOf<AnyEl>;
+      try { all = r.querySelectorAll<AnyEl>('*'); } catch { return; }
       for (const e of all) { if (e.shadowRoot) walk(e.shadowRoot); }
     };
     walk(root);
@@ -215,42 +217,42 @@ border-radius:8px;cursor:pointer;text-align:center}
   },
 
   // 票 04：低置信登记里的强引用清理（元素已断连 → 移除，防 Map 泄漏与幽灵召唤项）
-  _pruneLow() {
+  _pruneLow(): void {
     for (const k of [...this._lowFields.keys()]) {
       if (!k.isConnected) this._lowFields.delete(k);
     }
   },
 
   // ── 票 07：UI 偏好（GM 持久化；独立键与收藏/规则解耦；损坏值防御性回退默认） ──
-  prefs() {
+  prefs(): PrefsDoc {
     if (this._prefs) return this._prefs;
-    let p = null;
+    let p: PrefsDoc | null = null;
     try { p = JSON.parse(GM_getValue(UI_PREFS_KEY, 'null')); } catch {}
     if (!p || typeof p !== 'object' || Array.isArray(p)) p = {};
-    if (!LOWKEY_MODES.includes(p.lowkeyMode)) p.lowkeyMode = 'dim';
+    if (!p.lowkeyMode || !LOWKEY_MODES.includes(p.lowkeyMode)) p.lowkeyMode = 'dim';
     this._prefs = p;
     return p;
   },
 
-  setPref(key, val) {
+  setPref(key: string, val: unknown): void {
     const p = this.prefs();
     p[key] = val;
     try { GM_setValue(UI_PREFS_KEY, JSON.stringify(p)); } catch {}
   },
 
   // 票 07：负反馈/规则视图所需规则引擎（未接线时返回 null = 功能降级）
-  _rules() {
+  _rules(): CchRules | null {
     const R = deps.Rules;
     return R && typeof R.listRules === 'function' ? R : null;
   },
 
   // 低置信字段登记（不注入图标；面板「手动召唤」入口 [SP US18]）
-  rememberLow(el, kind, score, signals) {
+  rememberLow(el: AnyEl, kind: FillKind, score: number, signals: Signal[]): void {
     this._lowFields.set(el, { kind, score, signals });
   },
 
   // 面板召唤：对已登记的低置信字段补挂图标（用户显式请求 → 按高置信样式挂）
-  summon(el) {
+  summon(el: AnyEl): boolean {
     const rec = this._lowFields.get(el);
     if (!rec) return false;
     this._lowFields.delete(el);
@@ -259,7 +261,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     return true;
   },
 
-  open(target, kind, anchor, opts) {
+  open(target: AnyEl | null, kind: FillKind | null, anchor: AnyEl | null, opts: { remoteSource?: Window | null } = {}): void {
     opts = opts || {};
     // 票 12:子帧不渲染面板宿主——图标点击经 postMessage 请求顶层代开
     if (!IS_TOP_FRAME && !opts.remoteSource) {
@@ -384,7 +386,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     });
   },
 
-  _closePopup() {
+  _closePopup(): void {
     if (this._popup) {
       this._popup.remove();
       this._popup = null;
@@ -406,7 +408,7 @@ border-radius:8px;cursor:pointer;text-align:center}
   // 票 07：负反馈 [SP US9] —— 把当前目标字段记为 none 规则并即时拆图标（不等 350ms 重扫）。
   // 幂等：已有命中该字段的 none 规则 → 不重复写；命中字段既有 auto/lowkey 强制规则 →
   // 先删后写（后到用户意图优先，避免文档序让旧规则压住负反馈）。
-  _feedback() {
+  _feedback(): void {
     const el = this._target;
     // 票 12:远程面板负反馈 → postMessage 回子帧本地执行(规则按子帧 host 写入)
     if (this._remoteSource) {
@@ -437,14 +439,14 @@ border-radius:8px;cursor:pointer;text-align:center}
 
 
   // 票 12:子帧图标点击 → 保存目标字段 + 请求顶层代开面板(postMessage 跨域可达)
-  _requestRemoteOpen(target, kind) {
+  _requestRemoteOpen(target: AnyEl | null, kind: FillKind | null): void {
     this._target = target;
     this._kind = kind;
-    try { window.top.postMessage({ __cch: FRAME_TAG, type: FRAME_OPEN_MSG }, '*'); } catch {}
+    try { window.top?.postMessage({ __cch: FRAME_TAG, type: FRAME_OPEN_MSG }, '*'); } catch {}
   },
   // 票 07：规则管理渲染 —— 豁免开关（当前站点）+ 豁免域名删除 + 覆盖规则查看/删除 +
   // 低调样式切换。只消费 Rules/Store 公共 API（listRules/pageOverrides/setExempt/removeOverride），不直改存储。
-  _renderRules() {
+  _renderRules(): void {
     const sec = this._popup && this._popup.querySelector('#cch-rules-view');
     if (!sec) return;
     sec.innerHTML = '';
@@ -537,7 +539,7 @@ border-radius:8px;cursor:pointer;text-align:center}
 
   // 票 07 [SP US17]：低调样式切换 dim ⇄ hidden，对已挂/已登记字段即时迁移（无需刷新）：
   // dim → 召唤登记批量按低调样式补挂；hidden → 拆低调档图标转回召唤登记（auto 档不受影响）
-  _applyLowkeyMode(mode) {
+  _applyLowkeyMode(mode: string): void {
     if (mode === 'dim') {
       const entries = [...this._lowFields.entries()];
       this._lowFields.clear();
@@ -564,7 +566,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
   },
 
-  _bindViewportTracking() {
+  _bindViewportTracking(): void {
     if (this._viewportHandler) return;
     this._viewportHandler = () => {
       if (this._rafPending) return;
@@ -579,8 +581,8 @@ border-radius:8px;cursor:pointer;text-align:center}
     window.addEventListener('resize', this._viewportHandler);
   },
 
-  _bindPopupEvents(pop) {
-    const si = pop.querySelector('#cch-si');
+  _bindPopupEvents(pop: HTMLElement): void {
+    const si = pop.querySelector<HTMLInputElement>('#cch-si');
     if (si) {
       si.addEventListener('input', () => {
         if (this._popup !== pop) return;
@@ -589,7 +591,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
     pop.addEventListener('click', e => {
       if (this._popup !== pop) return;
-      const favBtn = e.target.closest('.cch-fav');
+      const favBtn = (e.target as HTMLElement).closest('.cch-fav');
       if (favBtn) {
         e.stopPropagation();
         const iso = (favBtn.dataset.iso || '').toLowerCase();
@@ -599,7 +601,7 @@ border-radius:8px;cursor:pointer;text-align:center}
         else Store.addFav(entry);
         return;
       }
-      const row = e.target.closest('.cch-row');
+      const row = (e.target as HTMLElement).closest('.cch-row');
       if (!row) return;
       const iso = (row.dataset.iso || '').toLowerCase();
       const c = ISO2_MAP[iso];
@@ -610,12 +612,12 @@ border-radius:8px;cursor:pointer;text-align:center}
         this._closePopup();
         return;
       }
-      deps.Fill.run(this._target, this._kind, c);
+      deps.Fill!.run(this._target!, this._kind, c);
       this._closePopup();
     });
   },
 
-  _pos(pop, anchor) {
+  _pos(pop: HTMLElement, anchor: AnyEl | null): void {
     if (!anchor) {
       // 票 12:远程面板(子帧图标点击经顶层代开)无本地锚点 → 居中定位
       const pw = pop.offsetWidth || 320;
@@ -637,14 +639,14 @@ border-radius:8px;cursor:pointer;text-align:center}
     pop.style.cssText += `;left:${l}px;top:${tp}px;position:fixed`;
   },
 
-  _match(c, query) {
+  _match(c: Country, query: string): boolean {
     return c.country.includes(query) ||
       c.countryEn.toLowerCase().includes(query) ||
       c.code.includes(query) ||
       c.iso.toLowerCase().includes(query);
   },
 
-  _renderRows(list, data) {
+  _renderRows(list: HTMLElement, data: Country[]): void {
     list.innerHTML = '';
     if (!data.length) {
       list.innerHTML = `<div class="cch-empty">${t('none')}</div>`;
@@ -665,25 +667,25 @@ border-radius:8px;cursor:pointer;text-align:center}
     list.appendChild(frag);
   },
 
-  _render(q) {
+  _render(q: string): void {
     if (!this._popup) return;
-    const favList = this._popup.querySelector('.cch-list[data-sec="favs"]');
-    const allList = this._popup.querySelector('.cch-list[data-sec="all"]');
-    const rulesSec = this._popup.querySelector('#cch-rules-view');
-    const sm = this._popup.querySelector('#cch-summon');
-    const fb = this._popup.querySelector('#cch-fb');
+    const favList = this._popup.querySelector<HTMLElement>('.cch-list[data-sec="favs"]');
+    const allList = this._popup.querySelector<HTMLElement>('.cch-list[data-sec="all"]');
+    const rulesSec = this._popup.querySelector<HTMLElement>('#cch-rules-view');
+    const sm = this._popup.querySelector<HTMLElement>('#cch-summon');
+    const fb = this._popup.querySelector<HTMLElement>('#cch-fb');
     if (this._view === 'rules') {
       // 票 07：规则管理视图 —— 隐藏国家列表/召唤/负反馈，仅渲染规则区
-      if (favList && favList.closest('.cch-sec')) favList.closest('.cch-sec').hidden = true;
-      if (allList && allList.closest('.cch-sec')) allList.closest('.cch-sec').hidden = true;
+      if (favList && favList.closest('.cch-sec')) favList.closest<HTMLElement>('.cch-sec')!.hidden = true;
+      if (allList && allList.closest('.cch-sec')) allList.closest<HTMLElement>('.cch-sec')!.hidden = true;
       if (sm) sm.hidden = true;
       if (fb) fb.hidden = true;
       if (rulesSec) { rulesSec.hidden = false; this._renderRules(); }
       return;
     }
     if (rulesSec) rulesSec.hidden = true;
-    if (favList && favList.closest('.cch-sec')) favList.closest('.cch-sec').hidden = false;
-    if (allList && allList.closest('.cch-sec')) allList.closest('.cch-sec').hidden = false;
+    if (favList && favList.closest('.cch-sec')) favList.closest<HTMLElement>('.cch-sec')!.hidden = false;
+    if (allList && allList.closest('.cch-sec')) allList.closest<HTMLElement>('.cch-sec')!.hidden = false;
     if (sm) sm.hidden = this._lowFields.size === 0;
     if (fb) fb.hidden = false;
     if (!favList || !allList) return;
