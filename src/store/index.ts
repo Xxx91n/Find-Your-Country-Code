@@ -20,6 +20,7 @@
 //   }
 // ════════════════════════════════════════════════════════
 import { RULES_KEY, RULES_BROADCAST, RULE_TIERS, RULES_MAX_OVERRIDES } from '../config';
+import type { CchStore, Country, OverrideRule, OverrideRuleInput, RulesDoc } from '../types';
 
 // GM_* 为 userscript 宿主注入的全局（vite 构建无类型门禁；此处仅声明供 tsc 局部清零）
 declare function GM_getValue(key: string, defaultValue?: string): string;
@@ -29,19 +30,31 @@ declare function GM_addValueChangeListener(
   fn: (key: string, oldValue: string, newValue: string, remote: boolean) => void,
 ): number;
 
-export function createStore() {
+interface FavsDoc { favs: Country[] }
+
+function isOverrideRule(o: unknown): o is OverrideRule {
+  if (!o || typeof o !== 'object') return false;
+  const v = o as Partial<OverrideRule>;
+  return typeof v.id === 'string' && !!v.id &&
+    typeof v.host === 'string' && !!v.host &&
+    typeof v.selector === 'string' && !!v.selector.trim() &&
+    !!v.action && typeof v.action === 'object' &&
+    RULE_TIERS.includes(v.action.tier);
+}
+
+export function createStore(): CchStore {
 const Store = {
   _k: 'cch_v33',
-  _c: null,
-  _bc: null,
-  _gmListener: null,
-  _rulesCache: null,
-  _rulesBC: null,
-  _rulesListener: null,
-  _subs: new Set(),
+  _c: null as FavsDoc | null,
+  _bc: null as BroadcastChannel | null,
+  _gmListener: null as number | null,
+  _rulesCache: null as RulesDoc | null,
+  _rulesBC: null as BroadcastChannel | null,
+  _rulesListener: null as number | null,
+  _subs: new Set<() => void>(),
   _notifyQueued: false,
   _sid: Math.random().toString(36).slice(2),
-  init() {
+  init(): void {
     if (!this._bc && typeof BroadcastChannel !== 'undefined') {
       try {
         this._bc = new BroadcastChannel('cch-favs-sync-v1');
@@ -97,7 +110,7 @@ const Store = {
       } catch {}
     }
   },
-  _notify() {
+  _notify(): void {
     if (this._notifyQueued) return;
     this._notifyQueued = true;
     setTimeout(() => {
@@ -107,36 +120,38 @@ const Store = {
       });
     }, 0);
   },
-  subscribe(fn) {
+  subscribe(fn: () => void): () => void {
     if (typeof fn !== 'function') return () => {};
     this._subs.add(fn);
-    return () => this._subs.delete(fn);
+    return () => { this._subs.delete(fn); };
   },
-  _broadcastFavs(favs) {
+  _broadcastFavs(favs: Country[]): void {
     if (!this._bc) return;
     try {
       this._bc.postMessage({ type: 'favs-sync', sid: this._sid, favs });
     } catch {}
   },
-  _broadcastRules() {
+  _broadcastRules(): void {
     if (!this._rulesBC) return;
     try {
       this._rulesBC.postMessage({ type: RULES_BROADCAST, sid: this._sid, rules: this._rulesCache });
     } catch {}
   },
-  _load() {
+  _load(): FavsDoc {
     if (this._c) return this._c;
-    try { this._c = JSON.parse(GM_getValue(this._k, '{}')); } catch { this._c = {}; }
-    if (!Array.isArray(this._c.favs)) this._c.favs = [];
-    return this._c;
+    let d: FavsDoc;
+    try { d = JSON.parse(GM_getValue(this._k, '{}')); } catch { d = {} as FavsDoc; }
+    if (!Array.isArray(d.favs)) d.favs = [];
+    this._c = d;
+    return d;
   },
-  _save(d, silent) {
+  _save(d: FavsDoc, silent?: boolean): void {
     this._c = d;
     GM_setValue(this._k, JSON.stringify(d));
     if (!silent) this._broadcastFavs(d.favs);
   },
-  isFav(code, iso) { return this._load().favs.some(f => f.code === code && f.iso === iso); },
-  addFav(c) {
+  isFav(code: string, iso: string): boolean { return this._load().favs.some(f => f.code === code && f.iso === iso); },
+  addFav(c: Country): void {
     const d = this._load();
     if (!this.isFav(c.code, c.iso)) {
       d.favs.push(c);
@@ -144,20 +159,20 @@ const Store = {
       this._notify();
     }
   },
-  rmFav(code, iso) {
+  rmFav(code: string, iso: string): void {
     const d = this._load();
     d.favs = d.favs.filter(f => !(f.code === code && f.iso === iso));
     this._save(d);
     this._notify();
   },
-  getFavs() { return this._load().favs; },
+  getFavs(): Country[] { return this._load().favs; },
 
   // ════════════════════════════════════════════════════════
   // 站点规则（票 05）——持久化原语 + CRUD 函数边界（票 07 UI 只依赖这些入口）
   // ════════════════════════════════════════════════════════
 
   // 域名归一：字符串（URL / 裸域名）/ 位置对象（location）→ 小写 hostname（去端口/路径/末点）
-  _hostOf(input) {
+  _hostOf(input: string | { hostname?: string } | null | undefined): string {
     try {
       let host = '';
       if (input && typeof input === 'object') {
@@ -173,25 +188,22 @@ const Store = {
   },
 
   // 防御性规范化（远端/GM 值可能被外部写坏；格式契约见文件头注）
-  _normRulesDoc(r) {
-    if (!r || typeof r !== 'object' || Array.isArray(r) || r.version !== 1) return null;
-    if (!Array.isArray(r.exempt)) r.exempt = [];
-    r.exempt = r.exempt.filter(h => typeof h === 'string' && h.trim()).map(h => h.trim().toLowerCase());
-    if (!Array.isArray(r.overrides)) r.overrides = [];
-    r.overrides = r.overrides.filter(o => o && typeof o === 'object' &&
-      typeof o.id === 'string' && o.id &&
-      typeof o.host === 'string' && o.host &&
-      typeof o.selector === 'string' && o.selector.trim() &&
-      o.action && typeof o.action === 'object' && RULE_TIERS.includes(o.action.tier))
-      .slice(0, RULES_MAX_OVERRIDES);
-    if (r.global !== null && (typeof r.global !== 'object' || Array.isArray(r.global))) r.global = null;
-    return r;
+  _normRulesDoc(r: unknown): RulesDoc | null {
+
+    if (!r || typeof r !== 'object' || Array.isArray(r) || (r as { version?: unknown }).version !== 1) return null;
+    const d = r as RulesDoc;
+    if (!Array.isArray(d.exempt)) d.exempt = [];
+    d.exempt = d.exempt.filter(h => typeof h === 'string' && h.trim()).map(h => h.trim().toLowerCase());
+    if (!Array.isArray(d.overrides)) d.overrides = [];
+    d.overrides = d.overrides.filter(isOverrideRule).slice(0, RULES_MAX_OVERRIDES);
+    if (d.global !== null && (typeof d.global !== 'object' || Array.isArray(d.global))) d.global = null;
+    return d;
   },
 
   // 查（R）：全量副本（外部改副本不影响存储）
-  getSiteRules() {
+  getSiteRules(): RulesDoc {
     if (!this._rulesCache) {
-      let r = null;
+      let r: RulesDoc | null = null;
       try { r = JSON.parse(GM_getValue(RULES_KEY, 'null')); } catch {}
       if (!this._normRulesDoc(r)) r = { version: 1, exempt: [], overrides: [], global: null };
       this._rulesCache = r;
@@ -199,13 +211,13 @@ const Store = {
     return JSON.parse(JSON.stringify(this._rulesCache));
   },
   // 查：豁免判定（host 归一 + 点边界子域匹配：example.com 覆盖 www.example.com）
-  isExempt(input) {
+  isExempt(input: string): boolean {
     const host = this._hostOf(input);
     if (!host) return false;
     return this.getSiteRules().exempt.some(k => host === k || host.endsWith('.' + k));
   },
   // 增/改（U）：豁免域名开关（幂等）
-  setExempt(input, on) {
+  setExempt(input: string, on: boolean): boolean {
     const host = this._hostOf(input);
     if (!host) return false;
     const r = this.getSiteRules();
@@ -216,12 +228,12 @@ const Store = {
     return true;
   },
   // 增/改（U）：元素级覆盖规则（幂等按 id；新规则生成 id/timestamps）
-  upsertOverride(rule) {
+  upsertOverride(rule: OverrideRuleInput): string | null {
     const r = this.getSiteRules();
     const host = this._hostOf(rule && rule.host);
     const sel = rule && typeof rule.selector === 'string' ? rule.selector.trim() : '';
     const tier = rule && rule.action && rule.action.tier;
-    if (!host || !sel || !RULE_TIERS.includes(tier)) return null;
+    if (!host || !sel || !tier || !RULE_TIERS.includes(tier)) return null;
     const note = typeof rule.note === 'string' ? rule.note : '';
     if (rule.id && typeof rule.id === 'string') {
       const o = r.overrides.find(x => x.id === rule.id);
@@ -241,7 +253,7 @@ const Store = {
     return o.id;
   },
   // 删（D）
-  removeOverride(id) {
+  removeOverride(id: string): boolean {
     const r = this.getSiteRules();
     const i = r.overrides.findIndex(o => o.id === id);
     if (i < 0) return false;
@@ -250,7 +262,7 @@ const Store = {
     return true;
   },
   // 写路径（内部）：缓存 + GM 持久化 + 本页通知 + 跨标签页广播
-  _writeRules(r) {
+  _writeRules(r: RulesDoc): void {
     this._rulesCache = r;
     try { GM_setValue(RULES_KEY, JSON.stringify(r)); } catch {}
     this._broadcastRules();

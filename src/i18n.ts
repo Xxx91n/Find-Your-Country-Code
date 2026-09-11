@@ -21,7 +21,7 @@ const MSG = {
         rulesEmpty:'No rules on this site', ruleDeleted:'Rule removed', on:'On', off:'Off',
         lowkeyStyle:'Low-key style (mid-confidence)', lowkeyDim:'Dim (visible)', lowkeyHidden:'Hidden (summonable)' },
 };
-const t = k => (MSG[LANG] || MSG.en)[k] || k;
+const t = (k: keyof typeof MSG.zh): string => (MSG[LANG] || MSG.en)[k] || k;
 
 // ════════════════════════════════════════════════════════
 

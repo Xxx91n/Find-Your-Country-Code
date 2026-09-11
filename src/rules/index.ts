@@ -10,11 +10,12 @@
 // 数据格式 v1 与 CRUD 函数边界：见 ../store/index.ts 头注（权威契约，报告同步）。
 // ════════════════════════════════════════════════════════
 import { SCORE_AUTO, SCORE_LOWKEY, OWN_ROOT_ID, RULE_FORCE_TIER, RULE_TIERS } from '../config';
+import type { AnyEl, CchRules, CchStore, OverrideRule, OverrideRuleInput, RulesDoc, Tier } from '../types';
 
-export function createRules(Store) {
+export function createRules(Store: CchStore): CchRules {
   const Rules = {
     // ── 内部：自身 UI 判定（与 Detect._own 同语义；规则引擎独立持有，避免 UI 依赖）──
-    _own(el) {
+    _own(el: AnyEl | null) {
       // 票 04 语义（07-fix 同步到 rules 层，04 报告 §1.3 附带修复 1 的遗漏面）：移除
       // closest('.cch-wrapper') 检查 —— wrapper 是脚本自建的包裹层，字段本身不是 UI；
       // 按包裹判定会把全部已挂图标字段挡在负反馈之外（brain-probe-07-fb 取证 confirmed：
@@ -27,17 +28,17 @@ export function createRules(Store) {
     },
 
     // ── 内部：CSS 选择器安全匹配（非法选择器静默不命中，不抛错污染检测主路径）──
-    _safeMatches(el, selector) {
+    _safeMatches(el: AnyEl, selector: string) {
       try { return !!el.matches(selector); } catch { return false; }
     },
 
     // ════ 读（查）════
 
     // 全量规则（07 面板列表用）
-    listRules() { return Store.getSiteRules(); },
+    listRules(): RulesDoc { return Store.getSiteRules(); },
 
     // 豁免判定：URL/hostname → 域名豁免命中？
-    isExempt(urlOrHost) { return Store.isExempt(urlOrHost); },
+    isExempt(urlOrHost: string): boolean { return Store.isExempt(urlOrHost); },
 
     // 当前页豁免（检测入口最前置闸门调用）
     isPageExcluded() {
@@ -50,7 +51,7 @@ export function createRules(Store) {
     },
 
     // 当前页生效的覆盖规则（07 面板高亮当前站点规则用）
-    pageOverrides() {
+    pageOverrides(): OverrideRule[] {
       try {
         if (typeof location !== 'undefined' && location && location.href) {
           return this.overridesFor(location.href);
@@ -60,7 +61,7 @@ export function createRules(Store) {
     },
 
     // URL/hostname → 命中的覆盖规则副本列表
-    overridesFor(urlOrHost) {
+    overridesFor(urlOrHost: string): OverrideRule[] {
       let host = '';
       try { host = Store._hostOf(urlOrHost); } catch { host = ''; }
       if (!host) return [];
@@ -71,7 +72,7 @@ export function createRules(Store) {
 
     // 评分前的强制选择器命中查询（Bitwarden linked field 语义）：
     // 返回命中的 tier（RULE_FORCE_TIER='auto'）或 null；自身 UI 永不命中。
-    forcedTier(el) {
+    forcedTier(el: AnyEl): Tier | null {
       if (this._own(el)) return null;
       const overrides = this.pageOverrides();
       for (const o of overrides) {
@@ -83,7 +84,7 @@ export function createRules(Store) {
     // 分档覆盖查询：当前页规则声明的 tier（无规则/不适用 → null = 引擎评分定档）
     // 语义（KeePassXC Site Preferences 心智，全页级）：只覆盖 auto/lowkey 两档判定；
     // 'none' 走豁免（全页跳过），不在元素级覆盖里重复表达。
-    pageTierOverride() {
+    pageTierOverride(): Tier | null {
       for (const o of this.pageOverrides()) {
         if (o.action.tier === 'auto' || o.action.tier === 'lowkey') return o.action.tier;
       }
@@ -93,17 +94,17 @@ export function createRules(Store) {
     // ════ 写（增/改/删）════
 
     // 豁免开关（幂等；UI「全站禁用」入口 US10）
-    setExempt(urlOrHost, on = true) { return Store.setExempt(urlOrHost, on); },
+    setExempt(urlOrHost: string, on = true): boolean { return Store.setExempt(urlOrHost, on); },
 
     // 覆盖规则 upsert（幂等；传入 id 即改，不传即增）
-    upsertOverride(rule) { return Store.upsertOverride(rule); },
+    upsertOverride(rule: OverrideRuleInput): string | null { return Store.upsertOverride(rule); },
 
     // 删除覆盖规则
-    removeOverride(id) { return Store.removeOverride(id); },
+    removeOverride(id: string): boolean { return Store.removeOverride(id); },
 
     // 面板负反馈（spec US9）便捷入口：目标字段 + 当前页 → 记 'none' 覆盖规则
     // 自身 UI（面板/按钮/搜索框）不可登记 —— 规则引擎永不作用于脚本自身 UI。
-    rememberNone(el) {
+    rememberNone(el: AnyEl): string | null {
       try {
         if (this._own(el)) return null;
         let host = '';
