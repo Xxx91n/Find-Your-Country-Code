@@ -9,14 +9,14 @@
 //   E 组 既有路径回归（React18 mock/Vue/plain/TEXTAREA 全组不回归，等价票 09 门）
 //   S 组 结构检查（S1 fill .value= 恰 1 / S2 adapter 0 / S3 _probe 探测-兜底单点 /
 //        S4 textarea/select 原型路径未改：_inject 为唯一派发点，fillSelect/fillInput 不直派）
-// 用法：node .scratch/architecture-recovery/research/scripts/verify-ticket-15.mjs
+// 用法：node tests/scripts/verify-ticket-15.mjs
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(here, '..', '..', '..', '..');
+const ROOT = join(here, '..', '..');
 
 function toModuleBody(file) {
   const src = readFileSync(file, 'utf8');

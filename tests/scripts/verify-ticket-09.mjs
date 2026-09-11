@@ -12,14 +12,14 @@
 // 覆盖：React select/input/textarea 注入终态与 onChange、Vue（无 tracker）select/input、
 //   TEXTAREA 分支、事件序列 input→change→blur 一致性、bubbles/composed 元数据、
 //   直接赋值被 tracker 吞掉的对照（C1）、iti 兜底经注入回调（R7）、单一注入函数收敛结构检查。
-// 用法：node .scratch/architecture-recovery/research/scripts/verify-ticket-09.mjs
+// 用法：node tests/scripts/verify-ticket-09.mjs
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(here, '..', '..', '..', '..');
+const ROOT = join(here, '..', '..');
 
 function toModuleBody(file) {
   const src = readFileSync(file, 'utf8');

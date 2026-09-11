@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(here, '..', '..', '..', '..');
+const ROOT = join(here, '..', '..');
 let pass = 0, fail = 0;
 const failures = [];
 function check(name, cond, detail) {

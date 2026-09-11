@@ -5,14 +5,14 @@
 // 判定口径：注入 = tier ∈ {auto, lowkey}（分级行动：中置信低调注入也算注入）。
 // 验收（issue 02 第 3 条）：FP 全家桶（F1–F8）全部不注入；FN 修复组 N1/N2/N3/N4 转为注入；
 //   N5(react-phone-input-2)/N6(hidden) 保持不注入为语义决策（组件自带选择器/隐藏字段不挂图标）。
-// 用法：node .scratch/architecture-recovery/research/scripts/misdetect-repro-v2.mjs  (-v 看信号明细)
+// 用法：node tests/scripts/misdetect-repro-v2.mjs  (-v 看信号明细)
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(here, '..', '..', '..', '..');
+const ROOT = join(here, '..', '..');
 
 function toModuleBody(file) {
   const src = readFileSync(file, 'utf8');

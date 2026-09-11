@@ -5,14 +5,14 @@
 //   mock DOM 只实现引擎消费的接口面（getAttribute 含 name/id/class 反射）。
 // 覆盖：E2E 24 字段代表性映射（P 组）+ 误报 5 类/harness FP 全集（F 组，全落 none）
 //   + 旧引擎 FN 修复确认（A 组）+ autocomplete 强信号（P11/P12）。
-// 用法：node .scratch/architecture-recovery/research/scripts/verify-ticket-02.mjs  （-v 打信号明细）
+// 用法：node tests/scripts/verify-ticket-02.mjs  （-v 打信号明细）
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(here, '..', '..', '..', '..');
+const ROOT = join(here, '..', '..');
 
 function toModuleBody(file) {
   const src = readFileSync(file, 'utf8');

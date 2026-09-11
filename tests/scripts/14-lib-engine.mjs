@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-export const ROOT = join(here, '..', '..', '..', '..');
+export const ROOT = join(here, '..', '..');
 export const MANIFEST_PATH = join(ROOT, 'tests', 'corpus', 'manifest.json');
 
 export function loadManifest() {
