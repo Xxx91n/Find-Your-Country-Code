@@ -103,3 +103,47 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 - **发布证据链**: 版本三处一致 dry-run 34035726335 → 发布 run 34035951623 → Release v1.4.0(附件 @version 1.4.0 实测)→ 四链接 200(README/GF 页/Release+附件/安装直达)。
 - **CI 门禁**: 每票 ticket-scoped verify workflow + 全量 E2E;收口时 main 上 Calibration Baseline 首跑绿(34035796148,触发面扩 main 生效)。
 - **遗留(用户/后续)**: ① GreasyFork 站内同步(@1.3.4 → 1.4.0,维护者手动,凭证门控);② 真实站点冒烟(18 报告建议);③ 17 票 atomcode 交叉验证轮(串行护栏挂起,可选);④ 本地 main ref 与 origin/main 分叉待对齐(见 19 报告 §6);⑤ .gitattributes CRLF 规范化(01 票遗留,未动)。
+
+## 第三周期（仓库工程卫生, 2026-09-11）
+
+> 输入: .scratch/architecture-recovery/research/cycle3-investigation.md（锐评1.txt 取证 + atomcode 行业调研）
+> Spec: spec.md（上一周期 spec 归档为 spec-cycle2.md）
+> Tickets: issues/20-26*.md
+
+### 波次表（从 issue Blocked by 推导）
+
+| 波次 | 票 | 依赖 | 焦点 |
+|------|----|------|------|
+| **W1** | 20, 22, 23, 24, 25 | 均 None — 可并行开工 | CI 脚本迁移 + 死代码删除 + TS strict + 安全加固 + 依赖/目录卫生 |
+| **W2** | 21 | 20 | PR 触发器（需先完成 CI 脚本迁移） |
+| **W3** | 26 | 20, 21, 22, 23, 24, 25 | ADR + 文档收口（全部实施票完成后写文档） |
+
+### 票务状态与 frontier
+
+| 票 | 状态 | 报告路径 | 复核结论 | 波次 |
+|----|------|----------|----------|------|
+| 20 CI 脚本迁移 | **done（复核通过）** | research/window-reports/20-ci-script-relocation-report.md | — | W1 |
+| 21 PR 触发器 | **done（复核通过）** ✅ | research/window-reports/21-pr-triggers-report.md | — | W2 |
+| 22 死代码清理 | **done（复核通过）** | research/window-reports/22-dead-code-elimination-report.md | — | W1 |
+| 23 TS strict + typecheck | **done（复核通过）** | research/window-reports/23-ts-strict-typecheck-report.md | — | W1 |
+| 24 安全加固 | **done（复核通过）** ✅ | research/window-reports/24-security-hardening-report.md | — | W1 |
+| 25 依赖/目录卫生 | **done（复核通过）** | research/window-reports/25-dependency-directory-hygiene-report.md | — | W1 |
+| 26 ADR + 文档收口 | **done（窗口实施完成，待大脑复核）** | research/window-reports/26-adr-docs-closure-report.md | ADR-0006 落库（accepted，五项决策+反证条件）+ CONTEXT.md 工程门禁节 5 术语（23 旧术语零回归）+ 票 20-26 状态表更新；遗留登记 F-1/typecheck flag/lockfile | W3 |
+
+### 发起窗口的 prompts
+
+| Prompt | 路径 |
+|--------|------|
+| 20-ci-script-relocation | `.scratch/architecture-recovery/prompts/20-ci-script-relocation.md` |
+| 21-pr-triggers | `.scratch/architecture-recovery/prompts/21-pr-triggers.md` |
+| 22-dead-code-elimination | `.scratch/architecture-recovery/prompts/22-dead-code-elimination.md` |
+| 23-ts-strict-typecheck | `.scratch/architecture-recovery/prompts/23-ts-strict-typecheck.md` |
+| 24-security-hardening | `.scratch/architecture-recovery/prompts/24-security-hardening.md` |
+| 25-dependency-directory-hygiene | `.scratch/architecture-recovery/prompts/25-dependency-directory-hygiene.md` |
+| 26-adr-docs-closure | `.scratch/architecture-recovery/prompts/26-adr-docs-closure.md` |
+
+### atomcode 调研引用
+
+本周期可复用的 atomcode 提示词位于：
+- `.scratch/architecture-recovery/research/atomcode-testing-strategies.md` — 油猴测试策略全景调研（11 原文 + 8 搜索级参考，Exa+Tavily+AnySearch 三引擎交叉验证）
+- `.scratch/architecture-recovery/research/cycle3-investigation.md` — 锐评1.txt 16 条指控取证记录
