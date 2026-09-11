@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "e2e": "npm run build && playwright test"
+    "e2e": "npm run build && playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "intl-tel-input": "^18.2.1",
