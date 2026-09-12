@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>票 27 [A-001] 弱信号区号字段 fixture</title>
+  <!--
+    A-001 形态：纯关键字 / placeholder 弱信号、无 <label>、无 tel 锚、无内容证据。
+    改前：仅 L1:kw:strong(+30) < SCORE_LOWKEY(35) → none（仅面板召唤）。
+    改后：+ L1:attr:phrase(+8) = 38 → lowkey（低调注入），SCORE_AUTO(70) 未动。
+    页面刻意不放 input[type=tel]：L2 锚分(+18)会污染弱信号语义（本票形态=无锚）。
+  -->
+  <style>body{font-family:sans-serif;padding:24px}h1{font-size:16px}div{margin:12px 0}input{padding:6px}</style>
+</head>
+<body>
+  <h1>弱信号区号字段（无 label / 无锚 / 无内容证据）</h1>
+
+  <div><span>camelCase 专名</span><br><input id="ws-name-camel" name="countryCode" type="text"></div>
+  <div><span>snake_case 专名</span><br><input id="ws-name-snake" name="country_code" type="text"></div>
+  <div><span>camelCase dial 专名</span><br><input id="ws-dial-camel" name="dialCode" type="text"></div>
+  <div><span>placeholder 强短语（无 name）</span><br><input id="ws-placeholder" type="text" placeholder="Country code"></div>
+  <div><span>placeholder dial 强短语</span><br><input id="ws-placeholder-dial" type="text" placeholder="Dial code"></div>
+
+  <h1>护栏负例（改后仍不得进入注入档）</h1>
+  <div><span>本地固话区号（areaCode + 本地固话区号）—— L1_BARE_QU / 无国家语义</span><br>
+    <input id="ws-neg-local" name="areaCode" type="text" placeholder="本地固话区号"></div>
+  <div><span>area-code 专名（areaCode 命中 KW_STRONG，但不属强短语组）—— 锁定「不得靠抬 L1_STRONG_KW_SCORE 越线」</span><br>
+    <input id="ws-neg-areacode" name="area-code" type="text"></div>
+  <div><span>语言前缀（L4 排除）</span><br><input id="ws-neg-lang" name="langPrefix" type="text" placeholder="语言前缀"></div>
+  <div><span>无关字段</span><br><input id="ws-neg-plain" name="remark" type="text"></div>
+</body>
+</html>
