@@ -148,6 +148,73 @@ D1 atomcode 直跑 CLI（无 ctx 承载）｜D2 架构报告落仓库而非临�
 - `.scratch/architecture-recovery/research/atomcode-testing-strategies.md` — 油猴测试策略全景调研（11 原文 + 8 搜索级参考，Exa+Tavily+AnySearch 三引擎交叉验证）
 - `.scratch/architecture-recovery/research/cycle3-investigation.md` — 锐评1.txt 16 条指控取证记录
 
+## 第四周期（真实网站生效闭环，2026-09-12）
+
+> 输入: `research/cycle4-investigation.md`（锐评2 取证 + 「大多数网页不生效」痛点根因 G1–G5）+ `research/cycle4-atomcode-findings.md`（两路 atomcode 调研纪要）
+> Spec: `spec.md`（上一周期 spec 已归档 `spec-cycle3.md`）| 对账闸: `decision-ledger.md`（A-001…A-010，无去向记录清单为空）
+> Tickets: `issues/27-35*.md`（9 张，票 35 为交叉核对轮补立）| 自检: `research/launcher-selfcheck.md` + 交叉核对: `research/cycle4-crosscheck-report.md`
+
+### 波次表（从 issue Blocked by 推导，未新造顺序）
+
+| 波次 | 票 | Blocked by | 并行性 | 焦点（覆盖 A-xxx） |
+|------|----|-----------|--------|-------------------|
+| **W1** | 30, 31, 32, 34 | 均 None — 可并行开工 | 互不堆叠 | 规则分档收敛（A-004）＋ 填充反馈闭环（A-005）＋ **真实站点语料地基（A-006）** ＋ 门禁减肥（A-008/A-009） |
+| **W2** | 27, 28, 29 | 32 | 语料落盘后三票可并行 | 检测覆盖率：弱信号阈值（A-001）＋ ISO2 括号区号证据（A-002）＋ 候选集扩展（A-003） |
+| **W3** | 33 | 27,28,29,30,31,32 | 收口波 | 版本 bump 交付（A-007）；真实发版须用户确认 |
+| **W4** | 35 | 33 | 收口纪律波（只读验证 + 教训落档） | 历史可查落地纪律（A-010）：非 squash + 只读 `git log`/`git merge-base` 验证 + WORKFLOW §5 固化 |
+
+A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 squash 落地 + 只读验证 + 教训写回 WORKFLOW §5；已归零的旧历史不重写（不可逆）。本周期吸收 Backlog 项 #3（真实站点冒烟）→ 票 32。
+
+### 票务状态与 frontier（第四周期）
+
+| 票 | 覆盖 | 状态 | 报告路径 | 波次 |
+|----|------|------|----------|------|
+| 27 检测覆盖率下限补强 | A-001 | **done（复核通过）** | research/window-reports/27-detection-coverage-floor-report.md | W2 |
+| 28 ISO2-value 下拉区号证据补全 | A-002 | **done（复核通过；AC5 `[~]` 合入后闭合）** | research/window-reports/28-iso2-dial-evidence-report.md | W2 |
+| 29 扫描候选集扩展 | A-003 | **done（复核通过；contenteditable 弱化呈报）** | research/window-reports/29-scan-candidates-expansion-report.md | W2 |
+| 30 规则分档覆盖收敛到 selector 级 | A-004 | **done（复核通过）** | research/window-reports/30-rules-tier-scope-fix-report.md | W1 |
+| 31 填充结果可观测 + 失败反馈闭环 | A-005 | **done（复核通过）** | research/window-reports/31-fill-feedback-loop-report.md | W1 |
+| 32 真实站点抽样语料 + 覆盖回归 | A-006 | **done（复核通过）** | research/window-reports/32-real-site-corpus-report.md | W1 |
+| 33 版本 bump 交付闭环 | A-007 | **done（复核通过；发版待用户确认）** | research/window-reports/33-version-bump-delivery-report.md | W3 |
+| 34 门禁减肥 | A-008, A-009 | **done（R1+R2 复核通过）** | research/window-reports/34-gate-slimming-report.md | W1 |
+| 35 历史可查落地纪律 | A-010 | pending | research/window-reports/35-history-landing-discipline-report.md | W4 |
+
+### 发起窗口的 prompts
+
+| 票 | 启动器 |
+|----|--------|
+| 27 | `prompts/27-detection-coverage-floor.md` |
+| 28 | `prompts/28-iso2-dial-evidence.md` |
+| 29 | `prompts/29-scan-candidates-expansion.md` |
+| 30 | `prompts/30-rules-tier-scope-fix.md` |
+| 31 | `prompts/31-fill-feedback-loop.md` |
+| 32 | `prompts/32-real-site-corpus.md` |
+| 33 | `prompts/33-version-bump-delivery.md` |
+| 34 | `prompts/34-gate-slimming.md` |
+| 35 | `prompts/35-history-landing-discipline.md` |
+| 34-fix | `prompts/34-gate-slimming-fix.md`（返工轮：同红三联修复，与 W2 并行） |
+
+### Wave-1 复核结论（首脑，2026-09-12，`verification/review-wave1-cycle4.md`）
+
+- **30 / 31 / 32：done（复核通过）**；**34：done（复核通过，带返工轮）**——A-008 统一载体因 main 预存红三联（verify-ticket-02 裸求值 TS 注解 / lockfile 失同步 / e2e ERESOLVE）暂不可用，返工启动器已发。
+- 过程呈报（未追认）：票 31 D-31a 越票面改共享安装面（.npmrc + typecheck.yml）；票 34 验收④以同红对照替代全绿；票 32 D7 smoke 无 CI run（合入 main 后补首跑）。
+- **frontier（重算）**：W1 ✅ → **W2 可开工：票 27 / 28 / 29**（blocked by 32 ✅）。票 34 返工轮与 W2 并行；33 仍被 27-32 阻塞（须含 34 返工合入）；35 被 33 阻塞。
+
+### Wave-2 复核结论（首脑，2026-09-12，`verification/review-wave2-cycle4.md`）
+
+- **27 / 28 / 29：done（复核通过）**；**34：done（R1+R2 复核通过）**——A-008 统一载体转绿（Engine Gates 34694435559 / Lockfile Regen 34693757830 / E2E 34694435571 / Typecheck 34695478812+34698250826 全 success），返工报告按约定追加 R1/R2 节未覆盖。
+- 关键量化：A-001 弱信号 30→38(lowkey) 且全语料 recall 恢复 1.0000；A-002 ISO2 括号下拉 14→38；A-003 无 ARIA 下拉入候选+登记面（档位守 ADR-0005），性能 14-73ms ≪ 350ms。
+- 待闭合/弱化（登记不阻塞）：28 AC5 `[~]`（E2E 以 29 栈全量 70 passed 间接取证，合入 main 后共享 E2E 转绿闭合）；29 contenteditable 未扩（D-29d 无语料地基）；typecheck.yml 注释称 npm ci 实为 npm install（文档债）；当前各远端头非全绿（栈卫生/安装共因，绿证据定格历史头）。
+- 过程呈报（不追认）：lockfile 双轨重复修复 + 27「经授权代解」34/29 lockfile（授权来源待追认）；多窗口推送竞态连锁 D-27b/D-29g/D-29i；每票私有 E2E 作业模式与 A-008 方向相悖（收口并回）。
+- **frontier（重算）**：W2 ✅ → **W3 可开工：票 33（版本 bump）**——六实施票 blocked-by 全清。前置：最终合序栈全绿复核（33 dry-run 承担）+ typecheck 注释顺手修正。**34-fix 启动器已执行完毕（R1+R2），关闭。** 35（W4）被 33 阻塞。
+
+### Wave-3 复核结论（首脑，2026-09-12，`verification/review-wave3-cycle4.md`）
+
+- **33：done（复核通过）**——三处 1.5.0 一致（33 栈 blob 直读 + 工作树双验）、dry-run 红→绿→复跑绿四轮 gh 实证（34704984108/34705250821 failure → 34705359110/34705751488 success）、远端零 v1.5.0 tag、发版权限边界守住。A-007 实现闭环（达用户的最后一步=合入+发版，待用户）。
+- 过程呈报（不追认）：D-33a 越票面修 release-dry-run.yml（客观闭合 cch-25 移除 legacy-peer-deps 的 dry-run 回归债，需追认）；D-33c 经 33 栈视图核验属实（不一致债确在 34-gate-slimming 栈版本）。
+- 遗留登记：最终合序栈全绿复核未闭合（33 栈不含 30/31/34 独立栈，合入时须重跑全门）；**合入 main 将自动创建 release v1.5.0（不可逆，须用户明确确认）**；lockfile 根 version 与 typecheck 注释债随收口处理。
+- **frontier（重算）**：W3 ✅ → **W4：票 35（历史可查落地纪律）为最后一票，前提是用户授权合入 main（含发版 v1.5.0）**。授权前无新实施票可开工。用户决策点：① 追认 D-33a + W2 lockfile 代解授权；② 授权 land 顺序与 release；③ 35 随合入后执行只读验证。
+
 ## Backlog (跨周期遗留 + Cycle-3 新增遗留 — 等用户决定是否立票)
 
 ### 跨周期遗留（mmv2）
