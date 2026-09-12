@@ -151,6 +151,7 @@ scans=1 maxMs=73 avgMs=73.00 samples=[73]
 1. **共享工作区下的文件归属**：多窗口并行改同一源文件时，晚提交者会连带带走他人在工作区的未提交改动（本票 detect 改动被票 28 带走）。建议§4.2 增补：「核心引擎文件（如 `src/detect/index.ts`）在波次内串行，或先提交再动手」。
 2. **分支快照依赖**：未堆叠分支的远端快照 = common base + 本票提交，缺栈上依赖（票 10 教训复现）。本票以 `but branch new --above` + `but push` 连带推栈消解。
 3. **验收工具先自证**：本票 verify 脚本首轮 4 项失败全为 mock 缺陷（引擎读 `el.className` 而非 `getAttribute('class')`）而非产物缺陷——与既有 §5 教训同源，已通过修正 mock 而非改引擎解决。
+4. **堆叠分支的推送纪律（D-29g，二次实证）**：`but commit` 之后、下一次 `but push` 之前，必须重新执行 `but move <本票> --above <依赖>` 重建堆叠关系；否则 GitButler 会在 push 时重算基址，把栈上依赖（本例票 27 的 `L1_ATTR_PHRASE_SCORE`）整体甩掉，导致本票与上游分支 Typecheck 同步转红且**症状伪装成「代码缺陷」**。建议§4.2 增补推送后复验三步：`git merge-base --is-ancestor <依赖> <本票>` + 远端 `git show <branch>:<file> | grep` 关键符号 + CI 结论回看。
 
 ---
 
@@ -163,4 +164,5 @@ scans=1 maxMs=73 avgMs=73.00 samples=[73]
 | 首轮红灯（基线缺 detect 改动，堆叠前） | `dc7898f` | Verify Ticket 29 34693000589 | 红 → 已由堆叠消解 |
 | E2E（跨分支安装面共因） | 同上 | E2E **34693447646** | 红（安装阶段，见 D-29c） |
 | docs 收口（窗口报告 + atomcode 调研纪要 + issue 勾销） | `27bddd3`（本地 `tkq`） | Verify Ticket 29 **34693990564** / Typecheck **34693990552** / E2E **34693990551** | 绿 / 绿 / 红（`react-dom@19.2.8` vs `react@18.3.1` ERESOLVE，安装阶段，见 D-29c） |
-| 重堆叠修复（D-29g：28/29 挂回票 27，恢复 `L1_ATTR_PHRASE_SCORE` 依赖） | `6621336`（本地栈顶，29）；连带 `cch/28` → `6a7a03f`、`cch/27` → `e65c2c3` | Verify Ticket 29 **34694371007** / Typecheck **34694371157** / E2E **34694371081** | 绿 / 绿 / 红（安装阶段，见 D-29c）；`cch/28` Typecheck 红为旧 lockfile EUSAGE（票 28 D-28a 预存，非本次引入） |
+| 重堆叠修复首轮（D-29g：28/29 挂回票 27，恢复 `L1_ATTR_PHRASE_SCORE` 依赖） | `6621336`（本地栈顶，29）；连带 `cch/28` → `6a7a03f`、`cch/27` → `e65c2c3` | Verify Ticket 29 **34694371007** / Typecheck **34694371157** / E2E **34694371081** | 绿 / 绿 / 红（安装阶段，见 D-29c）；`cch/28` Typecheck 红为旧 lockfile EUSAGE（票 28 D-28a 预存，非本次引入） |
+| **最终头**（D-29g 二次复现后的定态：`27 ⊑ 29` 与 `28 ⊑ 29` 均真，常量与实现在树） | **`dfa5fb4`** | Verify Ticket 29 **34694831864** / Typecheck **34694831866** / E2E **34694831891** | 绿 / 绿 / 红（安装阶段，见 D-29c）。**推送纪律**：本栈每次 `but commit` 后须重新 `but move 28 --above 27` + `but move 29 --above 28` 再 `but push`，否则 GitButler 重算基址会再次甩掉票 27（已二次实证）。 |
