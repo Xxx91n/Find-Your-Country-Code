@@ -31,14 +31,14 @@
 
 | 交付 | commit sha | CI run ID |
 | --- | --- | --- |
-| 改法落地（config + detect） | `2d2096d` | 34695235133 |
-| 语料 + fixture + 标定脚本 | `049131a` | 34695235133 / 34695252905 |
-| 票级验收门 + verify-27.yml | `3f4d9aa` | 34695235133 |
-| E2E 证据作业 | `a16bc71` | 34695235133（3 passed） |
-| manifest 基线同步 | `a18cdc4` | 34695252905（同内容在 db1dcf8） |
-| Typecheck | `db1dcf8` | 34695235083（最终头 5549d21 转红，见 D-27e） |
+| 改法落地（config + detect） | `2d2096d` | 34696245699 |
+| 语料 + fixture + 标定脚本 | `049131a` | 34696245699 / 34696258480 |
+| 票级验收门 + verify-27.yml | `3f4d9aa` | 34696245699 |
+| E2E 证据作业 | `a16bc71` | 34696245699（3 passed） |
+| manifest 基线同步 | `a18cdc4` | 34696258480 |
+| Typecheck | `0fbf001` | 34696245666（绿） |
 
-分支：`cch/27-detection-coverage-floor`（最终头 `5549d21`；证据采集头 `db1dcf8` 三门全绿，栈序 cch/27 → cch/28 → cch/29 → cch/32）
+分支：`cch/27-detection-coverage-floor`（最终头 `0fbf001`，三门全绿；栈序随并行窗口变动）
 
-> 注：最终头上 Calibration / Typecheck 因票 28/29 域漂移转红（D-27e），本票门 run 34695567968 在同头仍绿。
-窗口报告：`research/window-reports/27-detection-coverage-floor-report.md`（偏离点 D-27a~D-27e）
+> 注：过渡头曾因票 28/29 域漂移导致 Calibration / Typecheck 转红，已由重新入栈消解（D-27e）；最终头 `0fbf001` 三门全绿。共享 E2E 仍卡安装阶段（D-27a），本票以自有作业取证。
+窗口报告：`research/window-reports/27-detection-coverage-floor-report.md`（偏离点 D-27a~D-27e；含票 29/34 在 package-lock.json 上的未决冲突登记）

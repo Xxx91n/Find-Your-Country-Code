@@ -9,15 +9,15 @@
 
 | 项 | 内容 | commit sha | CI run ID |
 | --- | --- | --- | --- |
-| 改法落地 | L1_ATTR_PHRASE_SCORE=8 + attrStr 强短语证据面 | 2d2096d | 34695235133（门 81/81 + E2E 3 passed） |
-| 复现与标定 | 语料 3 例 + fixture + 标定脚本 | 049131a | 34695235133 / 34695252905 |
-| 票级验收门 | verify-ticket-27.mjs（81 断言）+ verify-27.yml | 3f4d9aa | 34695235133 |
-| E2E 证据作业 | verify-27.yml 增 ticket-27-e2e（弱信号 fixture） | a16bc71 | 34695235133（3 passed） |
+| 改法落地 | L1_ATTR_PHRASE_SCORE=8 + attrStr 强短语证据面 | 2d2096d | 34696245699（门 81/81 + E2E 3 passed） |
+| 复现与标定 | 语料 3 例 + fixture + 标定脚本 | 049131a | 34696245699 / 34696258480 |
+| 票级验收门 | verify-ticket-27.mjs（81 断言）+ verify-27.yml | 3f4d9aa | 34696245699 |
+| E2E 证据作业 | verify-27.yml 增 ticket-27-e2e（弱信号 fixture） | a16bc71 | 34696245699（3 passed） |
 | 基线登记同步 | manifest 基线同步到修后态（32 探针契约） | a18cdc4 | 34695252905（Calibration 绿） |
-| 类型门禁 | Typecheck | db1dcf8 | 34695235083（最终头转红，见 D-27e） |
-| 校准基线 | precision/recall 不回退 + 32 探针契约 | db1dcf8 | 34695252905（最终头转红，见 D-27e） |
+| 类型门禁 | Typecheck | 0fbf001 | 34696245666（绿） |
+| 校准基线 | precision/recall 不回退 + 32 探针契约 | 0fbf001 | 34696258480（绿） |
 
-分支栈顶 a18cdc4（远端同名分支）。栈拓扑 cch/27 -> cch/28 -> cch/29 -> cch/32（见偏离点 D-27b）。
+最终头 0fbf001（本票 docs 提交，分支含 7 个 cch-27 提交）；过渡头 a18cdc4 / 5549d21 由并行窗口重排产生。栈拓扑随并行窗口变动，收口时 cch/29 -> cch/27 -> cch/34-lockfile-land -> cch/28 -> cch/32（见偏离点 D-27b、D-27e）。
 
 ## 1. 阻塞关系与必读清单复核
 
@@ -98,7 +98,7 @@ L1_STRONG_KW_SCORE(30) + 8 = 38 >= SCORE_LOWKEY(35)，且 38 < SCORE_AUTO(70)，
 | --- | --- | --- | --- |
 | 1 | corpus 新增弱信号正例并记录改前 none 复现基线 | PASS | 049131a；改前 30/none 由 G2 组锁定，run 34695235133 |
 | 2 | 弱信号 >= SCORE_LOWKEY 被低调注入，SCORE_AUTO 不变 | PASS | 2d2096d；30(none) -> 38(lowkey)，G1/G5，run 34695235133 |
-| 3 | 现有正负例 precision/recall 不回退（calibration 绿） | PASS（绿证据锚 db1dcf8 / run 34695252905；最终头因他票漂移转红，见 D-27e） | a18cdc4；Calibration Baseline run 34695252905（前 41 / 后 48 例 precision 1.0000、recall 1.0000、回归门禁 PASS） |
+| 3 | 现有正负例 precision/recall 不回退（calibration 绿） | PASS | a18cdc4；Calibration Baseline run 34695252905（前 41 / 后 48 例 precision 1.0000、recall 1.0000、回归门禁 PASS） |
 | 4 | 改法以 corpus 正负例标定，证据锚 sha + run ID | PASS | 049131a + 3f4d9aa；标定脚本 7 段 + 门 G1-G8，run 34695235133 |
 | 5 | E2E 全量绿（含新增弱信号 fixture） | PASS | a16bc71；CI E2E 作业 3 passed（run 34695235133）；本地全量 E2E 80 passed |
 
@@ -109,7 +109,7 @@ CI 关键输出（run 34695252905 / 34695235133 原文摘录）：
 - [MISS] weak-signal-input covered=true expectTier=lowkey got=lowkey score=38 fix=27 (A-001)
 - 前 cases=41 precision=1.0000 recall=1.0000 gate=pass / 后 cases=48 precision=1.0000 recall=1.0000 gate=pass
 - 契约 + 覆盖 + 复现基线硬门禁: PASS
-- 票 27 验收门: 81 passed / 0 failed；npx playwright test tests/weak-signal.spec.ts -> 3 passed（最终头 5549d21 复跑 run 34695567968 同为 success）
+- 票 27 验收门: 81 passed / 0 failed；npx playwright test tests/weak-signal.spec.ts -> 3 passed（最终头 0fbf001 复跑 run 34696245699，两作业均 success）
 
 ## 6. 护栏证据
 
@@ -162,7 +162,7 @@ placeholder="国家区号" 改前 0 分（短语词表为拉丁词表），改�
 - E2E：npx playwright test tests/weak-signal.spec.ts；全量 npm run e2e（本地 80 passed）
 - 版本控制：but status / but commit -b cch/27-detection-coverage-floor -m "..." <id> / but push cch/27-detection-coverage-floor
 
-### D-27e 最终头上 Calibration / Typecheck 转红（他票域漂移，非本票）
+### D-27e 过渡头上 Calibration / Typecheck 曾转红（他票域漂移），最终头已转绿
 
 在证据采集头 db1dcf8 上三门全绿（Verify 34695235133 / Calibration 34695252905 / Typecheck 34695235083）。并行窗口随后重排并重算提交，最终头 5549d21 上：
 
@@ -170,4 +170,8 @@ placeholder="国家区号" 改前 0 分（短语词表为拉丁词表），改�
 - Calibration 转红（run 34695600773 / 34695844370），唯一违规为 `no-aria-custom-dropdown/rs-noaria-custom-dropdown: 引擎基线漂移 实测 score=14 基线 score=34` —— 属票 29 形态；同一份日志中本票形态仍为 `weak-signal-input covered=true expectTier=lowkey got=lowkey score=38`，探针自证断言数由 26 降至 21（SCAN_SELECTORS 集合变化），说明漂移源在票 29 的候选集贡献；
 - Typecheck 转红（run 34695567993），失败于 `npm ci --legacy-peer-deps` EUSAGE：lockfile 记 typescript@7.0.2 / vite@8.2.2 而 package.json 钉 5.9.3 / 6.4.3 —— 即票 29 已登记并修复过的 `lockfile 与 package.json 重新同步` 债务，其效果在当前栈序下不可见。
 
-**判定**：两处红灯均落在票 28/29 共享的引擎文件与依赖面上，本票未触碰相关文件（`src/config.ts` 仅新增常量、`src/detect/index.ts` 仅新增属性短语证据面）。本票不越界修复他票用例——越界修复会与并行窗口产生写冲突。绿证据以 db1dcf8 的三门 run ID 为准，最终头的本票门 run 34695567968 为补充证据。
+**判定与消解**：两处红灯均落在票 28/29 共享的引擎文件与依赖面上，本票未触碰相关文件（`src/config.ts` 仅新增常量、`src/detect/index.ts` 仅新增属性短语证据面），本票不越界修复他票用例——越界修复会与并行窗口产生写冲突。
+
+**消解**：并行窗口把 29 的候选集提交与 34 的 lockfile 修复（`cch/34-lockfile-land`）重新入栈后，本票把分支抬到整栈顶部重推，最终头 **0fbf001** 上三门全绿——Verify Ticket 27 run 34696245699（门 81/81 + E2E 作业 3 passed）、Calibration Baseline run 34696258480、Typecheck run 34696245666；探针自证与 no-aria 形态同步恢复（score 回到 34）。唯一仍红的共享 E2E（run 34696245668）仍是 D-27a 的安装阶段 ERESOLVE。
+
+**遗留**：`cch/34-lockfile-land` 的 `srn`（票 34 的 CI 再生 lockfile 入库）与票 29 的 lockfile 重同步在 `package-lock.json` 上互相冲突，GitButler 标记为 conflicted 并禁止含该提交的推送。属票 29/34 之间的所有权冲突，本票不代为裁决（代为 resolve 会改写他票交付物）。
