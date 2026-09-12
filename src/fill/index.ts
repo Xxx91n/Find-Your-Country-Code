@@ -220,10 +220,17 @@ const Fill = {
   // 点击选值: listbox 未挂载（关闭态）先点触发器展开再找（单次，同步渲染库直接命中）
   _pseudoFillByListbox(el: AnyEl, country: Country): boolean {
     let find = () => {
-      const lb = this._listboxOf(el);
-      if (!lb || !lb.querySelectorAll) return null;
       let opts: AnyEl[] = [];
-      try { opts = Array.prototype.slice.call(lb.querySelectorAll('[role="option"]')); } catch {}
+      const lb = this._listboxOf(el);
+      if (lb && lb.querySelectorAll) {
+        try { opts = Array.prototype.slice.call(lb.querySelectorAll('[role="option"]')); } catch {}
+      }
+      // 票 29 [A-003]: 无 ARIA 手写下拉无 aria-controls 可解（_listboxOf 返回 null）、
+      // 选项也无 role=option —— 回退按触发器后代 li 定位，与检测侧 customDropdownStats 同源口径。
+      // 既有 role=option 路径零改动（仅在其为空时回退）。
+      if (!opts.length && el.querySelectorAll) {
+        try { opts = Array.prototype.slice.call(el.querySelectorAll('li')); } catch {}
+      }
       return opts.find(o => this._pseudoOptMatch(o, country)) || null;
     };
     let m = find();
