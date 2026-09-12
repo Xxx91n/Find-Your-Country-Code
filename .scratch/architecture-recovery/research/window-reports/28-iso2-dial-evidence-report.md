@@ -103,6 +103,14 @@ pseudo 侧同步：`if (st2.plusDial > 0 && st2.parenDial > 0)` → `if (st2.par
 
 > E2E/Typecheck 的安装阶段失败在票 32 报告（`3e3b2ac`）已登记为「预存安装层债务，均安装阶段未执行测试」，非本票引入。
 
+### 7.1 补充取证（复核）
+
+- **E2E 非本票回归**：同期 E2E 在 `cch/27-detection-coverage-floor`（run `34693175512`）与 `cch/29-scan-candidates-expansion`（run `34693186391`）同样失败于 `npm install` 安装阶段 —— 三条 W2 分支表现一致，指向仓库级安装面破窗（D-28a），而非本票改动。
+- **`.npmrc` 落点**：`legacy-peer-deps=true` 目前仅存在于 `cch/31-fill-feedback-loop`，未落到 `main` / `cch/27` / `cch/28` / `cch/29` / `cch/34`。修复路径二选一：将票 31 提交 `lom` 的 `.npmrc` 落地，或按 `real-site-smoke.yml` 的 `npm ci --legacy-peer-deps || npm install --legacy-peer-deps` 回退。
+- **Calibration Baseline 复核**（run `34693353955`，sha `d602b22`）：`Run precision/recall harness` 通过、`Run threshold calibration` 通过、`Run real-site corpus probe` 失败；违反项去重后仅 `weak-signal-input`（票 27）与 `no-aria-custom-dropdown`（票 29），**本票 `iso2-value-paren-dial-select` 零违反**（D-28c）。
+- **docs-only 说明**：本报告与 issue 文本为文档提交，不改变代码与门禁结论；票级门在每次 push 后由 workflow 自动复跑。引用 sha 为当次取证时的分支 tip，后续文档提交不使其失效。
+- **本地复核**：`verify-ticket-28.mjs` 19 PASS / 0 FAIL；`14-calibration-harness.mjs` precision 1.0000 / recall 1.0000 / 回归门禁 PASS（叠加票 27 后的 48 例口径）；`tsc --noEmit` clean；全量 E2E 73 passed / 0 failed。
+
 ## 8. 偏离点 / 阻塞（呈报）
 
 | ID | 事项 | 性质 | 建议 |
@@ -110,7 +118,7 @@ pseudo 侧同步：`if (st2.plusDial > 0 && st2.parenDial > 0)` → `if (st2.par
 | **D-28a** | 仓库级 npm 安装面破损：`cch-25`（`4b420be`）把 8 个 workflow 的 `npm ci --legacy-peer-deps` 改为 `npm ci`，而 lockfile 未再生（票 25 AC4 pending）；票 31 的 `.npmrc legacy-peer-deps=true` 修复（提交 `lom`）**尚未落到本票分支**。E2E/Typecheck 因此无法取证 | 跨票预存红（票 31 D-31a 已登记） | 将 `.npmrc` 落地，或按 `real-site-smoke.yml` 的 `npm ci --legacy-peer-deps \|\| npm install --legacy-peer-deps` 回退。**本票未擅自回滚票 25 交付物** |
 | **D-28b** | 票 27 提交 `fcfe328` 同时改 detect 与 config，但本票分支基线**只含 detect 侧**，`L1_ATTR_PHRASE_SCORE` 未定义 → 分支上引擎在 `attrPhrase` 命中时抛 `ReferenceError`（真实运行时缺陷，CI run 34692544879 实证） | 跨票半落地 | 按 WORKFLOW §4.2 以 `but move cch/28 --above cch/27` 堆叠消解。**副作用：连带将 `cch/27-detection-coverage-floor`（推送时 tip `c9439f5`）推到 origin**，请票 27 负责人知悉。
 **注意：工作区被并行提交推进后，`but push` 会重算基址并可能再次丢掉该依赖**（实证：docs 提交后 push 曾使 `cch/27` 不再是祖先，票级门随即以 `L1_ATTR_PHRASE_SCORE is not defined` 转红，run 34692972982）——每次推送后须复验「27 为祖先 + config 含常量」 |
-| **D-28c** | Calibration Baseline 的 real-site 门禁在 27+28 上仍红：违反项全部为票 27 的 `weak-signal-input`（5 例基线漂移 + `knownResidual` 与 verdict 不一致）与票 29 的 `no-aria-custom-dropdown`（34→14）。本票 `iso2-value-paren-dial-select` 实测 `got=lowkey score=38` **零违反** | 他票在途 | 票 27/29 各自更新 `realSiteForms[].baseline.observed` 与用例 `knownResidual`。**本票未代改他人基线** |
+| **D-28c** | Calibration Baseline 的 real-site 门禁在 27+28 上仍红：违反项全部为票 27 的 `weak-signal-input`（5 例基线漂移 + `knownResidual` 与 verdict 不一致）与票 29 的 `no-aria-custom-dropdown`（34→14）。本票 `iso2-value-paren-dial-select` 实测 `got=lowkey score=38` **零违反**（复核 run `34693353955`：违反项去重后仅上述两形态） | 他票在途 | 票 27/29 各自更新 `realSiteForms[].baseline.observed` 与用例 `knownResidual`。**本票未代改他人基线** |
 | **D-28d** | 票 32 门禁语义限制：`verdict='MISS'` 时要求 `knownResidual=true`，而 `verdict≠'MISS'` 时又要求 `expect='none'` → **修复后的正例不存在合法编码状态**。故本票保留 `verdict='MISS'` + `knownResidual=true`，只更新 `baseline.observed`（回归保护由该锁承担，非 mismatch 列表） | 门禁设计缺口 | 建议票 34/35 增设 verdict 状态位（如 `MISS-RESOLVED`），使修复后正例可脱离 residual 语义 |
 | **D-28e** | 未采纳 atomcode 的两条护栏建议（共现约束硬门 / 选项 ≥10） | 有意偏离 | 理由见 §5 与调研纪要，均指向与 ADR-0001 已决或 spec Out of Scope 冲突 |
 | 未做 | 未新增 corpus 用例 | 有意 | 护栏 1 由既有 F2/F8 覆盖；避免与票 27/29 并行改 manifest |
