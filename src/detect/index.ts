@@ -14,6 +14,7 @@
 // 误报标定：research/misdetection-root-causes.md §2 五类 + 25 例 harness（FP 全落 none 档）
 // 站点规则接线（票 05）：规则匹配先于检测 —— scan 入口查豁免（=完全跳过）；
 //   _process 评分前查强制选择器/页面级分档覆盖（Rules 引擎，见 ../rules；Rules 缺省时行为=无规则）
+//   票 30 [A-004]：页面级分档覆盖仅来自显式 scope:'page' 规则；selector 规则只作用于命中元素
 // ════════════════════════════════════════════════════════
 import {
   L0_TOKEN_SCORE, L0_TEL_TOKENS, L0_TEL_HINT_SCORE, L0_INPUTMODE_TEL_SCORE,
@@ -627,6 +628,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       if (this._own(el)) return;
       // 票 05：规则介入先于评分（[AM 结论5] Bitwarden linked field 强制锚定 +
       // KeePassXC Site Preferences 分档心智）。自身 UI 已被 _own 拦截，规则永不作用。
+      // 票 30 [A-004]：pageTier 只来自显式页面级规则；元素规则经 forcedTier 只命中自身，不再抬全页。
       let pageTier: Tier | null = null;
       if (Rules && typeof Rules.forcedTier === 'function') {
         let forced: Tier | null = null;
@@ -694,7 +696,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       } else {
         // 票 16：iti 容器信号已并入 scoreElement（US10 取消评分外无条件 100 分短路）
         res = this.scoreElement(el);
-        // 票 05：页面级分档覆盖（auto/lowkey 双向重映射）——页面档即「本页注入档位下限」：
+        // 票 05 + 票 30 [A-004]：页面级分档覆盖（auto/lowkey 双向重映射；仅显式 scope:'page' 规则）——页面档即「本页注入档位下限」：
         // auto 覆盖把 lowkey/none 全部提升注入（用户显式规则自担误报风险，对标
         // KeePassXC Site Preferences 用户干预压过启发式）；lowkey 覆盖同理；
         // none 覆盖已在上方短路（撤图标不登记）。

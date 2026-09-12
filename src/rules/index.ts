@@ -3,7 +3,8 @@
 // 心智对标（[AM] atomcode-industry-models.md 核心结论5，三源独立同构）：
 //   - 豁免域名   ≈ 1Password data-1p-ignore（用户显式干预 > 引擎启发；可挂全站忽略）
 //   - 强制选择器 ≈ Bitwarden linked custom field（CSS 选择器强制锚定，评分前命中 → 高置信注入）
-//   - 分档覆盖   ≈ KeePassXC Site Preferences（按站点调整行为，不发明第三档语义）
+//   - 分档覆盖   ≈ KeePassXC Site Preferences（票 30 [A-004]：页面级显式规则类型 scope:'page'
+//     调整整页注入档；普通 selector 规则只作用于命中元素，不再放大全页）
 // 匹配时机（handoff delta）：规则匹配发生在检测入口之前 —— Detect.scan 最先查豁免
 //   （豁免 = 完全跳过，不评分不注入不登记）；强制选择器在评分前命中。对脚本自身 UI
 //   （#cch-root / .cch-wrapper / #cch-search）永不生效 —— Rules._own 前置拦截。
@@ -67,25 +68,29 @@ export function createRules(Store: CchStore): CchRules {
       if (!host) return [];
       return Store.getSiteRules().overrides
         .filter(o => o.host === host)
-        .map(o => ({ id: o.id, host: o.host, selector: o.selector, action: { tier: o.action.tier }, note: o.note || '', updatedAt: o.updatedAt || 0 }));
+        .map(o => ({ id: o.id, host: o.host, selector: o.selector, scope: o.scope === 'page' ? 'page' : 'element', action: { tier: o.action.tier }, note: o.note || '', updatedAt: o.updatedAt || 0 }));
     },
 
     // 评分前的强制选择器命中查询（Bitwarden linked field 语义）：
     // 返回命中的 tier（RULE_FORCE_TIER='auto'）或 null；自身 UI 永不命中。
+    // 票 30 [A-004]：只消费元素级规则；显式页面规则（scope:'page'）不经元素匹配。
     forcedTier(el: AnyEl): Tier | null {
       if (this._own(el)) return null;
       const overrides = this.pageOverrides();
       for (const o of overrides) {
+        if (o.scope === 'page') continue;
         if (this._safeMatches(el, o.selector)) return o.action.tier;
       }
       return null;
     },
 
-    // 分档覆盖查询：当前页规则声明的 tier（无规则/不适用 → null = 引擎评分定档）
-    // 语义（KeePassXC Site Preferences 心智，全页级）：只覆盖 auto/lowkey 两档判定；
-    // 'none' 走豁免（全页跳过），不在元素级覆盖里重复表达。
+    // 分档覆盖查询（票 30 [A-004] 语义收敛）：仅显式页面级规则（scope:'page'，页面级唯一合法
+    // 形态）参与；普通 selector 规则只作用于命中元素（forcedTier），不再放大全页。
+    // 页面档语义保留（KeePassXC Site Preferences 心智）：只覆盖 auto/lowkey 两档判定；
+    // 'none' 走豁免（全页跳过），不在覆盖里重复表达。
     pageTierOverride(): Tier | null {
       for (const o of this.pageOverrides()) {
+        if (o.scope !== 'page') continue;
         if (o.action.tier === 'auto' || o.action.tier === 'lowkey') return o.action.tier;
       }
       return null;
