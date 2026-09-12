@@ -161,3 +161,4 @@ scans=1 maxMs=73 avgMs=73.00 samples=[73]
 | lockfile 同步（仓库级债务） | `23a9173`（本地 `nnr`） | Verify Ticket 29 **34693447618** / Typecheck **34693447628** | 绿 / 绿 |
 | 首轮红灯（基线缺 detect 改动，堆叠前） | `dc7898f` | Verify Ticket 29 34693000589 | 红 → 已由堆叠消解 |
 | E2E（跨分支安装面共因） | 同上 | E2E **34693447646** | 红（安装阶段，见 D-29c） |
+| docs 收口（窗口报告 + atomcode 调研纪要 + issue 勾销） | `27bddd3`（本地 `tkq`） | Verify Ticket 29 **34693990564** / Typecheck **34693990552** / E2E **34693990551** | 绿 / 绿 / 红（`react-dom@19.2.8` vs `react@18.3.1` ERESOLVE，安装阶段，见 D-29c） |
