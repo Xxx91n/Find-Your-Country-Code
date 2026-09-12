@@ -105,8 +105,8 @@ const bundle = [
   toModuleBody(join(ROOT, 'src', 'iti-adapter', 'index.ts')),
   fillBody,
 ].join('\n');
-const { createFill, mk, toasts, window, setClipboard } =
-  new Function(stripTypeScriptTypes(bundle, { mode: 'strip' }) + '\n;return { createFill, mk, toasts, window, setClipboard };')();
+const { createFill, mk, toasts, window, setClipboard, CN } =
+  new Function(stripTypeScriptTypes(bundle, { mode: 'strip' }) + '\n;return { createFill, mk, toasts, window, setClipboard, CN };')();
 const Fill = createFill({ toast(m) { toasts.push(m); } });
 
 function opt(v, t) { const o = mk('OPTION', {}); o.value = v; o.text = t; return o; }
