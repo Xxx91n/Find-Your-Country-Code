@@ -43,10 +43,14 @@ export interface OptionStats {
 }
 
 // ── 站点规则文档（store/index.ts 头注为权威契约，此处为类型投影） ──
+// 规则作用域（票 30 [A-004]）：'element' = selector 命中元素生效（强制选择器/负反馈）；
+// 'page' = 页面级分档覆盖显式规则类型（全页 auto/lowkey 档重映射，不参与元素级匹配）。缺省 'element'。
+export type RuleScope = 'element' | 'page';
 export interface OverrideRule {
   id: string;
   host: string;
   selector: string;
+  scope?: RuleScope;
   action: { tier: Tier };
   note: string;
   createdAt?: number;
@@ -57,6 +61,7 @@ export interface OverrideRuleInput {
   id?: string;
   host?: string;
   selector?: string;
+  scope?: RuleScope;
   action?: { tier: Tier };
   note?: string;
 }
