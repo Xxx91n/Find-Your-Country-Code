@@ -177,7 +177,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 32 真实站点抽样语料 + 覆盖回归 | A-006 | **done（复核通过）** | research/window-reports/32-real-site-corpus-report.md | W1 |
 | 33 版本 bump 交付闭环 | A-007 | **done（复核通过；发版待用户确认）** | research/window-reports/33-version-bump-delivery-report.md | W3 |
 | 34 门禁减肥 | A-008, A-009 | **done（R1+R2 复核通过）** | research/window-reports/34-gate-slimming-report.md | W1 |
-| 35 历史可查落地纪律 | A-010 | pending | research/window-reports/35-history-landing-discipline-report.md | W4 |
+| 35 历史可查落地纪律 | A-010 | **done（收口执行，大脑）** | research/window-reports/35-history-landing-discipline-report.md | W4 |
 
 ### 发起窗口的 prompts
 
@@ -214,6 +214,15 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - 过程呈报（不追认）：D-33a 越票面修 release-dry-run.yml（客观闭合 cch-25 移除 legacy-peer-deps 的 dry-run 回归债，需追认）；D-33c 经 33 栈视图核验属实（不一致债确在 34-gate-slimming 栈版本）。
 - 遗留登记：最终合序栈全绿复核未闭合（33 栈不含 30/31/34 独立栈，合入时须重跑全门）；**合入 main 将自动创建 release v1.5.0（不可逆，须用户明确确认）**；lockfile 根 version 与 typecheck 注释债随收口处理。
 - **frontier（重算）**：W3 ✅ → **W4：票 35（历史可查落地纪律）为最后一票，前提是用户授权合入 main（含发版 v1.5.0）**。授权前无新实施票可开工。用户决策点：① 追认 D-33a + W2 lockfile 代解授权；② 授权 land 顺序与 release；③ 35 随合入后执行只读验证。
+
+### Cycle-4 收口状态（2026-09-12，用户授权后执行）
+
+- **合入完成**：11 支 land 零冲突零 squash（main head `019f228e`，父链完整，唯一 root 仍为周期前 7dbc6fc）；**release v1.5.0 已发布**（tag @019f228e，run 34708428429 success）。票 33 抬栈顶殿后防半成品发版。追认记录：D-33a + D-27e（用户 2026-09-12「确认」）。
+- 最终门：E2E/Typecheck/Calibration/Lockfile Regen/Release 全绿；**Engine Gates 独红**（P8 跨线，票 27 attr:phrase 组合效应）→ 返修轮在途：`prompts/27-detection-coverage-floor-fix.md`（37 行合规）。
+- **票 35 done**（大脑收口执行）：只读验证 + WORKFLOW §5 两教训落档（合入纪律 + 跨栈组合验证）。
+- **账本**：A-002…A-010 = done；A-001 = current（待 27-fix R1 三门绿）。
+- **frontier（最终）**：**W4 ✅ → 全周期仅剩 27-fix R1 一票一窗**：`D:\Aworker\mozilla\choose-your-country\.scratch\architecture-recovery\prompts\27-detection-coverage-floor-fix.md`（合序栈复跑 Engine Gates + verify-27/28/29 + Calibration，报告追加 R1 节）。
+- 遗留（用户决策，不自动扩权）：GreasyFork 站内同步（@1.4.0→1.5.0，凭证门控）、远端已合并分支清理、每票私有 E2E 作业并回统一 e2e、typecheck.yml 注释/命令一行修正、D-33b lockfile 根 version 随下周期处理。
 
 ## Backlog (跨周期遗留 + Cycle-3 新增遗留 — 等用户决定是否立票)
 
