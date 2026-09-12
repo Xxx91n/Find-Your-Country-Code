@@ -4,6 +4,8 @@ name: Engine Gates
 # + 误检 harness misdetect-repro-v2.mjs（25 例）。原 verify-13/16/18 三处逐字重复
 # 各跑一遍，抽到本 workflow 统一跑一次（票级 verify-* 只保留各自专属断言）。
 # 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)（见 CONTEXT.md）。
+# 返工联①（票 34 R1）：node 20→22 —— 装载脚本需 module.stripTypeScriptTypes（Node>=22.13）。
+
 on:
   pull_request:
   workflow_dispatch:
@@ -25,7 +27,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Engine gate (verify-ticket-02.mjs)
         run: node tests/scripts/verify-ticket-02.mjs
       - name: Harness (misdetect-repro-v2.mjs)

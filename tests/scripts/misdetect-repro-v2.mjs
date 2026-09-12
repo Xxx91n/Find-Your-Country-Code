@@ -8,6 +8,7 @@
 // 用法：node tests/scripts/misdetect-repro-v2.mjs  (-v 看信号明细)
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -21,13 +22,24 @@ function toModuleBody(file) {
     .replace(/^export\s+\{[^}]*\};\s*$/gm, '')
     .replace(/^export\s+/gm, '');
 }
+
+// 返工联①（票 34 R1）：装载器先剥离 TS 类型标注（同 verify-ticket-02 / 14-lib-engine 先例；
+// cch-23 起裸 new Function 遇 src/*.ts TS 注解 SyntaxError，引擎门在 main 上持续红）。
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('misdetect-repro-v2 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
+}
+
 const bundle = [
   toModuleBody(join(ROOT, 'src', 'config.ts')),
   toModuleBody(join(ROOT, 'src', 'data', 'countries.ts')),
   toModuleBody(join(ROOT, 'src', 'detect', 'index.ts')),
-  '\n;return { createDetect, COUNTRIES, ISO2_MAP };',
 ].join('\n');
-const { createDetect, COUNTRIES } = new Function(bundle)();
+// stripTypes 以模块语法解析：顶层 return 不合法，故先剥类型再拼返回语句（同 14-lib-engine）。
+const { createDetect, COUNTRIES } =
+  new Function(stripTypes(bundle) + '\n;return { createDetect, COUNTRIES, ISO2_MAP };')();
 
 // ── mock DOM（仅实现新引擎消费的接口面） ──
 class Opt {

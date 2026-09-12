@@ -1,0 +1,51 @@
+name: Lockfile Regen
+
+# 联②（票 34 R1）：lockfile 失同步修复（预存红 EUSAGE：cch-25 钉死 package.json 未再生 lockfile）。
+# 以 package.json（票 25 钉死版）为真相源，CI 云端 npm install 再生 package-lock.json，
+# 以 artifact 交付（lockfile-regen-<run>）。本 workflow 不自动 push（避免自动提交越权）；
+# artifact 内容由维护者确认后入库，typecheck.yml 的 npm ci 随之恢复同步。
+# 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)（见 CONTEXT.md）。
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'cch/**'
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile-regen:
+    name: Regen lockfile from pinned package.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Line-ending guard (CRLF in tracked text)
+        run: |
+          bad=$(git ls-files | grep -vE '\.(bat|ps1|cmd|png|ico|icns|jpg|jpeg|gif|webp|exe|dll|node|pdb|msi|so|dylib|bin|zip|gz|tar|7z)$' | xargs -r grep -lU "$(printf '\r')" 2>/dev/null || true)
+          if [ -n "$bad" ]; then echo "::error::CRLF found in tracked text files: $bad"; exit 1; fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Regen lockfile (npm install with legacy-peer-deps)
+        run: npm install --legacy-peer-deps
+
+      - name: Assert lockfile regenerated and in sync
+        run: |
+          if [ ! -f package-lock.json ]; then echo "::error::package-lock.json missing"; exit 1; fi
+          npm ci --legacy-peer-deps --dry-run
+
+      - name: Upload lockfile artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockfile-regen-${{ github.run_id }}
+          path: package-lock.json
