@@ -1,0 +1,92 @@
+// 票 31 · 填充结果可观测 + 失败反馈闭环（覆盖 A-005）
+// ══════════════════════════════════════════════════════════════
+// 复现基线（repro commit）：新行为断言按 fp-regression §6.2 维护契约标
+// test.fail() 默认红（reproduced）——证明「填充成功 / 降级复制 / 失败」三态
+// 与「格式分歧」当前对用户与测试面均不可观测；票 31 实施 commit 摘除标记转绿。
+// 基线不变式组（无标记、两版本恒绿）钉住「不动正确路径」：select 命中语义、
+// input 格式推测结果、降级不写字段，三者实施前后必须一致。
+// 证据：CI run ID 锚定（只认 CI 证据）。
+import { test, expect } from 'playwright/test';
+import type { Page } from 'playwright/test';
+import { installUserscript, openPanel } from './helpers/userscript';
+
+test.beforeEach(async ({ page }) => {
+  await installUserscript(page);
+});
+
+async function pick(page: Page, target: string, query: string, iso: string): Promise<void> {
+  await openPanel(page, target);
+  await page.locator('#cch-si').fill(query);
+  await page.locator(`.cch-row[data-iso="${iso}" i]`).click();
+}
+
+const lastFill = (page: Page) => page.evaluate(() => (window as any).__cchLastFill);
+const toastText = (page: Page) => page.locator('#cch-toast');
+
+test.describe('基线不变式（复现与实施两版本恒绿 —— 钉住正确路径不回退）', () => {
+  test('select 命中：真填充，值写入 +86，成功文案 toast', async ({ page }) => {
+    await page.goto('/fixtures/fill-feedback.html');
+    await pick(page, '#fb-ok', 'China', 'cn');
+    await expect(page.locator('#fb-ok')).toHaveValue('+86');
+    await expect(toastText(page)).toContainText(/已填入|Filled/);
+  });
+
+  test('select 无匹配：字段不被写入（降级不伤字段），提示复制类文案', async ({ page }) => {
+    await page.goto('/fixtures/fill-feedback.html');
+    await pick(page, '#fb-nomatch', 'China', 'cn');
+    await expect(page.locator('#fb-nomatch')).toHaveValue('');
+    await expect(toastText(page)).toContainText(/已复制|copied/i);
+  });
+
+  test('input 格式推测语义不变：placeholder 无数字线索 → plus 写入 +86', async ({ page }) => {
+    await page.goto('/fixtures/fill-feedback.html');
+    await pick(page, '#fb-diverge', 'China', 'cn');
+    await expect(page.locator('#fb-diverge')).toHaveValue('+86');
+  });
+
+  test('input 格式推测语义不变：placeholder 数字开头 → digits 写入 86', async ({ page }) => {
+    await page.goto('/fixtures/fill-feedback.html');
+    await pick(page, '#fb-digits', 'China', 'cn');
+    await expect(page.locator('#fb-digits')).toHaveValue('86');
+  });
+});
+
+test.describe('新行为：三态信号 + 格式分歧可观测（复现期默认红，实施后转绿）', () => {
+  test('① select 无匹配 → 降级复制态可观测：__cchLastFill.status=copied + 分层文案', async ({ page }) => {
+    test.fail(); // repro 期默认红：旧代码无三态信号，状态不可观测
+    await page.goto('/fixtures/fill-feedback.html');
+    await pick(page, '#fb-nomatch', 'China', 'cn');
+    expect(await lastFill(page)).toMatchObject({ status: 'copied', kind: 'select', iso: 'cn' });
+    await expect(toastText(page)).toContainText(/未匹配|No match/i);
+  });
+
+  test('② 期望 digits 得 plus → 格式分歧可观测：__cchLastFill.fmtDiff=true + 分歧文案', async ({ page }) => {
+    test.fail(); // repro 期默认红：旧代码静默按 plus 写入，无分歧信号
+    await page.goto('/fixtures/fill-feedback.html');
+    await pick(page, '#fb-diverge', 'China', 'cn');
+    expect(await lastFill(page)).toMatchObject({ status: 'filled', fmtDiff: true });
+    await expect(toastText(page)).toContainText(/格式|format/i);
+  });
+
+  test('③ digits 推测命中数字约束 → 非分歧对照：fmtDiff=false + 纯成功文案', async ({ page }) => {
+    test.fail(); // repro 期默认红：旧代码无 fmtDiff 字段
+    await page.goto('/fixtures/fill-feedback.html');
+    await pick(page, '#fb-digits', 'China', 'cn');
+    expect(await lastFill(page)).toMatchObject({ status: 'filled', fmtDiff: false });
+    await expect(toastText(page)).toContainText(/已填入|Filled/);
+  });
+
+  test('④ 填充失败且剪贴板不可用 → 失败态可观测：status=failed + 失败文案', async ({ page }) => {
+    test.fail(); // repro 期默认红：旧代码剪贴板 rejection 不被感知，仍提示「已复制」
+    await page.goto('/fixtures/fill-feedback.html');
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: () => Promise.reject(new Error('denied-by-test')) },
+      });
+    });
+    await pick(page, '#fb-nomatch', 'China', 'cn');
+    expect(await lastFill(page)).toMatchObject({ status: 'failed', kind: 'select' });
+    await expect(toastText(page)).toContainText(/失败|手动|failed|manually/i);
+  });
+});
