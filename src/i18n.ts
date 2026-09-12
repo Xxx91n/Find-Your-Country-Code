@@ -1,7 +1,7 @@
 export const LANG = (navigator.language || 'zh').toLowerCase().startsWith('zh') ? 'zh' : 'en';
 const MSG = {
   zh: { search:'搜索国家或区号…', favs:'收藏', all:'全部', none:'无结果',
-        ok:'已填入', copied:'已复制', needTarget:'请先点击目标字段',
+        ok:'已填入', copied:'未匹配到选项，已复制', fmtDiverge:'已填入（格式可能有出入）', fillFailed:'填充失败，请手动输入', needTarget:'请先点击目标字段',
         addFav:'添加收藏', rmFav:'取消收藏',
         summon:'检测到疑似区号字段（低置信）— 点此手动召唤',
         ruleNoneRemembered:'已记住：本页此字段不再提示',
@@ -11,7 +11,7 @@ const MSG = {
         rulesEmpty:'本站暂无规则', ruleDeleted:'已删除规则', on:'开', off:'关',
         lowkeyStyle:'低调样式（中置信）', lowkeyDim:'低调显示', lowkeyHidden:'隐藏，仅召唤' },
   en: { search:'Search country or code…', favs:'Favorites', all:'All', none:'No results',
-        ok:'Filled', copied:'Copied', needTarget:'Click target field first',
+        ok:'Filled', copied:'No match — copied', fmtDiverge:'Filled (format may differ)', fillFailed:'Fill failed — enter manually', needTarget:'Click target field first',
         addFav:'Add to favorites', rmFav:'Remove from favorites',
         summon:'Low-confidence matches found — click to summon',
         ruleNoneRemembered:'Remembered: this field will not be flagged again on this site',

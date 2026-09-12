@@ -1,0 +1,31 @@
+# 票 31 验证 workflow：本票验收门（verify-ticket-31.mjs：三态信号/toast 分层/
+# 格式分歧观测/三策略正确路径静态守卫/i18n 双语键集一致）。
+# 触发：pull_request（ADR-0006 非发版 workflow PR 门控）+ 本票验证分支 push + 手动 dispatch。
+# node 钉 22：装载器用 module.stripTypeScriptTypes（>=22.13），无 npm 依赖安装面。
+name: Verify Ticket 31 (fill-feedback-loop)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/31-fill-feedback-loop'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-31-gate:
+    name: Ticket-31 gate (tri-state fill signal + static guards)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-31 acceptance gate
+        run: node tests/scripts/verify-ticket-31.mjs

@@ -1,6 +1,6 @@
 import { t } from '../i18n';
 import { createItiAdapter } from '../iti-adapter';
-import type { AnyEl, CchFill, CchUI, Country, FillKind } from '../types';
+import type { AnyEl, CchFill, CchUI, Country, FillKind, FillResult } from '../types';
 
 // ════════════════════════════════════════════════════════
 // 注入安全层（票 09）：单一注入函数 _inject —— INPUT/SELECT/TEXTAREA 统一
@@ -138,10 +138,7 @@ const Fill = {
   },
 
   fillInput(el: AnyEl, country: Country): boolean {
-    const ph  = (el.placeholder || '').trim();
-    let fmt = 'plus';
-    if (/^00\d/.test(ph))  fmt = 'double0';
-    else if (/^\d/.test(ph)) fmt = 'digits';
+    const fmt = this._guessFmt(el);
     const digits    = country.code.replace(/\D/g, '');
     const formatted = fmt === 'double0' ? '00' + digits : fmt === 'digits' ? digits : country.code;
     const rest = (el.value || '').replace(/^(\+|00)?\d{1,4}\s*/, '').trim();
@@ -271,17 +268,67 @@ const Fill = {
     return this._pseudoFillByKeys(el, country);
   },
 
-  run(el: AnyEl, kind: FillKind | null, country: Country): void {
+  // ══ 票 31（A-005）: 观测面 — 只增观测，不改三策略写入路径 ══
+  // _guessFmt = fillInput 格式推测规则单一来源（placeholder 判据逐字迁移，零行为变更）；
+  // _inputFmtDiff 用同一规则再推导「将要写入的值」，对照字段声明式数字约束（pattern /
+  // inputmode / type=number）——声明式元数据优先于占位符猜测 [atomcode 票31 §3.3]；
+  // 且约束校验 API 对 JS 赋值不生效，分歧必须由填充方自行检测（MDN Constraint Validation）。
+  _guessFmt(el: AnyEl): 'plus' | 'digits' | 'double0' {
+    const ph = (el.placeholder || '').trim();
+    if (/^00\d/.test(ph))  return 'double0';
+    if (/^\d/.test(ph))    return 'digits';
+    return 'plus';
+  },
+  _inputFmtDiff(el: AnyEl, country: Country): boolean {
+    try {
+      const fmt     = this._guessFmt(el);
+      const digits  = country.code.replace(/\D/g, '');
+      const formatted = fmt === 'double0' ? '00' + digits : fmt === 'digits' ? digits : country.code;
+      if (/^\d+$/.test(formatted)) return false; // 写入值本就纯数字，与数字约束无分歧
+      let digitsOnly = el.type === 'number';
+      const im = (el.getAttribute && el.getAttribute('inputmode')) || '';
+      if (im === 'numeric' || im === 'digit') digitsOnly = true;
+      const pat = (el.getAttribute && el.getAttribute('pattern')) || '';
+      // pattern 白名单：仅数字字符类形态（[0-9]{1,3} / \d+ 等）判「要纯数字」；
+      // 含 +（未转义或转义）或字母（非 \d）的模式放宽、不判分歧——保守不误报
+      if (pat && !pat.includes('+') && !/[a-zA-Z]/.test(pat.replace(/\\d/g, '')) && /\d|[0-9]/.test(pat)) digitsOnly = true;
+      return digitsOnly;
+    } catch { return false; }
+  },
+  _last(res: FillResult): void {
+    try { if (typeof window !== 'undefined' && window) window.__cchLastFill = res; } catch {}
+  },
+
+  // 三态信号（票 31）：成功填充 filled / 降级复制 copied / 失败 failed。
+  // 布尔时代 filled 与「未匹配但已复制」都落到无差别文案，测试面不可判 [A-005 复现]；
+  // 现 run 返回 FillResult 且落 window.__cchLastFill（同步部分先落，剪贴板异步定态）。
+  // 反馈不阻塞分发：填充与事件派发全部同步完成后才 await 剪贴板（toast 为末端）。
+  run(el: AnyEl, kind: FillKind | null, country: Country): Promise<FillResult> {
     let ok = false;
     if (kind === 'iti')         ok = this.fillIti(el, country);
     else if (kind === 'select') ok = this.fillSelect(el, country);
     else if (kind === 'pseudo') ok = this.fillPseudo(el, country);
     else                        ok = this.fillInput(el, country);
-    if (ok) UI.toast(t('ok') + ': ' + country.flag + ' ' + country.code);
-    else {
-      try { navigator.clipboard.writeText(country.code); } catch {}
-      UI.toast(t('copied') + ': ' + country.code);
+    const res: FillResult = { status: 'failed', kind: kind ?? null, iso: country.iso, code: country.code, fmtDiff: false };
+    if (ok) {
+      // 格式分歧观测仅挂 input 策略（iti/select/pseudo 的写入形态由组件/原生语义保证）
+      if (kind !== 'iti' && kind !== 'select' && kind !== 'pseudo') res.fmtDiff = this._inputFmtDiff(el, country);
+      UI.toast((res.fmtDiff ? t('fmtDiverge') : t('ok')) + ': ' + country.flag + ' ' + country.code);
+      res.status = 'filled';
+      this._last(res);
+      return Promise.resolve(res);
     }
+    // 降级阶梯（对标 KeePassXC/Bitwarden 剪贴板降级通道 [atomcode 票31 §3.1]）：
+    // 未匹配 → 剪贴板确证成功才报 copied；rejection/不可用 → 真失败态 failed（旧代码
+    // 对 rejection 无感知，仍报「已复制」——A-005 静默面之一）。
+    return Promise.resolve()
+      .then(() => navigator.clipboard.writeText(country.code))
+      .then(() => { res.status = 'copied'; }, () => { res.status = 'failed'; })
+      .then(() => {
+        UI.toast((res.status === 'copied' ? t('copied') : t('fillFailed')) + ': ' + country.code);
+        this._last(res);
+        return res;
+      });
   },
 };
 
