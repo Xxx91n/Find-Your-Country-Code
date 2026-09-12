@@ -1,0 +1,73 @@
+# 票 30 验证 workflow：rules 引擎门（tests/scripts/verify-ticket-05.mjs，含 S5 分档覆盖收敛断言）
+# + 全量 E2E + typecheck（票 30 类型链自检），一次 push 全跑。
+# 触发：本票验证分支 push 或手动 workflow_dispatch（先例：verify-13/15/16/18；PR 门控按 ADR-0006）。
+# 装载注记：rules 引擎门复用 14-lib-engine 的 TS-strip 口径（node >= 22.13 的
+#   module.stripTypeScriptTypes；cch-23 类型标注后裸 new Function 必红），故全作业钉 node 22。
+# 安装面注记（偏离呈报，口径同票 31 D-31a）：基线 package-lock.json 预存失同步（F-3，
+#   npm ci 必红：lock file's domhandler@6.0.1 does not satisfy domhandler@5.0.3），且裸
+#   npm install 今日因 react-dom19@19.2.8 浮动解析 ERESOLVE（F-2 同机制）；共享 e2e.yml/
+#   typecheck.yml 的修复属票 31/34 分支与大脑收口范围，本票不越权共改——verify-30 自带
+#   npm install --legacy-peer-deps + tsc 作业以自证本票门禁与类型不回退。
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/30-rules-tier-scope-fix'
+
+permissions:
+  contents: read
+
+jobs:
+  rules-engine-gate:
+    name: Rules engine gate (verify-ticket-05.mjs)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rules engine acceptance gate
+        run: node tests/scripts/verify-ticket-05.mjs
+
+  typecheck:
+    name: Typecheck (tsc --noEmit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      - name: Typecheck
+        run: npm run typecheck
+
+  e2e:
+    name: Build + Playwright E2E (full suite)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      - name: Build userscript
+        run: npm run build
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E (full suite)
+        run: npx playwright test
+      - name: Upload build artifact as evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-userscript-verify-30
+          path: dist/find-your-country-code.user.js

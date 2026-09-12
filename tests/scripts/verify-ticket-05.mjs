@@ -6,14 +6,28 @@
 // 覆盖：S0 02 票回归自证 / S1 持久化+刷新+跨标签页（issue 验收1）/
 //   S2 引擎语义（豁免/强制/覆盖 + 自身 UI 防护，验收2/3）/ S3 检测入口接线 /
 //   S4 数据格式契约 + CRUD 边界（验收4 的可执行部分）
-// 用法：node .scratch/architecture-recovery/research/scripts/verify-ticket-05.mjs
+// 用法：node tests/scripts/verify-ticket-05.mjs（CI 钉 node >= 22.13）
+// 装载兼容：cch-23 引入显式 TS 类型标注后，裸 new Function(bundle) 必 SyntaxError
+//   （Unexpected token ':'）；按 14-lib-engine 票 32 前置修复口径，用
+//   module.stripTypeScriptTypes（Node >= 22.13）剥类型再装配，不引依赖不改语义。
+// 位置：票 30（A-004）自 .scratch/architecture-recovery/research/scripts/ 迁入 tests/scripts/
+//   （ADR-0006 工程卫生基线：CI 脚本入 tests/scripts；此前该门仅 .scratch 磁盘态运行，
+//   无 CI 挂接点，违反「证据须 commit sha + CI run ID」铁律。verify-30.yml 为首个挂接。）
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { stripTypeScriptTypes } from 'node:module';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(here, '..', '..', '..', '..');
+const ROOT = join(here, '..', '..');
+
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('verify-ticket-05 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
+}
 
 function toModuleBody(file) {
   const src = readFileSync(file, 'utf8');
@@ -46,9 +60,11 @@ const bundle = [
   toModuleBody(join(ROOT, 'src', 'store', 'index.ts')),
   toModuleBody(join(ROOT, 'src', 'rules', 'index.ts')),
   toModuleBody(join(ROOT, 'src', 'detect', 'index.ts')),
-  '\n;return { createStore, createRules, createDetect, COUNTRIES, ISO2_MAP };',
 ].join('\n');
-const { createStore, createRules, createDetect } = new Function(bundle)();
+// 先剥类型再拼返回语句（stripTypes 按模块语法解析，顶层 return 不合法 [14-lib-engine 同规]）
+const { createStore, createRules, createDetect } = new Function(
+  stripTypes(bundle) + '\n;return { createStore, createRules, createDetect, COUNTRIES, ISO2_MAP };',
+)();
 
 // ── 测试脚手架 ──
 let pass = 0; const fails = [];
@@ -139,7 +155,7 @@ const RULES_KEY_A = 'cch_site_rules_v1';
 function MSG_KEYS() {
   const body = toModuleBody(join(ROOT, 'src', 'i18n.ts'))
     .replace(/^export const LANG[^\n]*$/m, 'const LANG = "zh";');
-  const fn = new Function(body + '\n;return { zh: MSG.zh, en: MSG.en };')();
+  const fn = new Function(stripTypes(body) + '\n;return { zh: MSG.zh, en: MSG.en };')();
   return fn.zh;
 }
 
