@@ -30,6 +30,9 @@ jobs:
           node-version: 20
           cache: npm
 
+      # 联③（票 34 R1）：回迁 npm ci（cch-23 同基线先例）——lockfile 由 lockfile-regen workflow 以
+      # package.json（票 25 钉死版）为真相源再生（联②），失同步已修复；legacy-peer-deps 走内联
+      # （.npmrc 集中口径为票 31 D-31a 产物，未合流前本分支不可见，Delta「或等效」出口）。
       - name: Install dependencies
         run: npm install
 

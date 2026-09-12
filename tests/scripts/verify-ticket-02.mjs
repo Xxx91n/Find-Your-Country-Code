@@ -1,13 +1,15 @@
 // ══════════════════════════════════════════════════════════════════
 // verify-ticket-02.mjs — 票 02 引擎级单测门（纯函数 scoreElement，node 直跑，无浏览器）
-// 方法：三个 src 模块（config/countries/detect）均为「纯 JS + import/export」风格，
-//   剥离 import/export 行按依赖序拼接 → new Function 装配（与 misdetect-repro.mjs 同心智）。
+// 方法：三个 src 模块（config/countries/detect）按依赖序拼接 →
+//   module.stripTypeScriptTypes（Node >= 22.13，返工联①）剥离 TS 标注后 new Function 装配
+//   （与 14-lib-engine 同心智；cch-23 起裸 new Function 遇 TS 注解 SyntaxError）。
 //   mock DOM 只实现引擎消费的接口面（getAttribute 含 name/id/class 反射）。
 // 覆盖：E2E 24 字段代表性映射（P 组）+ 误报 5 类/harness FP 全集（F 组，全落 none）
 //   + 旧引擎 FN 修复确认（A 组）+ autocomplete 强信号（P11/P12）。
 // 用法：node tests/scripts/verify-ticket-02.mjs  （-v 打信号明细）
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -21,13 +23,27 @@ function toModuleBody(file) {
     .replace(/^export\s+\{[^}]*\};\s*$/gm, '')
     .replace(/^export\s+/gm, '');
 }
+
+// 返工联①（票 34 R1）：装载器先剥离 TS 类型标注——cch-23（188f9c1）给 src/*.ts 引入
+// 显式类型标注后，裸 new Function(bundle) 直接 SyntaxError（Unexpected token ':'），
+// 引擎门自该提交起在 main 上持续红（run 34618705653 等）。修法同 14-lib-engine 先例：
+// node 标准库 module.stripTypeScriptTypes 剥类型，不引入依赖、不改引擎语义；
+// src/*.ts 无 enum/namespace/参数属性（票 32 已静态核查），mode:'strip' 足够。
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('verify-ticket-02 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
+}
+
 const bundle = [
   toModuleBody(join(ROOT, 'src', 'config.ts')),
   toModuleBody(join(ROOT, 'src', 'data', 'countries.ts')),
   toModuleBody(join(ROOT, 'src', 'detect', 'index.ts')),
-  '\n;return { createDetect, COUNTRIES, ISO2_MAP };',
 ].join('\n');
-const { createDetect, COUNTRIES, ISO2_MAP } = new Function(bundle)();
+// stripTypes 以模块语法解析：顶层 return 不合法，故先剥类型再拼返回语句（同 14-lib-engine）。
+const { createDetect, COUNTRIES, ISO2_MAP } =
+  new Function(stripTypes(bundle) + '\n;return { createDetect, COUNTRIES, ISO2_MAP };')();
 
 console.log('countries:', COUNTRIES.length, '| ISO2_MAP keys:', Object.keys(ISO2_MAP).length);
 
