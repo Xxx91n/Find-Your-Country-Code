@@ -1,3 +1,13 @@
+## v1.5.0 Changelog
+
+- New: Weak-signal country/dial-code fields are now detected — fields with no visible text label that only carry attribute hints (name / id / placeholder / aria) move from "not detected" to the low-key tier (icon restored on hover); fixed-line area codes, honorific prefixes and pure numeric dropdowns still raise no false icons.
+- New: Support for dial-code selects whose `option value` is an ISO country code with a parenthesized dial code (e.g. `CN (+86)`); pure ISO2 country selectors (no dial code) stay undetected, and shared-code disambiguation (+1 / +44) is unaffected.
+- New: Hand-rolled custom dropdowns without ARIA semantics (focusable div / span containers) enter the scan candidate set — they can be registered and filled via manual summon from the panel.
+- Fixed: The forced-tier site rule now applies only to rules explicitly marked page-level; element-level rules are no longer treated as a page-wide override, so one element rule no longer affects every field on the site.
+- Fixed: Fill results are now observable — filled / copied / failed are distinguished, and a dial-code format divergence (+86 / 0086 / 86) is surfaced; a failed fill no longer silently reports "copied to clipboard".
+- Security: Cross-frame and cross-tab messaging (postMessage / BroadcastChannel) now validates message origins instead of accepting messages from any source.
+- Improved: Full TypeScript strict typing cleanup (zero build-time type errors), pinned dependency versions and a slimmer CI gate — the release artifact is unchanged.
+
 ## v1.4.0 Changelog
 
 - New: Multi-signal weighted scoring auto-detects country/phone-code fields (`select`, `input`, and intl-tel-input) with tiered actions by confidence — auto-inject 🌐 on high, low-key icon on medium (restored on hover), manual summon from the panel on low; honorific prefixes, local fixed-line area codes and pure numeric dropdowns no longer trigger false icons.
