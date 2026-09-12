@@ -1,0 +1,103 @@
+name: Real-site smoke (advisory)
+
+# 真实站点低频冒烟层（票 32 / A-006 第二层）
+# 红线（冒烟分层）：
+#   - 密封 E2E（e2e.yml）语义不动：CI 必跑、零外网、PR 阻断。本层与它完全解耦。
+#   - 本层永不出现在 pull_request 触发面 —— 因此失败天然不阻断任何 PR（advisory）。
+#   - 低频：schedule 每周一次 + workflow_dispatch 手动。证据进 run artifact。
+#   - 可跳过白名单：tests/live/site-manifest.json（跳过条目强制携带 reason + ticket，脚本硬校验）。
+# 工业参照：Bitwarden BIT live tests（不登录、不深挖页面、低频排期、弱断言、失败只报告不阻断）。
+on:
+  workflow_dispatch:
+    inputs:
+      cdp_fitness:
+        description: '同时跑 CDP Autofill 适配度评估（opt-in；只作评估，不进断言面）'
+        type: boolean
+        default: false
+  schedule:
+    # 每周一 03:00 UTC（低频）
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Line-ending guard (CRLF in tracked text)
+        run: |
+          bad=$(git ls-files | grep -vE '\.(bat|ps1|cmd|png|ico|icns|jpg|jpeg|gif|webp|exe|dll|node|pdb|msi|so|dylib|bin|zip|gz|tar|7z)$' | xargs -r grep -lU "$(printf '\r')" 2>/dev/null || true)
+          if [ -n "$bad" ]; then echo "::error::CRLF found in tracked text files: $bad"; exit 1; fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --legacy-peer-deps：ADR-0006 「后果 2」登记在案的例外（react@18 与 react-dom19 别名
+      # 双 peer 结构性冲突使裸 npm ci 必红），与 typecheck.yml 同口径；非本 workflow 新引入的策略。
+      # 根治（双 react 依赖或 lockfile 实证）后本行可移除。
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build userscript
+        run: npm run build
+
+      # advisory：本步允许失败（continue-on-error），失败信息由下一步以 ::warning:: 形式浮出。
+      # 本 workflow 不在 PR 触发面，因此无论红绿都不可能阻断任何 PR。
+      - name: Run real-site live smoke (advisory)
+        id: smoke
+        continue-on-error: true
+        run: |
+          node tests/live/live-smoke.mjs \
+            --json live-out/smoke-summary.json \
+            --out live-out/smoke-report.md
+
+      - name: CDP Autofill fitness evaluation (opt-in)
+        if: ${{ inputs.cdp_fitness }}
+        continue-on-error: true
+        run: |
+          node tests/live/cdp-autofill-fitness.mjs --json live-out/cdp-fitness.json
+
+      - name: Surface advisory failures
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          echo '::warning::真实站点冒烟层报出 advisory 失败（不阻断任何 PR；详见 live-out/smoke-report.md）'
+          if [ -f live-out/smoke-summary.json ]; then
+            node -e "const j=require('./live-out/smoke-summary.json');for(const f of (j.failures||[]))console.log('::warning::'+f);for(const v of (j.violations||[]))console.log('::error::白名单契约违规: '+v)"
+          else
+            echo '::warning::冒烟脚本未产出 summary（可能构建产物缺失或浏览器启动失败）'
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## Real-site smoke (advisory, ticket 32 / A-006)'
+            echo ''
+            echo '- 层定位: advisory（仅 schedule / workflow_dispatch 触发，不进 PR 触发面）'
+            echo '- 白名单: tests/live/site-manifest.json'
+            echo ''
+            if [ -f live-out/smoke-summary.json ]; then
+              node -e "const j=require('./live-out/smoke-summary.json');console.log('- gate: '+j.gate);console.log('- counts: '+JSON.stringify(j.counts));for(const r of j.results)console.log('- '+r.id+' ['+r.status+'] '+r.detail);for(const s of j.skipped)console.log('- '+s.id+' [skipped] ticket='+s.ticket)"
+            else
+              echo '- 冒烟未产出 summary；见 job log'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-site-smoke
+          path: live-out/
+          if-no-files-found: warn
