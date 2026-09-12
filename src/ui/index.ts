@@ -12,6 +12,7 @@ export function matchingOverrides(el: AnyEl | null, overrides: unknown): Overrid
   if (!el || typeof el.matches !== 'function' || !Array.isArray(overrides)) return out;
   for (const o of overrides) {
     if (!o || typeof o.selector !== 'string' || !o.selector) continue;
+    if (o.scope === 'page') continue; // 票 30 [A-004]：负反馈冲突清理/幂等判定只针对元素级规则
     try { if (el.matches(o.selector)) out.push(o); } catch {}
   }
   return out;
