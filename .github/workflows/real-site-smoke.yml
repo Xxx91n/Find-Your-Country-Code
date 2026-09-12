@@ -40,11 +40,13 @@ jobs:
           node-version: 22
           cache: npm
 
-      # --legacy-peer-deps：ADR-0006 「后果 2」登记在案的例外（react@18 与 react-dom19 别名
-      # 双 peer 结构性冲突使裸 npm ci 必红），与 typecheck.yml 同口径；非本 workflow 新引入的策略。
-      # 根治（双 react 依赖或 lockfile 实证）后本行可移除。
+      # 安装依赖：优先可复现路径（npm ci），但已提交的 package-lock.json 与 package.json 失同步
+      # （根 devDependencies 仍记 latest，而 package.json 已钉 ^5.7/^6.0 —— ADR-0006 「后果 3」
+      # 登记在案、票 25 AC4 pending），npm ci 会以 EUSAGE 直接失败，故回退 npm install。
+      # --legacy-peer-deps 为 ADR-0006 「后果 2」登记例外（react@18 与 react-dom19 别名双 peer 冲突），
+      # 与 typecheck.yml 同口径；非本 workflow 新引入的策略。lockfile 重生成后第一分支即生效，无需改本行。
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

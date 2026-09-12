@@ -15,7 +15,7 @@
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { loadManifest, bundleEngine, evaluateCase, ROOT } from './14-lib-engine.mjs';
+import { loadManifest, bundleEngine, evaluateCase, metrics, runCorpus, ROOT } from './14-lib-engine.mjs';
 
 const DETECT_SRC = join(ROOT, 'src', 'detect', 'index.ts');
 const REQUIRED_FORM_FIELDS = ['id', 'label', 'coveredA', 'fixingTicket', 'expectedTier',
@@ -193,6 +193,15 @@ for (const form of manifest.realSiteForms || []) {
   });
 }
 
+// ── 前后对照（CI-only 证据）：real-site 语料入 / 不入 的 precision/recall ──
+// 同一引擎、同一 harness，只切分语料集：证明新增语料不带来误报（precision 不回退），
+// 且把真实世界漏检量化成 recall 下降（FN = 三形态）。
+const beforeManifest = { ...manifest, cases: manifest.cases.filter(c => c.family !== 'real-site') };
+const contrast = {
+  before: (() => { const m = metrics(runCorpus(beforeManifest, Detect), beforeManifest); return { cases: m.cases, TP: m.TP, FP: m.FP, TN: m.TN, FN: m.FN, precision: m.precision, recall: m.recall, f1: m.f1, gate: m.mismatches.length ? 'fail' : 'pass' }; })(),
+  after: (() => { const m = metrics(runCorpus(manifest, Detect), manifest); return { cases: m.cases, TP: m.TP, FP: m.FP, TN: m.TN, FN: m.FN, precision: m.precision, recall: m.recall, f1: m.f1, gate: m.mismatches.length ? 'fail' : 'pass' }; })(),
+};
+
 const gate = violations.length === 0;
 
 // ── stdout 紧摘要 ──
@@ -206,6 +215,11 @@ for (const r of results) {
     ' fix=' + r.fixingTicket + ' (' + r.coveredA + ')');
 }
 for (const r of results) for (const g of r.gaps) console.log('    gap[' + r.id + '] ' + g);
+const num = x => x === null ? 'n/a' : x.toFixed(4);
+console.log('— calibration 前后对照（同引擎，仅切分 real-site 语料）');
+console.log('  前 cases=' + contrast.before.cases + ' precision=' + num(contrast.before.precision) + ' recall=' + num(contrast.before.recall) + ' f1=' + num(contrast.before.f1) + ' gate=' + contrast.before.gate);
+console.log('  后 cases=' + contrast.after.cases + ' precision=' + num(contrast.after.precision) + ' recall=' + num(contrast.after.recall) + ' f1=' + num(contrast.after.f1) + ' gate=' + contrast.after.gate);
+console.log('  Δ  precision=' + num(contrast.after.precision - contrast.before.precision) + ' recall=' + num(contrast.after.recall - contrast.before.recall) + '（FN 从 ' + contrast.before.FN + ' 升到 ' + contrast.after.FN + '，FP 不变 ' + contrast.after.FP + '）');
 console.log('契约 + 覆盖 + 复现基线硬门禁: ' + (gate ? 'PASS' : 'FAIL'));
 if (!gate) {
   for (const v of violations) console.log('  VIOLATION ' + v);
@@ -218,6 +232,7 @@ const json = {
   scanSelectors: scanSelectors.map(s => s.selector),
   selfTest: selfFails.length ? 'fail' : 'pass',
   gate: gate ? 'pass' : 'fail', violations,
+  contrast,
   forms: results,
 };
 const jsonPath = arg('--json');
@@ -253,6 +268,14 @@ if (mdPath) {
     for (const g of r.gaps) L.push('- 缺口: ' + g);
     L.push('');
   }
+  L.push('## calibration 前后对照（同引擎，仅切分 real-site 语料）');
+  L.push('');
+  L.push('| 集合 | cases | TP | FP | TN | FN | precision | recall | f1 | 回归门禁 |');
+  L.push('|---|---|---|---|---|---|---|---|---|---|');
+  const rows = [['前（无 real-site）', contrast.before], ['后（含 real-site）', contrast.after]];
+  for (const [tag, m] of rows) L.push('| ' + [tag, m.cases, m.TP, m.FP, m.TN, m.FN, num(m.precision), num(m.recall), num(m.f1), m.gate].join(' | ') + ' |');
+  L.push('| Δ | +' + (contrast.after.cases - contrast.before.cases) + ' | ' + (contrast.after.TP - contrast.before.TP) + ' | ' + (contrast.after.FP - contrast.before.FP) + ' | ' + (contrast.after.TN - contrast.before.TN) + ' | +' + (contrast.after.FN - contrast.before.FN) + ' | ' + num(contrast.after.precision - contrast.before.precision) + ' | **' + num(contrast.after.recall - contrast.before.recall) + '** | ' + num(contrast.after.f1 - contrast.before.f1) + ' | — |');
+  L.push('');
   L.push('## 门禁');
   L.push('');
   L.push((gate ? 'PASS' : 'FAIL') + ' — ' + (violations.length ? violations.join('；') : '契约 / 覆盖 / 复现基线全部与登记一致'));
