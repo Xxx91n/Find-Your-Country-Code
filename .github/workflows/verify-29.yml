@@ -1,0 +1,31 @@
+# 票 29 验证 workflow：本票验收门（verify-ticket-29.mjs：形态描述符候选集 / 结构启发式
+# 全瀑布 / 内容证据门槛 / ADR-0005 档位上限 / 指纹面=观测面 / contenteditable 不扩）。
+# 触发：pull_request（ADR-0006 非发版 workflow PR 门控）+ 本票验证分支 push + 手动 dispatch。
+# node 钉 22：装载器用 module.stripTypeScriptTypes（>=22.13），无 npm 依赖安装面。
+name: Verify Ticket 29 (scan-candidates-expansion)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/29-scan-candidates-expansion'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-29-gate:
+    name: Ticket-29 gate (no-ARIA custom dropdown candidate set)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-29 acceptance gate
+        run: node tests/scripts/verify-ticket-29.mjs

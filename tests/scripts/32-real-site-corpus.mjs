@@ -18,6 +18,13 @@ import { dirname, join } from 'node:path';
 import { loadManifest, bundleEngine, evaluateCase, metrics, runCorpus, ROOT } from './14-lib-engine.mjs';
 
 const DETECT_SRC = join(ROOT, 'src', 'detect', 'index.ts');
+const CONFIG_SRC = join(ROOT, 'src', 'config.ts');
+// 票 29：登记线取自 config.ts 真源（防与引擎漂移，同 SCAN_SELECTORS 提取纪律）
+const REGISTER_SCORE = (() => {
+  const m = /export const ITI_LOW_REGISTER_SCORE\s*=\s*(-?\d+)/.exec(readFileSync(CONFIG_SRC, 'utf8'));
+  if (!m) throw new Error('ITI_LOW_REGISTER_SCORE 提取失败：src/config.ts 结构已变');
+  return Number(m[1]);
+})();
 const REQUIRED_FORM_FIELDS = ['id', 'label', 'coveredA', 'fixingTicket', 'expectedTier',
   'expectedTierRationale', 'corpusCases', 'candidateDescriptor',
   'coveredByCandidateSetBaseline', 'coveredByCandidateSetTarget', 'baseline'];
@@ -113,6 +120,12 @@ function selfTest(scanSelectors) {
     ['.iti input', { tag: 'input' }, false],
     ['.intl-tel-input input', { tag: 'input', ancestors: [{ tag: 'div', classes: ['iti'] }] }, false],
     ['select', { tag: 'div', classes: ['select-country'] }, false],
+    // 票 29 形态描述符（无 ARIA 手写下拉）：可聚焦闸门必须双向成立
+    ['div[tabindex="0"]', { tag: 'div', classes: ['select-country'], attrs: { tabindex: '0' } }, true],
+    ['div[tabindex="0"]', { tag: 'div', classes: ['main-nav'] }, false],
+    ['span[tabindex="0"]', { tag: 'span', attrs: { tabindex: '0' } }, true],
+    ['div[tabindex="0"]', { tag: 'span', attrs: { tabindex: '0' } }, false],
+    ['div[tabindex="0"]', { tag: 'div', attrs: { tabindex: '-1' } }, false],
   ];
   const fails = [];
   for (const [sel, desc, want] of cases) {
@@ -183,6 +196,13 @@ for (const form of manifest.realSiteForms || []) {
     }
     if (wantKnownResidual && c.expect !== 'inject') violations.push(form.id + '/' + cid + ': verdict=MISS 但 expect 非 inject');
     if (!wantKnownResidual && c.expect !== 'none') violations.push(form.id + '/' + cid + ': verdict=' + form.baseline.verdict + ' 但 expect 非 none');
+    // 票 29：登记面可达断言 —— 候选集覆盖已达成且期望档位为 none（ADR-0005 登记不注入）
+    // 的形态，实测分数必须 >= 登记线，否则「进了候选集却进不了召唤面」等于修复未落地。
+    if (covered && form.coveredByCandidateSetTarget && form.expectedTier === 'none' &&
+        r.score < REGISTER_SCORE) {
+      violations.push(form.id + '/' + cid + ': 登记面不可达 实测 score=' + r.score +
+        ' < ITI_LOW_REGISTER_SCORE(' + REGISTER_SCORE + ')');
+    }
   }
 
   results.push({

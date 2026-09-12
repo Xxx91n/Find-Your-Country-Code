@@ -75,7 +75,9 @@ function stripTypes(src) {
 }
 
 // 实例化引擎；overrides 形如 { SCORE_AUTO: 60 }，仅影响内存实例
-export function bundleEngine(overrides) {
+// ui 可选：注入自定义 UI 桩以断言 attach/rememberLow/detach 调用（票 29 档位上限验证用）；
+// 缺省沿用空桩（既有调用方行为不变）。
+export function bundleEngine(overrides, ui) {
   // stripTypes 以模块语法解析：顶层 return 不合法，故先剥类型再拼返回语句。
   const bundle = [
     toModuleBody(applyOverrides(readFileSync(join(ROOT, 'src', 'config.ts'), 'utf8'), overrides)),
@@ -83,7 +85,7 @@ export function bundleEngine(overrides) {
     toModuleBody(readFileSync(join(ROOT, 'src', 'detect', 'index.ts'), 'utf8')),
   ].join('\n');
   const { createDetect, COUNTRIES } = new Function(stripTypes(bundle) + '\n;return { createDetect, COUNTRIES, ISO2_MAP };')();
-  const Detect = createDetect({ attach() {}, rememberLow() {}, summon() {} }, null);
+  const Detect = createDetect(ui || { attach() {}, rememberLow() {}, summon() {} }, null);
   return { Detect, COUNTRIES };
 }
 
@@ -101,6 +103,8 @@ class El {
     this._name = props.name || '';
     this._placeholder = props.placeholder || '';
     this.options = (props.options || []).map(o => typeof o === 'string' ? new Opt(o, o) : new Opt(o.value, o.text));
+    this.children = [];
+    this.textContent = props.text || '';
     this.ancestors = [];
     this.parentElement = null;
     this.disabled = false;
@@ -131,6 +135,21 @@ class El {
     if (sel === 'label') return this.ancestors.find(a => a.tagName === 'LABEL') || null;
     return null;
   }
+  // 票 29：受限后代查询（引擎消费面 = 'li' / '[role="option"]' / 'ul li' 三种），
+  // 使自定义下拉的结构探测在语料上真实运行（mock 不另开分支，镜像真实 DOM 结构）。
+  querySelectorAll(sel) {
+    const want = String(sel).trim().replace(/^.*\s+/, '');
+    const roleM = /^\[role="([\w-]+)"\]$/.exec(want);
+    const out = [];
+    const walk = (n) => {
+      for (const c of n.children || []) {
+        if (roleM ? c.getAttribute('role') === roleM[1] : c.tagName === want.toUpperCase()) out.push(c);
+        walk(c);
+      }
+    };
+    walk(this);
+    return out;
+  }
 }
 
 // 按用例声明构建元素：labels 逐用例注册；ancestors 逐层 DIV 包裹
@@ -158,6 +177,14 @@ export function buildElement(caseDef) {
     options: elDef.options,
   });
   el.ownerDocument = docMock;
+  // 票 29：非原生 select 的自定义下拉（div/span 触发器）在真实 DOM 中以 ul>li 承载选项，
+  // 选项值走 data-value（手写下拉的通用承载约定）、选项文本走 textContent。
+  // harness 镜像该子树，使结构探测在语料上跑真实路径（引擎无 mock 专用分支）。
+  if (el.options && el.options.length && el.tagName !== 'SELECT') {
+    const list = new El('ul', {});
+    for (const o of el.options) list.children.push(new El('li', { attrs: { 'data-value': o.value }, text: o.text }));
+    el.children.push(list);
+  }
   const ancs = (elDef.ancestors || []).map(a => new El('DIV', { className: a.className || '' }));
   el.ancestors = ancs;
   el.parentElement = ancs[0] || null;
