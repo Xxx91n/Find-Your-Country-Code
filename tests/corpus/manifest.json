@@ -454,11 +454,12 @@
       "fixingTicket": "29",
       "signalAttribution": [
         "L1:kw:country(+14)（class \"select-country\" 经 matchLatin joined 命中 country）",
-        "无 L2/L3/L4 信号",
-        "score 14 < ITI_LOW_REGISTER_SCORE(25) → 即便进入评分也不进召唤面"
+        "L2:custom:dropdown(+20)（票 29：div[tabindex=0] 可聚焦触发器 + 后代 ul>li 选项，选项文本 (+NN)/ISO2 通过内容门槛）",
+        "内容证据仅作门槛不作加分（无 ARIA 语义背书，进 L3 会击穿低调线）",
+        "score 34：>= ITI_LOW_REGISTER_SCORE(25) 进召唤面，< SCORE_LOWKEY(35) 且经 ADR-0005 cap → tier=none"
       ],
-      "source": "decision-ledger.md A-003；research/cycle4-atomcode-findings.md 第一路「无 ARIA 纯自定义下拉」；ADR-0005（伪 select 登记不注入）",
-      "note": "无 ARIA 的手写下拉（触发器 div.select-country[tabindex=0] + ul>li 选项，选项文本含 (+NN)）。expect=none 是 ADR-0005 的工具口径真值（伪 select 档位上限=登记+手动召唤，不自动注入）；真实缺口是候选集/登记面不可达，由 realSiteForms 覆盖基线记录。修复归属票 29",
+      "source": "decision-ledger.md A-003；research/cycle4-atomcode-findings.md 第一路「无 ARIA 纯自定义下拉」；ADR-0005（伪 select 登记不注入）；票 29 atomcode 调研（行业候选集一律收敛在语义控件白名单）",
+      "note": "无 ARIA 的手写下拉（触发器 div.select-country[tabindex=0] + ul>li 选项，选项文本含 (+NN)）。expect=none 是 ADR-0005 的工具口径真值（伪 select 档位上限=登记+手动召唤，不自动注入）。票 29 修复后：候选集可见（div[tabindex=\"0\"]）+ 登记面可达（score 34）+ 档位仍 none，三重缺口闭合；残留项为懒渲染面板与站点侧选值交互，见 realSiteForms.baseline.gaps",
       "el": {
         "tag": "div",
         "className": "select-country",
@@ -584,20 +585,24 @@
           "option": "li"
         }
       },
-      "coveredByCandidateSetBaseline": false,
+      "coveredByCandidateSetBaseline": true,
       "coveredByCandidateSetTarget": true,
       "baseline": {
-        "matchedSelectors": [],
+        "matchedSelectors": [
+          "div[tabindex=\"0\"]"
+        ],
         "observed": {
-          "score": 14,
+          "score": 34,
           "tier": "none",
           "injected": false
         },
-        "verdict": "UNCOVERED",
+        "verdict": "COVERED",
         "gaps": [
-          "candidate-set：SCAN_SELECTORS 五组零命中，扫描阶段不可见",
-          "kind-dispatch：_process 的 kind 分发无 div/自定义触发器分支 → kind=null 直接 return，rememberLow 登记路径不可达",
-          "register-threshold：即便进入评分，14 < ITI_LOW_REGISTER_SCORE(25)，仍不进召唤面"
+          "closed(candidate-set)：票 29 新增形态描述符 div[tabindex=\"0\"],span[tabindex=\"0\"] —— 只收可聚焦非表单容器，未放宽为裸 ul li / 全 div 扫描",
+          "closed(kind-dispatch)：结构信号 custom:dropdown 置 pseudo=true → kind=pseudo，rememberLow 登记路径可达",
+          "closed(register-threshold)：score 34（L1 kw:country 14 + 结构 20）>= ITI_LOW_REGISTER_SCORE(25) 进召唤面；< SCORE_LOWKEY(35) 与 ADR-0005 档位上限一致",
+          "residual(懒渲染面板)：选项面板未渲染时无 li 可探测，依赖 childList observer 重扫后登记——面板常驻形态不受影响",
+          "residual(填充可达性)：fill 侧已补无 aria-controls 的 li 回退，但手写下拉的选值交互由站点脚本决定，行业实证存在打不开/选不中的形态"
         ]
       }
     }
