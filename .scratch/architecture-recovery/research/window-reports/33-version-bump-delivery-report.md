@@ -9,8 +9,8 @@
 |---|---|---|
 | 目标版本号 | **1.5.0**（大脑开工指令给定，票面不预设） | 本次开工指令 |
 | 三处版本一致 | ✅ package.json / vite.config.ts / Glog + Glog_EN 头条 全为 1.5.0 | `06fd225` + dry-run 日志 |
-| 产物 @version | ✅ `1.5.0` | dry-run run `34705359110` |
-| dry-run CI | ✅ **success** | run `34705359110` @ `e308765` |
+| 产物 @version | ✅ `1.5.0` | dry-run run `34705751488` |
+| dry-run CI | ✅ **success** | run `34705751488` @ `3f39acb` |
 | tag 状态 | ✅ `v1.5.0` 不存在 → 合入 main 后将创建 release v1.5.0 | 同 run 日志 + `git ls-remote` 实证 |
 | 真实发版 | ⛔ **未执行**（零 tag / 零 Release / 零 GreasyFork 同步） | 权限边界，待用户确认 |
 
@@ -52,15 +52,17 @@ changelog 内容来源：v1.4.0 之后 19 个 main 提交 + 27/28/29/30/31 五�
 |---|---|
 | `06fd225` | 版本 bump 至 1.5.0（Glog.md +10 / Glog_EN.md +10 / package.json / vite.config.ts） |
 | `e701f3a` | release-dry-run 安装口径恢复 `--legacy-peer-deps` |
-| `e308765` | 改 `npm install --legacy-peer-deps`（head，dry-run 绿） |
+| `e308765` | 改 `npm install --legacy-peer-deps`（dry-run 转绿） |
+| `3f39acb` | 窗口报告落盘 + issue 四项验收勾销（docs-only，仅 .scratch） |
 
-## 4. dry-run CI：红→绿两次迭代（只认 CI 证据）
+## 4. dry-run CI：红→绿三轮迭代 + 最终头复跑（只认 CI 证据）
 
 | 轮次 | run | sha | 结论 | 失败步骤与归因 |
 |---|---|---|---|---|
 | R1 | `34704984108` | `06fd225` | failure | Install dependencies：`npm ci` **ERESOLVE**（react 18 ↔ react-dom19 别名包 peer 冲突） |
 | R2 | `34705250821` | `e701f3a` | failure | Install dependencies：`npm ci --legacy-peer-deps` **EUSAGE**（lockfile 与 package.json 失同步） |
 | R3 | `34705359110` | `e308765` | **success** | — |
+| R4 | `34705751488` | `3f39acb` | **success** | 最终头复跑：docs-only 证据同步提交后再锚定一次，断言面零变化 |
 
 ### 归因链（两次红灯均为预存安装面红，与 1.5.0 bump 无因果，且都发生在任何版本断言之前）
 
@@ -71,7 +73,7 @@ changelog 内容来源：v1.4.0 之后 19 个 main 提交 + 27/28/29/30/31 五�
 
 **修复**：改 `npm install --legacy-peer-deps` —— 不依赖 lockfile 同步，与 cch-34 联③ 修 e2e.yml 的口径一致（E2E run `34694435571` 已绿先例）。只改验证型 workflow，`release.yml` 与发版语义零触碰。
 
-### R3 绿日志原文（本票专属验收证据）
+### R4 绿日志原文（本票专属验收证据，run `34705751488` @ `3f39acb`）
 
 ```
 Cross-check version sources  artifact=1.5.0 vite.config.ts=1.5.0 package.json=1.5.0
@@ -80,14 +82,18 @@ Report tag state             Tag v1.5.0 does not exist - a push-to-main run WOUL
 
 另有 `git ls-remote --tags origin` 实证：远端仅 `v1.3.4` / `v1.4.0`，`v1.5.0` 确不存在。
 
+### 迭代小结
+
+R1/R2 两次红灯均落在 Install dependencies 步、均发生在任何版本断言之前，归因链完整指向 cch-25 的 `--legacy-peer-deps` 移除回归与未合流的 lockfile 重生成版（D-27e）；R3 转绿；R4 在最终头复跑确认。
+
 ## 5. issue 33 验收勾销
 
 | 验收项 | 状态 | 证据 |
 |---|---|---|
 | 版本号三处一致 bump | ✅ | `06fd225` + dry-run `34705359110`（artifact / vite.config.ts / package.json 三源均 1.5.0；Glog 双语头条已入同提交） |
-| dry-run CI 先行验证三处一致 + tag 状态 | ✅ | run `34705359110` @ `e308765` success |
+| dry-run CI 先行验证三处一致 + tag 状态 | ✅ | run `34705751488` @ `3f39acb` success |
 | 发行动作须用户确认后执行 | ✅（合规：未执行） | 本窗口零 tag / 零 Release / 零 GreasyFork 同步；`git ls-remote` 实证无 v1.5.0 |
-| 证据锚 commit sha + CI run ID | ✅ | 见上三行 |
+| 证据锚 commit sha + CI run ID | ✅ | 见上三行；最终头 `3f39acb` 之后的提交均为 .scratch docs-only，不触碰四版本文件与任何 CI 文件 |
 
 ## 6. 偏离点与呈报（单列，不追认）
 
