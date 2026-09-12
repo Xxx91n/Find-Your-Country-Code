@@ -101,7 +101,7 @@
 
 ## 8. 收口清单
 
-- 分支：`cch/31-fill-feedback-loop`（7 commits，`ceea6ae..0690f0c`），已 push origin，未开 PR（未获指示）。
+- 分支：`cch/31-fill-feedback-loop`（实现证据锚 `0690f0c` 三门全绿 → docs `30e373c` 报告/issue（push 三门复验：E2E 34688668061 / Typecheck 34688668060 / Verify-31 34688668066）→ 纪要追加），已 push origin，未开 PR（未获指示）。
 - 落盘：本报告 + `tests/{fixtures/fill-feedback.html, fill-feedback.spec.ts, scripts/verify-ticket-31.mjs}` +
   `.github/workflows/verify-31.yml` + `.npmrc` + `src/{types,i18n,fill/index}.ts` + issues/31 勾选。
 - 建议票 34 收编：① lockfile 再生 + `npm ci` 回迁；② verify-09/13/15/18 装载器统一 stripTypes；
