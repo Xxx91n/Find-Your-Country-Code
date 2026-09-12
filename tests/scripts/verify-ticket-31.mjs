@@ -76,7 +76,10 @@ Object.defineProperty(OptionCtor.prototype, 'value', {
   configurable: true, enumerable: true, get() { return this._domValue; }, set(v) { this._domValue = String(v); },
 });
 window['HTMLOptionElement'] = OptionCtor;
-CTORS.OPTION = OptionCtor;  const el = new CTORS[tag]();
+CTORS.OPTION = OptionCtor;
+function mk(tag, props) {
+  props = props || {};
+  const el = new CTORS[tag]();
   el.ownerDocument = { defaultView: window };
   if (props.options) { el.options = props.options.map(o => { const n = mk('OPTION', {}); n.value = o.value; n.text = o.text; return n; }); }
   for (const k of ['placeholder', 'type', 'name', 'id']) if (props[k] !== undefined) el[k] = props[k];
