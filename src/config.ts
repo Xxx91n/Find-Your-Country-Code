@@ -20,6 +20,16 @@ export const L1_PREFIX_KW_SCORE = 7;      // prefix 歧义降权组 [MD §2① p
 export const L1_NPA_KW_SCORE = 4;         // 北美编号计划词（npa/trunk，无国家语义）[MD §4 撞库类新发现]
 export const L1_LABEL_PHRASE_SCORE = 26;  // label 强短语（国家区号/国际区号/电话区号/呼叫代码/country code/…）
 export const L1_BARE_QU_SCORE = 8;        // label 裸词「区号」单独降权 [MD §2② 固话本地区号误报]
+// 属性强短语组（票 27 [A-001]）：placeholder/aria-label/name/id/class/data-name/title 等属性
+// 文本归一后命中强短语词表 —— 与 label 强短语同词表、权重低一档（属性文本是弱一等的 label
+// 证据：无 <label> 关联、可被 JS 动态改写、常为提示性文案）。
+// 标定（tests/scripts/27-weak-signal-calibration.mjs，全语料 45 例）:
+//   L1_STRONG_KW_SCORE(30) + 8 = 38 >= SCORE_LOWKEY(35) —— name=countryCode /
+//   placeholder="Country code" 类无锚弱信号字段由复现基线 30/none 跨过低置信线；
+//   全语料负例（含「本地固话区号 / 语言前缀」类）零抬升，precision 1.0 保持。
+//   不取更大值：8 已覆盖 camelCase/snake_case/紧凑三种命名变体，再高只会扩大
+//   66-68 分既有正例越过 SCORE_AUTO 的范围（SCORE_AUTO 常量本身不动）。
+export const L1_ATTR_PHRASE_SCORE = 8;
 export const L1_LOCAL_FIXED_PENALTY = -30;  // label 含 固话/本地/local → 本地区号语义负分 [MD §2②]
 export const L1_COMPOUND_SCORE = 40;      // 复合短语「国家/地区区号」「手机区号」白名单，优先级高于 L4 子串排除 [MD §5-0① N1 误杀修复]
 
