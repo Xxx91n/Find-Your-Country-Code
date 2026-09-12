@@ -13,7 +13,7 @@
 | 修法：文本括号区号证据独立计分（不嵌 plusDial 门），L3 常量口径复用 `src/config.ts`，不新增魔法数 | ✅ | `99ce511`；verify-28 G2（2.1–2.4）CI 绿 |
 | 护栏 1：裸国家选择器抑制（`country-semantic:suppress`）保持有效——纯 ISO2 无区号证据下拉仍判 none | ✅ | verify-28 G3（3.1–3.3）；E2E「护栏1」用例 |
 | 护栏 2：共享区号（+1）消歧不回退；`pseudoOptionStats` 与 `optStats` 口径同步（票 13 检查点二） | ✅ | verify-28 G4（4.1–4.2）、G5（5.1–5.2）；E2E「护栏2」消歧落点 CA |
-| 标定：以票 32 真实站点模式库为正例源，CI calibration baseline 为放行标准 | ✅（门禁层面）/ ⚠️（workflow 层面见 D-28c） | run `34692680834`；run `34692755555` 中 harness 与 threshold 两步 ✓ |
+| 标定：以票 32 真实站点模式库为正例源，CI calibration baseline 为放行标准 | ✅（门禁层面）/ ⚠️（workflow 层面见 D-28c） | run `34693074675`；run `34692755555` 中 harness 与 threshold 两步 ✓ |
 | 专属验收：正例源用票 32 模式库；CI calibration baseline 绿 + E2E 绿，均须 CI run ID | ⚠️ 部分受限 | 见 §7 与 D-28a / D-28c |
 
 ## 2. 变更清单
@@ -22,7 +22,7 @@
 |---|---|---|
 | 调研纪要 | `bc37aae` | `research/atomcode-ticket28-iso2-paren-dial.md`（parenDial 独立计分可行性调研 + 采用/不采用对照 + 一手信源） |
 | 实现 | `99ce511` | `src/detect/index.ts`（select 侧 parenDial 移出 plusDial 门 + pseudo 侧口径同步）；`tests/corpus/manifest.json`（复现基线锁显式更新）；`tests/fixtures/iso2-dial-evidence.html` + `tests/iso2-dial-evidence.spec.ts`（新增） |
-| 验收门 | `1f30990` | `tests/scripts/verify-ticket-28.mjs`（19 断言）+ `.github/workflows/verify-28.yml`（node 22、无 npm 安装面） |
+| 验收门 | `7714dc3` | `tests/scripts/verify-ticket-28.mjs`（19 断言）+ `.github/workflows/verify-28.yml`（node 22、无 npm 安装面） |
 
 ### 2.1 改法（精确到代码）
 
@@ -96,10 +96,10 @@ pseudo 侧同步：`if (st2.plusDial > 0 && st2.parenDial > 0)` → `if (st2.par
 
 | 门 | CI run ID | 结论 | sha |
 |---|---|---|---|
-| **Verify Ticket 28** | **34692680834** | **success（19/19）** | `1f30990` |
-| Calibration Baseline（dispatch） | 34692755555 | `Run precision/recall harness` ✓、`Run threshold calibration` ✓；`Run real-site corpus probe` ✗（违反项全属票 27/29，见 D-28c） | `1f30990` |
-| E2E | 34692680806 / 34692544829 | **failure —— 安装阶段** `npm install` ERESOLVE，未执行任何测试（预存破窗 D-28a） | `1f30990` / `d95c50a` |
-| Typecheck | 34692680832 / 34692276331 | **failure —— 安装阶段**（同 D-28a） | `1f30990` / `53b7449` |
+| **Verify Ticket 28** | **34693074675** | **success（19/19）** | `7714dc3` |
+| Calibration Baseline（dispatch） | 34692755555 | `Run precision/recall harness` ✓、`Run threshold calibration` ✓；`Run real-site corpus probe` ✗（违反项全属票 27/29，见 D-28c） | `7714dc3` |
+| E2E | 34693074703（最新）/ 34692680806 | **failure —— 安装阶段** `npm install` ERESOLVE，未执行任何测试（预存破窗 D-28a） | `7714dc3` / `d95c50a` |
+| Typecheck | 34693074677（最新）/ 34692680832 | **failure —— 安装阶段**（同 D-28a） | `7714dc3` / `53b7449` |
 
 > E2E/Typecheck 的安装阶段失败在票 32 报告（`3e3b2ac`）已登记为「预存安装层债务，均安装阶段未执行测试」，非本票引入。
 
@@ -108,7 +108,8 @@ pseudo 侧同步：`if (st2.plusDial > 0 && st2.parenDial > 0)` → `if (st2.par
 | ID | 事项 | 性质 | 建议 |
 |---|---|---|---|
 | **D-28a** | 仓库级 npm 安装面破损：`cch-25`（`4b420be`）把 8 个 workflow 的 `npm ci --legacy-peer-deps` 改为 `npm ci`，而 lockfile 未再生（票 25 AC4 pending）；票 31 的 `.npmrc legacy-peer-deps=true` 修复（提交 `lom`）**尚未落到本票分支**。E2E/Typecheck 因此无法取证 | 跨票预存红（票 31 D-31a 已登记） | 将 `.npmrc` 落地，或按 `real-site-smoke.yml` 的 `npm ci --legacy-peer-deps \|\| npm install --legacy-peer-deps` 回退。**本票未擅自回滚票 25 交付物** |
-| **D-28b** | 票 27 提交 `fcfe328` 同时改 detect 与 config，但本票分支基线**只含 detect 侧**，`L1_ATTR_PHRASE_SCORE` 未定义 → 分支上引擎在 `attrPhrase` 命中时抛 `ReferenceError`（真实运行时缺陷，CI run 34692544879 实证） | 跨票半落地 | 按 WORKFLOW §4.2 以 `but move cch/28 --above cch/27` 堆叠消解。**副作用：连带将 `cch/27-detection-coverage-floor`（`481713c`）首次推到 origin**，请票 27 负责人知悉 |
+| **D-28b** | 票 27 提交 `fcfe328` 同时改 detect 与 config，但本票分支基线**只含 detect 侧**，`L1_ATTR_PHRASE_SCORE` 未定义 → 分支上引擎在 `attrPhrase` 命中时抛 `ReferenceError`（真实运行时缺陷，CI run 34692544879 实证） | 跨票半落地 | 按 WORKFLOW §4.2 以 `but move cch/28 --above cch/27` 堆叠消解。**副作用：连带将 `cch/27-detection-coverage-floor`（推送时 tip `c9439f5`）推到 origin**，请票 27 负责人知悉。
+**注意：工作区被并行提交推进后，`but push` 会重算基址并可能再次丢掉该依赖**（实证：docs 提交后 push 曾使 `cch/27` 不再是祖先，票级门随即以 `L1_ATTR_PHRASE_SCORE is not defined` 转红，run 34692972982）——每次推送后须复验「27 为祖先 + config 含常量」 |
 | **D-28c** | Calibration Baseline 的 real-site 门禁在 27+28 上仍红：违反项全部为票 27 的 `weak-signal-input`（5 例基线漂移 + `knownResidual` 与 verdict 不一致）与票 29 的 `no-aria-custom-dropdown`（34→14）。本票 `iso2-value-paren-dial-select` 实测 `got=lowkey score=38` **零违反** | 他票在途 | 票 27/29 各自更新 `realSiteForms[].baseline.observed` 与用例 `knownResidual`。**本票未代改他人基线** |
 | **D-28d** | 票 32 门禁语义限制：`verdict='MISS'` 时要求 `knownResidual=true`，而 `verdict≠'MISS'` 时又要求 `expect='none'` → **修复后的正例不存在合法编码状态**。故本票保留 `verdict='MISS'` + `knownResidual=true`，只更新 `baseline.observed`（回归保护由该锁承担，非 mismatch 列表） | 门禁设计缺口 | 建议票 34/35 增设 verdict 状态位（如 `MISS-RESOLVED`），使修复后正例可脱离 residual 语义 |
 | **D-28e** | 未采纳 atomcode 的两条护栏建议（共现约束硬门 / 选项 ≥10） | 有意偏离 | 理由见 §5 与调研纪要，均指向与 ADR-0001 已决或 spec Out of Scope 冲突 |
