@@ -142,6 +142,7 @@ scans=1 maxMs=73 avgMs=73.00 samples=[73]
 | **D-29d** | `contenteditable` 未进候选集 | issue 提及该形态，但**票 32 未提供对应语料**（`realSiteForms` 只有 3 形态），无测量地基。且 `[contenteditable]` 会捞到所有富文本编辑器（候选爆炸），行业无先例。按数据驱动校准原则（CONTEXT.md）**不盲扩**；建议由票 32 补语料后另立票。 |
 | **D-29e** | 懒渲染面板的登记时点 | 选项面板未渲染时无 `li` 可探测，依赖 `childList` observer 重扫后登记（面板常驻形态不受影响）。已写入 manifest `gaps` 的 residual 项。 |
 | **D-29f** | 填充可达性的站点侧局限 | fill 侧已补 li 回退，但手写下拉的选值交互由站点脚本决定；行业实证（Bitwarden 15926）存在「打不开/选不中」形态。失败信号由票 31 的填充反馈闭环承接，不静默。 |
+| **D-29g** | 本票 docs 推送**连带改写了他票分支的远端基址**（已修复） | 第二次 `but push cch/29`（docs 收口）输出显示 `cch/28` 同步 `6bb7e58 → 656ab97`：GitButler 重算基址，把 `cch/28` 从「票 27 栈」rebase 到「票 32 栈」，**票 27 的 410 行内容整体丢失**（`verify-27.yml`、`src/config.ts` 的 `L1_ATTR_PHRASE_SCORE`、`27-weak-signal-calibration.mjs`、`verify-ticket-27.mjs`、`weak-signal.html/spec.ts`、`manifest`），导致 `cch/28` 与 `cch/29` 的 `detect/index.ts` 引用未定义常量 → Typecheck 同步转红（28 run 34694069205 / 29 同批）。**修复**：按依赖真序 `main → 32 → 27 → 28 → 29` 执行 `but move cch/28 --above cch/27` 与 `but move cch/29 --above cch/28` 后重推，票 27 内容已回到两条分支（远端 `config.ts` 常量复现、`weak-signal.html`/`verify-ticket-27.mjs` 在树）；本地 `tsc --noEmit` exit 0，CI Typecheck（29 run 34694371157）与 Verify Ticket 29（34694371007）转绿。**副作用**：同批连带推送了 `cch/27` 的 3 个待推提交（票 27 窗口产物，`b4cc43b → e65c2c3`）；该分支三门红灯为**预存**（`b98a1b7` 时代 Calibration/E2E/Typecheck/Verify-27 已全红，同 lockfile EUSAGE 口径），非本次引入。**教训**：堆叠分支的 `but push` 会重写祖先分支远端头，推送后必须 `git merge-base --is-ancestor` + 远端 grep 复验依赖完整性（D-28b 的二次实证）。 |
 
 ---
 
@@ -162,3 +163,4 @@ scans=1 maxMs=73 avgMs=73.00 samples=[73]
 | 首轮红灯（基线缺 detect 改动，堆叠前） | `dc7898f` | Verify Ticket 29 34693000589 | 红 → 已由堆叠消解 |
 | E2E（跨分支安装面共因） | 同上 | E2E **34693447646** | 红（安装阶段，见 D-29c） |
 | docs 收口（窗口报告 + atomcode 调研纪要 + issue 勾销） | `27bddd3`（本地 `tkq`） | Verify Ticket 29 **34693990564** / Typecheck **34693990552** / E2E **34693990551** | 绿 / 绿 / 红（`react-dom@19.2.8` vs `react@18.3.1` ERESOLVE，安装阶段，见 D-29c） |
+| 重堆叠修复（D-29g：28/29 挂回票 27，恢复 `L1_ATTR_PHRASE_SCORE` 依赖） | `6621336`（本地栈顶，29）；连带 `cch/28` → `6a7a03f`、`cch/27` → `e65c2c3` | Verify Ticket 29 **34694371007** / Typecheck **34694371157** / E2E **34694371081** | 绿 / 绿 / 红（安装阶段，见 D-29c）；`cch/28` Typecheck 红为旧 lockfile EUSAGE（票 28 D-28a 预存，非本次引入） |
