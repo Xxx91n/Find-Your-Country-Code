@@ -23,8 +23,13 @@ jobs:
           node-version: 20
           cache: npm
 
+      # 票 33（A-007 收口）：恢复 cch-19 的 --legacy-peer-deps 安装口径。
+      # 归因链：cch-19(4544a72) 为 release/dry-run 加该标志（裸 npm ci 因合并树含 react19/react-dom19
+      # 别名包 ERESOLVE 恒红，run 34035320882 实证）→ cch-25(4b420be) 从 8 个 workflow 移除引入回归
+      # → cch-34 R1 联③ 修 e2e/typecheck 但明言「release 系零接触」，本文件保持预存红。
+      # 本票专属验收要求 dry-run 绿方可合入，故在此恢复；只影响验证型 workflow，release.yml 零触碰。
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build userscript
         run: npm run build
