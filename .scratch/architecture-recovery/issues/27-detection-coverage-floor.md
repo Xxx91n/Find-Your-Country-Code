@@ -31,14 +31,14 @@
 
 | 交付 | commit sha | CI run ID |
 | --- | --- | --- |
-| 改法落地（config + detect） | `2d2096d` | 34696245699 |
-| 语料 + fixture + 标定脚本 | `049131a` | 34696245699 / 34696258480 |
-| 票级验收门 + verify-27.yml | `3f4d9aa` | 34696245699 |
-| E2E 证据作业 | `a16bc71` | 34696245699（3 passed） |
-| manifest 基线同步 | `a18cdc4` | 34696258480 |
-| Typecheck | `0fbf001` | 34696245666（绿） |
+| 改法落地（config + detect） | `2d2096d` | 34697124610 |
+| 语料 + fixture + 标定脚本 | `049131a` | 34697124610 / 34697148462 |
+| 票级验收门 + verify-27.yml | `3f4d9aa` | 34697124610 |
+| E2E 证据作业 | `a16bc71` | 34697124610（3 passed） |
+| manifest 基线同步 | `a18cdc4` | 34697148462 |
+| Typecheck | `1052f3c` | 34697124601（绿） |
 
-分支：`cch/27-detection-coverage-floor`（最终头 `0fbf001`，三门全绿；栈序随并行窗口变动）
+分支：`cch/27-detection-coverage-floor`（最终头 `1052f3c`，含 8 个 cch-27 提交；栈序随并行窗口变动）
 
-> 注：过渡头曾因票 28/29 域漂移导致 Calibration / Typecheck 转红，已由重新入栈消解（D-27e）；最终头 `0fbf001` 三门全绿。共享 E2E 仍卡安装阶段（D-27a），本票以自有作业取证。
-窗口报告：`research/window-reports/27-detection-coverage-floor-report.md`（偏离点 D-27a~D-27e；含票 29/34 在 package-lock.json 上的未决冲突登记）
+> 注：过渡头曾因票 28/29 域漂移导致 Calibration / Typecheck 转红，已由重新入栈消解（D-27e）；最终头 `1052f3c` 三门全绿（Verify 34697124610 / Calibration 34697148462 / Typecheck 34697124601）。共享 E2E 仍卡安装阶段（D-27a），本票以自有作业取证。
+窗口报告：`research/window-reports/27-detection-coverage-floor-report.md`（偏离点 D-27a~D-27e；D-27e 含本票经授权代解票 29/34 的 package-lock.json 冲突之记录，需两票窗口复核）

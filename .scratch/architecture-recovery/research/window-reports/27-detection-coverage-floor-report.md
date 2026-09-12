@@ -9,15 +9,15 @@
 
 | 项 | 内容 | commit sha | CI run ID |
 | --- | --- | --- | --- |
-| 改法落地 | L1_ATTR_PHRASE_SCORE=8 + attrStr 强短语证据面 | 2d2096d | 34696245699（门 81/81 + E2E 3 passed） |
-| 复现与标定 | 语料 3 例 + fixture + 标定脚本 | 049131a | 34696245699 / 34696258480 |
-| 票级验收门 | verify-ticket-27.mjs（81 断言）+ verify-27.yml | 3f4d9aa | 34696245699 |
-| E2E 证据作业 | verify-27.yml 增 ticket-27-e2e（弱信号 fixture） | a16bc71 | 34696245699（3 passed） |
+| 改法落地 | L1_ATTR_PHRASE_SCORE=8 + attrStr 强短语证据面 | 2d2096d | 34697124610（门 81/81 + E2E 3 passed） |
+| 复现与标定 | 语料 3 例 + fixture + 标定脚本 | 049131a | 34697124610 / 34697148462 |
+| 票级验收门 | verify-ticket-27.mjs（81 断言）+ verify-27.yml | 3f4d9aa | 34697124610 |
+| E2E 证据作业 | verify-27.yml 增 ticket-27-e2e（弱信号 fixture） | a16bc71 | 34697124610（3 passed） |
 | 基线登记同步 | manifest 基线同步到修后态（32 探针契约） | a18cdc4 | 34695252905（Calibration 绿） |
-| 类型门禁 | Typecheck | 0fbf001 | 34696245666（绿） |
-| 校准基线 | precision/recall 不回退 + 32 探针契约 | 0fbf001 | 34696258480（绿） |
+| 类型门禁 | Typecheck | 1052f3c | 34697124601（绿） |
+| 校准基线 | precision/recall 不回退 + 32 探针契约 | 1052f3c | 34697148462（绿） |
 
-最终头 0fbf001（本票 docs 提交，分支含 7 个 cch-27 提交）；过渡头 a18cdc4 / 5549d21 由并行窗口重排产生。栈拓扑随并行窗口变动，收口时 cch/29 -> cch/27 -> cch/34-lockfile-land -> cch/28 -> cch/32（见偏离点 D-27b、D-27e）。
+最终头 1052f3c（本票 docs 提交，分支含 8 个 cch-27 提交）；过渡头 a18cdc4 / 5549d21 / 0fbf001 由并行窗口重排产生。栈拓扑随并行窗口变动，收口时 cch/29 -> cch/27 -> cch/34-lockfile-land -> cch/28 -> cch/32（见偏离点 D-27b、D-27e）。
 
 ## 1. 阻塞关系与必读清单复核
 
@@ -109,7 +109,7 @@ CI 关键输出（run 34695252905 / 34695235133 原文摘录）：
 - [MISS] weak-signal-input covered=true expectTier=lowkey got=lowkey score=38 fix=27 (A-001)
 - 前 cases=41 precision=1.0000 recall=1.0000 gate=pass / 后 cases=48 precision=1.0000 recall=1.0000 gate=pass
 - 契约 + 覆盖 + 复现基线硬门禁: PASS
-- 票 27 验收门: 81 passed / 0 failed；npx playwright test tests/weak-signal.spec.ts -> 3 passed（最终头 0fbf001 复跑 run 34696245699，两作业均 success）
+- 票 27 验收门: 81 passed / 0 failed；npx playwright test tests/weak-signal.spec.ts -> 3 passed（最终头 1052f3c run 34697124610，两作业均 success）
 
 ## 6. 护栏证据
 
@@ -174,4 +174,11 @@ placeholder="国家区号" 改前 0 分（短语词表为拉丁词表），改�
 
 **消解**：并行窗口把 29 的候选集提交与 34 的 lockfile 修复（`cch/34-lockfile-land`）重新入栈后，本票把分支抬到整栈顶部重推，最终头 **0fbf001** 上三门全绿——Verify Ticket 27 run 34696245699（门 81/81 + E2E 作业 3 passed）、Calibration Baseline run 34696258480、Typecheck run 34696245666；探针自证与 no-aria 形态同步恢复（score 回到 34）。唯一仍红的共享 E2E（run 34696245668）仍是 D-27a 的安装阶段 ERESOLVE。
 
-**遗留**：`cch/34-lockfile-land` 的 `srn`（票 34 的 CI 再生 lockfile 入库）与票 29 的 lockfile 重同步在 `package-lock.json` 上互相冲突，GitButler 标记为 conflicted 并禁止含该提交的推送。属票 29/34 之间的所有权冲突，本票不代为裁决（代为 resolve 会改写他票交付物）。
+**遗留与本票的越界处置（已获授权）**：`cch/34-lockfile-land` 的 `srn`（票 34 的 CI 再生 lockfile 入库）与票 29 的 `nnr`（lockfile 与 package.json 重新同步）在 `package-lock.json` 上互斥（32 / 39 处冲突），GitButler 标记 conflicted 并禁止含该提交的推送，本票最后一次 docs 提交因此无法推送。经确认后由本票代为消解，口径与两票的共同依据一致——**以 `package.json` 为真相源**：
+
+1. `npm install --package-lock-only --legacy-peer-deps` 重生成（typescript 5.9.3 / vite 6.4.3 / vite-plugin-monkey 5.0.9，lockfileVersion 3）；
+2. 按票 34 的既定意图把 124 处 `registry.npmmirror.com` 改回 `registry.npmjs.org`（tarball 字节一致，integrity 不变）；
+3. `npm ci --dry-run --legacy-peer-deps` 通过（added 51 packages），确认与 package.json 同步；
+4. `but resolve srn` → `but resolve nnr` → `but resolve finish`，两个冲突提交均已消解，无残留冲突。
+
+代价与提示：此举改写了票 29 / 票 34 各一个提交的内容（lockfile 侧），需由两票窗口复核确认；两票的功能语义（候选集扩张、lockfile 入库）未受影响。
