@@ -18,7 +18,7 @@
 | 少量真实站点低频冒烟 + 可跳过白名单；密封 E2E 供给边界不破坏 | ✅ 新增 `tests/live/` 第二层 + `real-site-smoke.yml`（无 PR 触发面） | §6 |
 | CDP `Autofill.trigger` 先评估适配度再采用，不硬套 | ✅ opt-in 评估工具 + 判定 NOT-ADOPTED | §7 |
 | 语料改动不得悄悄引入回归：calibration-baseline 前后 precision/recall 对照 | ✅ 前后对照绿（§5） | §5 |
-| 专属验收：calibration-baseline 前后 precision/recall 对照绿，CI-only 证据 | ⏳ 本地对照已绿（§5）；CI run ID 见 §9 | §9 |
+| 专属验收：calibration-baseline 前后 precision/recall 对照绿，CI-only 证据 | ✅ **CI 绿**：run `34682668714`（sha `081bea8b`）success，且前后对照打印在同一份 CI 输出内（§5、§9） | §5、§9 |
 
 ---
 
@@ -73,6 +73,13 @@
 其中只有 `calibration-baseline` 的根因是上述 TS 装载链；其余 6 个不是同一错误文本（需各归属票自证）。另：`npm install` /
 `npm ci` 在 react@18 与 `react-dom19` 别名双 peer 冲突下**均直接 ERESOLVE 失败**（ADR-0006 「后果 2」登记项），
 `e2e.yml` 用的是裸 `npm install`——这很可能是 `e2e` 在 `main` 上红的原因之一，但属 ADR-0006 已登记债务，本票不动。
+
+**第二个安装层债务（同样已登记）**：已提交的 `package-lock.json` 与 `package.json` **失同步**——lockfile 根 `devDependencies` 仍记 `typescript: latest / vite: latest`，而 package.json 已被票 25 钉为 `^5.7` / `^6.0`。
+CI 实证：`typecheck` 的 install 步直接 `EUSAGE`：`Invalid: lock file's typescript@7.0.2 does not satisfy typescript@5.9.3`、`vite@8.2.2 does not satisfy vite@6.4.3`、`Missing: esbuild@0.25.12 from lock file`——即 ADR-0006 「后果 3」「lockfile 重生成待 CI 实证（票 25 AC4 pending）」。
+**本票未动依赖与 lockfile**（不属本票授权范围，且属票 25 AC4）；但已把该事实写入 `real-site-smoke.yml` 的安装步注释与回退逻辑。
+
+**两个红都是安装阶段，不是测试/类型阶段**（关键归因证据）：本分支 `E2E` run `34682653098` 的 step 展开为 `Install dependencies` = failure，而 `Install Playwright browsers` / `Build userscript` / `Run E2E` 全部 **skipped** —— 没有任何一个 E2E 用例被执行；`typecheck` 同理，`npm ci` 未通过。因此这两个红与本票变更无关。
+（另：两分支 run 的 `Line-ending guard` 均为 **success**，反向证明本票新增文件未引入 CRLF。）
 
 ---
 
@@ -134,6 +141,18 @@
 | 前（无 real-site） | 41 | 20 | 0 | 21 | 0 | 1.0000 | 1.0000 | 1.0000 | PASS |
 | 后（含 real-site） | 45 | 20 | 0 | 22 | 3 | **1.0000** | **0.8696** | 0.9302 | **PASS** |
 | Δ | +4 | 0 | 0 | +1 | +3 | 0.0000 | **-0.1304** | -0.0698 | — |
+
+**CI-only 证据（run `34682668714`，sha `081bea8b`，Calibration Baseline success）**——对照数字直接打印在 CI 输出里，不依赖本地：
+
+```
+precision=1.0000 (TP=20, FP=0)                     ← 票 14 harness（含新增语料）
+— calibration 前后对照（同引擎，仅切分 real-site 语料）
+  前 cases=41 precision=1.0000 recall=1.0000 f1=1.0000 gate=pass
+  后 cases=45 precision=1.0000 recall=0.8696 f1=0.9302 gate=pass
+  Δ  precision=0.0000 recall=-0.1304（FN 从 0 升到 3，FP 不变 0）
+契约 + 覆盖 + 复现基线硬门禁: PASS
+precision=1 recall=0.8695652173913043 f1=0.9302325581395349 gate=pass   ← workflow 断言步
+```
 
 读法（这是本票要的“不漏不误”证据）：
 - **precision 不回退**（1.0000，FP=0）：新增语料没带来任何新误报，三形态都是真阳漏检而非假阳
@@ -213,21 +232,27 @@ CDP Autofill 域是**浏览器原生 AutofillManager 的驱动/观测接口，�
 | D3 | `--legacy-peer-deps` 出现在新 workflow | react@18 与 `react-dom19` 别名双 peer 冲突使裸 `npm ci` / `npm install` **均 ERESOLVE 失败**（ADR-0006 「后果 2」登记债务）。新 workflow 用 `npm ci --legacy-peer-deps` 并锚定原因注释，**与 typecheck.yml 同口径**；根因修复（双 react 依赖或 lockfile 实证）后本行可移除 |
 | D4 | 未修 `misdetect-repro-v2.mjs` / `verify-ticket-02/09/13/15.mjs` 的私有 `toModuleBody` 副本 | 同构缺陷但属其他票的门禁范围（票 34 门禁减肥），避免并发冲突；已在 §3 登记 |
 | D5 | `:autofill` / DOM `autofill` 事件未做运行时探针 | 只做了一手规范与文档取证；两者对脚本注入均为「不可见」是确定性结论，运行时探针收益低 |
+| D7 | `real-site-smoke.yml` **本轮无法取得 CI run ID** | `workflow_dispatch` 要求 workflow 已存在于**默认分支**；本 workflow 首次入仓于特性分支，GitHub API 直接返回 `404 not found on the default branch`。因此本层需**合入 main 后**才能首次 dispatch（schedule 同样要等合入后生效）。替代验证：YAML 已本地解析通过（PyYAML，11 step），`live-smoke.mjs` 已本地端到端跑通（本地镜像 + 真实 Chromium，白名单契约与 harness 自证 PASS） |
 | D6 | `knownResidual` 在 harness 里的汇总文案仍写「计入 FP」 | 正向 residual 实际计入 FN（`recall` 分母）；文案是票 14 既有文本，本票未改（改动属票 14/34 范围），报告在此显式澄清 |
 
 ---
 
 ## 9. 证据锚（commit sha + CI run ID）
 
-> 收口时填写：本票提交 sha 与 `Calibration Baseline` / `Real-site smoke` / `E2E` run ID。
-> 本表由第二个提交（证据锚提交）填写，确保 sha 与 run ID 互相自洽。
+> 只认 CI 证据；下表 sha 为远端 sha（`git log` 可复核），run ID 可在 `gh run view <id>` 复核。
 
-| 项 | 值 |
-|---|---|
-| 票级提交 sha | 待填 |
-| Calibration Baseline run | 待填 |
-| E2E run | 待填 |
-| Real-site smoke run（手动触发） | 待填 |
+| 项 | 值 | 结果 |
+|---|---|---|
+| 提交 1（语料 + 冒烟层 + CDP 评估 + 前置修复） | `4f7102f8d37fed362b62fd412ba884ff71d3ed24` | — |
+| 提交 2（前后对照入 CI + 安装回退） | `081bea8ba1a58d1955c9161ecf37998820c0ea92` | — |
+| 提交 3（本报告证据锚） | 本提交（`but status` / `git log` 可查） | — |
+| **Calibration Baseline** run（sha `4f7102f8`） | `34682530402` | ✅ **success**（12 step 全绿，cch-23 以来首次转绿） |
+| **Calibration Baseline** run（sha `081bea8b`） | `34682668714` | ✅ **success**（前后对照已入 CI 输出，见 §5） |
+| E2E run（sha `081bea8b`） | `34682653098` | ❌ failure（**安装阶段** ERESOLVE；后续 3 步全 skipped，无用例执行 —— 预存债务） |
+| Typecheck run（sha `081bea8b`） | `34682653351` | ❌ failure（**安装阶段** lockfile 失同步 EUSAGE —— 预存债务） |
+| Real-site smoke run | 不可在本分支触发（见 §8 D7） | ⏳ 合入 main 后首次 dispatch |
+| 本地密封 E2E 回归 | `npx playwright test` | ✅ **59 passed**（密封 E2E 语义未破） |
+| 本地 calibration 三脚本 | `14-calibration-harness` / `14-threshold-calibration` / `32-real-site-corpus` | ✅ 均出数；threshold 建议 `keep-current` |
 
 ---
 
