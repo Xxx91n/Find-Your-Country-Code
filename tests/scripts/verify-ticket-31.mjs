@@ -98,14 +98,15 @@ const i18nBody = toModuleBody(join(ROOT, 'src', 'i18n.ts')).replace(/navigator\.
 // fill 源码里的 navigator.clipboard 是注入通道 mock 缝：Node 22 的 navigator 全局只读，
 // 直接 globalThis.navigator= 赋值静默失败 —— 以源码替换注入可变绑定（verify-09 同手法）。
 const fillBody = toModuleBody(join(ROOT, 'src', 'fill', 'index.ts')).replace(/navigator\.clipboard/g, '__navClipboard');
+// stripTypes 以模块语法解析：顶层 return 不合法，故先剥类型再拼返回语句（14-lib-engine 同法）
 const bundle = [
   PRELUDE,
   i18nBody,
   toModuleBody(join(ROOT, 'src', 'iti-adapter', 'index.ts')),
   fillBody,
-  '\n;return { createFill, mk, toasts, window, setClipboard };',
 ].join('\n');
-const { createFill, mk, toasts, window, setClipboard } = new Function(stripTypeScriptTypes(bundle, { mode: 'strip' }))();
+const { createFill, mk, toasts, window, setClipboard } =
+  new Function(stripTypeScriptTypes(bundle, { mode: 'strip' }) + '\n;return { createFill, mk, toasts, window, setClipboard };')();
 const Fill = createFill({ toast(m) { toasts.push(m); } });
 
 function opt(v, t) { const o = mk('OPTION', {}); o.value = v; o.text = t; return o; }

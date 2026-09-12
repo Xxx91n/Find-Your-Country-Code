@@ -18,6 +18,7 @@ test.beforeEach(async ({ page }) => {
   await installUserscript(page);
 });
 
+// 三态里 copied/failed 经剪贴板 promise 异步定态（成功档同步）——读钩子前等状态落定
 async function pick(page: Page, target: string, query: string, iso: string): Promise<void> {
   await openPanel(page, target);
   await page.locator('#cch-si').fill(query);
@@ -59,6 +60,7 @@ test.describe('新行为：三态信号 + 格式分歧可观测（复现期默�
   test('① select 无匹配 → 降级复制态可观测：__cchLastFill.status=copied + 分层文案', async ({ page }) => {
     await page.goto('/fixtures/fill-feedback.html');
     await pick(page, '#fb-nomatch', 'China', 'cn');
+    await page.waitForFunction(() => (window as any).__cchLastFill?.status === 'copied');
     expect(await lastFill(page)).toMatchObject({ status: 'copied', kind: 'select', iso: 'cn' });
     await expect(toastText(page)).toContainText(/未匹配|No match/i);
   });
@@ -86,6 +88,7 @@ test.describe('新行为：三态信号 + 格式分歧可观测（复现期默�
       });
     });
     await pick(page, '#fb-nomatch', 'China', 'cn');
+    await page.waitForFunction(() => (window as any).__cchLastFill?.status === 'failed');
     expect(await lastFill(page)).toMatchObject({ status: 'failed', kind: 'select' });
     await expect(toastText(page)).toContainText(/失败|手动|failed|manually/i);
   });
