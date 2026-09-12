@@ -245,9 +245,22 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
       "expectedTier": "lowkey",
       "fixingTicket": "27",
+      "postFix": {
+        "observed": {
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
+        },
+        "attribution": [
+          "L1:kw:strong(+30)",
+          "L1:attr:phrase:country code(+8)",
+          "38 >= SCORE_LOWKEY(35) → lowkey 注入；SCORE_AUTO(70) 常量未动"
+        ],
+        "note": "票 27 改法：属性强短语补分组（L1_ATTR_PHRASE_SCORE=8）与 kw:strong 叠加"
+      },
       "signalAttribution": [
         "L1:kw:strong(+30) 为唯一信号（L1_STRONG_KW_SCORE）",
         "无 L2 锚分（同 form/文档无另一 input[type=tel]）",
@@ -269,9 +282,22 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
       "expectedTier": "lowkey",
       "fixingTicket": "27",
+      "postFix": {
+        "observed": {
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
+        },
+        "attribution": [
+          "L1:kw:strong(+30)",
+          "L1:attr:phrase:country code(+8)",
+          "38 >= SCORE_LOWKEY(35) → lowkey 注入；SCORE_AUTO(70) 常量未动"
+        ],
+        "note": "票 27 改法：属性强短语补分组（L1_ATTR_PHRASE_SCORE=8）与 kw:strong 叠加"
+      },
       "signalAttribution": [
         "L1:kw:strong(+30)（placeholder 经 matchLatin joined 匹配命中 countrycode）",
         "无 L2 锚分、无 L3 内容证据",
@@ -287,6 +313,99 @@
       "labels": [],
       "ctx": {}
     },
+{
+      "id": "rs-weak-input-dialcode",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": false,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "baseline": {
+        "observed": {
+          "score": 30,
+          "tier": "none",
+          "injected": false
+        },
+        "note": "票 27 改前复现基线：name=dialCode（camelCase 变体，无 label/无锚/无内容证据），30 < SCORE_LOWKEY(35) 落 none（可用 L1_ATTR_PHRASE_SCORE=0 复算）"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30)",
+        "L1:attr:phrase:dial code(+8)",
+        "38 >= SCORE_LOWKEY(35) → lowkey"
+      ],
+      "source": "decision-ledger.md A-001；票 32 模式库；票 27 补强命名变体覆盖",
+      "note": "name=dialCode（camelCase 变体，无 label/无锚/无内容证据）",
+      "el": {
+        "tag": "input",
+        "name": "dialCode",
+        "type": "text"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+{
+      "id": "rs-weak-input-placeholder-dial",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": false,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "baseline": {
+        "observed": {
+          "score": 30,
+          "tier": "none",
+          "injected": false
+        },
+        "note": "票 27 改前复现基线：placeholder=Dial code（属性文本强短语，无 name），30 < SCORE_LOWKEY(35) 落 none（可用 L1_ATTR_PHRASE_SCORE=0 复算）"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30)",
+        "L1:attr:phrase:dial code(+8)",
+        "38 >= SCORE_LOWKEY(35) → lowkey"
+      ],
+      "source": "decision-ledger.md A-001；票 32 模式库；票 27 补强命名变体覆盖",
+      "note": "placeholder=Dial code（属性文本强短语，无 name）",
+      "el": {
+        "tag": "input",
+        "type": "text",
+        "placeholder": "Dial code"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+{
+      "id": "rs-weak-input-snake",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": false,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "baseline": {
+        "observed": {
+          "score": 30,
+          "tier": "none",
+          "injected": false
+        },
+        "note": "票 27 改前复现基线：name=country_code（snake_case 变体），30 < SCORE_LOWKEY(35) 落 none（可用 L1_ATTR_PHRASE_SCORE=0 复算）"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30)",
+        "L1:attr:phrase:country code(+8)",
+        "38 >= SCORE_LOWKEY(35) → lowkey"
+      ],
+      "source": "decision-ledger.md A-001；票 32 模式库；票 27 补强命名变体覆盖",
+      "note": "name=country_code（snake_case 变体）",
+      "el": {
+        "tag": "input",
+        "name": "country_code",
+        "type": "text"
+      },
+      "labels": [],
+      "ctx": {}
+    },
     {
       "id": "rs-iso2-paren-select",
       "family": "real-site",
@@ -297,13 +416,13 @@
       "fixingTicket": "28",
       "signalAttribution": [
         "L1:kw:country(+14)（L1_COUNTRY_KW_SCORE）",
-        "L3:opts:(+NN)-text 期望 +24（3 项 x L3_PLUS_PAREN_SCORE=8）——当前被 if (st.plusDial > 0) 门丢弃",
+        "L3:opts:(+NN)-text +24（3 项 x L3_PLUS_PAREN_SCORE=8）——票 28 修后已独立入账（移出 plusDial > 0 门）",
         "L3:opts:plus-dial=0（值域是 ISO2，非区号）",
         "isoName=0：选项文本含括号/加号/数字，不满足 ISO2 与国名互证的字符集",
-        "无 L2 锚分 → 总分 14 < 35 → 落 none"
+        "无 L2 锚分 → 总分 38 >= SCORE_LOWKEY(35) → 落 lowkey"
       ],
       "source": "decision-ledger.md A-002；research/cycle4-atomcode-findings.md 第二路（国家与区号非单射 → 表单 value 用 ISO 3166 alpha-2，UX SE #131795）；票 32 模式库",
-      "note": "libphonenumber 推荐的主流真实形态：<option value=\"us\">United States (+1)</option>。文本括号区号证据被 plusDial 门丢弃。修复归属票 28（parenDial 计分移出 plusDial 门，独立成 L3 证据；保持国家选择器≠区号字段抑制与共享区号消歧）",
+      "note": "libphonenumber 推荐的主流真实形态：<option value=\"us\">United States (+1)</option>。文本括号区号证据已被票 28 移出 plusDial 门独立计分。修复归属票 28（parenDial 计分移出 plusDial 门，独立成 L3 证据；保持国家选择器≠区号字段抑制与共享区号消歧）",
       "el": {
         "tag": "select",
         "name": "country",
@@ -375,7 +494,10 @@
       "expectedTierRationale": "应跨过低置信线（>= SCORE_LOWKEY=35）被低调注入或至少登记可召唤；不改 SCORE_AUTO",
       "corpusCases": [
         "rs-weak-input-name",
-        "rs-weak-input-placeholder"
+        "rs-weak-input-placeholder",
+        "rs-weak-input-dialcode",
+        "rs-weak-input-placeholder-dial",
+        "rs-weak-input-snake"
       ],
       "candidateDescriptor": {
         "tag": "input",
@@ -396,6 +518,20 @@
           "injected": false
         },
         "verdict": "MISS"
+      },
+      "postFix": {
+        "observed": {
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
+        },
+        "verdict": "HIT",
+        "attribution": [
+          "L1:kw:strong(+30)",
+          "L1:attr:phrase:country code(+8)",
+          "覆盖 camelCase / snake_case / 紧凑 / placeholder 四种命名变体"
+        ],
+        "note": "票 27 改法：新增属性强短语证据面（L1_ATTR_PHRASE_SCORE=8）；SCORE_AUTO 未动"
       }
     },
     {
@@ -418,9 +554,9 @@
           "select"
         ],
         "observed": {
-          "score": 14,
-          "tier": "none",
-          "injected": false
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
         },
         "verdict": "MISS"
       }
