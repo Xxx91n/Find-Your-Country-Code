@@ -8,6 +8,8 @@
 
 **Status:** done（5/5 验收销项；第 5 项 E2E 改由本票自有 workflow 取得 CI 证据，见文末 D-29c/D-29h）
 
+**栈卫生提示（非代码缺陷）:** 远端头 `dca9dc4` 的 Typecheck 为红 —— 他窗口 push 重算基址后本票再度丢失票 27 的 `L1_ATTR_PHRASE_SCORE`；且票 34 在途 lockfile 提交（`a7ac6e4`，经票 27 入链，32 处冲突）使 `but push` 被拒。经用户裁定**停止推送、等待票 27/34 自解**。绿灯证据定格于 run `34696053977`（gate 27/27 + E2E 70 passed）与 Typecheck `34696053947`。解锁配方见报告 D-29i。
+
 **闭环分支:** `cch/29-scan-candidates-expansion`（堆叠于 `cch/28-iso2-dial-evidence`）
 
 **闭环报告:** `.scratch/architecture-recovery/research/window-reports/29-scan-candidates-expansion-report.md`
