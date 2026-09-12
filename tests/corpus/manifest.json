@@ -245,7 +245,7 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": false,
+      "knownResidual": true,
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "postFix": {
@@ -282,7 +282,7 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": false,
+      "knownResidual": true,
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "postFix": {
@@ -318,7 +318,7 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": false,
+      "knownResidual": true,
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "baseline": {
@@ -349,7 +349,7 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": false,
+      "knownResidual": true,
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "baseline": {
@@ -380,7 +380,7 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": false,
+      "knownResidual": true,
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "baseline": {
@@ -514,11 +514,24 @@
           "input[type=\"text\"]"
         ],
         "observed": {
-          "score": 30,
-          "tier": "none",
-          "injected": false
-        },
-        "verdict": "MISS"
+                  "score": 38,
+                  "tier": "lowkey",
+                  "injected": true
+                },
+                "verdict": "MISS",
+                "preFix": {
+                  "observed": {
+                    "score": 30,
+                    "tier": "none",
+                    "injected": false
+                  },
+                  "note": "票 27 改前复现基线：attrStr 无属性短语证据面时 L1:kw:strong 单信号 30 分，30 < SCORE_LOWKEY(35) 落 none，仅手动召唤；标定脚本 tests/scripts/27-weak-signal-calibration.mjs 段 [2] 复现、段 [7] 前后对照"
+                },
+                "gaps": [
+                  "closed(attr-phrase)：票 27 新增属性强短语证据面 L1_ATTR_PHRASE_SCORE=8，归一化命中 camelCase / snake_case / kebab / 紧凑 / placeholder 五种命名变体",
+                  "closed(threshold)：38 >= SCORE_LOWKEY(35) 跨过低置信线；SCORE_AUTO(70) 与 L1_STRONG_KW_SCORE(30) 常量未动",
+                  "guard(negative)：全语料 22 例负例（含本地固话区号 / 语言前缀 / area-code）零抬升且分值逐例不变"
+                ]
       },
       "postFix": {
         "observed": {
@@ -532,7 +545,7 @@
           "L1:attr:phrase:country code(+8)",
           "覆盖 camelCase / snake_case / 紧凑 / placeholder 四种命名变体"
         ],
-        "note": "票 27 改法：新增属性强短语证据面（L1_ATTR_PHRASE_SCORE=8）；SCORE_AUTO 未动"
+        "note": "票 27 改法：新增属性强短语证据面（L1_ATTR_PHRASE_SCORE=8）；SCORE_AUTO 未动。按 32 探针契约（同票 28 口径）baseline.observed 已同步为修后值，改前复现基线留存于 baseline.preFix"
       }
     },
     {
