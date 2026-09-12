@@ -414,12 +414,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
         }
       }
 
-      // ── 票 27 [A-001]：属性强短语补分（与 label 强短语区分的证据面）──
-      // 位置刻意放在 iti 容器结算之后：属性短语不作为 iti 容器的最低佐证（票 13 检查点四
-      // 防线 —— 容器唯一证据须 type=tel / autocomplete tel 系 / inputmode=tel / 既有 L1 正向
-      // 信号；弱一等的属性文本不得抬升容器分）。
-      const attrPhrase = attrPhraseHit(attrStr);
-      if (attrPhrase) score += add('L1', 'attr:phrase:' + attrPhrase, L1_ATTR_PHRASE_SCORE);
+
       // ── L3 内容验证层（select 专属；值域整体分布，非单值判定 [MD §5-0②]） ──
       let st: OptionStats | null = null;
       if (tag === 'SELECT') {
@@ -450,6 +445,25 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
             st.numeric / st.total >= L3_NUMERIC_MIN_RATE) {
           score -= L1_STRONG_KW_SCORE;
           sig.push({ layer: 'L3', name: 'lock:revoke-strong-kw', pts: -L1_STRONG_KW_SCORE });
+        }
+      }
+
+      // ── 票 27 [A-001] R1：属性强短语补分（与 label 强短语区分的证据面）──
+      // 位置：iti 容器结算之后（属性短语不作 iti 容器的最低佐证 —— 票 13 检查点四防线），
+      // 且移到 L3 内容验证之后（R1）：需在内容证据已知时判定是否同源冗余，见下。
+      //
+      // R1 去重（P8 跨线返工）：属性短语是语义层证据；当 L3 内容层已独立证明区号值域
+      // （plusDial > 0 或 parenDial > 0，选项即 +NN / (+NN)）时，短语与该内容证据同向同源，
+      // 不再重复计入 —— 否则 68 分的既有正例（Case4 aria-label 含 calling code）被抬到 76
+      // 分越过 SCORE_AUTO(70)、由 lowkey 升 auto。本票是覆盖率**下限**补强（floor），
+      // 不应抬高上限（ceiling）；首轮 config 注释亦已登记「不扩大 66-68 分正例越线」的意图。
+      const attrPhrase = attrPhraseHit(attrStr);
+      const attrPhraseRedundant = !!st && (st.plusDial > 0 || st.parenDial > 0);
+      if (attrPhrase) {
+        if (attrPhraseRedundant) {
+          sig.push({ layer: 'L1', name: 'attr:phrase:' + attrPhrase + ':dedup(opts-dial)', pts: 0 });
+        } else {
+          score += add('L1', 'attr:phrase:' + attrPhrase, L1_ATTR_PHRASE_SCORE);
         }
       }
 
