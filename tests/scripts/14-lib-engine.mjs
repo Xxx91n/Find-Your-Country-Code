@@ -9,6 +9,7 @@
 // injected = tier ∈ {auto, lowkey}。
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -59,15 +60,29 @@ export function currentConfigValues() {
   return out;
 }
 
+// 票 32 前置修复：函数束装载器必须先剥离 TS 类型标注。
+// cch-23（strict 全量类型修复，commit 188f9c1）给 src/*.ts 引入显式类型标注后，
+// 裸 new Function(bundle) 直接 SyntaxError（Unexpected token ':'）——
+// calibration-baseline 自该提交起在 main 上持续红（run 34618705653 等），
+// A-006「CI 绿代表真实世界 coverage」的测量地基因此失效。
+// 修法：用 node 标准库 module.stripTypeScriptTypes（Node >= 22.13）剥离类型，
+// 不引入依赖、不改引擎语义；src/*.ts 无 enum/namespace/参数属性（已静态核查），mode:'strip' 足够。
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('14-lib-engine 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
+}
+
 // 实例化引擎；overrides 形如 { SCORE_AUTO: 60 }，仅影响内存实例
 export function bundleEngine(overrides) {
+  // stripTypes 以模块语法解析：顶层 return 不合法，故先剥类型再拼返回语句。
   const bundle = [
     toModuleBody(applyOverrides(readFileSync(join(ROOT, 'src', 'config.ts'), 'utf8'), overrides)),
     toModuleBody(readFileSync(join(ROOT, 'src', 'data', 'countries.ts'), 'utf8')),
     toModuleBody(readFileSync(join(ROOT, 'src', 'detect', 'index.ts'), 'utf8')),
-    '\n;return { createDetect, COUNTRIES, ISO2_MAP };',
   ].join('\n');
-  const { createDetect, COUNTRIES } = new Function(bundle)();
+  const { createDetect, COUNTRIES } = new Function(stripTypes(bundle) + '\n;return { createDetect, COUNTRIES, ISO2_MAP };')();
   const Detect = createDetect({ attach() {}, rememberLow() {}, summon() {} }, null);
   return { Detect, COUNTRIES };
 }

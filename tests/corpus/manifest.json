@@ -6,9 +6,10 @@
     "appendOnlyRule": "新样本只加不删；修正语义用新增字段/状态位表达（如 knownResidual 翻转），禁止删除或重写既有条目。",
     "injectionRule": "injected = tier in {auto, lowkey}（分级行动口径，与 misdetect-repro-v2.mjs 一致）",
     "gateRule": "回归门禁 = 全部 knownResidual!=true 的用例 expect 必须与引擎输出一致；knownResidual 用例为已登记的结构性偏差（修复归属见 note），不计入门禁但计入 precision/recall。",
+    "realSiteFormsRule": "票 32 真实站点抽样模式库（Cycle-4 / A-006）：每条形态登记 期望 tier + 信号归因 + 修复归属票 + 候选集覆盖基线 + 引擎复现基线（baseline.observed）。覆盖与基线由 tests/scripts/32-real-site-corpus.mjs 硬校验；修复票（27/28/29）落地后必须在本文件显式翻转 knownResidual / 更新 baseline，禁止静默漂移。",
     "caseFields": {
       "id": "稳定用例 id；legacy 25 例沿用 misdetect-repro-v2.mjs 编号保持可追溯",
-      "family": "legacy = 上一周期误报/漏检修复组；mm2 = 心智模型 v2 周期新增样本",
+      "family": "legacy = 上一周期误报/漏检修复组；mm2 = 心智模型 v2 周期新增样本；real-site = 票 32 真实站点抽样模式库（Cycle-4，A-006）",
       "polarity": "positive = 应注入（区号字段）；negative = 不应注入（工具口径的真值标签）",
       "expect": "inject | none（与 polarity 对应的期望注入行为）",
       "knownResidual": "true = 引擎当前已知会偏离 expect 的结构性残留（ticket 16 修复目标），基线如实计入 FP",
@@ -238,6 +239,231 @@
       "note": "占位首项 value=0 text=请选择 剔除出计分（不进 total/numeric 分布），区号证据照常计分；剔除仅作用计分，不影响填充匹配",
       "el": { "tag": "select", "name": "countrycode",
         "options": [ { "value": "0", "text": "请选择" }, { "value": "+86", "text": "+86" }, { "value": "+1", "text": "+1" }, { "value": "+44", "text": "+44" } ] },
-      "labels": [], "ctx": {} }
+      "labels": [], "ctx": {} },
+    {
+      "id": "rs-weak-input-name",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "signalAttribution": [
+        "L1:kw:strong(+30) 为唯一信号（L1_STRONG_KW_SCORE）",
+        "无 L2 锚分（同 form/文档无另一 input[type=tel]）",
+        "无 L3 内容证据（input 无选项值域）",
+        "30 < SCORE_LOWKEY(35) → 落 none，仅手动召唤"
+      ],
+      "source": "decision-ledger.md A-001（摩擦点原文）；research/cycle4-atomcode-findings.md 第二路「弱信号字段」；票 32 模式库",
+      "note": "真实站点标准命名 <input name=\"countryCode\">（无 label、无 placeholder、无锚）：纯关键字弱信号达不到低置信线。修复归属票 27（让弱信号跨过 35，不改 SCORE_AUTO、不回退既有 precision/recall）",
+      "el": {
+        "tag": "input",
+        "name": "countryCode",
+        "type": "text"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "rs-weak-input-placeholder",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "signalAttribution": [
+        "L1:kw:strong(+30)（placeholder 经 matchLatin joined 匹配命中 countrycode）",
+        "无 L2 锚分、无 L3 内容证据",
+        "30 < SCORE_LOWKEY(35) → 落 none"
+      ],
+      "source": "decision-ledger.md A-001（placeholder=\"Country code\" 原文）；票 32 模式库",
+      "note": "placeholder 驱动的纯弱信号 input（无 name）：与 rs-weak-input-name 同根因（L1_STRONG_KW_SCORE=30 < SCORE_LOWKEY=35）。修复归属票 27",
+      "el": {
+        "tag": "input",
+        "type": "text",
+        "placeholder": "Country code"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "rs-iso2-paren-select",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "28",
+      "signalAttribution": [
+        "L1:kw:country(+14)（L1_COUNTRY_KW_SCORE）",
+        "L3:opts:(+NN)-text 期望 +24（3 项 x L3_PLUS_PAREN_SCORE=8）——当前被 if (st.plusDial > 0) 门丢弃",
+        "L3:opts:plus-dial=0（值域是 ISO2，非区号）",
+        "isoName=0：选项文本含括号/加号/数字，不满足 ISO2 与国名互证的字符集",
+        "无 L2 锚分 → 总分 14 < 35 → 落 none"
+      ],
+      "source": "decision-ledger.md A-002；research/cycle4-atomcode-findings.md 第二路（国家与区号非单射 → 表单 value 用 ISO 3166 alpha-2，UX SE #131795）；票 32 模式库",
+      "note": "libphonenumber 推荐的主流真实形态：<option value=\"us\">United States (+1)</option>。文本括号区号证据被 plusDial 门丢弃。修复归属票 28（parenDial 计分移出 plusDial 门，独立成 L3 证据；保持国家选择器≠区号字段抑制与共享区号消歧）",
+      "el": {
+        "tag": "select",
+        "name": "country",
+        "options": [
+          {
+            "value": "us",
+            "text": "United States (+1)"
+          },
+          {
+            "value": "gb",
+            "text": "United Kingdom (+44)"
+          },
+          {
+            "value": "cn",
+            "text": "China (+86)"
+          }
+        ]
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "rs-noaria-custom-dropdown",
+      "family": "real-site",
+      "polarity": "negative",
+      "expect": "none",
+      "knownResidual": false,
+      "expectedTier": "none",
+      "fixingTicket": "29",
+      "signalAttribution": [
+        "L1:kw:country(+14)（class \"select-country\" 经 matchLatin joined 命中 country）",
+        "无 L2/L3/L4 信号",
+        "score 14 < ITI_LOW_REGISTER_SCORE(25) → 即便进入评分也不进召唤面"
+      ],
+      "source": "decision-ledger.md A-003；research/cycle4-atomcode-findings.md 第一路「无 ARIA 纯自定义下拉」；ADR-0005（伪 select 登记不注入）",
+      "note": "无 ARIA 的手写下拉（触发器 div.select-country[tabindex=0] + ul>li 选项，选项文本含 (+NN)）。expect=none 是 ADR-0005 的工具口径真值（伪 select 档位上限=登记+手动召唤，不自动注入）；真实缺口是候选集/登记面不可达，由 realSiteForms 覆盖基线记录。修复归属票 29",
+      "el": {
+        "tag": "div",
+        "className": "select-country",
+        "attrs": {
+          "tabindex": "0"
+        },
+        "options": [
+          {
+            "value": "us",
+            "text": "United States (+1)"
+          },
+          {
+            "value": "gb",
+            "text": "United Kingdom (+44)"
+          },
+          {
+            "value": "cn",
+            "text": "China (+86)"
+          }
+        ]
+      },
+      "labels": [],
+      "ctx": {}
+    }
+  ],
+  "realSiteForms": [
+    {
+      "id": "weak-signal-input",
+      "coveredA": "A-001",
+      "fixingTicket": "27",
+      "label": "弱信号 input（纯关键字 / placeholder，无 label、无锚、无内容证据）",
+      "expectedTier": "lowkey",
+      "expectedTierRationale": "应跨过低置信线（>= SCORE_LOWKEY=35）被低调注入或至少登记可召唤；不改 SCORE_AUTO",
+      "corpusCases": [
+        "rs-weak-input-name",
+        "rs-weak-input-placeholder"
+      ],
+      "candidateDescriptor": {
+        "tag": "input",
+        "attrs": {
+          "type": "text",
+          "name": "countryCode"
+        }
+      },
+      "coveredByCandidateSetBaseline": true,
+      "coveredByCandidateSetTarget": true,
+      "baseline": {
+        "matchedSelectors": [
+          "input[type=\"text\"]"
+        ],
+        "observed": {
+          "score": 30,
+          "tier": "none",
+          "injected": false
+        },
+        "verdict": "MISS"
+      }
+    },
+    {
+      "id": "iso2-value-paren-dial-select",
+      "coveredA": "A-002",
+      "fixingTicket": "28",
+      "label": "ISO2 作 value + 选项文本括号区号的下拉（国家与区号非单射的主流形态）",
+      "expectedTier": "lowkey",
+      "expectedTierRationale": "文本括号区号证据应独立成 L3 证据（+L3_PLUS_PAREN_SCORE=8/项，上限 L3_DIAL_CAP=45）；isoName=0 时国家选择器抑制不适用",
+      "corpusCases": [
+        "rs-iso2-paren-select"
+      ],
+      "candidateDescriptor": {
+        "tag": "select"
+      },
+      "coveredByCandidateSetBaseline": true,
+      "coveredByCandidateSetTarget": true,
+      "baseline": {
+        "matchedSelectors": [
+          "select"
+        ],
+        "observed": {
+          "score": 14,
+          "tier": "none",
+          "injected": false
+        },
+        "verdict": "MISS"
+      }
+    },
+    {
+      "id": "no-aria-custom-dropdown",
+      "coveredA": "A-003",
+      "fixingTicket": "29",
+      "label": "无 ARIA 手写自定义下拉（div+ul，无 role=combobox、无 aria-controls）",
+      "expectedTier": "none",
+      "expectedTierRationale": "ADR-0005 伪 select 档位上限 =「登记 + 手动召唤」，不自动注入、不自动填充；期望档位仍为 none，但必须进入候选集且登记分 >= ITI_LOW_REGISTER_SCORE(25)",
+      "corpusCases": [
+        "rs-noaria-custom-dropdown"
+      ],
+      "candidateDescriptor": {
+        "tag": "div",
+        "classes": [
+          "select-country"
+        ],
+        "attrs": {
+          "tabindex": "0"
+        },
+        "descendants": {
+          "listbox": "ul",
+          "option": "li"
+        }
+      },
+      "coveredByCandidateSetBaseline": false,
+      "coveredByCandidateSetTarget": true,
+      "baseline": {
+        "matchedSelectors": [],
+        "observed": {
+          "score": 14,
+          "tier": "none",
+          "injected": false
+        },
+        "verdict": "UNCOVERED",
+        "gaps": [
+          "candidate-set：SCAN_SELECTORS 五组零命中，扫描阶段不可见",
+          "kind-dispatch：_process 的 kind 分发无 div/自定义触发器分支 → kind=null 直接 return，rememberLow 登记路径不可达",
+          "register-threshold：即便进入评分，14 < ITI_LOW_REGISTER_SCORE(25)，仍不进召唤面"
+        ]
+      }
+    }
   ]
 }

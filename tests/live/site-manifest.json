@@ -1,0 +1,74 @@
+{
+  "_meta": {
+    "name": "real-site live smoke targets (ticket 32 / A-006)",
+    "created": "2026-09-12",
+    "layer": "真实站点低频冒烟层（第二层）——与密封 E2E（第一层）解耦：本层永不出现在 pull_request 触发面",
+    "skipTestsRule": "跳过必须携带非空 reason + ticket（Bitwarden BIT testPages.skipTests / Chromium failing_test_names 同构，带 ticket 可审计）；live-smoke.mjs 硬校验，缺失即失败。跳过不等于删除，恢复是显式动作（enabled 翻转）。",
+    "assertionRule": "弱断言：只断言注入后的 DOM 状态（.cch-wrapper 出现 / value / 事件），不登录、不深交互、不做多步流程（Bitwarden BIT live tests 口径：真实站点测试 inconsistently flaky，因此 typically only testing that the username/email was filled out properly）。",
+    "advisoryRule": "advisory 不阻断 PR 的实现方式 = 触发面设计：本层仅由 schedule（每周低频）+ workflow_dispatch（手动）触发，永不进入 pull_request 触发面；因此失败天然无法阻断任何 PR。运行红 = 告警（对标 Bitwarden BIT「regular reporting and early notifications」）。",
+    "enablementRunbook": "新增/启用外部真实站点：(1) 人工打开目标页确认仍存在目标形态（区号 input / ISO2 下拉 / 无 ARIA 自定义下拉）；(2) 填 selector 与 reason（含核对日期）；(3) 把 enabled 置 true 并写明 ticket；(4) 先 workflow_dispatch 单跑一次观察，连续两次绿后再保留。外部站点 A/B 实验、外链变慢、广告、网络抖动都会引入 flaky，故默认全部关闭。",
+    "cdpNote": "CDP Autofill 域（trigger / FilledField / addressFormFilled）只观测浏览器原生 AutofillManager 的填充管线，userscript 注入不可见（native value setter + 合成事件不经过 AutofillManager）——不得用作脚本填充断言；适配度评估见 cdp-autofill-fitness.mjs（opt-in，不进断言面）。"
+  },
+  "targets": [
+    {
+      "id": "mirror-control",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-control",
+      "expect": "injected",
+      "enabled": true,
+      "reason": "本地镜像自证：已知好对照组（label \"Country code\" + +NN 值域），引擎应注入 .cch-wrapper——用于验证本层 harness（浏览器启动 / GM 替身 / 构建产物注入 / 弱断言）端到端可用，零外网",
+      "ticket": "32"
+    },
+    {
+      "id": "mirror-weak-input",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-weak",
+      "expect": "observe",
+      "enabled": true,
+      "reason": "A-001 形态观测（弱信号 input，当前预期无 wrapper）；仅记录观测值，不作断言（供票 27 作复现基线）",
+      "ticket": "27"
+    },
+    {
+      "id": "mirror-iso2-paren",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-iso2",
+      "expect": "observe",
+      "enabled": true,
+      "reason": "A-002 形态观测（ISO2-value + 括号区号下拉，当前预期无 wrapper）；仅记录观测值（供票 28 作复现基线）",
+      "ticket": "28"
+    },
+    {
+      "id": "mirror-noaria-dropdown",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-noaria",
+      "expect": "observe",
+      "enabled": true,
+      "reason": "A-003 形态观测（无 ARIA 自定义下拉，当前预期无 wrapper）；仅记录观测值（供票 29 作复现基线）",
+      "ticket": "29"
+    },
+    {
+      "id": "live-github-signup",
+      "kind": "live",
+      "url": "https://github.com/signup",
+      "selector": null,
+      "expect": "observe",
+      "enabled": false,
+      "reason": "外部真实站点候选（公开注册页），本轮未启用：需按 enablementRunbook 人工核对页面仍存在区号/国家字段并补 selector 后才能启用；未校准前不写入任何形态断言",
+      "ticket": "32"
+    },
+    {
+      "id": "live-twilio-signup",
+      "kind": "live",
+      "url": "https://www.twilio.com/try-twilio",
+      "selector": null,
+      "expect": "observe",
+      "enabled": false,
+      "reason": "外部真实站点候选（公开试用注册页，历史上使用 intl-tel-input 类控件），本轮未启用：同上，待人工校准",
+      "ticket": "32"
+    }
+  ]
+}
