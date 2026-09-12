@@ -79,7 +79,7 @@ CI 实证：`typecheck` 的 install 步直接 `EUSAGE`：`Invalid: lock file's t
 **本票未动依赖与 lockfile**（不属本票授权范围，且属票 25 AC4）；但已把该事实写入 `real-site-smoke.yml` 的安装步注释与回退逻辑。
 
 **两个红都是安装阶段，不是测试/类型阶段**（关键归因证据）：本分支 `E2E` run `34682653098` 的 step 展开为 `Install dependencies` = failure，而 `Install Playwright browsers` / `Build userscript` / `Run E2E` 全部 **skipped** —— 没有任何一个 E2E 用例被执行；`typecheck` 同理，`npm ci` 未通过。因此这两个红与本票变更无关。
-（另：两分支 run 的 `Line-ending guard` 均为 **success**，反向证明本票新增文件未引入 CRLF。）
+（另：两分支 run 的 `Line-ending guard` 均为 **success**，证明 CI checkout 后的工作树文本无 CRLF —— 即被强制的不变量成立。）
 
 ---
 
@@ -232,6 +232,7 @@ CDP Autofill 域是**浏览器原生 AutofillManager 的驱动/观测接口，�
 | D3 | `--legacy-peer-deps` 出现在新 workflow | react@18 与 `react-dom19` 别名双 peer 冲突使裸 `npm ci` / `npm install` **均 ERESOLVE 失败**（ADR-0006 「后果 2」登记债务）。新 workflow 用 `npm ci --legacy-peer-deps` 并锚定原因注释，**与 typecheck.yml 同口径**；根因修复（双 react 依赖或 lockfile 实证）后本行可移除 |
 | D4 | 未修 `misdetect-repro-v2.mjs` / `verify-ticket-02/09/13/15.mjs` 的私有 `toModuleBody` 副本 | 同构缺陷但属其他票的门禁范围（票 34 门禁减肥），避免并发冲突；已在 §3 登记 |
 | D5 | `:autofill` / DOM `autofill` 事件未做运行时探针 | 只做了一手规范与文档取证；两者对脚本注入均为「不可见」是确定性结论，运行时探针收益低 |
+| D8 | 仓库 blob 级行尾为 CRLF（**预存、跨周期**，本票未改） | 实测基线提交 `7dbc6fc` 的 blob 本身就含 CRLF：`manifest.json` 243 行、`tests/server.mjs` 153 行、`e2e.yml` 42 行（`git cat-file blob` 直读，绕过 filter）。`.gitattributes` 为 `* text=auto eol=lf` + `core.autocrlf=false`，因此 **CI checkout 会转成 LF**，Line-ending guard 才得以通过。blob 级 CRLF 归一化已被 `spec.md` 明确列为 **Out of Scope（「.gitattributes CRLF 规范化——跨周期遗留」）**，本票不动，也未把 CRLF 当作新增问题 |
 | D7 | `real-site-smoke.yml` **本轮无法取得 CI run ID** | `workflow_dispatch` 要求 workflow 已存在于**默认分支**；本 workflow 首次入仓于特性分支，GitHub API 直接返回 `404 not found on the default branch`。因此本层需**合入 main 后**才能首次 dispatch（schedule 同样要等合入后生效）。替代验证：YAML 已本地解析通过（PyYAML，11 step），`live-smoke.mjs` 已本地端到端跑通（本地镜像 + 真实 Chromium，白名单契约与 harness 自证 PASS） |
 | D6 | `knownResidual` 在 harness 里的汇总文案仍写「计入 FP」 | 正向 residual 实际计入 FN（`recall` 分母）；文案是票 14 既有文本，本票未改（改动属票 14/34 范围），报告在此显式澄清 |
 
@@ -245,7 +246,8 @@ CDP Autofill 域是**浏览器原生 AutofillManager 的驱动/观测接口，�
 |---|---|---|
 | 提交 1（语料 + 冒烟层 + CDP 评估 + 前置修复） | `4f7102f8d37fed362b62fd412ba884ff71d3ed24` | — |
 | 提交 2（前后对照入 CI + 安装回退） | `081bea8ba1a58d1955c9161ecf37998820c0ea92` | — |
-| 提交 3（本报告证据锚） | 本提交（`but status` / `git log` 可查） | — |
+| 提交 3（报告 + 证据锚） | `3e3b2ac`（`but status` / `git log` 可查） | — |
+| 提交 4（报告措辞校正：blob 行尾事实 + 偏离点 D8） | 本提交 | 文档 only，不影响上面两次 Calibration run 的证据效力 |
 | **Calibration Baseline** run（sha `4f7102f8`） | `34682530402` | ✅ **success**（12 step 全绿，cch-23 以来首次转绿） |
 | **Calibration Baseline** run（sha `081bea8b`） | `34682668714` | ✅ **success**（前后对照已入 CI 输出，见 §5） |
 | E2E run（sha `081bea8b`） | `34682653098` | ❌ failure（**安装阶段** ERESOLVE；后续 3 步全 skipped，无用例执行 —— 预存债务） |
