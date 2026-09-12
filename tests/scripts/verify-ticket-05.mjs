@@ -127,7 +127,7 @@ class El {
 function mockUI() {
   return {
     attachCalls: [], detachCalls: [], lowCalls: [],
-    attach(el, kind, tier, score) { this.attachCalls.push({ el, kind, tier, score }); },
+    attach(el, kind, tier, score, signals) { this.attachCalls.push({ el, kind, tier, score, signals }); },
     detach(el) { this.detachCalls.push({ el }); },
     rememberLow(el, kind, score) { this.lowCalls.push({ el, kind, score }); },
     _pruneLow() {},
@@ -273,11 +273,11 @@ async function S2() {
   // 分档覆盖（页面级；KeePassXC Site Preferences 心智）：auto/lowkey 参与覆盖，none 走豁免
   // 先移除元素级规则，避免与页面级覆盖相互污染
   ok(Rules.removeOverride(idCC), 'S2 移除元素级规则');
-  const idT = Rules.upsertOverride({ host: 'rules.example.com', selector: 'body', action: { tier: 'lowkey' } });
+  const idT = Rules.upsertOverride({ host: 'rules.example.com', selector: '*', action: { tier: 'lowkey' }, scope: 'page' });
   eq(Rules.pageTierOverride(), 'lowkey', 'S2 页面级 lowkey 覆盖生效');
   ok(Rules.removeOverride(idT), 'S2 removeOverride true');
   eq(Rules.pageTierOverride(), null, 'S2 移除后无覆盖');
-  Rules.upsertOverride({ host: 'rules.example.com', selector: 'body', action: { tier: 'none' } });
+  Rules.upsertOverride({ host: 'rules.example.com', selector: '*', action: { tier: 'none' }, scope: 'page' });
   eq(Rules.pageTierOverride(), null, 'S2 none 覆盖不参与分档覆盖');
   ok(!Rules.isPageExcluded(), 'S2 none 覆盖 ≠ 域名豁免（完全跳过仅属豁免）');
   Store.setExempt('rules.example.com', true);
@@ -350,8 +350,8 @@ async function S3() {
   eq(r.UI.attachCalls.length, 0, 'S3 强制 none 不注入');
   eq(r.UI.lowCalls.length, 0, 'S3 强制 none 不登记召唤');
 
-  // 分档覆盖：页面级规则把引擎 auto 压成 lowkey（验收2③）
-  Rules.upsertOverride({ host: 'wired.example.com', selector: 'body', action: { tier: 'lowkey' } });
+  // 分档覆盖：显式页面级规则（scope:'page'，票 30 [A-004] 后唯一合法形态）把引擎 auto 压成 lowkey（验收2③）
+  Rules.upsertOverride({ host: 'wired.example.com', selector: '*', action: { tier: 'lowkey' }, scope: 'page' });
   const acSel2 = new El('SELECT', { attrs: { autocomplete: 'tel-country-code' }, options: [{ value: '+1', text: 'US' }, { value: '+86', text: 'CN' }] });
   r = fresh();
   r.Det.scan(scanRoot([acSel2]));
@@ -361,7 +361,7 @@ async function S3() {
   // 分档覆盖反向：lowkey 提到 auto（覆盖双向生效）
   const lowRule = Rules.pageOverrides().find(o => o.action.tier === 'lowkey');
   ok(Rules.removeOverride(lowRule.id), 'S3 移除 lowkey 覆盖');
-  Rules.upsertOverride({ host: 'wired.example.com', selector: 'body', action: { tier: 'auto' } });
+  Rules.upsertOverride({ host: 'wired.example.com', selector: '*', action: { tier: 'auto' }, scope: 'page' });
   const lowSel = new El('SELECT', { name: 'cc-2', options: [{ value: '+44', text: 'UK (+44)' }, { value: '+33', text: 'FR (+33)' }] });
   r = fresh();
   r.Det.scan(scanRoot([lowSel]));
@@ -409,7 +409,68 @@ async function S4() {
 }
 
 // ══════════════════════════════════════════════════════════════════
-const groups = [['S0', S0], ['S1', S1], ['S2', S2], ['S3', S3], ['S4', S4]];
+// S5 — 票 30（A-004）分档覆盖收敛到 selector 级：元素规则不放大全页；
+//      页面级语义收敛为显式规则类型（scope:'page'）。
+// ══════════════════════════════════════════════════════════════════
+async function S5() {
+  console.log('── S5 票 30 分档覆盖收敛（A-004） ──');
+  setLoc('https://scope30.example.com/p');
+  // 状态隔离：S4 批量压力用例已把 500 条 bulk 规则塞满 RULES_MAX_OVERRIDES 截断位，
+  // S5 新建规则会被 _normRulesDoc slice 掉——先清桶再跑（BUCKET 为门内共享 GM mock）。
+  BUCKET[RULES_KEY_A] = JSON.stringify({ version: 1, exempt: [], overrides: [], global: null });
+  const { Store, Rules } = freshRules();
+  const mkTel = () => new El('SELECT', { id: 'plain-num', options: [{ value: '1', text: 'One' }, { value: '2', text: 'Two' }, { value: '3', text: 'Three' }] });
+  const mkAc = () => new El('SELECT', { id: 'ac', attrs: { autocomplete: 'tel-country-code' }, options: [{ value: '+1', text: 'US' }, { value: '+86', text: 'CN' }] });
+  const fresh = () => { const UI = mockUI(); return { UI, Det: createDetect(UI, Rules) }; };
+
+  // ① A-004 复现基线：单条元素级 selector 强制规则（tier:auto）不抬整页
+  const idE = Rules.upsertOverride({ host: 'scope30.example.com', selector: '#phone-cc', action: { tier: 'auto' }, note: 'force' });
+  eq(Rules.pageTierOverride(), null, 'S5 元素规则不再抬整页分档（A-004 收敛核心）');
+  eq(Rules.forcedTier(new El('input', { id: 'phone-cc' })), 'auto', 'S5 元素规则仍命中自身 selector（forcedTier 语义不变）');
+  eq(Rules.forcedTier(mkAc()), null, 'S5 未命中元素不受该元素规则影响');
+  let r = fresh();
+  r.Det.scan(scanRoot([mkTel(), mkAc()]));
+  const autoCall = r.UI.attachCalls.find(c => c.el && c.el._id === 'ac');
+  ok(!!autoCall && autoCall.tier === 'auto', 'S5 引擎 auto 字段按评分照常注入（非规则抬档）');
+  ok(!r.UI.attachCalls.some(c => c.el && c.el._id === 'plain-num'), 'S5 引擎 none 字段不被单条元素规则抬档注入（A-004 泄漏面）');
+  eq(r.UI.lowCalls.length, 0, 'S5 none 字段亦不因此登记召唤');
+
+  // ② 低档元素规则同样不得外溢（不抬也不压）
+  ok(Rules.removeOverride(idE), 'S5 移除 auto 元素规则');
+  const idE2 = Rules.upsertOverride({ host: 'scope30.example.com', selector: 'input[name="phone-cc"]', action: { tier: 'lowkey' } });
+  eq(Rules.pageTierOverride(), null, 'S5 lowkey 元素规则同样不驱动 pageTierOverride');
+  eq(Rules.forcedTier(new El('input', { name: 'phone-cc' })), 'lowkey', 'S5 name 形态元素规则命中 → lowkey');
+
+  // ③ 页面级显式规则类型（scope:'page'）：全页重映射语义保留（评分后路径）
+  const idP = Rules.upsertOverride({ host: 'scope30.example.com', selector: '*', action: { tier: 'lowkey' }, scope: 'page' });
+  eq(Rules.pageTierOverride(), 'lowkey', 'S5 显式页面规则驱动 pageTierOverride（scope:page 唯一入口）');
+  const pgRow = Rules.pageOverrides().find(o => o.id === idP);
+  eq(pgRow && pgRow.scope, 'page', 'S5 scope 字段过 CRUD/副本边界不丢失');
+  r = fresh();
+  r.Det.scan(scanRoot([mkAc()]));
+  eq(r.UI.attachCalls[0] && r.UI.attachCalls[0].tier, 'lowkey', 'S5 页面 lowkey 规则把引擎 auto 压成 lowkey（重映射语义保留）');
+  ok(r.UI.attachCalls[0] && (r.UI.attachCalls[0].signals || []).some(s => s.name === 'rule:tier-override'), 'S5 页面规则走评分后重映射（signals 留痕 rule:tier-override，非 forced 零分路径）');
+
+  // ④ 页面 auto 规则抬 none 字段（「页面档=注入档位下限」保留）且不经 forcedTier
+  ok(Rules.removeOverride(idP), 'S5 移除页面 lowkey 规则');
+  const idPA = Rules.upsertOverride({ host: 'scope30.example.com', selector: '*', action: { tier: 'auto' }, scope: 'page' });
+  eq(Rules.forcedTier(mkTel()), null, 'S5 页面规则不经 forcedTier（不绕评分强注）');
+  r = fresh();
+  r.Det.scan(scanRoot([mkTel()]));
+  const lift = r.UI.attachCalls.find(c => c.el && c.el._id === 'plain-num');
+  ok(!!lift && lift.tier === 'auto', 'S5 页面 auto 规则把 none 字段抬到 auto（下限语义保留）');
+  ok(lift && (lift.signals || []).some(s => s.name === 'rule:tier-override'), 'S5 抬档信号留痕（评分语义未被替换）');
+
+  // ⑤ 不变项守卫：页面级 none 不参与分档覆盖（none 语义属豁免/元素负反馈）
+  ok(Rules.removeOverride(idPA), 'S5 移除页面 auto 规则');
+  Rules.upsertOverride({ host: 'scope30.example.com', selector: '*', action: { tier: 'none' }, scope: 'page' });
+  eq(Rules.pageTierOverride(), null, 'S5 页面 none 规则不参与分档覆盖');
+  eq(Rules.forcedTier(mkTel()), null, 'S5 页面 none 规则亦不经元素路径生效');
+  ok(!!Store.getSiteRules().overrides.find(o => o.id && o.scope === 'page'), 'S5 页面规则在文档中可按 scope 审计（面板删除面兼容）');
+}
+
+// ══════════════════════════════════════════════════════════════════
+const groups = [['S0', S0], ['S1', S1], ['S2', S2], ['S3', S3], ['S4', S4], ['S5', S5]];
 (async () => {
   const only = process.argv[2] || '';
   for (const [name, fn] of groups) {

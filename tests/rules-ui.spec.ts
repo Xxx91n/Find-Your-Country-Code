@@ -181,3 +181,33 @@ test('验收5 面板交互不外溢宿主表单：无 submit、无字段事件�
   }));
   expect(after).toEqual(before); // 宿主字段状态零污染
 });
+
+// ══ 票 30（A-004）：分档覆盖收敛到 selector 级 ══
+test('票30 元素级规则不放大全页：单条 selector→lowkey 只作用于命中字段', async ({ page }) => {
+  await boot(page, {
+    rules: { version: 1, exempt: [], global: null, overrides: [
+      { id: 'r-el30', host: '127.0.0.1', selector: '#cc-mid', action: { tier: 'lowkey' }, scope: 'element', note: 'ticket30', createdAt: 1, updatedAt: 1 },
+    ] },
+  });
+  // 命中元素按声明档（强制选择器语义不变）
+  await expect(wrapperFor(page, '#cc-mid').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
+  // 全页不放大：无关字段保持引擎评分档（缺陷语义会把全页压成 lowkey）
+  await expect(wrapperFor(page, '#cc-strong').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'auto');
+  // 全页不放大：引擎 none 字段不被抬档
+  await expect(wrapperFor(page, '#phone')).toHaveCount(0);
+  await expect(wrapperFor(page, '#plain-num')).toHaveCount(0);
+});
+
+test('票30 显式页面级规则（scope:page）保留全页重映射语义', async ({ page }) => {
+  await boot(page, {
+    rules: { version: 1, exempt: [], global: null, overrides: [
+      { id: 'r-pg30', host: '127.0.0.1', selector: '*', action: { tier: 'lowkey' }, scope: 'page', note: 'ticket30-page', createdAt: 1, updatedAt: 1 },
+    ] },
+  });
+  // 页面档=注入档位下限：auto 压到 lowkey（评分保留 + rule:tier-override 留痕）
+  const strongBtn = wrapperFor(page, '#cc-strong').locator('.cch-btn');
+  await expect(strongBtn).toHaveAttribute('data-cch-tier', 'lowkey');
+  await expect(strongBtn).toHaveClass(/cch-btn-lowkey/);
+  // none 字段抬到 lowkey（下限语义，与票 05 ADR-0003 记录一致）
+  await expect(wrapperFor(page, '#phone').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
+});

@@ -7,10 +7,14 @@
 //   doc = {
 //     version: 1,
 //     exempt:   string[],            // 豁免域名列表（小写 hostname，点边界子域匹配）
-//     overrides: [{                  // 元素级覆盖规则（强制选择器 / 分档覆盖 / 负反馈记忆）
+//     overrides: [{                  // 覆盖规则（元素级：强制选择器 / 负反馈记忆；页面级分档覆盖须 scope:'page' [票 30]）
 //       id: string,                  // 'r' + base36 时间 + 随机段（稳定主键）
 //       host: string,                // 规则绑定的 hostname（小写）
-//       selector: string,            // CSS 选择器（文档级 querySelectorAll 匹配）
+// //       selector: string,            // CSS 选择器（文档级 querySelectorAll 匹配）
+//       scope?: 'element' | 'page',    // 作用域（票 30 [A-004]，缺省 'element'，v1 文档无字段向后兼容）：
+//                                  //   'element' = 只作用于 selector 命中元素；
+//                                  //   'page' = 页面级分档覆盖显式规则类型（全页 auto/lowkey 档重映射；
+//                                  //   selector 为展示占位、约定 '*'，不参与元素级匹配）
 //       action: { tier },            // tier ∈ 'auto' | 'lowkey' | 'none'
 //       note: string,                // 来源备注（07 面板展示；'panel-negative-feedback' = 负反馈记忆）
 //       createdAt: number, updatedAt: number   // epoch ms
@@ -20,7 +24,7 @@
 //   }
 // ════════════════════════════════════════════════════════
 import { RULES_KEY, RULES_BROADCAST, RULE_TIERS, RULES_MAX_OVERRIDES } from '../config';
-import type { CchStore, Country, OverrideRule, OverrideRuleInput, RulesDoc } from '../types';
+import type { CchStore, Country, OverrideRule, OverrideRuleInput, RuleScope, RulesDoc } from '../types';
 
 // GM_* 为 userscript 宿主注入的全局（vite 构建无类型门禁；此处仅声明供 tsc 局部清零）
 declare function GM_getValue(key: string, defaultValue?: string): string;
@@ -238,18 +242,20 @@ const Store = {
     const sel = rule && typeof rule.selector === 'string' ? rule.selector.trim() : '';
     const tier = rule && rule.action && rule.action.tier;
     if (!host || !sel || !tier || !RULE_TIERS.includes(tier)) return null;
+    // 票 30 [A-004]：scope 显式归一——仅 'page' 生效，其余（含旧文档缺字段）一律 'element'
+    const scope: RuleScope = rule && rule.scope === 'page' ? 'page' : 'element';
     const note = typeof rule.note === 'string' ? rule.note : '';
     if (rule.id && typeof rule.id === 'string') {
       const o = r.overrides.find(x => x.id === rule.id);
       if (o) {
-        o.host = host; o.selector = sel; o.action = { tier }; o.note = note; o.updatedAt = Date.now();
+        o.host = host; o.selector = sel; o.scope = scope; o.action = { tier }; o.note = note; o.updatedAt = Date.now();
         this._writeRules(r);
         return o.id;
       }
     }
     const o = {
       id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
-      host, selector: sel, action: { tier }, note,
+      host, selector: sel, scope, action: { tier }, note,
       createdAt: Date.now(), updatedAt: Date.now(),
     };
     r.overrides.push(o);
