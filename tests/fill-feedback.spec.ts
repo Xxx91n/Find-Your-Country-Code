@@ -10,6 +10,10 @@ import { test, expect } from 'playwright/test';
 import type { Page } from 'playwright/test';
 import { installUserscript, openPanel } from './helpers/userscript';
 
+// 降级复制态需要真实 clipboard-write 成功（headless 默认无该权限时 writeText 被拒 →
+// 如实报 failed，恰证三态闭环；为让 copied 档可测，授予权限）
+test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
+
 test.beforeEach(async ({ page }) => {
   await installUserscript(page);
 });
