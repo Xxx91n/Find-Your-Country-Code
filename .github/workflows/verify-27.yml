@@ -1,0 +1,31 @@
+# 票 27 验证 workflow：本票验收门（verify-ticket-27.mjs：弱信号复现基线 -> 改后跨线 ->
+# 分值单一来源 -> 负例零抬升 -> 阈值不变 -> 全语料指标不回退 -> 命名变体覆盖 -> areacode 护栏）。
+# 触发：pull_request（ADR-0006 非发版 workflow PR 门控）+ 本票分支 push + 手动 dispatch。
+# node 钉 22：装载器用 module.stripTypeScriptTypes（>=22.13），无 npm 依赖安装面。
+name: Verify Ticket 27 (detection-coverage-floor)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/27-detection-coverage-floor'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-27-gate:
+    name: Ticket-27 gate (weak-signal coverage floor)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-27 acceptance gate
+        run: node tests/scripts/verify-ticket-27.mjs
