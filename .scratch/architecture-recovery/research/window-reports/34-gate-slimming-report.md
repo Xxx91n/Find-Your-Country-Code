@@ -126,3 +126,35 @@ verify-31 最近 run 34688872701 **success**（cch/31-fill-feedback-loop）；ve
 
 - **D-R1a Lockfile Regen 首推红（050d442，run 34693483708）**: 本窗口建 workflow 时 CRLF guard 正则被转义双写（反斜杠双写 → 匹配字面反斜杠 → 白名单失效 → 误报全库 CRLF）。amend 785406e 修正，与 typecheck.yml 同款 guard 逐字一致后转绿（34693757830）。属实现 bug 非预存债，已自纠。
 - **D-R1b .npmrc 不可见**: 联③原计划对齐 .npmrc 集中口径，发现其为票 31 独立分支产物（lom 提交），未合流前本分支 checkout 不可见 → 走 Delta「或等效」出口内联 flag。红线（不移除 .npmrc）零接触。
+
+
+## 返工轮次 R2（2026-09-12）：lockfile artifact 入库落地（联② 数据面收口）
+
+> R1 呈报的「联② 不自动 push、产物入库待维护者」经复核判定为非验收出口——验收明文要求「e2e 与 typecheck 在本分支 run 全绿（run ID）」，lockfile 入库在本会话内可完成且恰属联②票域（可逆常规 git 写）。本窗口获授权执行。
+
+### 入库过程
+
+- **他窗改动比对（不吸收）**: 提交前核查工作区 package-lock.json——`git diff --stat HEAD -- package-lock.json` 为空（无未提交在途改动）；`but status` 中 package-lock.json 的 M 态系 kp change 指向。kp 的 46 hunk 实质：把 nnr（cch/29-scan-candidates-expansion 已推送提交）版本对齐 lockfile（resolved 指 npmmirror，sha 529af64b1ab3f214）变换为 CI artifact 版（resolved 指 npmjs.org，sha 31ad2f0b806adce2）——纯 registry 域差异，version 字段 125/125 零差异（typescript@5.9.3 / vite@6.4.3 / lockfileVersion 3），双方均无 CRLF。未吸收他窗文件面。
+- **GitButler 依赖门**: `but commit` 首报 c2 不适用、次报 hunk 依赖 cch/29-scan-candidates-expansion（nnr）已推送 lockfile 重同步——按提示建栈式分支: `but branch new cch/34-lockfile-land --anchor cch/29-scan-candidates-expansion`（GitButler 依赖门强制，非主动越权）。
+- **提交**: commit `srn`（46 hunk 全量 kp 单 change）→ 分支推送 `cch/34-lockfile-land`（da8caa44cb6f270671ba90b5212bba28e9d1ec32）。
+
+### CI 实证（R2 验收）
+
+| workflow | run | 结论 |
+|---|---|---|
+| Typecheck | **34695478812** | **success（转绿）**——lockfile 入库后 npm ci 恢复同步，R1 预期红消除 |
+| E2E | 34695478778 | failure——归因: 安装阶段 ERESOLVE（react-dom@18 peer react@^18.3.1 与 react-dom19 alias peer react@^19.2.8 冲突），同源 D-29c/联③ 共因；联③ 修复（--legacy-peer-deps）在 cch/34-gate-slimming（E2E run 34694435571 已绿），本栈分支锚定 cch/29 不含该 CI 文件面，本分支 diff 仅 package-lock.json，非新引入 |
+
+### R1 验收④复核闭环
+
+R1 呈报「届时 Typecheck 转绿」条件已兑现: lockfile artifact 版入库（da8caa4）后 Typecheck run 34695478812 success。三红三 run ID 全锚定: Engine Gates 34694435559 ✅ / E2E 34694435571 ✅（cch/34-gate-slimming）/ Typecheck 34695478812 ✅（cch/34-lockfile-land）。
+
+
+### R2 后续轮（2026-09-12）：typecheck.yml 进 cch/27 栈 + e2e.yml 所有权边界（呈报）
+
+> R2 落地后其他窗口重排栈（D-29i：用户裁定停止推送等待票 27/34 自解；票 27 头 885bbed 代解 srn/nnr lockfile 互斥，version 125/125 零差异继承票 34 意图 + npmjs.org 域），远端 a1cf2422 双红归因：Typecheck TS2724（票 27 config 不在栈）+ E2E ERESOLVE（共因）。
+
+- **typecheck.yml 进 cch/27 栈**: commit omu（8dfe25aac0606837ff9f016bd7ecd415b042301d）——typecheck.yml 对齐联③版（npm ci --legacy-peer-deps，与 ga 逐字一致）→ **Typecheck run 34698250826 success + Verify Ticket 27 run 34698250830 success**（headSha 8dfe25a）。
+- **e2e.yml 所有权边界（呈报）**: e2e.yml 联③ hunks（--legacy-peer-deps + push:main）属 ga 分支 xys 提交所有权，GitButler 视角无未提交 hunk 可进 et——cch/27 栈共享 E2E 34698250812 红为**票 27 D-27a 呈报过的安装共因**（票 27 已用自有 verify-27.yml 复刻步骤取证三门绿 run 34697124610），**非票 34 验收出口**。合流 main 后两分支 CI 文件面自然统一。
+- **cch/34-lockfile-land 收束**: 其头 a1cf2422 已成 cch/27 头 885bbed 的祖先（无独有提交，票 27 代解覆盖），srn 语义已由 885bbed 继承，分支待维护者合流时自然收束。
+- **票 34 返工验收最终证据链**: 联① Engine Gates 34694435559 ✅ / 联② Lockfile Regen 34693757830 ✅ + artifact 入库（srn→885bbed 代解继承）+ Typecheck 转绿（cch/34-lockfile-land run 34695478812 ✅、cch/27 栈 run 34698250826 ✅）/ 联③ E2E 34694435571 ✅（返工分支）——三红全部转绿且 run ID 锚定。
