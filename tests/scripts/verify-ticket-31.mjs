@@ -194,14 +194,16 @@ await inputCase('F7 无约束无分歧', { placeholder: 'Code' }, false, '+86');
   check('T4 fillInput 注入表达式未动', fillSrcRaw.includes("this._inject(el, formatted + (rest ? ' ' + rest : ''));"));
   check('T5 toast 分层映射', fillSrcRaw.includes("res.fmtDiff ? t('fmtDiverge') : t('ok')") && fillSrcRaw.includes("res.status === 'copied' ? t('copied') : t('fillFailed')"));
 }
-// ══ G5 i18n 双语键集一致 ══
+// ══ G5 i18n 双语键集一致（以运行时 MSG 对象为真相源，静态提取易被源码噪声污染）══
+const i18nRun = new Function('const __navLanguage = "zh-CN";\n' + stripTypeScriptTypes(i18nBody, { mode: 'strip' }) + '\n;return MSG;')();
 {
-  const zh = i18nSrc.slice(i18nSrc.indexOf('zh: {'), i18nSrc.indexOf('en: {'));
-  const en = i18nSrc.slice(i18nSrc.indexOf('en: {'));
-  const keys = (b) => [...b.replace(/'[^']*'/g, "''").matchAll(/([A-Za-z][A-Za-z0-9]*)\s*:/g)].map(m => m[1]).sort();
-  const kz = keys(zh), ke = keys(en);
+  const keys = (o) => Object.keys(o).sort();
+  const kz = keys(i18nRun.zh), ke = keys(i18nRun.en);
   check('L1 zh/en 键集一致', JSON.stringify(kz) === JSON.stringify(ke), kz.join(',') + ' vs ' + ke.join(','));
-  check('L2 新键双语齐', /fmtDiverge:'已填入/.test(i18nSrc) && /fmtDiverge:'Filled/.test(i18nSrc) && /fillFailed:'填充失败/.test(i18nSrc) && /fillFailed:'Fill failed/.test(i18nSrc));
+  check('L2 新键双语齐',
+    /已填入（格式/.test(i18nRun.zh.fmtDiverge) && /format may differ/.test(i18nRun.en.fmtDiverge) &&
+    /填充失败/.test(i18nRun.zh.fillFailed) && /Fill failed/.test(i18nRun.en.fillFailed) &&
+    /未匹配到选项，已复制/.test(i18nRun.zh.copied) && /No match/.test(i18nRun.en.copied));
 }
 
 console.log('-----------------------------');
