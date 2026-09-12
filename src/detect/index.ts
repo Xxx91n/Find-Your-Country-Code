@@ -19,7 +19,7 @@
 import {
   L0_TOKEN_SCORE, L0_TEL_TOKENS, L0_TEL_HINT_SCORE, L0_INPUTMODE_TEL_SCORE,
   L1_STRONG_KW_SCORE, L1_COUNTRY_KW_SCORE, L1_PREFIX_KW_SCORE, L1_NPA_KW_SCORE,
-  L1_LABEL_PHRASE_SCORE, L1_BARE_QU_SCORE, L1_LOCAL_FIXED_PENALTY, L1_COMPOUND_SCORE,
+  L1_LABEL_PHRASE_SCORE, L1_ATTR_PHRASE_SCORE, L1_BARE_QU_SCORE, L1_LOCAL_FIXED_PENALTY, L1_COMPOUND_SCORE,
   L2_ANCHOR_TEL_SCORE, ARIA_COMBO_STRUCT_SCORE,
   L3_PLUS_DIAL_SCORE, L3_PLUS_PAREN_SCORE, L3_DIAL_CAP, L3_ISO_BONUS,
   L3_NUMERIC_MIN_RATE, L3_NUMERIC_PENALTY,
@@ -137,6 +137,28 @@ function comboboxEvidence(el: AnyEl) {
   return { listbox, stats, veto };
 }
 
+// ══ 票 29 [A-003]: 无 ARIA 手写下拉结构探测 ══
+// 形态：div/span 触发器（无 role=combobox / 无 aria-controls）+ 后代 ul/ol>li 选项面板。
+// 与票 18 的 ARIA combobox 层并列、互斥：有 ARIA 语义的走 comboboxEvidence，完全无语义的走这里。
+// 收敛纪律（同源调研）：
+//   ① 触发器闸门：仅 DIV/SPAN 且可聚焦（tabindex 存在）——不可聚焦的静态容器不是交互控件；
+//   ② 选项来源：`[role=option]` 优先，缺失时回退 `li`（手写下拉的通用承载）；
+//   ③ 内容验证复用 L3 口径 pseudoOptionStats，不自造判据、不开新误报后门（票 18 检查点二纪律）。
+function customDropdownStats(el: AnyEl): OptionStats | null {
+  if (!el.querySelectorAll) return null;
+  const tag = el.tagName;
+  if (tag !== 'DIV' && tag !== 'SPAN') return null;
+  // 可聚焦闸门：无 tabindex 的非表单容器 = 静态布局节点，不是下拉触发器
+  if (el.getAttribute && el.getAttribute('tabindex') === null) return null;
+  let opts: AnyEl[] = [];
+  try { opts = Array.prototype.slice.call(el.querySelectorAll('[role="option"]')); } catch {}
+  if (!opts.length) {
+    try { opts = Array.prototype.slice.call(el.querySelectorAll('li')); } catch {}
+  }
+  if (!opts.length) return null;
+  return pseudoOptionStats(opts);
+}
+
 // 拉丁词匹配：camelCase 拆分 → token 等值；≥6 字符词允许 joined/token 子串。
 // 3-4 字符短词（idd/npa/lang）只做等值匹配 —— F6「hidden→idd」子串撞库的根因即无长度护栏 [MD §2⑤]。
 function matchLatin(text: string, kw: string): boolean {
@@ -165,6 +187,39 @@ const LABEL_PHRASES_STRONG = ['country code', 'dial code', 'calling code', 'phon
   '国家区号', '国际区号', '电话区号', '呼叫代码'];
 const LABEL_COMPOUND = ['国家/地区区号', '国家地区区号', '手机区号'];
 const LABEL_EXCLUDE = ['语言', '语种', '本地化', '翻译', '省份', '城市', '区县', '县区', '行政区'];
+
+// ── 票 27 [A-001]：属性强短语组（与 label 强短语同词表、不同证据面）──
+// 覆盖缺口：<label> 关联文本走 L1_LABEL_PHRASE_SCORE，而 placeholder / aria-label / name /
+// id / class / data-name / title 这些同样对用户可见或由站点命名的属性文本，此前只能靠
+// kw:strong 的 joined 偶然命中拿 30 分（< SCORE_LOWKEY=35），无锚弱信号字段因此落 none。
+// 属性文本证据力弱于 <label>（无关联关系、可动态改写），故权重低于 L1_LABEL_PHRASE_SCORE。
+const ATTR_PHRASES_STRONG = LABEL_PHRASES_STRONG;
+
+// 归一口径：camelCase 边界 -> 空格、非字母数字 -> 空格、小写。
+// 使 countryCode / country_code / country-code / countrycode 四种真实站点命名归一到同一
+// 强短语形态（紧凑形态一并比对，全小写命名不漏）。
+function attrPhraseNorm(s: string): string {
+  return String(s || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+// CJK 短语按原文包含（归一化会把 CJK 抹成空格）；EN 短语比对空格形态与紧凑形态。
+function attrPhraseHit(attrStr: string): string | null {
+  const raw = String(attrStr || '');
+  if (!raw) return null;
+  const norm = attrPhraseNorm(raw);
+  const joined = norm.replace(/ /g, '');
+  const low = raw.toLowerCase();
+  for (const p of ATTR_PHRASES_STRONG) {
+    if (low.indexOf(p.toLowerCase()) >= 0) return p;
+    const pn = attrPhraseNorm(p);
+    if (pn && (norm.indexOf(pn) >= 0 || joined.indexOf(pn.replace(/ /g, '')) >= 0)) return p;
+  }
+  return null;
+}
 
 // ── L3 选项分布统计（一次性扫描；value 与 text 双证据口径；票 13：占位首项剔除 + ISO2 全集域） ──
 function optStats(el: AnyEl): OptionStats {
@@ -203,7 +258,10 @@ function optStats(el: AnyEl): OptionStats {
 // 票 04：observer 配置与指纹属性面（两者对齐 —— 指纹读什么，observer 就监听什么）
 const OBSERVED_ATTRS = ['name', 'id', 'class', 'type', 'placeholder', 'aria-label',
   'data-name', 'title', 'autocomplete', 'inputmode', 'disabled', 'readonly',
-  'role', 'aria-expanded', 'aria-controls', 'aria-owns'];
+  'role', 'aria-expanded', 'aria-controls', 'aria-owns',
+  // 票 29 [A-003]: tabindex —— 无 ARIA 手写下拉的「可聚焦触发器」门槛属性。
+  // 观测面与指纹面必须同步（票 04 契约：指纹读什么，observer 就监听什么）。
+  'tabindex'];
 const MO_OPTS = { childList: true, subtree: true, attributes: true, attributeFilter: OBSERVED_ATTRS };
 // 候选选择器组（顺序：select → iti 容器 → input 组合；与 v1.3.4 迁移基线一致）
 const SCAN_SELECTORS = [
@@ -213,6 +271,13 @@ const SCAN_SELECTORS = [
   'input[type="tel"],input[type="text"],input:not([type]),input[type="number"]',
   // 票 18: 伪 select 触发器三形态 DIV/INPUT/BUTTON[role=combobox]（MUI/antd/EP/react-select/Radix observed）
   '[role="combobox"]',
+  // 票 29 [A-003]: 无 ARIA 手写下拉触发器 —— 形态描述符而非宽选择器。
+  // 行业实证（atomcode 调研，2026-09）：Chromium/Firefox/Bitwarden/Dashlane 的候选集一律收敛在
+  // 语义控件白名单（input/select/textarea），无 ARIA 的 div+ul 下拉一律「不发现」；本脚本是唯一
+  // 要主动识别该形态的实现，故多做一层形态描述符匹配，但严守两条约束：
+  //   ① 不做全 DOM div 扫描、不放裸 `ul li`（候选爆炸）——只收「可聚焦（tabindex=0）的非表单容器」；
+  //   ② 结构/选项内容证据全部在 scoreElement 内裁决（customDropdownStats），不在此处放宽。
+  'div[tabindex="0"],span[tabindex="0"]',
 ];
 // 票 24 安全加固：候选选择器存在覆盖重叠（.iti input ⊂ input[type="tel"] 组合项），
 // 迭代 Set 去重版避免同一 selector 字符串被重复 querySelectorAll（数组顺序不变，仅收敛唯一集合）
@@ -349,6 +414,12 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
         }
       }
 
+      // ── 票 27 [A-001]：属性强短语补分（与 label 强短语区分的证据面）──
+      // 位置刻意放在 iti 容器结算之后：属性短语不作为 iti 容器的最低佐证（票 13 检查点四
+      // 防线 —— 容器唯一证据须 type=tel / autocomplete tel 系 / inputmode=tel / 既有 L1 正向
+      // 信号；弱一等的属性文本不得抬升容器分）。
+      const attrPhrase = attrPhraseHit(attrStr);
+      if (attrPhrase) score += add('L1', 'attr:phrase:' + attrPhrase, L1_ATTR_PHRASE_SCORE);
       // ── L3 内容验证层（select 专属；值域整体分布，非单值判定 [MD §5-0②]） ──
       let st: OptionStats | null = null;
       if (tag === 'SELECT') {
@@ -360,9 +431,12 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
         }
         if (st.plusDial > 0) {
           score += add('L3', 'opts:plus-dial', Math.min(st.plusDial * L3_PLUS_DIAL_SCORE, L3_DIAL_CAP));
-          if (st.parenDial > 0) {
-            score += add('L3', 'opts:(+NN)-text', Math.min(st.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
-          }
+        }
+        // 票 28（A-002）：文本括号区号 (+NN) 独立成 L3 证据，移出 plusDial > 0 门。
+        // ISO2 作 value 的形态（<option value="us">United States (+1)</option>）值域不命中区号表
+        // （plusDial=0），括号区号是其唯一区号证据 [libphonenumber：国家↔区号非单射 → ISO2 作 value]。
+        if (st.parenDial > 0) {
+          score += add('L3', 'opts:(+NN)-text', Math.min(st.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
         }
         // 票 16：数字占比罚分独立叠加（不再与区号加分互斥短路）——混入高占比数字枚举的
         // 下拉两条证据同时入账，交由总分与分档裁决 [issue 16 验收2]
@@ -398,9 +472,31 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
               sig.push({ layer: 'L3', name: 'pseudo:gate:options<2', pts: 0 });
             } else {
               if (st2.plusDial > 0) score += add('L3', 'pseudo:opts:plus-dial', Math.min(st2.plusDial * L3_PLUS_DIAL_SCORE, L3_DIAL_CAP));
-              if (st2.plusDial > 0 && st2.parenDial > 0) score += add('L3', 'pseudo:opts:(+NN)-text', Math.min(st2.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
+              // 票 28（A-002）：与 select 侧口径同步 —— 括号区号独立计分，去掉 plusDial > 0 前置（票 13 检查点二）
+              if (st2.parenDial > 0) score += add('L3', 'pseudo:opts:(+NN)-text', Math.min(st2.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
               if (st2.numeric / st2.total >= L3_NUMERIC_MIN_RATE) score += add('L3', 'pseudo:opts:numeric-enum', L3_NUMERIC_PENALTY);
               if (st2.isoName / st2.total >= 0.5) score += add('L3', 'pseudo:opts:country-identity', L3_ISO_BONUS);
+            }
+          }
+        }
+        // ── 票 29 [A-003]: 无 ARIA 手写下拉（与上方 ARIA 层互斥：有语义的不走本分支）──
+        // 结构信号复用票 18 常量 ARIA_COMBO_STRUCT_SCORE(20)，不新造权重：
+        //   单独 20 < 登记线 25（无国家语义上下文不进召唤面）；+ L1 country kw(14) = 34
+        //   稳过登记线且 < SCORE_LOWKEY(35)，与语料期望 tier=none 自洽。
+        // 内容证据在此只作「门槛」不作「加分」：无 ARIA 语义背书的自定义下拉证据强度低于
+        // 组件库伪 select，若并入 L3 加分（parenDial/isoName，L3_ISO_BONUS=30）会直接击穿
+        // 低调注入线、把「登记不注入」的档位上限架空——故只登记、不抬分。
+        else {
+          const custom = customDropdownStats(el);
+          if (custom) {
+            if (custom.total < 2) {
+              sig.push({ layer: 'L2', name: 'custom:gate:options<2', pts: 0 });
+            } else if (custom.plusDial + custom.parenDial + custom.isoName === 0) {
+              // 内容门槛：无任何区号/国家证据的列表 = 导航菜单/普通列表，不进登记面
+              sig.push({ layer: 'L2', name: 'custom:gate:no-dial-evidence', pts: 0 });
+            } else {
+              pseudoHit = true;
+              score += add('L2', 'custom:dropdown', ARIA_COMBO_STRUCT_SCORE);
             }
           }
         }
@@ -611,6 +707,8 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
         // 展开态 option 内容证据可入账（关闭态 MUI 悬空 id 静态证据口径 [17 票]）
         el.getAttribute('role'), el.getAttribute('aria-expanded'),
         el.getAttribute('aria-controls'), el.getAttribute('aria-owns'),
+        // 票 29: tabindex 入指纹 —— 可聚焦态翻转（框架 hydration / 条件渲染）触发重评
+        el.getAttribute('tabindex'),
         el.disabled ? 'd' : '', el.readOnly ? 'r' : '',
         this._isIti(el) ? 'iti' : '', this._label(el) || '',
       // 票 13：可见性判定入指纹 —— 显隐翻转（路由切换/样式类变更）即触发重评
