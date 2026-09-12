@@ -11,6 +11,8 @@ on:
   push:
     branches:
       - 'cch/27-detection-coverage-floor'
+      # R1 返工轮：同票返工分支（首轮已合入 main，P8 跨线修复在此分支取证）
+      - 'cch/27-detection-coverage-floor-fix'
 
 permissions:
   contents: read
