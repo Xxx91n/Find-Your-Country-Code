@@ -98,6 +98,22 @@ ok(!areaLocal.injected, '本地固话区号仍不注入', areaLocal.score + '/' 
 const langPrefix = evaluateCase({ el: { tag: 'input', name: 'langPrefix', type: 'text', placeholder: '语言前缀' }, labels: [], ctx: {} }, post.Detect);
 ok(!langPrefix.injected, '语言前缀仍不注入（L4 排除有效）', langPrefix.score + '/' + langPrefix.tier);
 
+// ── G9 R1 返工锁定：属性短语与 L3 区号内容证据同源时不重复计分（P8 跨线返工）──
+// 形态 = Engine Gates 的 P8（Case4：aria-label 含 calling code + 全 +NN 选项 + tel 锚）。
+// 首轮 +8 使其 68 -> 76 越过 SCORE_AUTO(70) 由 lowkey 升 auto，属『抬天花板』越界；
+// R1 改法：属性短语在 L3 已独立证明区号值域（plusDial/parenDial > 0）时不重复计入。
+console.log('G9 R1 去重：属性短语不得把既有 68 分正例推过 SCORE_AUTO（floor 不抬 ceiling）');
+const p8Case = { el: { tag: 'select', attrs: { 'aria-label': 'Select country calling code' }, options: ['+86', '+1', '+44', '+33', '+49'] }, labels: [], ctx: { anchorHasTel: true } };
+const p8Post = evaluateCase(p8Case, post.Detect);
+ok(p8Post.score === 68 && p8Post.tier === 'lowkey', 'P8 形态改后 68/lowkey（未跨 auto 线）', p8Post.score + '/' + p8Post.tier);
+const p8Pre = evaluateCase(p8Case, pre.Detect);
+ok(p8Pre.score === 68 && p8Pre.tier === 'lowkey', 'P8 形态与首轮改前基线一致（68/lowkey）', p8Pre.score + '/' + p8Pre.tier);
+ok(p8Post.signals.some(function (g) { return /^attr:phrase:.*dedup\(opts-dial\)$/.test(g.name); }), '去重留痕信号 attr:phrase:*:dedup(opts-dial) 存在', (p8Post.signals.map(function (g) { return g.name; }).join(' | ') || 'none'));
+const wsNoContent = evaluateCase({ el: { tag: 'input', name: 'countryCode', type: 'text' }, labels: [], ctx: {} }, post.Detect);
+ok(wsNoContent.score === 38 && wsNoContent.tier === 'lowkey', '无内容证据的弱信号 input 仍 38/lowkey（去重不误伤 A-001）', wsNoContent.score + '/' + wsNoContent.tier);
+const p3Like = evaluateCase({ el: { tag: 'input', name: 'country_code', type: 'text' }, labels: [], ctx: { anchorHasTel: true } }, post.Detect);
+ok(p3Like.score === 56 && p3Like.tier === 'lowkey', '弱信号 input + tel 锚仍 56/lowkey（去重不误伤）', p3Like.score + '/' + p3Like.tier);
+
 console.log(String.fromCharCode(45, 45, 45));
 console.log('票 27 验收门: ' + pass + ' passed / ' + fail + ' failed');
 if (fail > 0) process.exit(1);
