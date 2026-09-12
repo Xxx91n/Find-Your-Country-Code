@@ -1,0 +1,32 @@
+name: Engine Gates
+
+# 公共引擎门（票 34 门禁减肥）：引擎门 verify-ticket-02.mjs（36 例）
+# + 误检 harness misdetect-repro-v2.mjs（25 例）。原 verify-13/16/18 三处逐字重复
+# 各跑一遍，抽到本 workflow 统一跑一次（票级 verify-* 只保留各自专属断言）。
+# 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)（见 CONTEXT.md）。
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'cch/**'
+
+permissions:
+  contents: read
+
+jobs:
+  engine-gates:
+    name: Engine gate (36) + harness (25)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Engine gate (verify-ticket-02.mjs)
+        run: node tests/scripts/verify-ticket-02.mjs
+      - name: Harness (misdetect-repro-v2.mjs)
+        run: node tests/scripts/misdetect-repro-v2.mjs
