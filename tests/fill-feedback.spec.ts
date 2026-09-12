@@ -61,7 +61,8 @@ test.describe('新行为：三态信号 + 格式分歧可观测（复现期默�
     await page.goto('/fixtures/fill-feedback.html');
     await pick(page, '#fb-nomatch', 'China', 'cn');
     await page.waitForFunction(() => (window as any).__cchLastFill?.status === 'copied');
-    expect(await lastFill(page)).toMatchObject({ status: 'copied', kind: 'select', iso: 'cn' });
+    // iso 为 Country.iso 数据源逐字透传（观测不加工），countries 表该字段是大写形态
+    expect(await lastFill(page)).toMatchObject({ status: 'copied', kind: 'select', iso: 'CN' });
     await expect(toastText(page)).toContainText(/未匹配|No match/i);
   });
 
