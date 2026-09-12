@@ -1,8 +1,8 @@
 // 票 31 · 填充结果可观测 + 失败反馈闭环（覆盖 A-005）
 // ══════════════════════════════════════════════════════════════
-// 复现基线（repro commit）：新行为断言按 fp-regression §6.2 维护契约标
-// test.fail() 默认红（reproduced）——证明「填充成功 / 降级复制 / 失败」三态
-// 与「格式分歧」当前对用户与测试面均不可观测；票 31 实施 commit 摘除标记转绿。
+// 复现基线：新行为断言曾按 fp-regression §6.2 维护契约标 test.fail() 默认红
+// （复现证据：E2E run 34684194549 四条 ✘ expected-fail + 基线不变式 4 ✓）；
+// 票 31 实施后标记已摘除转绿（维护契约同 06 报告 §6.2）。
 // 基线不变式组（无标记、两版本恒绿）钉住「不动正确路径」：select 命中语义、
 // input 格式推测结果、降级不写字段，三者实施前后必须一致。
 // 证据：CI run ID 锚定（只认 CI 证据）。
@@ -51,9 +51,8 @@ test.describe('基线不变式（复现与实施两版本恒绿 —— 钉住正
   });
 });
 
-test.describe('新行为：三态信号 + 格式分歧可观测（复现期默认红，实施后转绿）', () => {
+test.describe('新行为：三态信号 + 格式分歧可观测（复现期默认红已摘标转绿）', () => {
   test('① select 无匹配 → 降级复制态可观测：__cchLastFill.status=copied + 分层文案', async ({ page }) => {
-    test.fail(); // repro 期默认红：旧代码无三态信号，状态不可观测
     await page.goto('/fixtures/fill-feedback.html');
     await pick(page, '#fb-nomatch', 'China', 'cn');
     expect(await lastFill(page)).toMatchObject({ status: 'copied', kind: 'select', iso: 'cn' });
@@ -61,7 +60,6 @@ test.describe('新行为：三态信号 + 格式分歧可观测（复现期默�
   });
 
   test('② 期望 digits 得 plus → 格式分歧可观测：__cchLastFill.fmtDiff=true + 分歧文案', async ({ page }) => {
-    test.fail(); // repro 期默认红：旧代码静默按 plus 写入，无分歧信号
     await page.goto('/fixtures/fill-feedback.html');
     await pick(page, '#fb-diverge', 'China', 'cn');
     expect(await lastFill(page)).toMatchObject({ status: 'filled', fmtDiff: true });
@@ -69,7 +67,6 @@ test.describe('新行为：三态信号 + 格式分歧可观测（复现期默�
   });
 
   test('③ digits 推测命中数字约束 → 非分歧对照：fmtDiff=false + 纯成功文案', async ({ page }) => {
-    test.fail(); // repro 期默认红：旧代码无 fmtDiff 字段
     await page.goto('/fixtures/fill-feedback.html');
     await pick(page, '#fb-digits', 'China', 'cn');
     expect(await lastFill(page)).toMatchObject({ status: 'filled', fmtDiff: false });
@@ -77,7 +74,6 @@ test.describe('新行为：三态信号 + 格式分歧可观测（复现期默�
   });
 
   test('④ 填充失败且剪贴板不可用 → 失败态可观测：status=failed + 失败文案', async ({ page }) => {
-    test.fail(); // repro 期默认红：旧代码剪贴板 rejection 不被感知，仍提示「已复制」
     await page.goto('/fixtures/fill-feedback.html');
     await page.evaluate(() => {
       Object.defineProperty(navigator, 'clipboard', {

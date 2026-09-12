@@ -12,6 +12,21 @@
 export type Tier = 'auto' | 'lowkey' | 'none';
 export type FillKind = 'select' | 'iti' | 'input' | 'pseudo';
 
+// 票 31（A-005）：填充结果三态信号 —— 成功填充 / 降级复制（字段未写入，值已进剪贴板）/
+// 失败（填充不可用且剪贴板也不可用）。对标 Chromium ActorFormFillingError 枚举心智
+// [atomcode 票31 §3.2]：状态是操作返回的结构化结果，不是文案副产物。
+// fmtDiff：仅 input 策略有意义——字段声明式数字约束（pattern/inputmode=numeric/type=number）
+// 与写入格式推测不一致（期望 digits 得 plus）的只读观测旗标，不改写入行为。
+export type FillStatus = 'filled' | 'copied' | 'failed';
+
+export interface FillResult {
+  status: FillStatus;
+  kind: FillKind | null;
+  iso: string;
+  code: string;
+  fmtDiff: boolean;
+}
+
 export interface Country {
   code: string;
   iso: string;
@@ -125,7 +140,7 @@ export interface CchUI {
 }
 
 export interface CchFill {
-  run(el: AnyEl, kind: FillKind | null, country: Country): void;
+  run(el: AnyEl, kind: FillKind | null, country: Country): Promise<FillResult>;
 }
 
 // ── iti 插件跨版本探测面（v16–v29；方法存在性由 _isFn 运行时裁决后调用） ──
@@ -156,6 +171,9 @@ declare global {
   interface Window {
     // 可选性能探针（票 04 基线，页面不设置即零开销）
     __cchPerfHook?: (ms: number) => void;
+    // 票 31：最近一次填充的三态结果（测试面唯一可读钩子；成功/降级/写入值同步落，
+    // 剪贴板异步定态；E2E 经 page.evaluate 读取，勿再加第二套钩子 [handoff 31 信号设计]）
+    __cchLastFill?: FillResult;
     // iti 插件宿主全局与页面 jQuery（跨版本鸭子探测面，运行时守卫 + try/catch 兜底）
     intlTelInput?: ItiApi;
     intlTelInputGlobals?: ItiApi;
