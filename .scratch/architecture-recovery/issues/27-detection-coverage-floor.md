@@ -41,4 +41,27 @@
 分支：`cch/27-detection-coverage-floor`（最终头 `1052f3c`，含 8 个 cch-27 提交；栈序随并行窗口变动）
 
 > 注：过渡头曾因票 28/29 域漂移导致 Calibration / Typecheck 转红，已由重新入栈消解（D-27e）；最终头 `1052f3c` 三门全绿（Verify 34697124610 / Calibration 34697148462 / Typecheck 34697124601）。共享 E2E 仍卡安装阶段（D-27a），本票以自有作业取证。
-窗口报告：`research/window-reports/27-detection-coverage-floor-report.md`（偏离点 D-27a~D-27e；D-27e 含本票经授权代解票 29/34 的 package-lock.json 冲突之记录，需两票窗口复核）
+窗口报告：`research/window-reports/27-detection-coverage-floor-report.md`（R1 追加节 `## 返工轮次 R1（2026-09-12）`）（偏离点 D-27a~D-27e；D-27e 含本票经授权代解票 29/34 的 package-lock.json 冲突之记录，需两票窗口复核）
+
+
+## 返工轮次 R1（2026-09-12）— P8 跨线裁决
+
+- **发现**：全栈合入 main 后 Engine Gates 唯一红 run 34708464239 @ `019f228e` —— 35/36，`P8(expect=lowkey, got=auto, score=76)`（68 + attr:phrase 8 越过 `SCORE_AUTO=70`）。根因：首轮只跑自有 verify-27 + calibration，票 34 R1 的 EG 绿取自不含票 27 改动的栈，全合序组合从未被验证。
+- **裁决：路线 B（限制叠加，保 lowkey）**。理由：本票是覆盖率**下限**补强（floor），不应抬高上限（ceiling）；首轮 config 注释已点名 66-68 分正例为不得越线的风险带；引擎 L449「关键词↔内容同向锁定」已有同范式先例；atomcode 调研给出「同源证据不可叠加计分 / floor-ceiling 分离（Chrome Autofill ML、FICO 贡献封顶）」的方向性支撑（本轮零抓取，仅作方向依据）。
+- **改法**：`src/detect/index.ts` 属性短语结算移到 L3 内容验证之后，当 `st.plusDial > 0 || st.parenDial > 0`（L3 已独立证明区号值域）时不重复计入，仅留痕 `attr:phrase:*:dedup(opts-dial)`；无内容证据的弱信号 input 照常 +8。`SCORE_AUTO/LOWKEY/L1_ATTR_PHRASE_SCORE` 三常量未动。
+- **影响面**：P 组 36 例中仅 P8 档位变化（回 68/lowkey）；P1/P2/P6/A1 分值 -8 档位不变；F 组负例与 `area-code`（P10 = 68/lowkey）零变化；`rs-*` 真实语料形态判定不变。
+- **新增锁定**：`verify-ticket-27.mjs` G9 组（81 → 86 断言）。
+
+| 门 | run ID | 结论 |
+| --- | --- | --- |
+| Engine Gates（36/36 + 25/25） | 34710856761 | success |
+| Verify Ticket 27（86 断言 + E2E 作业 3 passed） | 34710856759 | success |
+| Verify Ticket 28（19） | 34710863480 | success |
+| Verify Ticket 29（27） | 34710866693 | success |
+| Calibration Baseline | 34710869926 | success |
+| Typecheck | 34710856729 | success |
+| E2E（共享面 80 passed） | 34710856691 | success |
+
+commits：引擎去重 `53615470` / G9 锁定 `419b03d2` / 触发面 `793f0d39`；分支 `cch/27-detection-coverage-floor-fix`。
+
+- **遗留建议**：P1（6 选项）72/auto 与 P8（5 选项）68/lowkey 语义证据相同而档位不同（首轮前即存在）。若产品判断 Case4 应自动注入，应作独立变更，不得借本票补分越线。

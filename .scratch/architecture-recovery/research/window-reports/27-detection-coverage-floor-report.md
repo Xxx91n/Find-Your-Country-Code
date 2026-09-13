@@ -182,3 +182,99 @@ placeholder="国家区号" 改前 0 分（短语词表为拉丁词表），改�
 4. `but resolve srn` → `but resolve nnr` → `but resolve finish`，两个冲突提交均已消解，无残留冲突。
 
 代价与提示：此举改写了票 29 / 票 34 各一个提交的内容（lockfile 侧），需由两票窗口复核确认；两票的功能语义（候选集扩张、lockfile 入库）未受影响。
+
+## 返工轮次 R1（2026-09-12）
+
+> 触发：跨栈全门复核发现 Engine Gates 唯一红 —— run 34708464239 @ `019f228e`，`P8(expect=lowkey, got=auto, score=76)`，35/36。
+> 根因：首轮只跑自有 verify-27 + calibration，票 34 R1 的 EG 绿取自不含票 27 改动的栈，**全合序组合从未被任何一方验证**。
+> 返工分支：`cch/27-detection-coverage-floor-fix`（首轮已合入 main，公共基址 `8c09e045`）。
+
+### 1. 复现与归因
+
+P8 形态 = Case4：`aria-label="Select country calling code"` + 5 个 `+NN` 选项 + tel 锚。信号明细：
+
+| 信号 | 首轮前（attr=0） | 首轮后（attr=8） |
+| --- | --- | --- |
+| `L1 kw:strong` | 30 | 30 |
+| `L1 attr:phrase:calling code` | 0 | 8 |
+| `L3 opts:plus-dial`（5 项 x 4） | 20 | 20 |
+| `L2 anchor:tel` | 18 | 18 |
+| **合计 / 档位** | **68 / lowkey** | **76 / auto** |
+
+即：属性短语与 `kw:strong` 同源于同一段 aria-label 文本，两者叠加后又与 L3 内容证据（+NN 值域）同向 —— 相关证据朴素求和，把 68 分的既有正例推过 `SCORE_AUTO(70)`。
+
+### 2. 影响面普查（全 P 组 36 例 + N/F 负例）
+
+以 `L1_ATTR_PHRASE_SCORE` 覆写为 0 / 8 的同引擎对照：
+
+| 用例 | attr=0 | attr=8 | 档位变化 |
+| --- | --- | --- | --- |
+| P8 | 68/lowkey | 76/auto | **漂移** |
+| P1 | 72/auto | 80/auto | 无（分值 +8） |
+| P2 | 78/auto | 86/auto | 无（分值 +8） |
+| P3 | 48/lowkey | 56/lowkey | 无 |
+| P6 | 72/auto | 80/auto | 无（分值 +8） |
+| P16 | 48/lowkey | 56/lowkey | 无 |
+| A1 | 86/auto | 94/auto | 无（分值 +8） |
+| F 组负例（含 F2 62/none） | 不变 | 不变 | 零变化 |
+
+结论：**36 例中仅 P8 一例档位漂移**，与任务书预期一致；负例与 `area-code` 类专名（P10 = 68/lowkey）的分值与档位均未变。
+
+补充事实：P1（6 个 +NN 选项）72 分即 auto，P8（5 个 +NN 选项）68 分落 lowkey —— 两者语义证据完全相同（kw:strong 30 + anchor 18），差异仅来自选项数（plus-dial 24 vs 20）。该不一致**在首轮之前即存在**，非本票引入。
+
+### 3. 裁决：路线 B（限制叠加，保 lowkey）
+
+| 维度 | 路线 A（认 auto） | 路线 B（保 lowkey，**选定**） |
+| --- | --- | --- |
+| 改动面 | 改票 02 门里 P8 的注册期望（lowkey→auto） | 改本票引擎：属性短语在内容证据已证成时不重复计入 |
+| 真实站点行为 | **变更**：Case4 类下拉由低调注入升自动注入 | **不变**：全部既有档位逐例保持 |
+| 与首轮意图 | 违背首轮 config 注释「不扩大 66-68 分正例越线」 | 一致（68 分正例正是该注释点名的风险带） |
+| 治理成本 | 改他票（02）注册表，等于改写「什么算正确」 | 只修本票自身的泄漏 |
+| 副作用 | 用户可见升级 | 无 |
+
+**选定路线 B 的理由**：
+
+1. 本票是 A-001「覆盖率**下限**」补强（floor），授权范围是把落 none 的弱信号抬到可注入，**不是**把既有中置信字段抬到高置信自动注入（ceiling）。
+2. 首轮 `src/config.ts` 的标定注释已明示风险带为 66-68 分正例，P8 恰在其中 —— 修自身越界比改他票期望值更正当。
+3. 引擎内已有同范式先例：L449「关键词↔内容同向锁定」（内容证据与 L1 相悖时撤销 kw 分）；本次是其**同向冗余**侧的对称补齐。
+4. atomcode 调研支撑：**「相关证据朴素求和高估置信 —— aria-label 与 +NN 选项同源，不能叠加计分」**；「新证据抬高下限、不抬高上限（floor/ceiling 分离）」有 Chrome Autofill ML（只提升下限、填充门槛独立）与 FICO / SpamAssassin（贡献封顶 + 分档决策）先例。
+
+> 调研诚实标注：本轮 atomcode 以 `--no-tools` 运行，**零网页抓取**；来源为其训练知识给出的公开资源清单（Chrome / Firefox formautofill / Bitwarden / 1Password / libphonenumber 等，URL 见调研原文），未经本机核验，仅作方向性支撑。决定性依据仍是本仓实证：首轮 config 注释 + L449 同范式 + 影响面普查。
+
+### 4. 改法
+
+`src/detect/index.ts`：属性短语结算位置由「iti 容器结算之后」移到「L3 内容验证之后」（需在内容证据已知时判定；仍保持不作 iti 容器最低佐证 —— 票 13 检查点四不变），并加同源去重：
+
+| 条件 | 行为 |
+| --- | --- |
+| `st.plusDial > 0` 或 `st.parenDial > 0`（L3 已独立证明区号值域） | 属性短语**不计分**，仅留痕 `attr:phrase:*:dedup(opts-dial)`（0 分） |
+| 其他（无内容区号证据：纯 name/placeholder 弱信号 input 等） | 照常 `+L1_ATTR_PHRASE_SCORE(8)` |
+
+`SCORE_AUTO(70)` / `SCORE_LOWKEY(35)` / `L1_ATTR_PHRASE_SCORE(8)` 三个常量均未改动；`rs-*` 真实语料形态判定不变；护栏（负例零抬升）不变。
+
+`tests/scripts/verify-ticket-27.mjs` 新增 **G9 锁定组**（81 → 86 断言）：P8 形态改后 68/lowkey、与首轮改前基线一致、去重留痕存在、无内容证据弱信号 input 仍 38/lowkey、弱信号 input + tel 锚仍 56/lowkey。
+
+### 5. 验收证据（合序态，全 CI）
+
+| 门 | run ID | 结论 |
+| --- | --- | --- |
+| Engine Gates（36/36 + 25/25） | 34710856761 | **success** |
+| Verify Ticket 27（86 断言 + E2E 作业 3 passed） | 34710856759 | **success** |
+| Verify Ticket 28（19） | 34710863480 | **success** |
+| Verify Ticket 29（27） | 34710866693 | **success** |
+| Calibration Baseline | 34710869926 | **success** |
+| Typecheck | 34710856729 | **success** |
+| E2E（共享面，80 passed） | 34710856691 | **success** |
+
+红基线（修复前）：Engine Gates run 34708464239 @ `019f228e` —— 35/36，`P8(expect=lowkey, got=auto, score=76)`。
+
+| 交付 | commit sha |
+| --- | --- |
+| 引擎去重改法 | `53615470` |
+| G9 锁定组（81 → 86 断言） | `419b03d2` |
+| verify-27.yml 触发面补返工分支 | `793f0d39` |
+
+### 6. 遗留与建议
+
+- **P8 的不一致仍在（非本票引入）**：P1（6 选项）72/auto 与 P8（5 选项）68/lowkey 语义证据相同而档位不同。若产品判断 Case4 应自动注入，应作为**独立变更**上调其档位或调整 L3 选项数门槛，而不是借本票的补分越线 —— 本轮已显式登记该建议。
+- **教训（与票 33 同步登记）**：跨栈行为改动必须在最终合序栈复跑公共门；单票自有门绿不足以证明组合正确。本轮 R1 即该教训的第一次兑现。
