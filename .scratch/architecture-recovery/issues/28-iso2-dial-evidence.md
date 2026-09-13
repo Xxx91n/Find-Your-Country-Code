@@ -16,7 +16,7 @@
       — F2(44/none) 与 F8(0/none) 保持 none 且 country-semantic:suppress 留痕；E2E 新增「护栏1」用例（verify-28 G3；本地全量 E2E 73 passed）
 - [x] 共享区号（+1/+44 多国）消歧不回退
       — mm2-pos-shared-dial 仍 inject/lowkey score=66；E2E「护栏2」断言 +1 下拉选 Canada 落 selectedIndex===1（verify-28 G4）
-- [~] CI calibration baseline 绿 + E2E 绿；证据锚 commit sha + CI run ID
+- [x] CI calibration baseline 绿 + E2E 绿；证据锚 commit sha + CI run ID — AC5 闭合（收口审计 2026-09-13）：合入 main 后共享 E2E 全量 80 passed（本地复跑 50.2s 全绿）+ CI run 34735968078 success
       — 票级门 CI 绿：Verify Ticket 28 run 34692680834（19/19，sha 1f30990）
       — calibration harness CI 绿：run 34692755555 中 Run precision/recall harness 与 Run threshold calibration 两步均通过；Run real-site corpus probe 红，违反项全属票 27/29（呈报 D-28c）
       — E2E / Typecheck CI 未能取证：失败于安装阶段 npm install ERESOLVE（仓库级预存破窗，呈报 D-28a；票 32 报告 3e3b2ac 已登记为「预存安装层债务」）。本地全量 E2E 73 passed / 0 failed、tsc --noEmit clean

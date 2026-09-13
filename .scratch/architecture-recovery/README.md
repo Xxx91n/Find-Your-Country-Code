@@ -232,6 +232,15 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - **frontier（终态）**：**Cycle-4 全周期闭环 ✅**（票 27-35 + 27R1 + 34R1/R2 + brain-docs×2，共 13 支 land main；release v1.5.0 已发布）。遗留（用户决策，均不自动扩权）：① GreasyFork 站内同步 @1.4.0→1.5.0（凭证门控）；② 远端已合并 `origin/cch/*` 分支清理；③ 每票私有 E2E 作业并回统一 e2e；④ typecheck.yml 注释/命令一行修正 + D-33b lockfile 根 version（随下周期）；⑤ P1/P8 语义同证据档位不一致的独立裁决（27R1 §6 建议，禁借补分越线）。
 - 遗留（用户决策，不自动扩权）：GreasyFork 站内同步（@1.4.0→1.5.0，凭证门控）、远端已合并分支清理、每票私有 E2E 作业并回统一 e2e、typecheck.yml 注释/命令一行修正、D-33b lockfile 根 version 随下周期处理。
 
+### Cycle-4 收口审计（审计 Agent，2026-09-13，`cycle4-closure/01-03.md`）
+
+- **硬验收本地重跑全绿**（goal 授权覆盖 CI-only，偏离已记录）：build 121.7KB @version=1.5.0 / typecheck 0 错 / E2E **80/80（50.2s）** / 门脚本 verify-02 36/36、harness F1–F8 不注入、verify-27 86/86、28 19/19、29 PASS、31 48/48、05 100/100、32 契约 PASS、calibration PASS；关键声明 rg 抽查与实物零矛盾。
+- **交叉核对**：矛盾 1 条（28 AC5 `[~]`）闭合——合入后共享 E2E 转绿实证（run 34735968078 + 本地 80/80）。
+- **三层一致性**：CONTEXT「分档覆盖」词条已修；新增 ADR-0007（scope 显式化，取代 ADR-0003 页面级语义）+ ADR-0008（真实站点测试塔 + CDP NOT-ADOPTED + floor≠ceiling 去重）；10 项 implemented 决策摘要沉淀 `docs/architecture-recovery-cycle4-decisions.md`（入既有白名单，零 .gitignore 变更）。
+- **账本结算**：A-001…A-010 = **implemented 10/10**、current 清零；账本随 `.scratch/` 原地归档。
+- **合并**：`but pull` 无新上游；13 支已全部在 main。收口产物提交本地分支 `cch/cycle4-closure`，**未 land 未 push——停边界等指令**。
+- **Backlog B-1…B-10**（GreasyFork / 远端支清理 / 私有 E2E 并回 / verify-09~18 私有装载器残留+F-1 / typecheck 注释+lockfile / P1-P8 档位裁决 / contenteditable 语料先行 / 真实站点启用 / peer 根修 / CI-only 审计授权条款化）：详见 `cycle4-closure/03-backlog-and-merge-state.md`。
+
 ## Backlog (跨周期遗留 + Cycle-3 新增遗留 — 等用户决定是否立票)
 
 ### 跨周期遗留（mmv2）
