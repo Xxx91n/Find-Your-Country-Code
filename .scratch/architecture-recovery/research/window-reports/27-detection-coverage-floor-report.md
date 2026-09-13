@@ -266,6 +266,11 @@ P8 形态 = Case4：`aria-label="Select country calling code"` + 5 个 `+NN` 选
 | Typecheck | 34710856729 | **success** |
 | E2E（共享面，80 passed） | 34710856691 | **success** |
 
+
+**最终头复核（`a56f2da5`，docs 提交后重跑，同栈再确认）**：Engine Gates 34735967970、Verify Ticket 27 34735967988、Verify Ticket 28 34735990282、Verify Ticket 29 34735992783、Calibration Baseline 34735996427、Typecheck 34735968024、E2E 34735968078 —— 七门全 success。
+
+上表（`793f0d39`）为代码落点头的证据；本行为文档提交后最终头的复核证据，两者差异仅 `.scratch` 文档。
+
 红基线（修复前）：Engine Gates run 34708464239 @ `019f228e` —— 35/36，`P8(expect=lowkey, got=auto, score=76)`。
 
 | 交付 | commit sha |
@@ -273,6 +278,7 @@ P8 形态 = Case4：`aria-label="Select country calling code"` + 5 个 `+NN` 选
 | 引擎去重改法 | `53615470` |
 | G9 锁定组（81 → 86 断言） | `419b03d2` |
 | verify-27.yml 触发面补返工分支 | `793f0d39` |
+| R1 收口文档（报告 R1 节 + issue R1 节） | `a56f2da5` |
 
 ### 6. 遗留与建议
 

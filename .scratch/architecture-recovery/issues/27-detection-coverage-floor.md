@@ -62,6 +62,8 @@
 | Typecheck | 34710856729 | success |
 | E2E（共享面 80 passed） | 34710856691 | success |
 
-commits：引擎去重 `53615470` / G9 锁定 `419b03d2` / 触发面 `793f0d39`；分支 `cch/27-detection-coverage-floor-fix`。
+commits：引擎去重 `53615470` / G9 锁定 `419b03d2` / 触发面 `793f0d39` / R1 收口文档 `a56f2da5`；分支 `cch/27-detection-coverage-floor-fix`。
+
+**最终头复核（`a56f2da5`）**：Engine Gates 34735967970、Verify 27 34735967988、Verify 28 34735990282、Verify 29 34735992783、Calibration 34735996427、Typecheck 34735968024、E2E 34735968078 —— 七门全 success。
 
 - **遗留建议**：P1（6 选项）72/auto 与 P8（5 选项）68/lowkey 语义证据相同而档位不同（首轮前即存在）。若产品判断 Case4 应自动注入，应作独立变更，不得借本票补分越线。
