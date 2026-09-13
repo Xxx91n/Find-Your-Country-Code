@@ -169,7 +169,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 
 | 票 | 覆盖 | 状态 | 报告路径 | 波次 |
 |----|------|------|----------|------|
-| 27 检测覆盖率下限补强 | A-001 | **done（复核通过）** | research/window-reports/27-detection-coverage-floor-report.md | W2 |
+| 27 检测覆盖率下限补强 | A-001 | **done（R1 返修复核通过：P8 跨线→同源去重，路线 B）** | research/window-reports/27-detection-coverage-floor-report.md | W2 |
 | 28 ISO2-value 下拉区号证据补全 | A-002 | **done（复核通过；AC5 `[~]` 合入后闭合）** | research/window-reports/28-iso2-dial-evidence-report.md | W2 |
 | 29 扫描候选集扩展 | A-003 | **done（复核通过；contenteditable 弱化呈报）** | research/window-reports/29-scan-candidates-expansion-report.md | W2 |
 | 30 规则分档覆盖收敛到 selector 级 | A-004 | **done（复核通过）** | research/window-reports/30-rules-tier-scope-fix-report.md | W1 |
@@ -222,6 +222,14 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - **票 35 done**（大脑收口执行）：只读验证 + WORKFLOW §5 两教训落档（合入纪律 + 跨栈组合验证）。
 - **账本**：A-002…A-010 = done；A-001 = current（待 27-fix R1 三门绿）。
 - **frontier（最终）**：**W4 ✅ → 全周期仅剩 27-fix R1 一票一窗**：`D:\Aworker\mozilla\choose-your-country\.scratch\architecture-recovery\prompts\27-detection-coverage-floor-fix.md`（合序栈复跑 Engine Gates + verify-27/28/29 + Calibration，报告追加 R1 节）。
+
+### 27-fix R1 复核 + Cycle-4 全周期闭环（首脑，2026-09-13）
+
+- **27-fix R1：done（复核通过）**。实物核验：去重实现落位 `src/detect/index.ts:460-468`（L3 之后结算，`plusDial>0||parenDial>0` 时属性短语 0 分留痕 `dedup(opts-dial)`）；三常量（SCORE_AUTO/SCORE_LOWKEY/L1_ATTR_PHRASE_SCORE）实读未动；G9 锁定组存在（verify-27 81→86）；影响面普查 36 例仅 P8 一例漂移（与红基线 run 34708464239 吻合）。**七门 gh 独立实证 @a56f2da5 全 success**（EG 34735967970 / V27 34735967988 / V28 34735990282 / V29 34735992783 / Calib 34735996427 / TC 34735968024 / E2E 34735968078）。
+- 裁决采**路线 B**（floor 不抬 ceiling；改自身泄漏不改他票注册表；真实站点行为不变），与首轮 config 注释「不扩大 66-68 分正例越线」一致——复核认可。诚实标注在案：本轮 atomcode `--no-tools` 零抓取，仅方向性支撑，决定性依据为仓内实证。
+- **合入完成**：fix 支 land main（ff，`0604af71 parents:a56f2da5`，父链完整零 squash），合入后最终头**全门绿**（E2E/EG/Calibration/Typecheck/Lockfile/Release-dedup 逐项 success），远端 fix 支已自动清理。
+- **账本**：A-001…A-010 = **10/10 done，current 清零**。
+- **frontier（终态）**：**Cycle-4 全周期闭环 ✅**（票 27-35 + 27R1 + 34R1/R2 + brain-docs×2，共 13 支 land main；release v1.5.0 已发布）。遗留（用户决策，均不自动扩权）：① GreasyFork 站内同步 @1.4.0→1.5.0（凭证门控）；② 远端已合并 `origin/cch/*` 分支清理；③ 每票私有 E2E 作业并回统一 e2e；④ typecheck.yml 注释/命令一行修正 + D-33b lockfile 根 version（随下周期）；⑤ P1/P8 语义同证据档位不一致的独立裁决（27R1 §6 建议，禁借补分越线）。
 - 遗留（用户决策，不自动扩权）：GreasyFork 站内同步（@1.4.0→1.5.0，凭证门控）、远端已合并分支清理、每票私有 E2E 作业并回统一 e2e、typecheck.yml 注释/命令一行修正、D-33b lockfile 根 version 随下周期处理。
 
 ## Backlog (跨周期遗留 + Cycle-3 新增遗留 — 等用户决定是否立票)

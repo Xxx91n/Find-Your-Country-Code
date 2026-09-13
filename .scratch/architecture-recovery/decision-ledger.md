@@ -8,7 +8,7 @@
 
 | ID | 问题描述原文 | 规范化需求 | 显式约束 | 状态 |
 |----|-------------|-----------|---------|------|
-| A-001 | 纯关键字独立 input 达不到低置信线：`L1_STRONG_KW_SCORE=30` < `SCORE_LOWKEY=35`，`<input name="countryCode">` / placeholder="Country code" 等真实站点标准命名只落 `none`，仅手动召唤 | 让纯关键字/placeholder 弱信号且无锚的区号字段能跨过低置信线（≥35）被低调注入或至少登记可召唤 | 不降低 `SCORE_AUTO`；现有语料 precision 1.0 / recall 1.0 不得回退；改法须有语料标定依据（`tests/corpus/`） | current（R1 返修在途：P8 跨线裁决，见 prompts/27-detection-coverage-floor-fix.md） |
+| A-001 | 纯关键字独立 input 达不到低置信线：`L1_STRONG_KW_SCORE=30` < `SCORE_LOWKEY=35`，`<input name="countryCode">` / placeholder="Country code" 等真实站点标准命名只落 `none`，仅手动召唤 | 让纯关键字/placeholder 弱信号且无锚的区号字段能跨过低置信线（≥35）被低调注入或至少登记可召唤 | 不降低 `SCORE_AUTO`；现有语料 precision 1.0 / recall 1.0 不得回退；改法须有语料标定依据（`tests/corpus/`） | done（R1 返修合入，main 0604af71 全门绿） |
 | A-002 | ISO2 作 value 的下拉丢区号证据：`parenDial` 计分嵌套在 `if (st.plusDial > 0)` 内，`<option value="us">United States (+1)</option>` 的文本括号区号证据被丢弃 | 让 ISO2-value + 文本括号区号的下拉（libphonenumber 推荐「国家↔区号非单射→ISO2 作 value」形态）获得 L3 区号证据，且不被误判为国家选择器 | 保持「国家选择器≠区号字段」语义抑制；共享区号（+1 多国）消歧不回退；L3 常量单一口径（config.ts） | done（Cycle-4 收口 2026-09-12） |
 | A-003 | 扫描候选集结构性缺口：`SCAN_SELECTORS` 仅 `select/.iti input/.intl-tel-input input/input[tel|text|无type|number]/[role=combobox]`，无 ARIA 的纯自定义下拉（div+ul）与 contenteditable 完全不可见 | 扩展候选集以覆盖无 ARIA 自定义下拉与可编辑 contenteditable 区号面 | 不引入误报后门；性能（1000 节点 scan < 350ms）不回退；伪 select 档位仍遵守 ADR-0005（登记不注入） | done（Cycle-4 收口 2026-09-12） |
 | A-004 | 站点规则分档覆盖语义泄漏：`pageTierOverride()` 遍历该 host 全部规则不看 selector，一条「选择器→auto」会把整页抬到 auto | 分档覆盖收敛到 selector 级：仅命中选择器的元素生效；页面级语义显式建模或移除 | 豁免域名（整站禁用）与负反馈（element→none）语义不变；既有规则引擎测试不回退 | done（Cycle-4 收口 2026-09-12） |
