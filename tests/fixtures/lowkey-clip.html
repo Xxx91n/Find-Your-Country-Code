@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>票 37 [A-013] lowkey 图标裁剪 fixture</title>
+  <!--
+    A-013 形态：lowkey 字段在典型 overflow:hidden 祖先容器内。
+    #lc-field：name=countryCode → kw:strong(30)+attr:phrase(8)=38 → lowkey。
+      旧定位 top:-12px;right:-12px 悬于 wrapper 盒外 → 被 .clip 裁掉；
+      新定位在字段右缘盒内 → 不被裁剪（兄弟锚点式字段内悬浮）。
+    #lc-auto：autocomplete=tel-country-code → L0(100) → auto（分层对照）。
+    刻意不放 input[type=tel]：L2 锚分(+18)是不必要变量（38+18=56 仍 <70）。
+  -->
+  <style>
+    body{font-family:sans-serif;padding:24px}
+    h1{font-size:16px}
+    .clip{overflow:hidden;width:280px;padding:10px;border:1px solid #cbd5e1;border-radius:8px}
+    input{box-sizing:border-box;width:100%;height:34px;padding:6px}
+    label{font-size:13px;color:#475569}
+  </style>
+</head>
+<body>
+  <h1>overflow:hidden 祖先内的 lowkey 图标</h1>
+  <div class="clip">
+    <input id="lc-field" name="countryCode" type="text">
+  </div>
+  <div style="margin-top:16px">
+    <label for="lc-auto">Country code</label><br>
+    <input id="lc-auto" type="text" autocomplete="tel-country-code">
+  </div>
+</body>
+</html>

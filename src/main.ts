@@ -85,8 +85,12 @@ if (IS_TOP_FRAME) {
   });
 }
 // 票 12：菜单命令为面板/图标不可达时的解禁入口——仅顶层注册（避免多帧菜单项重复刷屏）
+// 票 37 [A-012]：第二条菜单命令「打开面板」——与字段分数无关的全局入口
+// （anchor=null 复用既有居中路径 ui/index.ts _pos 的 !anchor 分支；仅顶层注册，
+// 与 Tampermonkey 跨帧同名合并行为兼容——面板宿主本就只在顶层渲染）
 if (IS_TOP_FRAME && typeof GM_registerMenuCommand === 'function') {
   try { GM_registerMenuCommand(t('ruleExemptRemoved'), () => { Rules.setExempt(location.href, false); }); } catch {}
+  try { GM_registerMenuCommand(t('openPanel'), () => { UI.open(null, null, null); }); } catch {}
 }
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

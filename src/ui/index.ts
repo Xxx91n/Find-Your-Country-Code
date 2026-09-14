@@ -79,8 +79,14 @@ font-size:13px;z-index:2147483647;pointer-events:none;opacity:0;
 transition:opacity .2s;white-space:nowrap}
 #cch-toast.on{opacity:1}
 /* 中置信低调注入样式 [SP US17]：半透明缩小，悬停恢复 */
-.cch-btn-lowkey{opacity:.38;transform:scale(.78);filter:saturate(.4)}
-.cch-btn-lowkey:hover{opacity:1;transform:scale(1.06);filter:none}
+/* 票 37 [A-013]：移入字段右缘盒内（top:50%/right:6px，兄弟锚点式字段内悬浮）——
+   旧 top:-12px/right:-12px 悬于 wrapper 盒外，祖先 overflow:hidden 即被裁掉；
+   降广告特征（轻阴影/去高饱和，NN/g 横幅盲区）+ 提信息气味（静止态可感知灰度 .62）；
+   与高置信角标的视觉分层保留（分层=档位语义），悬停恢复全权重。 */
+.cch-btn-lowkey{top:50%;right:6px;transform:translateY(-50%) scale(.85);
+opacity:.62;filter:saturate(.5);box-shadow:0 1px 3px rgba(2,8,23,.14)}
+.cch-btn-lowkey:hover{opacity:1;transform:translateY(-50%) scale(1.06);filter:none;
+box-shadow:0 6px 14px rgba(2,8,23,.2)}
 #cch-summon{margin:6px 12px 0;padding:6px 10px;font-size:12px;color:#475569;
 background:rgba(15,118,110,.06);border:1px dashed rgba(15,118,110,.35);
 border-radius:8px;cursor:pointer;text-align:center}
@@ -421,7 +427,8 @@ border-radius:8px;cursor:pointer;text-align:center}
       if (this._popup) this._closePopup();
       return;
     }
-    if (!el) return;
+    // 票 37 [A-012]：GM 菜单入口打开时无目标字段——负反馈点击明示而非静默
+    if (!el) { this.toast(t('needTarget')); return; }
     const R = this._rules();
     let remembered = false;
     if (R) {
@@ -641,7 +648,9 @@ border-radius:8px;cursor:pointer;text-align:center}
         this._closePopup();
         return;
       }
-      deps.Fill!.run(this._target!, this._kind, c);
+      // 票 37 [A-012]：GM 全局入口开面板时无目标字段——提示先点字段，面板保持打开
+      if (!this._target) { this.toast(t('needTarget')); return; }
+      deps.Fill!.run(this._target, this._kind, c);
       this._closePopup();
     });
   },
