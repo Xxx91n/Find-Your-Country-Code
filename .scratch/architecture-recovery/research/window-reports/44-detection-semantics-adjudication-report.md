@@ -3,13 +3,13 @@
 > Cycle-5 | 票: `issues/44-detection-semantics-adjudication.md` | 覆盖 A-022, A-023
 > 分支: `cch/44-detection-semantics-adjudication`（WORKFLOW §4.2；波次内互不堆叠）
 > Blocked by: None（W1 可并行）
-> 完成时间: 2026-09-14 | 状态: A-023 已闭环；A-022 裁决提案**待用户确认**
+> 完成时间: 2026-09-14 | 状态: **A-022 + A-023 均已闭环**（A-022 用户裁决 = 方案 C，已留档 ADR-0009 + CI 锁定）
 
 ---
 
 ## 1. 结论摘要
 
-- **A-022（同证据不同档位）**：复现坐实 P1/P8 的档位差**仅由 L3 区号选项个数驱动**（6→24 分 = 72/auto；5→20 分 = 68/lowkey，SCORE_AUTO=70 恰落在两者之间）。给出独立裁决：**显式建模差异**（不统一），并说明为何两条「统一」路径分别被本票 delta（floor 不抬 ceiling）与 ADR-0008（既有档位逐例不变）封死。**裁决须用户确认后方可实施（留档），当前状态：提案待确认。**
+- **A-022（同证据不同档位）**：复现坐实 P1/P8 的档位差**仅由 L3 区号选项个数驱动**（6→24 分 = 72/auto；5→20 分 = 68/lowkey，SCORE_AUTO=70 恰落在两者之间）。**用户裁决 2026-09-14 = 方案 C「显式建模差异」**（不统一）：承认 L3 按证据量单调计分为有意设计。已实施留档（ADR-0009 + CONTEXT.md 分级行动词条 + decision-ledger A-022=done）与 CI 锁定（verify-ticket-02 G10 组，负控实测 exit 1）。**零引擎改动、零档位变更。**
 - **A-023（contenteditable 语料先行）**：语料 append 3 例（1 正 + 2 负），precision/recall 基线**不回退**（1.0000 → 1.0000），回归门禁 PASS；**不改任何检测/扫描代码**（无地基不立检测改动）。
 
 ---
@@ -72,13 +72,14 @@ P1 与 P8 的证据**结构**相同（强区号关键词 + tel 主号锚 + 全 +
 
 **显式建模差异（方案 C）**。理由：(1) 两条「统一」路径分别被 floor≠ceiling 与冻结档位封死（§4.2）；(2) 本引擎架构前提（ADR-0001 连续评分 → 分级行动）本就以**证据强度**驱动分档，L3 量化计分是**有意**而非偶然；(3) 业界「数量只作二值门」的对标结论构成**有意的偏离**，须显式记录（而非默认偶然），恰是 spec US27「intentional rather than accidental」的要求。
 
-### 4.4 实施（待确认后落地）
+### 4.4 实施（已落地）
 
-1. **留档**：把裁决写成显式条款（候选落点：`docs/adr/` 新增或追加 + `decision-ledger.md` A-022 结算 + `CONTEXT.md` 分档词条补注）。
-2. **锁定**：在 `verify-ticket-02.mjs` 增补边界断言（P1=72/auto、P8=68/lowkey + 算术归因），使任何「偶然统一」在 CI 变红。
-3. **不改引擎**：零行为变更、零档位变更、precision/recall 不变。
+1. **留档**：新增 `docs/adr/0009-evidence-quantity-tier-boundary.md`（决策 + 两条被否决路线 + 与业界对标的有意偏离 + 后果）；`CONTEXT.md` 分级行动词条补注证据量语义与边界；`decision-ledger.md` A-022 → `done`（附裁决摘要）。
+2. **锁定**：`tests/scripts/verify-ticket-02.mjs` 增补 **G10 组 5 条断言**（P1=72/auto、P8=68/lowkey、`68 < SCORE_AUTO ≤ 72`、`L3_PLUS_DIAL_SCORE=4`、`SCORE_LOWKEY < 68`），常量经 `src/config.ts` 解析而非硬编码。已由 `engine-gates.yml` 承载（`pull_request` + `push(main, cch/**)`），**无需新增 workflow**。
+   - **负控实测**：把 `L3_PLUS_DIAL_SCORE` 改为 5（模拟「统一→auto」）→ 用例门 34/36、G10 2/5、`exit 1`（CI 变红）；还原后 36/36 + 5/5、`exit 0`。`src/config.ts` 已逐字节还原（`git diff` 零改动）。
+3. **不改引擎**：零行为变更、零档位变更、precision/recall 不变（实测 51 例 1.0000/1.0000）。
 
-> **须用户裁决**：以上方案 C 为提案；确认（或改选 A/B）后方可实施留档与锁定。
+> **用户裁决（2026-09-14）：采纳方案 C「显式建模差异」。** 留档与锁定已按 §4.4 实施完毕。
 
 ---
 
@@ -103,7 +104,7 @@ P1 与 P8 的证据**结构**相同（强区号关键词 + tel 主号锚 + 全 +
 | 门 | 命令 | 结果 |
 |---|---|---|
 | 全语料基线 | `node tests/scripts/14-calibration-harness.mjs` | 语料 51 例；precision=1.0000 (TP=27,FP=0) / recall=1.0000 (FN=0) / f1=1.0000；**回归门禁 PASS** |
-| 引擎门 | `node tests/scripts/verify-ticket-02.mjs` | 36/36 pass |
+| 引擎门 | `node tests/scripts/verify-ticket-02.mjs` | 用例门 36/36 pass + **G10 边界锁 5/5 pass**（A-022） |
 | 票 27 门 | `node tests/scripts/verify-ticket-27.mjs` | 90 passed / 0 failed |
 | 票 28 门 | `node tests/scripts/verify-ticket-28.mjs` | 19 PASS / 0 FAIL |
 | 真实站点语料 | `node tests/scripts/32-real-site-corpus.mjs` | 契约+覆盖+复现基线硬门禁 **PASS**；前后对照 precision/recall Δ=0 |
@@ -117,17 +118,20 @@ P1 与 P8 的证据**结构**相同（强区号关键词 + tel 主号锚 + 全 +
 
 | # | 偏离 | 说明与建议 |
 |---|---|---|
-| **D-44a** | A-022 裁决**未实施**（仅提案） | 按本票 delta「产品语义裁决结果需用户确认后方可实施」与 issue「须用户裁决」，留档与锁定待用户确认方案后落地。 |
+| ~~**D-44a**~~ | ~~A-022 裁决未实施（仅提案）~~ → **已解除** | 用户 2026-09-14 裁决方案 C；留档与锁定已落地（见 §4.4）。 |
 | **D-44b** | contenteditable 正例标记 `knownResidual: true` | 残留语义在**扫描层**（非评分层，评分层已满足 expect）。取保守口径：不计入门禁、计入 precision/recall，登记待扫描扩展票翻转。若用户认为应 `false`（gate 强锁评分行为），可一行翻转。 |
 | **D-44c** | 新增 `family` 值 `ce` | `family` 仅文档字段（无脚本消费）；新增族值已在 `_meta.caseFields.family` 登记。 |
 | **D-44d** | `verify-ticket-13/18` 的语料规模断言（`cases === 41`）为陈旧值 | 该二门属 A-014 已登记「裸 new Function 崩」的四门（verify-09/13/15/18），修复票 36 将「语料规模断言改动态读取」；本票新增语料**不新引入红**（二门当前即崩）。 |
 | **D-44e** | CI 证据待推送后取 run ID | 按 WORKFLOW §4.2 与全局纪律，未推送（push 需用户授权）；本报告证据为本地确定性复现（脚本可重复、纯确定性）。 |
+| **D-44f** | 分支按 §4.2 堆叠在 `cch/cycle5-ticketing` 之上 | 留档载体（`decision-ledger.md`）与锁定载体（`verify-ticket-02.mjs`）均由 Cycle-5 立票提交 `894e6efb` 引入、不在 `cch/44` 的原始基线上；`but commit` 明确拒绝并给出堆叠提示。按 §4.2「确有依赖按 `but move <branch> --above <dependency>` 堆叠」执行——依赖真实存在（票 44 的票面文件与公共引擎门同在 ticketing 分支），非波次内无故堆叠。 |
+| **D-44g** | 环境级阻塞：`but status`/`but diff` 报 `os error 1`，根因是仓库根 0 字节文件 `nul` | Windows 保留设备名导致 GitButler 工作树读取器 stat 失败（**非本票产物**；由并行窗口 `>nul` 重定向产生）。已把该文件移出仓库（可恢复）解除阻断，并实测 `.gitignore` 收 `nul` 可作持久缓解；教训已写回 WORKFLOW §5（2026-09-14 行）。 |
 
 ---
 
 ## 8. 给 WORKFLOW §5 的教训候选
 
 1. **「同证据不同档位」的根因是阈值与证据量的耦合**：连续评分模型里，任何「按量计分」的证据面都会在某两个相邻样本间跨过固定阈值，产生看似「同证据不同档」的现象。裁决时应先做**约束分析**（能否统一），再决定「统一」还是「显式建模」；本票两条统一路径被 floor≠ceiling 与冻结档位同时封死，只剩显式建模。
+2. **「CLI 全坏」先怀疑工作树内容，不是 CLI 本身**：`but status`/`but diff` 一律 `os error 1` 而 `but --version`/`but branch list`/`--help` 全正常——这个「部分坏」指纹说明命令解析层健康、只有工作树读取路径失败。Windows 宿主上保留设备名文件（`nul`/`CON`/`PRN`/`AUX`）是最高优先级嫌疑，且共享工作区下它会同时阻断所有窗口。已写回 WORKFLOW §5。
 
 ---
 
@@ -135,9 +139,10 @@ P1 与 P8 的证据**结构**相同（强区号关键词 + tel 主号锚 + 全 +
 
 | 内容 | 锚 |
 |---|---|
-| 本票变更 | `tests/corpus/manifest.json`（+3 例，48→51）+ 本报告 |
+| 本票变更 | `tests/corpus/manifest.json`（+3 例，48→51）+ `docs/adr/0009-*.md`（新）+ `CONTEXT.md` + `decision-ledger.md`（A-022/A-023→done）+ `tests/scripts/verify-ticket-02.mjs`（G10 组）+ `WORKFLOW.md` §5 + `issues/44-*.md`（勾销）+ 本报告 |
+| A-022 CI 锁 | `node tests/scripts/verify-ticket-02.mjs` → 用例门 36/36 + G10 5/5；负控（`L3_PLUS_DIAL_SCORE` 4→5）→ `exit 1` |
 | P1/P8 复现 | `node tests/scripts/verify-ticket-02.mjs -v`（P1=72/auto，P8=68/lowkey） |
 | 基线不回退 | `node tests/scripts/14-calibration-harness.mjs`（51 例，1.0000/1.0000，gate PASS） |
 | atomcode 调研 | 本会话串行 1 次（16 搜索 / 7 全文核读；Chromium / Firefox / 1Password / Bitwarden / Dashlane 多源交叉） |
-| 分支 | `cch/44-detection-semantics-adjudication`（WORKFLOW §4.2） |
+| 分支 | `cch/44-detection-semantics-adjudication`，按 §4.2 堆叠于 `cch/cycle5-ticketing` 之上（见 D-44f） |
 | CI | 待推送后取 run ID（CI-only 证据铁律；未推送） |

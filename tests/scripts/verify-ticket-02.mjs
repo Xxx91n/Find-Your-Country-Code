@@ -158,7 +158,7 @@ C('A2', 'lowkey', 'N2 修复：aria-labelledby 双 id「手机区号」「必填
 C('A3', 'lowkey', 'phonePrefix 真页面形态（B3：label 相邻 + 有 tel 锚 → lowkey 档注入）', () => new El('INPUT', { id: 'phonePrefix', type: 'text', attrs: { placeholder: '+XX' } }), { anchorHasTel: true });
 
 // ── 运行 ──
-let pass = 0, fail = 0;
+let pass = 0, fail = 0, casePass = 0;
 const failures = [];
 for (const c of CASES) {
   const el = c.build();
@@ -166,12 +166,49 @@ for (const c of CASES) {
   // 票 16：iti 并入评分后，P4 与普通用例同走 scoreElement（容器信号在引擎内加分）
   res = Detect.scoreElement(el, { anchorHasTel: c.ctx.anchorHasTel });
   const ok = res.tier === c.expect;
-  if (ok) pass++; else { fail++; failures.push(`${c.id}(expect=${c.expect},got=${res.tier},score=${res.score})`); }
+  if (ok) { pass++; casePass++; } else { fail++; failures.push(`${c.id}(expect=${c.expect},got=${res.tier},score=${res.score})`); }
   console.log(`[${ok ? 'PASS' : 'FAIL'}] ${c.id}  expect=${c.expect} got=${res.tier} score=${res.score}`);
   console.log(`        ${c.desc}`);
   if (!ok || process.argv.includes('-v')) {
     for (const s of res.signals) console.log(`          · ${s.layer} ${s.name} ${s.pts}`);
   }
 }
-console.log(`\n${pass}/${CASES.length} pass${fail ? ` | FAILURES: ${failures.join(', ')}` : ''}`);
+
+// ── G10：A-022 证据量档位边界锁定（票 44 裁决） ──
+// 裁决留档：docs/adr/0009-evidence-quantity-tier-boundary.md
+// 结论：L3 按证据量单调计分是「有意设计」。P1/P8 证据结构逐项相同，唯一差异 =
+//   区号选项个数（P1 6×L3_PLUS_DIAL_SCORE=24 → 72；P8 5×4=20 → 68），
+//   SCORE_AUTO(70) 恰落 68/72 之间 → 6 选项 auto / 5 选项 lowkey。不统一。
+// 本组把「边界 + 算术归因」显式锁进 CI：任何偶然统一（抬 P8 或压 P1）在此变红。
+const _cfgSrc = readFileSync(join(ROOT, 'src', 'config.ts'), 'utf8');
+const _num = (name) => {
+  const key = 'export const ' + name;
+  const at = _cfgSrc.indexOf(key);
+  if (at < 0) throw new Error('config.ts 未找到常量 ' + name);
+  const m = _cfgSrc.slice(at + key.length).match(/-?[0-9]+/);
+  if (!m) throw new Error('config.ts 常量无值: ' + name);
+  return Number(m[0]);
+};
+const SCORE_AUTO = _num('SCORE_AUTO');
+const SCORE_LOWKEY = _num('SCORE_LOWKEY');
+const L3_PLUS_DIAL_SCORE = _num('L3_PLUS_DIAL_SCORE');
+const _run = (id) => {
+  const c = CASES.find((x) => x.id === id);
+  return Detect.scoreElement(c.build(), { anchorHasTel: c.ctx.anchorHasTel });
+};
+const _p1 = _run('P1');
+const _p8 = _run('P8');
+const G10 = [
+  ['P1（6 个区号选项）= 72 / auto', _p1.score === 72 && _p1.tier === 'auto'],
+  ['P8（5 个区号选项）= 68 / lowkey', _p8.score === 68 && _p8.tier === 'lowkey'],
+  ['SCORE_AUTO 严格落在 68 与 72 之间（边界成因）', 68 < SCORE_AUTO && SCORE_AUTO <= 72],
+  ['L3 每选项分值 = 4（选项数差异的算术来源）', L3_PLUS_DIAL_SCORE === 4],
+  ['SCORE_LOWKEY < 68（P8 仍稳在低置信线之上）', SCORE_LOWKEY < 68],
+];
+let g10Pass = 0;
+for (const [name, ok] of G10) {
+  if (ok) { pass++; g10Pass++; } else { fail++; failures.push('G10:' + name); }
+  console.log(`[${ok ? 'PASS' : 'FAIL'}] G10 ${name}`);
+}
+console.log(`\n用例门 ${casePass}/${CASES.length} pass | G10 边界锁 ${g10Pass}/${G10.length} pass（A-022 证据量档位边界，ADR-0009）${fail ? ` | FAILURES: ${failures.join(', ')}` : ''}`);
 process.exit(fail ? 1 : 0);

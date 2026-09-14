@@ -88,6 +88,7 @@
 | 2026-09-05 | S7(票10) | 未堆叠分支的远端快照 = common base + 本票提交，缺工程文件（package-lock.json 等），CI dry-run 首跑红灯（Dependencies lock file is not found） | 推送验证类分支前先确认快照基线：`but move <branch> --above <依赖栈顶>` 堆叠后再推；验证 workflow 首跑红灯先归因分支快照再归因脚本 |
 | 2026-09-12 | S8(票35) | 周期合入 land 纪律：Cycle-4 十一支（brain-docs + 票27-34 + 33 殿后）按栈序底→顶 `but land` 零 squash，main 父链完整可追溯票级提交（head 019f228e，parents 链非 root；v1.5.0 为 main 祖先）；杜绝再发生「main 归零为单 root commit」历史谋杀 | 周期收口一律 `but land` 栈序合入（33 版本 bump 必殿后，防 release.yml 从半成品 main 建发版）；合入前以最终合序栈重跑全公共门——单栈全绿≠合序全绿（P8 跨线教训见下行） |
 | 2026-09-12 | S8(票27R1) | 跨栈行为改动的组合从未被任何单票验证：票 27 的 attr:phrase +8 在合入 main 后使 verify-ticket-02 P8（dial 下拉+aria 强短语+锚，68→76）跨 auto 线，公共引擎门独红（run 34708464239）——票 27 只跑了自有门，票 34 的 EG 绿取自不含 27/28/29 的栈 | 行为面改动（评分/阈值/信号叠加）合入前必须在含全部前序票的合序栈复跑公共门（engine-gates/calibration），不得以单栈绿自证；公共门红即触发裁决返修 |
+| 2026-09-14 | S7(票44) | GitButler 在 Windows 保留设备名文件上静默失效：仓库根出现 0 字节文件 `nul`（Git Bash `>nul` 重定向产物）后，`but status`/`but diff` 一律报 `Error: 函数不正确。 (os error 1)`（ERROR_INVALID_FUNCTION），而 `but --version` / `but branch list` / `but * --help` 全部正常——表象像 CLI 损坏，实为工作树读取器对保留名 stat 失败；共享工作区下该文件同时阻断所有并行窗口的提交（诊断约 1 小时，先误判为「并行窗口改动 / 符号链接」） | 本工作区 shell 重定向统一用 `>/dev/null`，禁用 `>nul`；`but status` 报 os error 1 时先核验仓库内是否有 `nul`/`CON`/`PRN`/`AUX` 等保留名文件；已实测把 `nul` 写入 `.gitignore` 可解除阻断（文件在场也不报错） |
 
 ## §6 偏离点清单（呈报用户，逐条确认后才生效）
 

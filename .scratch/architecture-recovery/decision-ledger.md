@@ -30,8 +30,8 @@
 | A-019 | 语言切换功能真空：i18n 自始至终只有一行 `navigator.language` 自动判定中/英（`src/i18n.ts:1`），手动语言切换在脚本历史上从未存在；`export const LANG` 为死导出（无任何 import） | 若确需手动语言切换：改为面板可选 + GM 持久化；否则清理 `LANG` 死导出 | 不破坏既有 `t()` 契约与中/英文案键；GM 存储键与收藏/规则解耦（沿用 `UI_PREFS_KEY` 独立键模式）；不新增依赖 | current |
 | A-020 | 文档/元数据债：`typecheck.yml` 注释称 `npm ci` 实为 `npm install`（Cycle-4 票 33 D-33c 登记）；`package-lock.json` 根 version 字段未随 1.5.0 同步（D-33b 登记） | 修正 typecheck.yml 注释/命令口径一致；同步 lockfile 根 version 字段 | 不改依赖版本范围（依赖钉死策略，CONTEXT.md）；不改 release.yml 触发语义；lockfile 变更须 `npm ci` 可复现 | current |
 | A-021 | 依赖根因未修：`react@18` / `react-dom19` 双 peer 冲突靠 `--legacy-peer-deps` 残留维持安装（ADR-0008 登记为负后果） | 根修 peer 冲突，移除 `--legacy-peer-deps` 残留 | 依赖钉死（禁 `latest` 浮动）；不改测试语义；`npm ci` 必须可复现；不引入新依赖 | current |
-| A-022 | 同证据档位不一致：P1/P8 在「6 选项 auto vs 5 选项 lowkey」下同证据得出不同档位，票 27 R1 §6 建议独立裁决 | 对「同证据不同档位」做独立产品语义裁决（统一，或把差异显式建模） | 禁借补分越线（floor 不抬 ceiling，ADR-0008）；须有语料标定依据；precision/recall 基线不回退；产品语义变更须用户裁决 | current |
-| A-023 | 候选集剩余缺口：contenteditable 区号面无语料地基（Cycle-4 票 29 D-29d 弱化项），未扩 `SCAN_SELECTORS` | 先把 contenteditable 区号形态沉淀进校准语料，再据此立检测票 | 语料先行（无地基不立检测票）；不引入误报后门；性能红线（1000 节点 scan < 350ms）不回退 | current |
+| A-022 | 同证据档位不一致：P1/P8 在「6 选项 auto vs 5 选项 lowkey」下同证据得出不同档位，票 27 R1 §6 建议独立裁决 | 对「同证据不同档位」做独立产品语义裁决（统一，或把差异显式建模） | 禁借补分越线（floor 不抬 ceiling，ADR-0008）；须有语料标定依据；precision/recall 基线不回退；产品语义变更须用户裁决 | done（票 44：裁决 = 显式建模差异，零档位变更；ADR-0009 留档 + verify-ticket-02 G10 CI 锁定） |
+| A-023 | 候选集剩余缺口：contenteditable 区号面无语料地基（Cycle-4 票 29 D-29d 弱化项），未扩 `SCAN_SELECTORS` | 先把 contenteditable 区号形态沉淀进校准语料，再据此立检测票 | 语料先行（无地基不立检测票）；不引入误报后门；性能红线（1000 节点 scan < 350ms）不回退 | done（票 44：语料 append 3 例 contenteditable 形态——1 正 2 负，precision/recall 不回退；检测扩展为后续 backlog） |
 | A-024 | 远端残留：已合并的 `origin/cch/*` 11 支未清理（Cycle-4 land 副产物） | 批清已确认合并的远端分支并 prune | 只删已确认合并的分支；不触碰 main；远端写操作须用户授权 | current |
 | A-025 | 边界未条款化：CI-only 政策与「审计型本地硬验收」的边界未写入流程（Cycle-4 收口逐次授权） | 在 WORKFLOW 中把 CI-only 政策与本地硬验收的边界条款化 | 不放松「证据只认 CI run/artifact」总原则；例外须显式登记与授权路径；不改既有 §5 教训条目格式 | current |
 
