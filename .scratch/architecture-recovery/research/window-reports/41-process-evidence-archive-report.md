@@ -19,7 +19,7 @@
 cd D:/Aworker/mozilla/choose-your-country
 git ls-files .scratch | wc -l          # 397 -> 209
 ```
-输出摘要：`397`（归档前）→ **`209`**（-47%）。剩余构成：`issues/` 45 + `handoffs/` 46 + `prompts/` 54 + `research/window-reports/` 49 + 根部 4（WORKFLOW/spec/decision-ledger/README）= **198 现役**，加 **11 在途票产物**（见 §5 D-1）。
+输出摘要：`397`（归档前）→ **`209`**（归档提交时，-47%）；分支末端（含本票报告）为 **`210`**。剩余构成：`issues/` 45 + `handoffs/` 46 + `prompts/` 54 + `research/window-reports/` 50 + 根部 4（WORKFLOW/spec/decision-ledger/README）= **199 现役**，加 **11 在途票产物**（见 §5 D-1）。
 
 归档口径（`git diff --stat 9929b8a7 d7322ae5`）：`191 files changed, 22 insertions(+), 14409 deletions(-)`——纯删除主导，符合 spec「纯删除型改动优先」。
 
