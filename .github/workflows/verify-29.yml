@@ -30,10 +30,8 @@ jobs:
       - name: Ticket-29 acceptance gate
         run: node tests/scripts/verify-ticket-29.mjs
 
-  # E2E 取证作业：共享 e2e.yml 在本票基线上仍是裸 npm install（ERESOLVE 预存红，
-  # 修复分属 cch/34 内联 --legacy-peer-deps 与 cch/31 .npmrc，两条均未合流）。
-  # 本票不改动共享 workflow（同票 27 D-27a 口径），改在本票自有 workflow 内
-  # 复刻 e2e.yml 步骤并显式加 --legacy-peer-deps，用于取得本票 E2E 的 CI 证据。
+  # E2E 取证作业：在本票自有 workflow 内复刻 e2e.yml 步骤，用于取得本票 E2E 的 CI 证据。
+  # 票 43（A-021）安装面根修后，React 18 / React 19 分居两个 install root，裸 npm ci 可复现。
   ticket-29-e2e:
     name: Ticket-29 E2E (no-ARIA custom dropdown)
     runs-on: ubuntu-latest
@@ -47,7 +45,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

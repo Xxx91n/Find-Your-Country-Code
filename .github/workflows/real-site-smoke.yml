@@ -40,13 +40,11 @@ jobs:
           node-version: 22
           cache: npm
 
-      # 安装依赖：优先可复现路径（npm ci），但已提交的 package-lock.json 与 package.json 失同步
-      # （根 devDependencies 仍记 latest，而 package.json 已钉 ^5.7/^6.0 —— ADR-0006 「后果 3」
-      # 登记在案、票 25 AC4 pending），npm ci 会以 EUSAGE 直接失败，故回退 npm install。
-      # --legacy-peer-deps 为 ADR-0006 「后果 2」登记例外（react@18 与 react-dom19 别名双 peer 冲突），
-      # 与 typecheck.yml 同口径；非本 workflow 新引入的策略。lockfile 重生成后第一分支即生效，无需改本行。
+      # 安装依赖：可复现路径（npm ci + package-lock.json）。票 43（A-021）安装面根修后，
+      # 根项目 react@18 与 tests/vendor/react19 workspace 的 react@19 分居两个 install root，
+      # 两侧 peer 各自自洽，裸 npm ci 不再 ERESOLVE，安装面无需 peer 例外开关。
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

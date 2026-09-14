@@ -30,11 +30,11 @@ jobs:
           node-version: 20
           cache: npm
 
-      # 联③（票 34 R1）：ERESOLVE 修复——内联 --legacy-peer-deps（Delta「或等效」出口；cch-23 同基线先例）。
-      # .npmrc 集中口径为票 31 D-31a 产物（独立分支，未合流前本分支不可见），合流后两口径自然统一。
-      # lockfile 由 lockfile-regen workflow 再生（联②，本文件 npm install 不依赖 lockfile 同步）。
+      # 票 43（A-021）：安装面根修——React 18 与 React 19 分居两个 npm install root
+      # （根项目 react@18；tests/vendor/react19 workspace 承载 react@19），两侧 peer 各自自洽，
+      # 故 npm ci 可复现，安装面无需任何 peer 例外开关。
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

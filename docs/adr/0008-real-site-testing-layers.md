@@ -18,7 +18,7 @@ A-006：CI 绿全部来自手工合成 fixture（0 真实站点），「出厂�
 ## 后果
 
 - 正：CI 绿首次具备「真实形态代表性」；A-001/A-002/A-003 三形态以量化 recall（0.87→1.0）闭环。
-- 负：`--legacy-peer-deps` 因 react@18/react-dom19 双 peer 冲突残留于安装面（根因修复后移除）。
+- 负：~~`--legacy-peer-deps` 因 react@18/react-dom19 双 peer 冲突残留于安装面（根因修复后移除）。~~ **已消除（票 43 / A-021，2026-09-14）**：React 18 与 React 19 分居两个 install root（npm workspaces），安装面不再需要该 flag（见 ADR-0006 §决策4 / §后果 2）。
 
 ## 反证条件
 
