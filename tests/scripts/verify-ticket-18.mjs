@@ -3,7 +3,7 @@
 // verify-ticket-18.mjs — 票 18（伪 select 端到端识别与填充）验收门
 // 覆盖 issue 18 验收项的程序化断言面（E2E 端到端由 verify-18.yml e2e job 承担）:
 //   验收1 ARIA 语义层接入评分: 两形态识别 + 内容验证沿用 L3 口径 + 否决组 + 误报防线同等生效
-//         （含 41 例既有语料回归 mismatch=0 —— 伪层对既有语料零扰动）
+//         （含既有语料回归 mismatch=0，规模动态计数 >=41 —— 伪层对既有语料零扰动）
 //   验收2 填充策略: 可编辑型隐藏承值 input 原生 setter+事件 / select-only listbox 点击选值
 //   验收5 ADR-0005 裁决=实现（非缓议）; 检查点二 口径复用静态落点
 // 装载: 引擎束（config+countries+detect, createDetect 注入记录型 UI）+ 填充束
@@ -11,6 +11,7 @@
 // ══════════════════════════════════════════════════════════════════════
 import { loadManifest, bundleEngine, runCorpus, metrics } from './14-lib-engine.mjs';
 import { readFileSync, existsSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -29,14 +30,22 @@ function toModuleBody(src) {
     .replace(/^export\s+/gm, '');
 }
 
+// 票 36（A-014）装载修复：函数束须先剥 TS 标注再 new Function（14-lib-engine 同口径），
+// 否则 cch-23 起 SyntaxError。Node >= 22.13（module.stripTypeScriptTypes）。
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('verify-ticket-18 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
+}
+
 // ── 引擎束（createDetect 注入记录型 UI，_process 档位 cap/登记断言用）──
 const engineBundle = [
   toModuleBody(readFileSync(join(ROOT, 'src', 'config.ts'), 'utf8')),
   toModuleBody(readFileSync(join(ROOT, 'src', 'data', 'countries.ts'), 'utf8')),
   toModuleBody(readFileSync(join(ROOT, 'src', 'detect', 'index.ts'), 'utf8')),
-  '\n;return { createDetect, COUNTRIES, ISO2_MAP, pseudoOptionStats };',
 ].join('\n');
-const { createDetect, COUNTRIES, pseudoOptionStats } = new Function(engineBundle)();
+const { createDetect, COUNTRIES, pseudoOptionStats } = new Function(stripTypes(engineBundle) + '\n;return { createDetect, COUNTRIES, ISO2_MAP, pseudoOptionStats };')();
 
 // ── 填充束（真实 fill 模块；Node 20 无 navigator/window 全局，verify-13 同口径 stub）──
 const fillBundle = [
@@ -45,9 +54,8 @@ const fillBundle = [
   toModuleBody(readFileSync(join(ROOT, 'src', 'i18n.ts'), 'utf8')),
   toModuleBody(readFileSync(join(ROOT, 'src', 'iti-adapter', 'index.ts'), 'utf8')),
   toModuleBody(readFileSync(join(ROOT, 'src', 'fill', 'index.ts'), 'utf8')),
-  '\n;return { createFill };',
 ].join('\n');
-const { createFill } = new Function(fillBundle)();
+const { createFill } = new Function(stripTypes(fillBundle) + '\n;return { createFill };')();
 
 // ── combobox mock DOM（鸭子类型面: getAttribute/getRootNode/querySelectorAll/textContent/
 //    events/click; ownerDocument 注入避开 Node 无 document 的 L2 兜底引用）──
@@ -211,7 +219,7 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
   check('5.1 aria-hidden input gate', res.score === 0 && res.signals.some(function (s) { return s.name === 'gate:aria-hidden'; }));
 }
 
-// ══ 6. 既有 41 例语料回归（伪层零扰动） ══
+// ══ 6. 既有语料回归（伪层零扰动；规模动态计数） ══
 {
   const manifest = loadManifest();
   const Detect = bundleEngine(null).Detect;
@@ -220,7 +228,7 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
   check('6.1 语料 mismatch=0', m.mismatches.length === 0, m.mismatches.join(','));
   check('6.2 precision=1.0 recall=1.0', m.precision === 1 && m.recall === 1,
     'precision=' + m.precision + ' recall=' + m.recall);
-  check('6.3 语料规模 41 例', m.cases === 41, 'cases=' + m.cases);
+  check('6.3 语料规模 >=41 例（动态计数，appendOnly 只增不删）', m.cases >= 41, 'cases=' + m.cases);
 }
 
 // ══ 7. 填充策略（issue 验收2）══
@@ -270,7 +278,7 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
   check('8.2 ADR 档位 cap 留痕', det.includes('gate:adr-0005-register-only'));
   check('8.3 指纹含 aria-expanded(开合重评)', det.includes("el.getAttribute('aria-expanded')"));
   check('8.4 结构常量入 config 单一来源', cfg.includes('ARIA_COMBO_STRUCT_SCORE = 20'));
-  check('8.5 fill 双形态分发(fillPseudo+keys)', fil.includes('fillPseudo(el, country) {') && fil.includes('_pseudoFillByKeys'));
+  check('8.5 fill 双形态分发(fillPseudo+keys)', /fillPseudo\(el:\s*\w+,\s*country:\s*Country/.test(fil) && fil.includes('_pseudoFillByKeys'));
   check('8.6 Fill.run 伪 select 分支', fil.includes("kind === 'pseudo'"));
   check('8.7 ui lowkey 迁移 kind=pseudo', ui.includes("combobox') ? 'pseudo'"));
   check('8.8 verify-18.yml 存在', existsSync(join(ROOT, '.github', 'workflows', 'verify-18.yml')));

@@ -6,7 +6,7 @@
 //   验收3 ISO2 全集成员测试（语料 + 静态检查）
 //   验收4 共享区号消歧（fill 引擎级断言：+1 双国下拉选 Canada 落 CA）
 //   验收5 占位首项剔除（语料 mm2-pos-placeholder-dial + 填充不受伤断言）
-//   验收6 回归红线（41 例语料 mismatch=0 / FN=0 / FP=0；mm2-neg-itires 转通过）
+//   验收6 回归红线（语料动态计数 >=41 例，mismatch=0 / FN=0 / FP=0；mm2-neg-itires 转通过）
 // 引擎装载复用 14-lib-engine.mjs（函数束，零构建）；fill 装载同法（i18n/iti-adapter 依赖剥除）。
 // 证据等级：本脚本输出为程序化断言结果；CI-only 政策下最终证据 = verify-13.yml CI run。
 // ══════════════════════════════════════════════════════════════════════
@@ -14,6 +14,7 @@ import {
   loadManifest, bundleEngine, runCorpus, metrics, buildElement,
 } from './14-lib-engine.mjs';
 import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -32,6 +33,15 @@ function toModuleBody(src) {
     .replace(/^export\s+/gm, '');
 }
 
+// 票 36（A-014）装载修复：函数束须先剥 TS 标注再 new Function（14-lib-engine 同口径），
+// 否则 cch-23 起 SyntaxError。Node >= 22.13（module.stripTypeScriptTypes）。
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('verify-ticket-13 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
+}
+
 // ── 装载真实 fill 模块（fill + i18n + iti-adapter，剥 import 后函数束） ──
 function bundleFill() {
   const bundle = [
@@ -41,9 +51,8 @@ function bundleFill() {
     toModuleBody(readFileSync(join(ROOT, 'src', 'i18n.ts'), 'utf8')),
     toModuleBody(readFileSync(join(ROOT, 'src', 'iti-adapter', 'index.ts'), 'utf8')),
     toModuleBody(readFileSync(join(ROOT, 'src', 'fill', 'index.ts'), 'utf8')),
-    '\n;return { createFill };',
   ].join('\n');
-  const { createFill } = new Function(bundle)();
+  const { createFill } = new Function(stripTypes(bundle) + '\n;return { createFill };')();
   return createFill({ toast() {} });
 }
 
@@ -83,7 +92,7 @@ function buildHiddenMock(hidden) {
   };
 }
 
-// ══════════ 1. 语料回归门（41 例：appendOnly 39 + 票 13 新增 2） ══════════
+// ══════════ 1. 语料回归门（动态计数 >=41 例：appendOnly 只增不删） ══════════
 const manifest = loadManifest();
 const { Detect } = bundleEngine();
 const results = runCorpus(manifest, Detect);
@@ -91,7 +100,7 @@ const m = metrics(results, manifest);
 console.log('[CORPUS] cases=' + m.cases, 'TP=' + m.TP, 'FP=' + m.FP, 'TN=' + m.TN, 'FN=' + m.FN,
   'precision=' + m.precision, 'recall=' + m.recall, 'f1=' + m.f1);
 
-check('验收6 语料规模 41（appendOnly 只增不删）', m.cases === 41, 'got ' + m.cases);
+check('验收6 语料规模 >=41（appendOnly 只增不删；动态读取，新增用例不致红）', m.cases >= 41, 'got ' + m.cases);
 check('验收6 mismatch=0（全部用例 expect 与引擎一致）', m.mismatches.length === 0, m.mismatches.join('; '));
 check('验收6 FN=0（正样本不回归）', m.FN === 0, 'got ' + m.FN);
 check('验收6 FP=0（负样本全不注入）', m.FP === 0, 'got ' + m.FP);
@@ -127,7 +136,7 @@ check('验收5 占位首项不进计分（numeric/total 分母剔除占位）', 
 const Fill = bundleFill();
 // COUNTRIES 取法：直接解析 countries.ts（与引擎同源）
 const countriesSrc = readFileSync(join(ROOT, 'src', 'data', 'countries.ts'), 'utf8');
-const countriesArr = new Function(toModuleBody(countriesSrc) + ';return COUNTRIES;')();
+const countriesArr = new Function(stripTypes(toModuleBody(countriesSrc)) + ';return COUNTRIES;')();
 const byEn = Object.fromEntries(countriesArr.map(c => [c.countryEn, c]));
 const CA = byEn['Canada'];
 const CN = byEn['China'];

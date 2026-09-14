@@ -1,7 +1,8 @@
 // ══════════════════════════════════════════════════════════════════
 // verify-ticket-09.mjs — 票 09 注入安全层单测门（node 直跑，无浏览器）
 // 方法：与 verify-ticket-02 同心智 —— src 模块剥离 import/export 按依赖序拼接 →
-//   new Function 装配。本门额外预置（PRELUDE，随 bundle 一起求值并导出给外层断言）：
+//   module.stripTypeScriptTypes（Node >= 22.13）剥 TS 标注后 new Function 装配（14-lib-engine 同口径）。
+//   本门额外预置（PRELUDE，随 bundle 一起求值并导出给外层断言）：
 //   ① 三类元素原型（HTMLInputElement/HTMLSelectElement/HTMLTextAreaElement）
 //      带 prototype value descriptor（get/set 读写 _domValue）
 //   ② React 18 value tracker 模拟（react-dom inputValueTracking.js 语义）：
@@ -15,6 +16,7 @@
 // 用法：node tests/scripts/verify-ticket-09.mjs
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -27,6 +29,16 @@ function toModuleBody(file) {
     .replace(/^import[\s\S]*?from\s+'[^']*';\s*$/gm, '')
     .replace(/^export\s+\{[^}]*\};\s*$/gm, '')
     .replace(/^export\s+/gm, '');
+}
+
+// 票 36（A-014）装载修复：cch-23 引入显式 TS 类型标注后，裸 new Function(bundle)
+// 必 SyntaxError（Unexpected token ':'）；与 14-lib-engine 同口径——node 标准库
+// module.stripTypeScriptTypes（Node >= 22.13）剥类型，不引依赖不改语义。
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('verify-ticket-09 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
 }
 
 // i18n 顶层读 navigator.language —— 单测门以 __navLanguage 替身注入
@@ -113,10 +125,11 @@ const bundle = [
   i18nBody,
   toModuleBody(join(ROOT, 'src', 'iti-adapter', 'index.ts')),
   toModuleBody(join(ROOT, 'src', 'fill', 'index.ts')),
-  '\n;return { createFill, makePlain, makeReact, updateValueIfChanged, window };',
 ].join('\n');
 
-const { createFill, makePlain, makeReact, updateValueIfChanged, window } = new Function(bundle)();
+// stripTypes 以模块语法解析（顶层 return 不合法）——先剥类型再拼返回语句
+const { createFill, makePlain, makeReact, updateValueIfChanged, window } =
+  new Function(stripTypes(bundle) + '\n;return { createFill, makePlain, makeReact, updateValueIfChanged, window };')();
 const UIstub = { toast() {} };
 const Fill = createFill(UIstub);
 
@@ -244,7 +257,7 @@ function makeAngular(tag, props) {
   const assignAd = (adSrc.match(/\.\s*value\s*=/g) || []).length;
   check('S1:fill-single-assign', assignFill === 1, `src/fill 直接赋值 ${assignFill} 次（应仅 _inject 兜底 1 次）`);
   check('S2:adapter-zero-assign', assignAd === 0, `src/iti-adapter 直接赋值 ${assignAd} 次（应为 0，兜底走注入回调）`);
-  check('S3:single-inject-fn', (fillSrc.match(/_inject\s*\(/g) || []).length >= 1 && /_inject\(el,\s*value\)/.test(fillSrc), '_inject 为唯一注入函数');
+  check('S3:single-inject-fn', (fillSrc.match(/_inject\s*\(/g) || []).length >= 1 && /_inject\(el:\s*\w+,\s*value:\s*string/.test(fillSrc), '_inject 为唯一注入函数');
 }
 
 console.log(`\n${pass}/${pass + fail} pass${fail ? ` | FAILURES: ${failures.join(', ')}` : ''}`);
