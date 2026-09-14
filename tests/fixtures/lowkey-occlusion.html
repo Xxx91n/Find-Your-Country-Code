@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>票 37 R1 lowkey 面板遮挡 fixture</title>
+  <!--
+    返工轮次 R1 形态：lowkey 字段（盒内图标）开面板后，面板几何压住**下一个字段**的图标。
+    #oc-low：name=countryCode → kw:strong(30)+attr:phrase(8)=38 → lowkey（图标在字段右缘盒内，
+      锚点左缘 = 字段右缘 - 28.2px；面板按锚点左缘对齐 → 面板左缘同此）。
+    #oc-next：autocomplete=tel-country-code → L0(100) → auto（图标在字段右缘盒外 right:-12px，
+      图标中心 = 字段右缘 314px）。显式宽度使两侧几何与字体度量无关：
+      修前 面板左缘 295.8 < 314（图标中心落在面板内 → 点击被拦截）；
+      修后 面板左缘 = 字段右缘 + 8 = 332 > 326（图标完全在面板右侧）。
+    与 CI run 34845561008 同象（票 18 pseudo-select.spec.ts:46 被 #cch-pop 子树拦截）。
+  -->
+  <style>
+    body{font-family:sans-serif;padding:24px}
+    h1{font-size:16px}
+    .row{margin:0 0 12px}
+    input{box-sizing:border-box;height:34px;padding:6px}
+    label{font-size:13px;color:#475569}
+  </style>
+</head>
+<body>
+  <h1>lowkey 面板不得遮挡相邻字段图标</h1>
+  <div class="row">
+    <label for="oc-low">Country code</label><br>
+    <input id="oc-low" name="countryCode" type="text" style="width:300px">
+  </div>
+  <div class="row">
+    <label for="oc-next">Country code</label><br>
+    <input id="oc-next" type="text" autocomplete="tel-country-code" style="width:290px">
+  </div>
+</body>
+</html>

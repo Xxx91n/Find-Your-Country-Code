@@ -4,7 +4,7 @@
 // 路径二：lowkey 图标移入字段右缘盒内 —— 祖先 overflow:hidden 不再裁剪；
 //   与高置信图标的视觉分层（静止态低权重 / 悬停恢复）保留。
 import { test, expect } from 'playwright/test';
-import { installUserscript, wrapperFor } from './helpers/userscript';
+import { installUserscript, wrapperFor, openPanel } from './helpers/userscript';
 
 // GM 菜单命令标题跨语言匹配（zh 含「面板」/ en 含「panel」）；stub 见 helpers/userscript.ts
 async function invokeMenuOpenPanel(page: any): Promise<void> {
@@ -96,6 +96,18 @@ test.describe('票 37 [A-013] lowkey 图标可见性', () => {
     // 可点击 = 可命中（被裁元素 playwright 无法点击）
     await btn.click();
     await expect(page.locator('#cch-pop')).toBeVisible();
+  });
+
+  // 返工轮次 R1：盒内 lowkey 图标开面板后不得压住相邻字段的图标（CI run 34845561008 同象）。
+  test('盒内 lowkey 锚开面板不遮挡下一字段图标（相邻字段仍可点击开面板）', async ({ page }) => {
+    await page.goto('/fixtures/lowkey-occlusion.html');
+    const lowBtn = wrapperFor(page, '#oc-low').locator('.cch-btn');
+    await expect(lowBtn).toHaveAttribute('data-cch-tier', 'lowkey');
+    // lowkey 锚（盒内右缘）开面板 → 面板悬于其下
+    await lowBtn.click();
+    await expect(page.locator('#cch-pop')).toBeVisible();
+    // 下一字段的 auto 图标若被面板压住，此处点击会 30s 超时（被 #cch-pop 子树拦截指针事件）
+    await openPanel(page, '#oc-next');
   });
 
   test('lowkey 与 auto 分层语义保留；悬停恢复', async ({ page }) => {

@@ -672,6 +672,15 @@ border-radius:8px;cursor:pointer;text-align:center}
     const m = 8;
     let l = r.left;
     let tp = r.bottom + 8;
+    // 票 37 R1：lowkey 图标已移入字段右缘盒内（top:50%;right:6px）。面板若仍按图标左缘对齐，
+    // 会随图标一起向左多伸约 18px，压住相邻字段的图标（票 18 pseudo-select 在 CI 字体度量下
+    // 被 #cch-pop/#cch-sw 子树拦截 57 次，本地仅余 ~11px 余量故未复现）。
+    // 盒内图标改按字段右缘锚定，恢复与盒外锚点等价的横向间距；盒外图标（auto 档）路径不变。
+    const wrap = anchor.closest('.' + WRAPPER_CLASS) as AnyEl | null;
+    if (wrap) {
+      const wr = wrap.getBoundingClientRect();
+      if (r.right <= wr.right + 1) l = wr.right + m;
+    }
     if (l + pw > innerWidth - m) l = Math.max(m, innerWidth - pw - m);
     if (tp + ph > innerHeight - m) tp = Math.max(m, r.top - ph - 8);
     pop.style.cssText += `;left:${l}px;top:${tp}px;position:fixed`;
