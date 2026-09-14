@@ -268,7 +268,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 44 检测语义裁决与语料先行 | A-022, A-023 | **done（复核通过）** — 补 CI 后 4 run 全 success（无专属 verify-44 门，共享工作流覆盖） | `research/window-reports/44-detection-semantics-adjudication-report.md` | W1 |
 | 38 分发最后一公里 | A-011 | **done（复核通过）** — 补 CI 后 5 run 全 success（含 Verify-38 与 E2E 80 passed）；GF 侧 Sync 仍待用户开通 | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
 | 39 真实站点层启用 | A-016 | **done（复核通过）** — 7 run 实物全 success（含 Real-site smoke ×2）；live 启用数 0→2 | `research/window-reports/39-real-site-enablement-report.md` | W2 |
-| 41 过程证据出仓与升塔纪律 | A-018 | **ready-for-agent** | `research/window-reports/41-process-evidence-archive-report.md` | W3 |
+| 41 过程证据出仓与升塔纪律 | A-018 | **done（复核通过）** — 归档实测：`git ls-files .scratch` 397→210；仓库外归档 200 文件+MANIFEST(199 sha256)；WORKFLOW §4.5 升塔纪律已入；.gitignore 零改动；纯删除 14409 行 | `research/window-reports/41-process-evidence-archive-report.md` | W3 |
 | 45 仓库与流程收口 | A-024, A-025 | **ready-for-agent** | `research/window-reports/45-repo-process-closeout-report.md` | W4 |
 
 ### 发起窗口的 prompts
@@ -348,6 +348,29 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 **frontier（重算）**：W1 + W2 全部**实现层与 CI 证据均闭合** → **W3 可开工：票 41**（←36,37,38,39,40,42,43,44 均已落盘且 CI 已补）。W4（票 45）待 41。
 
 **仍待用户动作**：① 票 38 的 GF 侧 Sync 开通（手册 `docs/greasyfork-sync-setup.md`）；② 票 41 由用户手动开；③ P-2/P-3 已推送提交信息是否改写。
+
+---
+### W3 复核结论（票 41，首脑，2026-09-14）
+
+- **票 41 复核通过（实物验证）**：commits `fff188b8`/`d7322ae5`/`b7b1f0a2` 均存在；`git ls-files .scratch` = **210**（报告 397→209→210 含本票报告）；WORKFLOW **§4.5 升塔纪律** 已入；`.gitignore` 对 41 零改动（diff 空）；仓库外归档目录 + `ARCHIVE-MANIFEST.json`（199 条 sha256）均存在，实际 200 文件；归档主体 `191 files changed, 22 insertions, 14409 deletions`（纯删除主导，符 spec「纯删除优先」）；现役流程文件 WORKFLOW/spec/ledger/README 均在，issues=45 / handoffs=46 / prompts=54 / window-reports=50。
+
+- **数据保全核验（我重点查）**：41 把 Cycle-5 大脑产物从工作树归档出去了（wave1/wave2 复核、审计报告、对账报告等）——逐件回查归档，**10/10 均在归档且 sha256 已录、字节数一致**（如 wave1-review 11098B / audit 7545B / investigation 17316B / HTML 45355B）；且这些文件已提交在 `cch/cycle5-ticketing`，历史可取回。**无丢失。**
+
+- **残留 D-1（41 自报，已确认属实）**：11 文件未能归档（`report/architecture-review-cycle5.html`、`research/cycle5-investigation.md`、`research/atomcode-43-*.md`、`research/scripts/39-*.mjs`×8）——它们由独立成栈的 `cch/39`/`cch/43`/`cch/36-cycle5-brain` 创建，不在 41 分支基线内；待那三支落地后作为收尾项归档。
+
+- **过程违规（未追认）**：P-11 票 41 **未推送**（`ls-remote` 空）→ 无 CI 证据（D-3 自报，纯文档改动）；P-12 票 41 **堆叠于 cch/44** 之上（D-2 自报，真实文件依赖）。
+
+### 票 38 GF 同步落地结论（用户提问答复，2026-09-14）
+
+- **旧 URL 已死**：`raw.githubusercontent.com/Xxx91n/Find-Your-Country-Code/refs/heads/main/src/Find-Your-Country-Code.js` → **HTTP 404**（实测），且 `src/Find-Your-Country-Code.js` 本地已不存在——架构已由「单文件手写源码」改为 Vite 构建产物，旧路径自然失效。
+
+- **正确 URL（实测 HTTP 200，`@version 1.5.0`，121,447 B）**：`https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest/download/find-your-country-code.user.js`
+
+- **为何用 releases/latest 而非 raw**：`dist/` 不入 main（`raw .../main/dist/...` → 404 实测），而 release 流水线在每次合入 main 后自动把构建产物挂到 Release；`/releases/latest/download/<asset>` 是 GitHub 官方的「最新版资产」固定链。
+
+- **闭环**：GF 侧开启 Sync from external URL 指向上述 URL → GF 拉取到 `version 1.5.0` → 用户更新检查看到新版本（修复 A-011 送达断点）。
+
+**frontier（41 复核后重算）**：W3 ✅ → **W4 可开工：票 45（仓库与流程收口，A-024/A-025，←41 ✅）**。
 
 ---
 ### 辩证校正（入档）
