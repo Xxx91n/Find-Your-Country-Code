@@ -123,3 +123,70 @@ CI run ID：未推送（WORKFLOW §4.2 未授权 push）——本地证据如下
 **一句话判定**：CI 回链证据已补齐（5 个 run 终态全部落档，headSha 一致），但门禁**未全绿**——
 E2E 红（1 failed：票 18 pseudo-select 点击被 `#cch-pop` 子树拦截），故「CI 证据缺口」已闭合、
 「CI 绿灯」未达成。
+
+## 返工轮次 R1
+
+> 窗口身份：Cycle-5 票 37 **返工修复窗口（R1）**；上游启动器 `prompts/37-entry-point-accessibility-fix.md`。
+> 分支 `cch/37-entry-point-accessibility`；修复 commit GitButler id `luv`，远端 head `0350110f`。
+> 版本控制全程 `but`（WORKFLOW §4.2）。生成：2026-09-14。
+
+### R1.1 独立复现（先复现再改码，未凭猜动代码）
+
+1. **本地对 CI 失败用例原样复跑**：`npx playwright test tests/pseudo-select.spec.ts` → **3 passed（绿）**。
+   按启动器要求，先归因「为何只在 CI 红」，不得直接改代码。
+2. **CI 日志关键事实**（`gh run view 34845561008 --log-failed`）：失败按钮解析为
+   `<button class="cch-btn" data-cch-summon="1" data-cch-tier="auto" data-cch-score="108">` ——
+   是**盒外 auto 档**图标，并非本票改位的那个 lowkey 图标；但拦截者 `#cch-sw`/`#cch-pop`
+   正是**由 `#anchor-cc` 图标开出的面板**（该面板在 :42 开启后未关）。
+3. **只读几何探针**（`pseudo-react-select.html` 复刻 spec 序列，1280×720，修前产物）：
+   - 面板 `#cch-pop`：`left=207.9 / top=114.1 / h=462`；`#rs-input` 召唤图标（auto，盒外 `right:-12px`）
+     `right=197.0` → **横向余量仅 10.9px**，纵向完全落在面板内 ⇒ 遮挡与否只由横向余量决定。
+   - `#anchor-cc` 图标实测 `data-cch-tier="lowkey"`（score 38 档）。本票把它由盒外
+     `right:-12px` 移入盒内 `right:6px`，其包围盒左缘左移 ≈18px；面板按锚点左缘 `l = r.left`
+     定位，面板左缘同步左移 ≈18px ⇒ 余量由修前 ≈27px 降至 ≈11px。
+   - 余量 = `相邻字段右缘差 − 40.2px`，是**字体度量相关**量：本地 Windows 字体下 10.9px（>0 → 绿），
+     Linux CI 字体度量漂移 >11px 即翻负（→ 红）。旁证自洽：修前 lowkey CSS（盒外锚点，余量 ≈27px）
+     的 38/44 分支 CI 全绿。
+
+### R1.2 根因
+
+A-013「lowkey 图标移入字段右缘盒内」使面板锚点左移 ≈18px，把「面板左缘 vs 相邻字段图标右缘」的
+横向余量压进字体度量敏感区（本地 ≈11px），在 CI 字体度量下越界成遮挡。**既非 flaky，也非 auto 图标被改位**
+——是面板横向锚定方式与盒内锚点不匹配。
+
+### R1.3 修复（限定于几何/遮挡，只动面板定位）
+
+`src/ui/index.ts` `_pos()`：锚点为**字段盒内**图标（`anchor.right <= wrapper.right + 1`，即 lowkey 盒内定位）时，
+面板左缘改锚到**字段右缘 + 8px**（`wr.right + m`），恢复与盒外锚点等价的横向间距（余量 ≈47px）；
+盒外 auto 锚点路径**零改动**（`r.right > wr.right + 1` 不触发）。未改图标定位、未在召唤后关面板、
+未削弱/删改任何断言或用例、未改票 18 验收语义、未回退 A-012/A-013 已验收行为。
+
+### R1.4 本地确定性红→绿证据（新增密封回归，不改票 18 文件）
+
+- `tests/fixtures/lowkey-occlusion.html`：上字段 lowkey（盒内图标）+ 下字段 auto（盒外图标），
+  两侧均为**显式宽度**，几何与字体度量无关。
+- `tests/entry-access.spec.ts`：新增用例「盒内 lowkey 锚开面板不遮挡下一字段图标」。
+- **修前产物**：该用例 **1 failed**，call log 与 CI 同象（`#cch-pop` 子树 intercepts pointer events，
+  55+ 次重试后 30s 超时）；**修后**：**ok**。
+
+### R1.5 同一套验收复跑（不只跑失败用例）
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| 票级门 | `node tests/scripts/verify-ticket-37.mjs` | **20 PASS, 0 FAIL** |
+| 全量 E2E | `npx playwright test` | **95 passed**（修前 94；+1 新增回归） |
+| 类型检查 | `npm run typecheck` | **0 错** |
+
+### R1.6 新 CI 证据（push 事件，head `0350110f`）
+
+| Run ID | Workflow | Conclusion | 备注 |
+|---|---|---|---|
+| 34847188053 | E2E | **success** | 90 passed；票 18 `pseudo-select.spec.ts:34:3` ✓（767ms）、新增遮挡回归 ✓ |
+| 34847188018 | Verify Ticket 37 (entry-point-accessibility) | success | |
+| 34847188135 | Engine Gates | success | |
+| 34847188090 | Typecheck | success | |
+| 34847188035 | Lockfile Regen | success | |
+
+**一句话判定**：CI 五门全绿；上一轮红的 `pseudo-select.spec.ts:46` 点击超时已消除，票 18 与票 37
+全部验收项在 CI 复绿。
+
