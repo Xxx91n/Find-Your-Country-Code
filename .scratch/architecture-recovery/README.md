@@ -3,6 +3,15 @@
 > 生成：2026-09-03 | 大脑 Agent（AutoCoder）| 流程依据：WORKFLOW.md（本目录）
 > 用途：多窗口人工派发的入口索引。开新窗口前先读本表对应票的行，再打开对应 prompts 文件粘贴给子窗口。
 
+## 归档说明（票 41 / A-018，2026-09-14）
+
+冻结过程证据已**归档出工作树索引**；工作树只保留现役流程文件（`WORKFLOW.md` / `spec.md` / `decision-ledger.md` / `README.md` / `issues/` / `handoffs/` / `prompts/` / `research/window-reports/`）。
+
+- **归档位置（仓库外）**：`D:\Aworker\mozilla\choose-your-country-evidence-archive\`（保留原 `.scratch/architecture-recovery/…` 相对结构；逐文件 SHA-256 与清单见归档根 `ARCHIVE-MANIFEST.json`）
+- **历史副本**：归档前工作树 = commit `b7b1f0a2`；任一归档文件可用 `git show b7b1f0a2:.scratch/architecture-recovery/<相对路径>` 取回
+- **引用约定**：本文件与 `decision-ledger.md` 中引用 `research/`（`window-reports/` 除外）、`verification/`、`report/`、`cycle3-closure/`、`cycle4-closure/`、`spec-cycle*.md` 的路径，一律相对**归档根**解析（不再位于本目录）
+- **归档范围**：199 文件 / 978KB；`git ls-files .scratch` 397 → 198（仅剩现役）
+
 ## 产物地图
 
 | 类别 | 路径（相对本目录） | 说明 |

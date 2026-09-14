@@ -5,6 +5,8 @@
 > 状态取值：`current`（本周期处理）/ `deferred`（登记在案，非本周期）/ `done`（已闭环，随窗口报告勾销）/ `implemented`（历史周期已实现，保留审计链）
 > **ID 连续性**：A-001…A-010 为 Cycle-4 台账（终态 implemented，审计链保留）；Cycle-5 新登记**续 A-011 起**，不重启编号——重启会与既有 A-001…A-010 冲突，破坏「单台账 + 票级 A 声明」机制。
 
+> **归档说明（票 41 / A-018，2026-09-14）**：本台账中引用 `research/cycle*-investigation.md`、`research/launcher-selfcheck.md`、`cycle4-closure/…` 等路径的**过程证据已归档出工作树**（仓库外 `D:\Aworker\mozilla\choose-your-country-evidence-archive\`；历史副本 commit `b7b1f0a2`），引用一律相对归档根解析。详见 `README.md` 「归档说明」节。
+
 ## 台账
 
 | ID | 问题描述原文 | 规范化需求 | 显式约束 | 状态 |
