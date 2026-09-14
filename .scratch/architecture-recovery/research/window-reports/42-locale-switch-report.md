@@ -1,7 +1,7 @@
 # 42 语言切换收口 — 窗口报告
 
 > Cycle-5 | 票 `issues/42-locale-switch.md` | 覆盖 **A-019** | 启动器 `prompts/42-locale-switch.md`
-> 分支 `cch/42-locale-switch` | commit **86df9b14144bca508b55fca5c9d3534266f89f16**（GitButler id `kus`）| 报告时间 2026-09-14
+> 分支 `cch/42-locale-switch` | 代码落点头 **86df9b14144bca508b55fca5c9d3534266f89f16**（GitButler `kus`）| 最终头 **fec312a0dab4546679965fd6de2b33c5bb01a5a4**（`kus` → `zqs` 文档 → `tyr` R1 修正）| 报告时间 2026-09-14
 > 证据标注：observed（本机实测）/ reproduced（可复现）/ cited（外部来源）/ candidate（候选，未采信为结论）
 
 ---
@@ -107,3 +107,31 @@ commit **86df9b14144bca508b55fca5c9d3534266f89f16**（`cch/42-locale-switch`，G
 |---|---|---|---|
 | 2026-09-14 | S7(票42) | 多窗口并行下，`tests/corpus/manifest.json` 会被并行票（44）实时追加，钉死计数的断言（verify-13 的 41）随之漂移；单次全量 E2E 在 2 workers 下会产出 flaky 失败，须单文件复跑归因后再下结论 | 跨票共享断言改成「>= 下限 + 快照基线」而非钉死绝对值；全量 E2E 失败先按文件单独复跑归因，再判定归属 |
 | 2026-09-14 | S7(票42) | 判定「红灯是否自己引入」不能靠推断，必须做基线对照（临时还原上游文件复跑） | 子窗口遇到既有红灯先做基线复跑留证，再决定修/不修 |
+
+## 10 返工轮次 R1（2026-09-14）
+
+**现象**：文档提交 `zqs` push 后，E2E **run 34827293112 转红**——本票第 4 例「验收3 语言偏好写入 UI_PREFS_KEY，不污染收藏/规则键」报：
+
+```
+Error: expect(locator).toHaveCount(expected) failed
+Locator:  locator('.cch-wrapper').filter({ has: locator('#cc-strong') })
+Expected: 1
+Received: undefined
+Protocol error (Runtime.callFunctionOn): Internal server error, session closed.
+```
+
+**归因（测试代码缺陷，非功能缺陷、非环境 flake）**：spec 第 84 行 `expect(wrapperFor(page, '#cc-strong')).toHaveCount(1)` **漏写 `await`**。用例体执行完进入收尾、页面已被关闭后该断言仍在飞行，浏览器会话销毁 → Protocol error。代码落点头（86df9b14）的同分支 E2E **run 34826590603 曾 84 passed**，两次运行差异恰为该未 await 断言的竞态窗口。
+
+**改法**：补 `await`（commit `tyr`，最终头 **fec312a0dab4546679965fd6de2b33c5bb01a5a4**）；本地 `npx playwright test tests/locale-switch.spec.ts --repeat-each=3` → **12/12 稳定绿**。
+
+**R1 后 CI 五门全绿（最终头）**：
+
+| Workflow | Run ID | 结果 |
+|---|---|---|
+| Verify Ticket 42 (locale-switch) | 34828039425 | success |
+| E2E | 34828039466 | success（`84 passed (29.9s)`，本票 4 例 ✓ 42/43/44/45） |
+| Engine Gates | 34828039510 | success |
+| Typecheck | 34828039397 | success |
+| Lockfile Regen | 34828039422 | success |
+
+**并入 §9 的教训**：Playwright 的 `expect(locator).toXxx()` 必须 `await`；未 await 的断言在多数运行中不报错，只在收尾竞态下偶发暴露为 `Protocol error ... session closed`，极像环境 flake —— 新增 E2E 断言一律先 `--repeat-each=3` 干跑自证，再据红灯归因。
