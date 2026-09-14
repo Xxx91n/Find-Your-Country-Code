@@ -47,7 +47,7 @@ Install one userscript manager extension:
 1. **Direct install URL**
 
 - [GreasyFork](https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js)
-- [GitHub Release](https://github.com/Xxx91n/Find-Your-Country-Code/releases/download/v1.4.0/find-your-country-code.user.js)
+- [GitHub Release](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest/download/find-your-country-code.user.js)
 
 2. **Manual install**
    1. Build from source: clone this repo, then run `npm install && npm run build` to produce `dist/find-your-country-code.user.js`.

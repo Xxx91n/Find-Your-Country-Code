@@ -44,7 +44,7 @@
 **方法一：点击直接安装**
 
 - [GreasyFork](https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js)
-- [GitHub Release](https://github.com/Xxx91n/Find-Your-Country-Code/releases/download/v1.4.0/find-your-country-code.user.js)
+- [GitHub Release](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest/download/find-your-country-code.user.js)
 
 **方法二：手动安装**
 

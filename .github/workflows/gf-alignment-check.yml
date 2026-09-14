@@ -1,0 +1,29 @@
+# 票 38（A-011）GreasyFork 上线版本对齐 —— 只读校验
+# 只读：全程 HTTP GET，绝不向 GreasyFork 发起任何写请求（GF 无写入 API，票 38 delta 明令禁止）。
+# 频率：每日 1 次（满足 GF「更新检查 ≤ 1 次/天」）+ 手动 dispatch；不随每次 push 触发。
+# 开通 GF 站内 Sync 后，可将脚本调用切换为 --strict，使版本漂移转为红灯。
+name: GreasyFork Alignment Check (read-only)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  gf-alignment:
+    name: GF vs repo version alignment (read-only GET)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read-only alignment check
+        run: node tests/scripts/38-gf-alignment-check.mjs
