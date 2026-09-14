@@ -9,17 +9,19 @@ npm run build      # 构建产物 dist/find-your-country-code.user.js
 npm run e2e        # 构建 + Playwright 端到端测试
 ```
 
-源码在 `src/`（TypeScript 模块），油猴脚本头部元数据统一在 `vite.config.ts` 的 `userscript` 字段维护，不手写 `// ==UserScript==` 头。改动后请同时保持 `package.json` 的 `version` 与 `vite.config.ts` 的 `version` 一致（dry-run 会校验并警告不一致）。
+源码在 `src/`（TypeScript 模块），油猴脚本头部元数据统一在 `vite.config.ts` 的 `userscript` 字段维护，不手写 `// ==UserScript==` 头。`package.json` 的 `version` 是版本**唯一真源**，`vite.config.ts` 在构建时读取它并注入产物 `// @version`，无需也不应手写字面量；一致性由 `verify-38` 闸门强制，不一致即红（票 38 / A-011）。
 
 ## 版本号与变更日志（发版必读）
 
 一次发版 = 三个文件同步更新，缺一不可：
 
-1. **版本号**：`vite.config.ts` 的 `userscript.version`（版本事实源，构建时写入产物 `// @version`）+ `package.json` 的 `version`（保持同步）。
+1. **版本号**：`package.json` 的 `version`（**唯一真源**）——`vite.config.ts` 构建时读取它并写入产物 `// @version`。bump 版本只改 `package.json` 这一处。
 2. **`greasyfork/Glog.md`**：中文更新日志，写清本次版本的用户可感知变化（修复/优化/新特性）。发布时该文件全文会成为 GitHub Release 说明的中文部分，也是 GreasyFork 站内更新说明的素材。
 3. **`greasyfork/Glog_EN.md`**：英文更新日志，内容与 Glog.md 逐条对应。
 
-流程：改完代码 → bump 版本 → 更新 Glog 双语 → 自测（`npm run e2e`）→ 合入 `main`。
+流程：改完代码 → bump 版本（只改 `package.json`）→ 更新 Glog 双语 → 自测（`npm run e2e`）→ 合入 `main`。
+
+> GreasyFork 侧版本同步是一次性人工配置（站内 Sync from external URL 拉取 GitHub 产物），CI 不会也不能向 GF 写入。步骤与验收见 `docs/greasyfork-sync-setup.md`。
 
 ## 发布链路（自动化）
 

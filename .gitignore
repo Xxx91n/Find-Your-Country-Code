@@ -12,6 +12,7 @@
 docs/*
 !docs/adr/
 !docs/architecture-recovery-*.md
+!docs/greasyfork-sync-setup.md
 
 # worktrees
 .worktrees/

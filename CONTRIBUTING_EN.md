@@ -9,17 +9,19 @@ npm run build      # build dist/find-your-country-code.user.js
 npm run e2e        # build + Playwright e2e tests
 ```
 
-Source lives in `src/` (TypeScript modules). The userscript metadata header is maintained solely in the `userscript` field of `vite.config.ts` — never hand-write the `// ==UserScript==` block. Keep `package.json` `version` in sync with `userscript.version` in `vite.config.ts` (the dry-run workflow cross-checks and warns on drift).
+Source lives in `src/` (TypeScript modules). The userscript metadata header is maintained solely in the `userscript` field of `vite.config.ts` — never hand-write the `// ==UserScript==` block. `package.json` `version` is the **single source of truth**: `vite.config.ts` reads it at build time and injects the artifact `// @version`, so no version literal belongs there. Consistency is enforced by the `verify-38` gate, which fails red on drift (ticket 38 / A-011).
 
 ## Version & changelog (required for a release)
 
 One release = three files updated together:
 
-1. **Version**: `userscript.version` in `vite.config.ts` (source of truth; baked into the artifact `// @version` at build time) plus `version` in `package.json` (kept in sync).
+1. **Version**: `version` in `package.json` (**single source of truth**) — `vite.config.ts` reads it at build time and bakes it into the artifact `// @version`. Bump only `package.json`.
 2. **`greasyfork/Glog.md`**: Chinese changelog describing user-visible changes (fixes / improvements / features). Its full text becomes the Chinese half of the GitHub Release notes and the material for the GreasyFork update note.
 3. **`greasyfork/Glog_EN.md`**: English changelog, mirroring Glog.md item by item.
 
-Flow: code change → bump version → update both Glog files → self-test (`npm run e2e`) → merge to `main`.
+Flow: code change → bump version (`package.json` only) → update both Glog files → self-test (`npm run e2e`) → merge to `main`.
+
+> GreasyFork version sync is a one-time manual setup (in-site "Sync from external URL" pulling the GitHub artifact); CI never writes to GreasyFork — it cannot. Steps and verification: `docs/greasyfork-sync-setup.md`.
 
 ## Release pipeline (automated)
 
