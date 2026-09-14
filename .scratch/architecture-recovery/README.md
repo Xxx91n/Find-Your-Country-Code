@@ -269,7 +269,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 38 分发最后一公里 | A-011 | **done（复核通过）** — 补 CI 后 5 run 全 success（含 Verify-38 与 E2E 80 passed）；GF 侧 Sync 仍待用户开通 | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
 | 39 真实站点层启用 | A-016 | **done（复核通过）** — 7 run 实物全 success（含 Real-site smoke ×2）；live 启用数 0→2 | `research/window-reports/39-real-site-enablement-report.md` | W2 |
 | 41 过程证据出仓与升塔纪律 | A-018 | **done（复核通过）** — 归档实测：`git ls-files .scratch` 397→210；仓库外归档 200 文件+MANIFEST(199 sha256)；WORKFLOW §4.5 升塔纪律已入；.gitignore 零改动；纯删除 14409 行 | `research/window-reports/41-process-evidence-archive-report.md` | W3 |
-| 45 仓库与流程收口 | A-024, A-025 | **ready-for-agent** | `research/window-reports/45-repo-process-closeout-report.md` | W4 |
+| 45 仓库与流程收口 | A-024, A-025 | **done（复核通过）** — A-024 清理集实物为 **∅**（远端 9 支 0/9 MERGED；台账登记的 11 支 Cycle-4 支经逐名核验 11/11 已 ABSENT，属台账失真）；**零删除**；A-025 WORKFLOW §8 两子节 10 条款已入 | `research/window-reports/45-repo-process-closeout-report.md` | W4 |
 
 ### 发起窗口的 prompts
 
@@ -371,6 +371,34 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - **闭环**：GF 侧开启 Sync from external URL 指向上述 URL → GF 拉取到 `version 1.5.0` → 用户更新检查看到新版本（修复 A-011 送达断点）。
 
 **frontier（41 复核后重算）**：W3 ✅ → **W4 可开工：票 45（仓库与流程收口，A-024/A-025，←41 ✅）**。
+
+---
+### W4 复核结论 + Cycle-5 全周期收口（首脑，2026-09-14）
+
+> 报告：`research/cycle5-wave4-review.md`
+
+- **票 45 复核通过**：commit `741c2807`/`7035300d` 实物；WORKFLOW **§8 证据边界**（`§8.1 CI-only 政策` 5 条 + `§8.2 本地硬验收边界` 5 条，共 22 行）实读属实；远端 `main` 未动。
+
+- **本轮最有价值的一次“不执行”**：A-024 字面要求「清理 11 支已合并分支」，票 45 **未盲删**——逐名实测发现那 11 支早已 ABSENT，而远端现存的 9 支 `cch/*` **0/9 MERGED**（全是在途交付的唯一远端副本）。照字面执行将不可逆摧毁 Cycle-5 全部在途工作。**台账前提被实物证伪，已写回 WORKFLOW §5 教训。**
+
+- **账本终态：A-011…A-025 = 15/15 implemented**（无 deferred、无无去向）。
+
+- **过程违规（未追认）**：P-11 票41 未推送无 CI；P-13 票45 未推送无 CI；P-14 票45 堆叠于41（5 层栈）；P-15 A-024 台账数字失真（已由 45 写回教训，需追认）。
+
+- **返工判定：无源码层面问题，不重发修复版启动器。**
+
+### Cycle-5 frontier（终态）
+
+| 波次 | 票 | 状态 |
+|------|----|------|
+| W1 | 36 / 37(R1) / 40 / 42 / 43 / 44 | ✅ done（含 CI 证据） |
+| W2 | 38 / 39 | ✅ done（含 CI 证据；38 GF 侧 Sync 待用户） |
+| W3 | 41 | ✅ done（未推送） |
+| W4 | 45 | ✅ done（未推送） |
+
+**无剩余实施票**。下一动作不是新票，而是 **land 到 main**：远端 9 支 `cch/*` **0/9 MERGED**，`origin/main` 仍停 `e2a10d8e`——**land 将自动触发 release，属不可逆、需用户明确授权**。
+
+**待用户动作（按优先级）**：① 授权 land Cycle-5（或指定合并序）；② GF 脚本页填新同步 URL `https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest/download/find-your-country-code.user.js`；③ 授权 push cch/41+cch/45 补 CI；④ P-2/P-3 是否改写已推送提交信息；⑤ D-1 11 文件补归档。
 
 ---
 ### 辩证校正（入档）
