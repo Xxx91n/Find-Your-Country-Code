@@ -266,8 +266,8 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 42 语言切换收口 | A-019 | **done（复核通过，含 R1）** — R1 返工后 7 run 实物 success | `research/window-reports/42-locale-switch-report.md` | W1 |
 | 43 依赖根修 | A-021 | **done（复核通过）** — 4 CI run success；提交信息转义缺陷另计 | `research/window-reports/43-dependency-peer-rootfix-report.md` | W1 |
 | 44 检测语义裁决与语料先行 | A-022, A-023 | **⚠️ 实现属实、CI 证据缺失** — 未推送，无 run ID（待授权 push） | `research/window-reports/44-detection-semantics-adjudication-report.md` | W1 |
-| 38 分发最后一公里 | A-011 | **ready-for-agent** | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
-| 39 真实站点层启用 | A-016 | **ready-for-agent** | `research/window-reports/39-real-site-enablement-report.md` | W2 |
+| 38 分发最后一公里 | A-011 | **⚠️ 实现属实、CI 证据缺失** — 分支未推送；GF 侧 Sync 待用户开通（A-011 部分完成） | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
+| 39 真实站点层启用 | A-016 | **done（复核通过）** — 7 run 实物全 success（含 Real-site smoke ×2）；live 启用数 0→2 | `research/window-reports/39-real-site-enablement-report.md` | W2 |
 | 41 过程证据出仓与升塔纪律 | A-018 | **ready-for-agent** | `research/window-reports/41-process-evidence-archive-report.md` | W3 |
 | 45 仓库与流程收口 | A-024, A-025 | **ready-for-agent** | `research/window-reports/45-repo-process-closeout-report.md` | W4 |
 
@@ -305,6 +305,25 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - **返工判定：无源码层面问题，不重发修复版启动器**；待处置均为证据/过程项。
 
 **frontier（W1 复核后重算）**：W1 实现层全清 → **W2 可开工：票 38（←36 ✅）、票 39（←40 ✅）**，两票可并行。W3（41）待 W2；W4（45）待 41。
+
+---
+### W2 复核结论（首脑，2026-09-14）
+
+> 报告：`research/cycle5-wave2-review.md`
+
+- **实现层：票 39 完全通过**（commit bb0e8f1d 实物；site-manifest live 启用数 **0→2** 实物；harness 嵌套帧/pageerror/有头 xvfb 均实读；反检测红线守住：零 UA 伪造；7 run 全 success 含 Real-site smoke ×2）。
+
+- **票 38：实现属实但证据不闭合**。实物验证：闸门脚本 129 行 + GF 只读校验 125 行 + 两 workflow + 手册 + .gitignore + 版本真源收敛 + README releases/latest 均属实；delta「零 CI→GF POST」实读确认（无 POST/PUT，仅 GET）；本地闸门 15/15 绿 + 反向 `--tag v9.9.9` exit 1。但分支**不在远端**，**零 CI 证据**；AC#1 GF 侧 Sync 待用户开通。
+
+- **账本**：A-016 ✅ implemented；A-011 ⚠️ **部分完成 + 证据弱化**。
+
+- **过程违规（未追认）**：P-1（重复）票 38 未推送无 CI；P-8 票 38 堆叠于 cycle5-ticketing；P-9 未提交记账文件增至 4 个（issues/36/39/42/43）；P-10 报告路径差异（已按约定处理）。
+
+- **返工判定：无源码层面问题，不重发修复版启动器**。
+
+**frontier（W2 复核后重算）**：W2 实现层全清 → **W3 可开工：票 41（←36,37,38,39,40,42,43,44 均已落盘）**。W4（45）待 41。
+
+⚠️ **开 41 前建议**：票 41 会归档 .scratch 冻结证据，而 37/38/44 的 CI 证据尚未补齐（P-1）——**先补 push 取 CI，再归档**。
 
 ---
 ### 辩证校正（入档）
