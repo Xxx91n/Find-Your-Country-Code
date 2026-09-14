@@ -24,3 +24,6 @@ dist/
 # e2e
 test-results/
 playwright-report/
+
+# 真实站点冒烟层运行产物（票 39）
+live-out/

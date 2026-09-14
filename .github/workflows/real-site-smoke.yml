@@ -1,12 +1,19 @@
 name: Real-site smoke (advisory)
 
-# 真实站点低频冒烟层（票 32 / A-006 第二层）
+# 真实站点低频冒烟层（票 32 / A-006 第二层；票 39 / A-016 首次启用）
 # 红线（冒烟分层）：
 #   - 密封 E2E（e2e.yml）语义不动：CI 必跑、零外网、PR 阻断。本层与它完全解耦。
 #   - 本层永不出现在 pull_request 触发面 —— 因此失败天然不阻断任何 PR（advisory）。
 #   - 低频：schedule 每周一次 + workflow_dispatch 手动。证据进 run artifact。
 #   - 可跳过白名单：tests/live/site-manifest.json（跳过条目强制携带 reason + ticket，脚本硬校验）。
 # 工业参照：Bitwarden BIT live tests（不登录、不深挖页面、低频排期、弱断言、失败只报告不阻断）。
+# 票 39 增补：
+#   - 有头浏览器 + 虚拟显示（xvfb-run）：真实站点普遍前置反爬托管挑战；实测 CodePen 编辑器页
+#     被 Cloudflare Turnstile 拦截（headless shell / 默认 HeadlessChrome UA 必被拦，有头完整
+#     Chrome 可正常渲染）。无 DISPLAY 时脚本自动回退 headless 并告警（不伪造绿）。
+#   - 嵌套帧断言：目标可声明 frame，断言在匹配子帧内求值（CodePen 编辑器页 + preview iframe）。
+#   - 未捕获异常断言：expect="injected" 目标要求 pageerror 计数为 0。
+#   - 不采用 UA 伪造与反自动化指纹开关。
 on:
   workflow_dispatch:
     inputs:
@@ -24,6 +31,7 @@ permissions:
 jobs:
   live-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -49,6 +57,11 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # 有头浏览器需要虚拟显示（票 39）。playwright install --with-deps 通常已装 xvfb，
+      # 此处做防御性检查，缺失则补装。
+      - name: Ensure xvfb (headed browser virtual display)
+        run: command -v xvfb-run || (sudo apt-get update && sudo apt-get install -y xvfb)
+
       - name: Build userscript
         run: npm run build
 
@@ -58,7 +71,7 @@ jobs:
         id: smoke
         continue-on-error: true
         run: |
-          node tests/live/live-smoke.mjs \
+          xvfb-run -a node tests/live/live-smoke.mjs \
             --json live-out/smoke-summary.json \
             --out live-out/smoke-report.md
 
@@ -66,7 +79,7 @@ jobs:
         if: ${{ inputs.cdp_fitness }}
         continue-on-error: true
         run: |
-          node tests/live/cdp-autofill-fitness.mjs --json live-out/cdp-fitness.json
+          xvfb-run -a node tests/live/cdp-autofill-fitness.mjs --json live-out/cdp-fitness.json
 
       - name: Surface advisory failures
         if: steps.smoke.outcome == 'failure'
@@ -82,13 +95,13 @@ jobs:
         if: always()
         run: |
           {
-            echo '## Real-site smoke (advisory, ticket 32 / A-006)'
+            echo '## Real-site smoke (advisory, ticket 39 / A-016)'
             echo ''
             echo '- 层定位: advisory（仅 schedule / workflow_dispatch 触发，不进 PR 触发面）'
             echo '- 白名单: tests/live/site-manifest.json'
             echo ''
             if [ -f live-out/smoke-summary.json ]; then
-              node -e "const j=require('./live-out/smoke-summary.json');console.log('- gate: '+j.gate);console.log('- counts: '+JSON.stringify(j.counts));for(const r of j.results)console.log('- '+r.id+' ['+r.status+'] '+r.detail);for(const s of j.skipped)console.log('- '+s.id+' [skipped] ticket='+s.ticket)"
+              node -e "const j=require('./live-out/smoke-summary.json');console.log('- browser: '+j.launch);console.log('- gate: '+j.gate);console.log('- counts: '+JSON.stringify(j.counts));for(const r of j.results)console.log('- '+r.id+' ['+r.status+'] frame='+(r.frame||'top')+' errs='+r.pageErrors+' '+r.detail);for(const s of j.skipped)console.log('- '+s.id+' [skipped] ticket='+s.ticket)"
             else
               echo '- 冒烟未产出 summary；见 job log'
             fi

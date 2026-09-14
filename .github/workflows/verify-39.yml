@@ -1,0 +1,31 @@
+# 票 39 验证 workflow：本票验收门（verify-ticket-39.mjs：白名单契约 / CodePen 收编 /
+#   harness 嵌套帧与未捕获异常能力 / 真实站点层隔离 / advisory 保留 / xvfb 有头渲染）。
+# 触发：pull_request（ADR-0006 非发版 workflow PR 门控）+ 本票验证分支 push + 手动 dispatch。
+# node 钉 22：无 npm 依赖安装面（纯文件断言，零外网）。
+name: Verify Ticket 39 (real-site-enablement)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/39-real-site-enablement'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-39-gate:
+    name: Ticket-39 gate (real-site enablement + isolation)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-39 acceptance gate
+        run: node tests/scripts/verify-ticket-39.mjs
