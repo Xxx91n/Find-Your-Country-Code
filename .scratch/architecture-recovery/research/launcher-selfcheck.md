@@ -1,15 +1,24 @@
-# Launcher 自检报告 — Cycle-4（票 27–35）
+# Cycle-5 启动器自检报告（launcher-selfcheck）
 
-> 生成: 2026-09-12T07:24:02.353Z | 工具: node research/scripts/cycle4-launcher-selfcheck.mjs
+> 生成：大脑 Agent，2026-09-14（**审计后重修**：D-1 修复后重跑）| 对象：prompts/36…45（10 份）+ handoffs/36…45（10 份）
 
-- prompts 检查: 9/8；handoffs: 9/8；issues: 9/8
-- prompt 行数: 27=28, 28=29, 29=30, 30=29, 31=29, 32=30, 33=29, 34=31, 35=28（上限 60）
-- 违禁词（worktree / git checkout / git branch）: 0 命中 = PASS
-- 路径可解析: PASS
-- A-xxx 声明: ledger 10/10，spec 覆盖 10/10，issue/handoff/prompt 全含声明
-- 复述检查: prompts 不含「通用调研要求/串行护栏」块 = PASS
-- 波次推导（Blocked by）: [["30","31","32","34"],["27","28","29"],["33"],["35"]]
+## 硬规则校验结果
 
-## 问题清单
+| 启动器 | 行数(≤60) | 违禁词 | 复述上游 | handoff 调研要求 | 引用本票 handoff | handoff 引用本票 issue | 路径可解析 | 声明 A-xxx | 结论 |
+|--------|-----------|--------|----------|------------------|------------------|-----------------------|-----------|-------------|------|
+| 36-gate-integrity-repair | 23 | 0 | 0 | 1 | ✓ | ✓ | 7/7 | I:✓ H:✓ | **PASS** |
+| 37-entry-point-accessibility | 22 | 0 | 0 | 1 | ✓ | ✓ | 6/6 | I:✓ H:✓ | **PASS** |
+| 38-distribution-last-mile | 22 | 0 | 0 | 1 | ✓ | ✓ | 6/6 | I:✓ H:✓ | **PASS** |
+| 39-real-site-enablement | 21 | 0 | 0 | 1 | ✓ | ✓ | 6/6 | I:✓ H:✓ | **PASS** |
+| 40-frame-governance-degradation | 21 | 0 | 0 | 1 | ✓ | ✓ | 6/6 | I:✓ H:✓ | **PASS** |
+| 41-process-evidence-archive | 21 | 0 | 0 | 1 | ✓ | ✓ | 6/6 | I:✓ H:✓ | **PASS** |
+| 42-locale-switch | 20 | 0 | 0 | 1 | ✓ | ✓ | 5/5 | I:✓ H:✓ | **PASS** |
+| 43-dependency-peer-rootfix | 22 | 0 | 0 | 1 | ✓ | ✓ | 7/7 | I:✓ H:✓ | **PASS** |
+| 44-detection-semantics-adjudication | 24 | 0 | 0 | 1 | ✓ | ✓ | 8/8 | I:✓ H:✓ | **PASS** |
+| 45-repo-process-closeout | 21 | 0 | 0 | 1 | ✓ | ✓ | 6/6 | I:✓ H:✓ | **PASS** |
 
-- 无 — 全部检查通过
+失败数：**0/10**（全部 PASS）
+
+---
+
+> 程序化比对审计见 `research/cycle5-audit-report.md`（逐字段 + 2 维合规 + 3 段覆盖）。

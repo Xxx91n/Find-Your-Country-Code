@@ -1,71 +1,113 @@
-# Cycle-4 Spec — 真实网站生效闭环
+# Cycle-5 Spec — 从“代码正确”到“用户可见”
 
-> Brain Agent | 2026-09-12 | Input: `research/cycle4-investigation.md`（锐评2 取证 + 两轮 atomcode 调研）
-> Previous cycle: 第三周期 spec 已归档 `spec-cycle3.md`（票 20-26）
-> 对账闸：`decision-ledger.md` 登记 A-001…A-010；本 spec 每条声明其覆盖的 A-xxx，无去向记录清单见文末。
+> Brain Agent | 2026-09-14 | Input: `research/cycle5-investigation.md`（Cycle-5 架构大脑调查 + 锐评 Round 3 辩证核验）+ `cycle4-closure/03-backlog-and-merge-state.md`（B-1…B-10）
+> Previous cycle: Cycle-4 spec 已归档 `spec-cycle4.md`（票 27–35）
+> 对账闸：`decision-ledger.md` 登记 A-011…A-025（15 条）；本 spec 每条声明其覆盖的 A-xxx，无去向记录清单见文末。
 
 ## Problem Statement
 
-经历三轮交付（模块化+评分引擎 / 心智模型 v2 / 仓库工程卫生），引擎在合成 fixture 上 CI 全绿，但真实世界验证缺失——你点出的「出厂都是幻觉、大多数网页不生效」源于：
+经历四轮交付，引擎在合成 fixture 上 CI 全绿，但四个系统性盲区在 Cycle-5 调查中被**实测**坐实（每条附证据行号，不以自述为准）：
 
-1. 真实网页最常见的区号字段形态落 `none` 档（A-001、A-002），或根本不在扫描候选集内（A-003）——用户眼里「脚本没生效」。
-2. 站点规则分档覆盖有语义泄漏，单条强制规则会放大到整页误报（A-004）。
-3. 填充失败静默、无反馈闭环（A-005）。
-4. CI 绿证据全部来自合成 fixture、0 真实站点，这是「出厂幻觉」的机制（A-006）。
-5. 已交付的修复停在 1.4.0 不 bump，用户收不到（A-007）。
-6. 门禁 engine-gates 重复三跑、main 不合入不测试（A-008、A-009）。
-7. main 历史两次归零，票级开发过程在 git 里不可查（A-010）。
+1. **送达断了（A-011）**：v1.5.0 的安全修复、弱线索识别、三条用户上报 bug 修复全部堵在分发链路上。产物 `updateURL` 全部指向 Greasyfork（`vite.config.ts:8`），而 GF 线上实测仍服务 `version 1.3.4`（仓库已到 1.5.0），CI 里没有任何 GF 同步步骤（17 个 workflow 搜 greasyfork 仅命中 `release.yml:63,73` 读 Glog）。用户更新检查永远看到 1.3.4。
+2. **可见性断了（A-012 / A-013）**：面板只能从 🌐 图标打开，图标仅在置信度 ≥35 时注入（`detect/index.ts:542-544`）；`#cch-summon` 只在面板 `open()` 内创建（`ui/index.ts:317,326`），而 `open()` 仅两个调用点且均以「已存在图标」为前提；GM 菜单只有「已恢复本站检测」（`main.ts:88-90`）。→ 低置信页面无图标 → 无面板 → 无召唤入口，脚本在用户眼中等于「没注入」。且 lowkey 图标 `opacity:.38;scale(.78)`（`ui/index.ts:82`）近乎不可见，定位在 wrapper 盒外（`top:-12px;right:-12px`）易被 `overflow` 裁剪。
+3. **绿不可信（A-014 / A-016）**：10 个票级门中 4 个当场崩（`verify-ticket-09/13/15/18` 裸 `new Function` 未 strip TS，实测 4/4 `SyntaxError`），而 6 个绿门恰好是已迁移装载器集——「十门全绿」是幸存者名单；真实站点层两个 live 目标 `enabled:false` 且 `selector:null`，实际启用数 0，`real-site` 语料无一条含 URL（幽灵覆盖）。
+4. **静默失败与仓库卫生（A-017…A-025）**：帧校验只扫顶层 iframe，嵌套帧下子帧消息被静默 return（无面板、无 toast）；`.scratch` 339 文件全部被 git 跟踪；语言切换是从未存在的功能真空；另有依赖/元数据/流程债（peer 冲突靠 `--legacy-peer-deps` 残留、typecheck 注释与 lockfile 根 version、同证据档位不一致、contenteditable 无语料地基、远端已合并支残留、CI-only 边界未条款化）。
 
 ## Solution
 
-一轮「真实网站生效闭环」周期：先建真实站点抽样语料作为测量地基（A-006），再据实补齐检测覆盖率（A-001/A-002/A-003）、修规则语义（A-004）与填充反馈（A-005），最后 bump 送达（A-007）并减肥门禁（A-008/A-009）。历史纪律（A-010）在收口以非 squash 落地执行。
+一轮「**送达 + 可见 + 可信**」周期，按 issue 的 Blocked by 字段推导四波推进（不新造顺序）：
+
+- **W1 可并行（无阻塞）**：门禁完整性返修（票 36）、入口可达性（票 37）、帧治理降级反馈（票 40）、过程证据出仓（票 41）、语言切换收口（票 42）、依赖根修（票 43）、检测语义裁决与语料先行（票 44）。
+- **W2**：分发最后一公里（票 38，blocked by 36）、真实站点层启用（票 39，blocked by 40）。
+- **W3**：过程证据出仓收口（票 41 归位 W3，blocked by 36–40/42–44 报告落盘）。
+- **W4**：仓库与流程收口（票 45，blocked by 41）。
+
+核心取径：**先做能被人看见的（票 37/38），再做能被人信任的（票 36/39）**，最后收口（票 41/45）。
 
 ## User Stories
 
-1. As a maintainer, I can measure recall/precision against a real-site pattern corpus, so CI green represents real-world coverage.（A-006）
-2. As a user on a site with `<input name="countryCode">`, the script recognizes and injects, so I don't have to hunt for a manual summon.（A-001）
-3. As a user on a site with an ISO2-valued country dropdown showing `(+NN)`, the script treats it as a dial-code field, not a country selector.（A-002）
-4. As a user on a site with a hand-rolled dropdown (no ARIA), the script still detects and offers the panel.（A-003）
-5. As a user with one forced-selector rule, unrelated fields on the same host are not force-injected.（A-004）
-6. As a user, when a fill fails I get a clear signal and it stays correct where possible, so wrong fills are not silent.（A-005）
-7. As a user, I receive the fixes via a version bump, so the delivered work actually reaches me.（A-007）
-8. As a maintainer, shared engine-gates run once per PR rather than three times.（A-008）
-9. As a maintainer, a push to main triggers full E2E, so the branch that ships is tested.（A-009）
-10. As a reviewer, I can trace each ticket's work in git history, so the process is auditable.（A-010）
+### 送达（A-011）
+1. As a user who installed the script from Greasyfork, I want the version I run to be the latest one, so that I actually receive the security and detection fixes.（A-011）
+2. As a maintainer, I want a CI gate that fails when tag, `package.json` and the built artifact `version` disagree, so that a half-released version cannot happen silently.（A-011）
+3. As a user reading the README, I want the install link to point at the current release, so that I do not install a stale version.（A-011）
+4. As a maintainer, I want the Greasyfork channel to pull from GitHub automatically, so that I do not hand-sync versions.（A-011）
+
+### 可见（A-012 / A-013）
+5. As a user on a page whose best field scores below the lowkey line, I want a global way to open the panel, so that the script is not invisible to me.（A-012）
+6. As a user, I want the panel to be reachable from the userscript manager menu, so that I am not dependent on finding a small icon.（A-012）
+7. As a user, I want fields that were registered but not injected to be summonable from that panel, so that manual summon works without an icon.（A-012）
+8. As a user, I want the lowkey icon to be perceptible when I look for it, so that I can find the feature.（A-013）
+9. As a user, I want the icon not to be clipped by an ancestor overflow container, so that it does not vanish inside real forms.（A-013）
+10. As a user, I want the lowkey icon to stay visually distinct from the high-confidence icon, so that the two tiers keep their meaning.（A-013）
+
+### 可信（A-014 / A-015 / A-016）
+11. As a maintainer, I want all ten ticket gates to execute, so that a green CI means ten gates green, not six.（A-014）
+12. As a maintainer, I want the gate workflows to run on a Node version that supports TypeScript stripping, so that the gates do not crash on load.（A-014）
+13. As a maintainer, I want the corpus-size assertion to be derived from the corpus, so that adding corpus cases does not redden a gate.（A-014）
+14. As a maintainer, I want per-ticket E2E jobs folded back into the shared E2E workflow, so that gate fragments do not multiply.（A-015）
+15. As a maintainer, I want at least one real-site target actually enabled, so that real-site coverage is a measurable number, not zero.（A-016）
+16. As a maintainer, I want the CodePen editor page covered as a real-site target including its nested preview iframe, so that the reported CodePen regression is caught before release.（A-016）
+17. As a maintainer, I want real-site smoke to assert only existence, so that site churn does not produce false alarms.（A-016）
+
+### 静默失败与卫生（A-017…A-025）
+18. As a user on a page that nests the form several frames deep, I want the panel to open or a clear message to appear, so that clicking is never a silent no-op.（A-017）
+19. As a user, I want frame discovery to recurse through nested and shadow-wrapped frames, so that deep embeddings work.（A-017）
+20. As a maintainer, I want frozen process evidence out of the working tree index, so that diffs show code changes, not archive churn.（A-018）
+21. As a maintainer, I want the “sink a fixture before fixing the script” discipline written into the workflow, so that real-site findings become permanent coverage.（A-018）
+22. As a user, I want to be able to choose the panel language and have it persisted, so that language is not decided for me by `navigator.language`.（A-019）
+23. As a maintainer, I want the dead `LANG` export either consumed or removed, so that the module has no dead surface.（A-019）
+24. As a maintainer, I want the typecheck workflow comment to match its command, so that the file does not lie.（A-020）
+25. As a maintainer, I want the lockfile root version field in sync, so that metadata is consistent.（A-020）
+26. As a maintainer, I want the react peer conflict fixed at the root, so that `--legacy-peer-deps` is no longer a standing exception.（A-021）
+27. As a maintainer, I want the “same evidence, different tier” case adjudicated once, so that the tier rule is intentional rather than accidental.（A-022）
+28. As a maintainer, I want the contenteditable field shape in the corpus before any detection change, so that the change has a measurement basis.（A-023）
+29. As a maintainer, I want merged remote branches cleaned up, so that the remote ref list is readable.（A-024）
+30. As a maintainer, I want the CI-only policy and local-hard-verification boundary written down, so that each closure does not need a fresh authorisation.（A-025）
 
 ## Implementation Decisions
 
-- **测量地基·真实站点抽样语料（票 32，A-006）**：把真实站点区号字段抽象成标注模式库（对标 Bitwarden `test-the-web` / Mozilla `form-fill-examples`），加少量真实站点低频冒烟 + CDP `Autofill.trigger` 断言 + 可跳过白名单，挂接 CI；证据只认 CI run/artifact。覆盖 A-006。
-- **检测覆盖率下限（票 27，A-001）**：让纯关键字/placeholder 弱信号、无锚的区号字段跨过低置信线（≥35），以 corpus 正负例标定，不改 `SCORE_AUTO`、不回退既有 precision/recall。覆盖 A-001。
-- **ISO2-value 下拉证据（票 28，A-002）**：把文本括号区号 `parenDial` 计分移出 `plusDial > 0` 门，独立成 L3 证据；保持「国家选择器≠区号字段」抑制与共享区号消歧。覆盖 A-002。
-- **候选集扩展（票 29，A-003）**：扩展 `SCAN_SELECTORS` 覆盖无 ARIA 自定义下拉（div+ul）与 contenteditable；遵守 ADR-0005 档位上限与 350ms 性能红线。覆盖 A-003。
-- **规则分档覆盖收敛（票 30，A-004）**：修 `pageTierOverride` 语义泄漏，分档覆盖收敛到 selector 级，页面级语义显式建模或移除。覆盖 A-004。
-- **填充反馈闭环（票 31，A-005）**：填充结果可观测（成功/失败/格式分歧），错填不再静默，不改三策略正确路径。覆盖 A-005。
-- **版本 bump 交付（票 33，A-007）**：三处版本号一致 bump（package.json / vite.config.ts / Glog 双语 changelog），dry-run CI 先行，发行须用户确认。覆盖 A-007。
-- **门禁减肥（票 34，A-008 / A-009）**：公共 engine-gates 抽成一个 workflow（verify-13/16/18 只保留专属断言）；e2e 触发面补 `push: main`。覆盖 A-008、A-009。
-- **历史可查落地纪律（票 35，A-010）**：本周期落地不 squash、不改写历史；以只读 `git log` / `git merge-base` 验证 main 父链含票级提交，纪律条目连同验证证据写回 WORKFLOW §5。覆盖 A-010。
+### 送达
+- **分发最后一公里（票 38，A-011）**：GF 侧一次性开启 Sync from external URL 指向 GitHub raw 产物（**拉取模型**，因 GF 无写入 API）；CI 只新增版本一致性闸门（tag = package.json = 产物 `version`）；README 安装链接改为 `releases/latest`。禁止任何 CI 主动 POST 到 GF 的步骤。
+
+### 可见
+- **入口可达性（票 37，A-012 + A-013）**：新增第二条 `GM_registerMenuCommand` 直达 `UI.open(null,null,null)`（复用既有 anchor=null 居中路径）；lowkey 图标按「降广告特征 + 提信息气味 + 规避 overflow 裁剪」重设计。不改评分引擎与注入档位判定。
+
+### 可信
+- **门禁完整性返修（票 36，A-014 + A-015 + A-020）**：四门统一改用现成 TS 安全装载器（范式 `tests/scripts/14-lib-engine.mjs:11`）；workflow node 升 22；`verify-13` 语料规模断言改动态读取；票级复刻的 E2E 步骤并回统一 `e2e.yml`；顺带清 typecheck 注释与 lockfile 根 version。
+- **真实站点层启用（票 39，A-016）**：按 manifest 自带 `enablementRunbook` 启用 ≥1 个 live 目标（优先 CodePen 编辑器页 + 嵌套 preview iframe 断言）；冒烟只断言存在性。保持 advisory（不进 pull_request）。
+
+### 静默失败与卫生
+- **帧治理降级反馈（票 40，A-017）**：帧枚举改递归 + shadowRoot 穿透；校验失败降级为可见 toast。**不重构**「全帧自治 + 顶层中心化面板 + origin/source 双校验」架构（与业界共识一致，仅为覆盖缺口）。
+- **过程证据出仓（票 41，A-018）**：冻结证据归档出工作树索引；升塔纪律写入 WORKFLOW。纯删除型改动优先。
+- **语言切换收口（票 42，A-019）**：面板可选 + GM 持久化（沿用 `UI_PREFS_KEY` 独立键模式）；否则清理 `LANG` 死导出。
+- **依赖根修（票 43，A-021）**：根修 peer 冲突，移除 `--legacy-peer-deps` 残留。
+- **检测语义裁决与语料先行（票 44，A-022 + A-023）**：同证据档位不一致做独立裁决（须用户裁决，禁借补分越线）；contenteditable 先入 corpus 再议检测。
+- **仓库与流程收口（票 45，A-024 + A-025）**：批清已合并远端支（需用户授权）；CI-only 边界条款化入 WORKFLOW。
 
 ## Testing Decisions
 
-- 好测试断言外部行为：真实语料上的 precision/recall、候选集各形态覆盖数、填充结果信号、workflow 触发面。
-- 方法：程序化自检 + 现有 Playwright E2E + CDP `Autofill.trigger` 断言；证据只认 CI run/artifact，不认本地输出（CI-only 策略）。
-- 每票验收锚定 commit sha + CI run ID，不以磁盘自述为准。
+- 好测试只断言**外部行为**：注入后 DOM 状态、面板可达性、门可执行性、workflow 触发面、版本一致性，不断言实现细节。
+- 分层（行业测试塔，T1）：塔基引擎 harness / 校准语料（mock DOM）；塔身密封 fixture E2E（真 Chromium + 出厂产物）；塔尖真实站点冒烟（存在性弱断言，advisory）；塔外 cron 合成监控。
+- **升塔纪律**：发现塔身未覆盖的真实形态，先沉淀为 fixture 再修脚本（真实站点用例只升不降）。
+- 先例（prior art）：`tests/scripts/14-lib-engine.mjs` 装载器、`tests/live/site-manifest.json` 站点清单、`tests/*.spec.ts` 密封 E2E、`.github/workflows/engine-gates.yml` 公共引擎门。
+- 证据铁律：每票验收锚定 commit sha + CI run ID；报告自述不算证据（CI-only）。
 
 ## Out of Scope
 
-- 已归零的旧历史（前两轮 root commit）不做不可逆重写、不尝试恢复——本周期仅保证「此后历史可查」，由票 35（只读验证 + WORKFLOW §5 教训固化）承接。
-- 评分引擎五层信号（L0-L4）权重/阈值的整体重构——仅针对性修 A-001/A-002 两处缺口，不重做引擎。
-- 国家数据扩充（科索沃 +383、梵蒂冈）——跨周期遗留。
-- GreasyFork 站内同步（凭证门控）——跨周期遗留。
+- 评分引擎五层信号（L0–L4）权重/阈值的整体重构——本周期只做票 44 的语义裁决与语料先行，不重做引擎。
 - 伪 select 两形态填充分发的整体重做（不动 ADR-0005 已定档位上限）。
-- `.gitattributes` CRLF 规范化——跨周期遗留。
+- 国家数据扩充（科索沃 +383 / 梵蒂冈）——跨周期遗留，未登记为 A。
+- `.gitattributes` CRLF 规范化——跨周期遗留，未登记为 A。
+- 已归零的历史不重写（不可逆，A-010 已 implemented）。
 
 ## Further Notes
 
-- 本周期输入来自「锐评2 取证 + 真实站点不生效痛点」两轮 atomcode 调研（测试侧四层组合拳 + 检测侧 libphonenumber 语义模型），非用户 bug 单。
-- 两条工业硬结论指导本周期：① WPT 测不了 autofill 触发，必须自建宿主级测试或走 CDP；② 海量真实站点靠「模式抽象 + 低频抽样 + 弱断言 + 可跳过白名单」收敛成本。
-- 波次由 issue 的 Blocked by 字段推导（不新造顺序）：W1 = 票 30/31/32/34；W2 = 票 27/28/29（被 32 阻塞）；W3 = 票 33（被 27-32 阻塞）；W4 = 票 35（被 33 阻塞，收口纪律波）。
+- 本周期输入来自 Cycle-5 架构大脑调查（4 次 atomcode 全景调研 + 4 个子代理并行只读审计 + codegraph 结构图）与用户点名的 Cycle-4 backlog（B-1…B-10）。
+- **辩证校正已入档**：锐评 Round 3 的「git 历史第三次归零 / tag 非 main 祖先」经实测**证伪**（origin/main 有父提交、163 commits、三 tag 均为祖先），**未登记为 A、不立票**；「在 release.yml 加 GF 发布步骤」经深度调研**推翻**（GF 无写入 API），已改写为拉取模型。
+- 波次由 issue 的 Blocked by 字段推导（不新造顺序），波次表写入 `README.md`。
 
 ## 无去向记录清单
 
-核对 decision-ledger.md 的 A-001…A-010 去向登记：**A-001→27、A-002→28、A-003→29、A-004→30、A-005→31、A-006→32、A-007→33、A-008→34、A-009→34、A-010→35（收口纪律票，交叉核对轮补立）**。全部有去向，**无去向记录为空**，准予立票。
+核对 `decision-ledger.md` 的 Cycle-5 去向登记：A-011→38、A-012→37、A-013→37、A-014→36、A-015→36、A-016→39、A-017→40、A-018→41、A-019→42、A-020→36、A-021→43、A-022→44、A-023→44、A-024→45、A-025→45。
+
+**15/15 全部有去向，无去向记录为空，准予立票。**

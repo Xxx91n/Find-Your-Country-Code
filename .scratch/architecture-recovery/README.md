@@ -241,6 +241,63 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - **合并**：`but pull` 无新上游；13 支已全部在 main。收口产物提交本地分支 `cch/cycle4-closure`，**未 land 未 push——停边界等指令**。
 - **Backlog B-1…B-10**（GreasyFork / 远端支清理 / 私有 E2E 并回 / verify-09~18 私有装载器残留+F-1 / typecheck 注释+lockfile / P1-P8 档位裁决 / contenteditable 语料先行 / 真实站点启用 / peer 根修 / CI-only 审计授权条款化）：详见 `cycle4-closure/03-backlog-and-merge-state.md`。
 
+## 第五周期（送达 + 可见 + 可信，2026-09-14）
+
+> 输入: `research/cycle5-investigation.md`（Cycle-5 架构大脑调查：4 次 atomcode 全景调研 + 4 个子代理并行只读审计 + codegraph 结构图 119 files/1,693 nodes/4,469 edges）+ `cycle4-closure/03-backlog-and-merge-state.md`（B-1…B-10）
+> Spec: `spec.md`（上一周期 spec 已归档 `spec-cycle4.md`）| 对账闸: `decision-ledger.md`（A-011…A-025 共 15 条，无去向记录为空）
+> Tickets: `issues/36-45*.md`（10 张）| 自检: `research/launcher-selfcheck.md` | 对账报告: `research/cycle5-reconciliation-report.md`
+
+### 波次表（从 issue Blocked by 推导，未新造顺序）
+
+| 波次 | 票 | Blocked by | 并行性 | 焦点（覆盖 A-xxx） |
+|------|----|-----------|--------|-------------------|
+| **W1** | 36, 37, 40, 42, 43, 44 | 36←无； 37←无； 40←无； 42←无； 43←无； 44←无 | 同波互不堆叠，可并行 | 门禁完整性返修（A-014, A-015, A-020） ＋ 入口可达性（A-012, A-013） ＋ 帧治理降级反馈（A-017） ＋ 语言切换收口（A-019） ＋ 依赖根修（A-021） ＋ 检测语义裁决与语料先行（A-022, A-023） |
+| **W2** | 38, 39 | 38←36； 39←40 | 同波互不堆叠，可并行 | 分发最后一公里（A-011） ＋ 真实站点层启用（A-016） |
+| **W3** | 41 | 41←36,37,38,39,40,42,43,44 | 单票 | 过程证据出仓与升塔纪律（A-018） |
+| **W4** | 45 | 45←41 | 单票 | 仓库与流程收口（A-024, A-025） |
+
+### 票务状态与 frontier（第五周期）
+
+| 票 | 覆盖 | 状态 | 报告路径 | 波次 |
+|----|------|------|----------|------|
+| 36 门禁完整性返修 | A-014, A-015, A-020 | **ready-for-agent** | `research/window-reports/36-gate-integrity-repair-report.md` | W1 |
+| 37 入口可达性 | A-012, A-013 | **ready-for-agent** | `research/window-reports/37-entry-point-accessibility-report.md` | W1 |
+| 40 帧治理降级反馈 | A-017 | **ready-for-agent** | `research/window-reports/40-frame-governance-degradation-report.md` | W1 |
+| 42 语言切换收口 | A-019 | **ready-for-agent** | `research/window-reports/42-locale-switch-report.md` | W1 |
+| 43 依赖根修 | A-021 | **ready-for-agent** | `research/window-reports/43-dependency-peer-rootfix-report.md` | W1 |
+| 44 检测语义裁决与语料先行 | A-022, A-023 | **ready-for-agent** | `research/window-reports/44-detection-semantics-adjudication-report.md` | W1 |
+| 38 分发最后一公里 | A-011 | **ready-for-agent** | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
+| 39 真实站点层启用 | A-016 | **ready-for-agent** | `research/window-reports/39-real-site-enablement-report.md` | W2 |
+| 41 过程证据出仓与升塔纪律 | A-018 | **ready-for-agent** | `research/window-reports/41-process-evidence-archive-report.md` | W3 |
+| 45 仓库与流程收口 | A-024, A-025 | **ready-for-agent** | `research/window-reports/45-repo-process-closeout-report.md` | W4 |
+
+### 发起窗口的 prompts
+
+| 票 | 启动器 |
+|----|--------|
+| 36 | `prompts/36-gate-integrity-repair.md` |
+| 37 | `prompts/37-entry-point-accessibility.md` |
+| 40 | `prompts/40-frame-governance-degradation.md` |
+| 42 | `prompts/42-locale-switch.md` |
+| 43 | `prompts/43-dependency-peer-rootfix.md` |
+| 44 | `prompts/44-detection-semantics-adjudication.md` |
+| 38 | `prompts/38-distribution-last-mile.md` |
+| 39 | `prompts/39-real-site-enablement.md` |
+| 41 | `prompts/41-process-evidence-archive.md` |
+| 45 | `prompts/45-repo-process-closeout.md` |
+
+### 对账闸与自检
+
+- **对账闸（Step 0）**：登记 A-011…A-025（15 条，状态 current）；**无去向记录清单为空，准予立票**。报告 `research/cycle5-reconciliation-report.md`。
+- **启动器自检**：10/10 PASS（行数 ≤23、违禁词 0、复述条款 0、handoff 通用调研要求各 1 次、路径全可解析、A-xxx 均已声明）。报告 `research/launcher-selfcheck.md`。
+- **B-1…B-10 backlog**：10/10 全部有去向（B-1→A-011/票38、B-2→A-024/票45、B-3→A-015/票36、B-4→A-014/票36、B-5→A-020/票36、B-6→A-022/票44、B-7→A-023/票44、B-8→A-016/票39、B-9→A-021/票43、B-10→A-025/票45）。
+
+### 辩证校正（入档）
+
+- 锐评 Round 3「git 历史第三次归零 / tag 非 main 祖先」经实测**证伪**（origin/main 有父提交、163 commits、v1.3.4/v1.4.0/v1.5.0 均为祖先）——**未登记为 A、不立票**。
+- 「在 release.yml 加 GF 发布步骤」经深度调研**推翻**（GF 无写入 API），已改写为拉取模型（A-011 显式约束）。
+
+---
 ## Backlog (跨周期遗留 + Cycle-3 新增遗留 — 等用户决定是否立票)
 
 ### 跨周期遗留（mmv2）
