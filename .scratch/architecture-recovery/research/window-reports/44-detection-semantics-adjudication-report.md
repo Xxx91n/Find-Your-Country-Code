@@ -145,4 +145,23 @@ P1 与 P8 的证据**结构**相同（强区号关键词 + tel 主号锚 + 全 +
 | 基线不回退 | `node tests/scripts/14-calibration-harness.mjs`（51 例，1.0000/1.0000，gate PASS） |
 | atomcode 调研 | 本会话串行 1 次（16 搜索 / 7 全文核读；Chromium / Firefox / 1Password / Bitwarden / Dashlane 多源交叉） |
 | 分支 | `cch/44-detection-semantics-adjudication`，按 §4.2 堆叠于 `cch/cycle5-ticketing` 之上（见 D-44f） |
-| CI | 待推送后取 run ID（CI-only 证据铁律；未推送） |
+| CI | 待推送后取 run ID（CI-only 证据铁律；未推送）→ 见 §10 补录 |
+
+---
+
+## CI 证据补录（首脑授权 push 后，2026-09-14）
+
+**推送远端头**：`a8ee1a83c51842d7c7c670f6db458a8c4f2f8ed2`（分支 `cch/44-detection-semantics-adjudication`，实现提交 `894e6efb`）
+
+**说明**：本票**无专属 verify 工作流**（`verify-ticket-44.mjs` 不存在），故仅共享工作流运行。以下为全部 run 的终态结果（均为 `push` 事件，headSha 一致）。
+
+| Run ID | Workflow | Conclusion | headSha | Event |
+|---|---|---|---|---|
+| 34845611095 | Lockfile Regen | success | `a8ee1a83` | push |
+| 34845611809 | Engine Gates | success | `a8ee1a83` | push |
+| 34845608176 | Typecheck | success | `a8ee1a83` | push |
+| 34845607981 | E2E | success | `a8ee1a83` | push |
+
+**E2E 与兄弟票 37 的对照**：票 37 的 E2E 曾在 `tests/pseudo-select.spec.ts:34` 因面板拦截指针事件而失败；本票 E2E 该用例 **`✓ 43 tests/pseudo-select.spec.ts:34:3`（758ms）通过**，全量 **80 passed (28.1s)**，无 failure/flaky。故 37 的失败**未在本票复现**。
+
+**裁决**：4/4 共享工作流全绿（E2E 80/80 含 pseudo-select:34），CI 证据缺口已闭合，本票无回归。
