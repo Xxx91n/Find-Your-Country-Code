@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════════
 // verify-ticket-15.mjs — 票 15 React 19 填充能力探测兜底 单测门（node 直跑，无浏览器）
-// 方法：verify-ticket-09 同心智（src 模块拼接 → new Function 装配）；React 19.2.8
+// 方法：verify-ticket-09 同心智（src 模块拼接 → stripTypeScriptTypes 剥 TS 标注后 new Function 装配，Node >= 22.13）；React 19.2.8
 //   react-dom-client.production.js 实读：_valueTracker / updateValueIfChanged 与 16–18
 //   逐字同构（observed）。覆盖：
 //   P 组 能力探测语义（own accessor + _valueTracker 双条件；任一缺失不命中）
@@ -12,6 +12,7 @@
 // 用法：node tests/scripts/verify-ticket-15.mjs
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -24,6 +25,15 @@ function toModuleBody(file) {
     .replace(/^import[\s\S]*?from\s+'[^']*';\s*$/gm, '')
     .replace(/^export\s+\{[^}]*\};\s*$/gm, '')
     .replace(/^export\s+/gm, '');
+}
+
+// 票 36（A-014）装载修复：函数束须先剥 TS 标注再 new Function（14-lib-engine 同口径），
+// 否则 cch-23 起 SyntaxError。Node >= 22.13（module.stripTypeScriptTypes）。
+function stripTypes(src) {
+  if (typeof stripTypeScriptTypes !== 'function') {
+    throw new Error('verify-ticket-15 需要 Node >= 22.13（module.stripTypeScriptTypes）；CI 已钉 node-version 22');
+  }
+  return stripTypeScriptTypes(src, { mode: 'strip' });
 }
 
 const i18nBody = toModuleBody(join(ROOT, 'src', 'i18n.ts')).replace(/navigator\.language/g, '__navLanguage');
@@ -107,10 +117,11 @@ const bundle = [
   i18nBody,
   toModuleBody(join(ROOT, 'src', 'iti-adapter', 'index.ts')),
   toModuleBody(join(ROOT, 'src', 'fill', 'index.ts')),
-  '\n;return { createFill, makePlain, makeReact, updateValueIfChanged, reactTrack, window };',
 ].join('\n');
 
-const { createFill, makePlain, makeReact, updateValueIfChanged, reactTrack, window } = new Function(bundle)();
+// stripTypes 以模块语法解析（顶层 return 不合法）——先剥类型再拼返回语句
+const { createFill, makePlain, makeReact, updateValueIfChanged, reactTrack, window } =
+  new Function(stripTypes(bundle) + '\n;return { createFill, makePlain, makeReact, updateValueIfChanged, reactTrack, window };')();
 const Fill = createFill({ toast() {} });
 
 let pass = 0, fail = 0;
@@ -256,7 +267,9 @@ const probeSrc = readFileSync(join(ROOT, 'src', 'fill', 'index.ts'), 'utf8');
   check('S1:fill-single-assign', assignFill === 1, `src/fill 直接赋值 ${assignFill} 次（应仅 _inject 兜底 1 次）`);
   check('S2:adapter-zero-assign', assignAd === 0, `src/iti-adapter 直接赋值 ${assignAd} 次`);
   check('S3:probe-single-point', (fillSrc.match(/_probe\.hit\(/g) || []).length === 1 && (fillSrc.match(/_probe\.forceDiff\(/g) || []).length === 1, '探测+兜底收敛于 _inject 单点');
-  check('S4:dispatch-single', (fillSrc.match(/dispatchEvent/g) || []).length === 1, '事件派发仅 _inject 一处（textarea/select 原型路径未改）');
+  check('S4:dispatch-single',
+    (fillSrc.match(/dispatchEvent/g) || []).length - (fillSrc.match(/dispatchEvent\(new KeyboardEvent/g) || []).length === 1,
+    '值事件派发仅 _inject 一处（textarea/select 原型路径未改；cch-18 伪 select keydown 键盘派发不入值事件口径——ADR-0006 后果1 登记修法）');
   check('S5:probe-readonly', fillSrc.includes('Object.getOwnPropertyDescriptor(el, \'value\')') && !fillSrc.includes('defineProperty'), '探测只读（不写元素属性，无新失败面）');
 }
 
