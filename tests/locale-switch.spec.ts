@@ -81,5 +81,5 @@ test('\u9A8C\u65363 \u8BED\u8A00\u504F\u597D\u5199\u5165 UI_PREFS_KEY\uFF0C\u4E0
   expect(keys).toContain('cch_ui_prefs_v1');
   expect(keys).not.toContain('cch_site_rules_v1');
   expect(keys).not.toContain('cch_v33');
-  expect(wrapperFor(page, '#cc-strong')).toHaveCount(1); // \u5207\u6362\u8BED\u8A00\u4E0D\u5F71\u54CD\u6CE8\u5165
+  await expect(wrapperFor(page, '#cc-strong')).toHaveCount(1); // \u5207\u6362\u8BED\u8A00\u4E0D\u5F71\u54CD\u6CE8\u5165
 });
