@@ -3,6 +3,9 @@
   "version": "1.5.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "tests/vendor/react19"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite",
@@ -14,8 +17,6 @@
     "playwright": "^1.62.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-dom19": "npm:react-dom@^19.2.8",
-    "react19": "npm:react@^19.2.8",
     "typescript": "^5.7",
     "vite": "^6.0",
     "vite-plugin-monkey": "^5.0",

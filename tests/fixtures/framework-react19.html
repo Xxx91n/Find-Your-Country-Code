@@ -6,7 +6,7 @@
 </head>
 <body>
 <h1>React 19 受控组件（能力探测 + 强制 diff 兜底 [AM 核心结论9]）</h1>
-<p>React 19 不再发布 UMD，本页依赖由 tests/server.mjs 现场把 npm 生产构建（react19/react-dom19 别名包）
+<p>React 19 不再发布 UMD，本页依赖由 tests/server.mjs 现场把 npm 生产构建（tests/vendor/react19 独立安装根）
 转译为 ESM 供给（/gen/react19/*），hermetic 无外部 CDN。受控 select/input 的填充必须经 React onChange
 同步进组件状态；探测命中时注入层在事件派发前强制 tracker 快照 diff（票 15）。</p>
 <pre id="r19-boot-error" hidden></pre>

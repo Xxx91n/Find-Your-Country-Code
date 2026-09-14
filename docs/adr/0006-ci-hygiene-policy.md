@@ -11,7 +11,7 @@
 1. **CI 脚本位置约定**：一切被 CI 引用的验证/校准脚本置于 `tests/scripts/`（脚本以自身位置上溯 2 级锚定仓库根）；`.github/workflows/*.yml` 禁止出现 `.scratch/` 路径引用。`.scratch/architecture-recovery/research/scripts/` 降级为可抛弃调研现场，不再是 CI 单点故障。（票 20：9 脚本迁移、workflows `.scratch/` 引用清零；calibration run 34569015933 + E2E run 34568992880 绿）
 2. **PR 门控策略**：所有非发版 workflow 必须声明 `pull_request:` 触发，main 合入以 CI 门禁为前置（typecheck + E2E + calibration baseline + verify-* 票级回归）；发版系 `release.yml` / `release-dry-run.yml` 例外，只由发版事件与手动触发。（票 21：六 workflow 补齐 + 票 23 typecheck.yml 原生自带，PR#2 实证六 run 并行触发；verify-15 预存红见后果 1）
 3. **类型门禁**：`tsconfig.json` 保持 `"strict": true`；`npm run typecheck`（tsc --noEmit）由 typecheck.yml 在 pull_request / push(main, cch/**) / workflow_dispatch 三事件执行。类型修复必须 types-only——以同提交 E2E 绿为无运行时行为变更的实证；共享类型层集中 `src/types.ts`，禁 `as any` 逃逸。（票 23：240→0 错误四轮收敛，Typecheck run 34590080334 + E2E run 34590080352 同提交 7b98132 双绿）
-4. **依赖版本钉死策略**：package.json 依赖一律显式 semver 范围、禁 `latest` 浮动（typescript `^5.7` / vite `^6.0` / vite-plugin-monkey `^5.0`）；CI 安装以 package-lock.json + `npm ci` 复现。`--legacy-peer-deps` 属登记在案待清偿的例外而非策略。（票 25：devDependencies `latest` 清零、七 workflow 移除该 flag；typecheck.yml 残留 1 处见后果 2）
+4. **依赖版本钉死策略**：package.json 依赖一律显式 semver 范围、禁 `latest` 浮动（typescript `^5.7` / vite `^6.0` / vite-plugin-monkey `^5.0`）；CI 安装以 package-lock.json + `npm ci` 复现。`--legacy-peer-deps` 属登记在案待清偿的例外而非策略；**该例外已由票 43（A-021）根修清偿**——同一项目内互斥的两个大版本（React 18 与 React 19）分居两个 install root（npm workspaces：根项目 + `tests/vendor/react19`），使每棵安装树的 peerDependencies 各自自洽。（票 25：devDependencies `latest` 清零、七 workflow 移除该 flag；typecheck.yml 残留 1 处见后果 2）
 5. **目录结构约定**：仓库只有一个 `tests/` 根：`manual/` 手工验证页、`scripts/` CI 验证脚本、`fixtures/`+`corpus/` 语料、`*.spec.ts` E2E；`test/` 废止（3 个手工验证页迁至 `tests/manual/`）。冻结基准不入库：v1.3.4 遗留单文件已删除，历史对照走 `git show v1.3.4`（CONTRIBUTING 双语已改）；死导出删除以 rg 零调用者为前提，存活调用者（store 侧 subscribe）保留。（票 22/25：E2E run 34569162088 场景 A–E 绿证行为不变）
 
 ## 依据（全部 observed，证据锚点为 commit sha / CI run，非磁盘态）
@@ -35,7 +35,7 @@
 - `.scratch/` 不再是 CI 依赖：删除调研现场不影响流水线；其归档/清理留待后续周期（本周期 spec 明确 Out of Scope）。
 - 本周期登记三项遗留，属执行残差而非策略推翻：
   1. **F-1 verify-15 S4 门预存红**（PR run 34606286040 与 main 基线 run 34606594163 同红 27/28）：断言「dispatchEvent 恰 1 处」早于 cch-18 引入 pseudo-select keydown 第二派发点（src/fill/index.ts:246），PR 门控合入 main 后将挡所有 PR；修法为 S4 口径限定（仅统计 input/change 值事件派发点）或豁免登记——待返修票，票 21/26 窗口均无改测试授权未动。
-  2. **typecheck.yml 残留 `--legacy-peer-deps`**（D-23b：react@18 与 react-dom19 别名双 peer 结构性冲突使裸 npm ci 必红；票 25 的七 workflow 清单不含票 23 新建文件）。根治双 react 依赖或 lockfile 实证后可移除；移除前按票 25 §4 约定加注释锚定原因。
+  2. ~~**typecheck.yml 残留 `--legacy-peer-deps`**（D-23b：react@18 与 react-dom19 别名双 peer 结构性冲突使裸 npm ci 必红；票 25 的七 workflow 清单不含票 23 新建文件）。根治双 react 依赖或 lockfile 实证后可移除。~~ **已清偿（票 43 / A-021，2026-09-14）**：React 18 与 React 19 分居两个 install root（根项目 + `tests/vendor/react19` workspace），react19/react-dom19 别名已移除，`.npmrc` 的 `legacy-peer-deps=true` 与全部 workflow 内联 flag 清零，裸 `npm ci` 在干净环境可复现。
   3. **lockfile 重生成待 CI 实证**（票 25 AC4 pending；工作区尚存他窗在途的 workflow 安装命令改动，本票不触碰）。
 - V5 过程教训：票 23 在「本周期消除该 flag」背景下新建 workflow 反向引入 flag——新 workflow 一律以基线最新口径起稿（建议写回 WORKFLOW §5）。
 - CONTEXT.md 新增「工程门禁与仓库卫生」术语节（CI 门禁 / PR 门控 / 密封 E2E / 类型门禁 / 依赖钉死），后续周期以词表为准引用。

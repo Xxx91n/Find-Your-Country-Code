@@ -26,7 +26,7 @@ const ROUTES = [
   { prefix: '/vendor/react/', dir: path.join(ROOT, 'node_modules', 'react') },
   { prefix: '/vendor/react-dom/', dir: path.join(ROOT, 'node_modules', 'react-dom') },
   { prefix: '/vendor/vue/', dir: path.join(ROOT, 'node_modules', 'vue', 'dist') },
-  // 票 15 React 19 本地 vendored（npm 别名包 react19/react-dom19 生产构建，hermetic 无外网）
+  // 票 15 React 19 本地 vendored（生产构建，hermetic 无外网）；票 43 起改由独立 install root 供给
 
   { prefix: '/gen/react19/', handler: serveReact19Gen },
 
@@ -39,11 +39,15 @@ const CDN_LOCAL = '/vendor/intl-tel-input/build/';
 // React 19 npm 包不再发布 UMD/min 构建；按真实 require 图（react → scheduler →
 // react-dom → react-dom-client）现场拼装 ESM。转译只改写 require()/exports. 赋值，
 // 模块体内代码逐字保留（无打包器语义漂移）；页面以命名空间 import 消费。
+// 票 43（A-021）：React 19 生产构建改由独立 npm install root 供给（workspaces: tests/vendor/react19）。
+// 根项目的 react@18 与本 vendor 根的 react@19 分居两棵安装树，peerDependencies 各自自洽，
+// 因此安装面不再需要 --legacy-peer-deps（原 react19/react-dom19 别名包已移除）。
+const REACT19_ROOT = path.join(ROOT, 'tests', 'vendor', 'react19', 'node_modules');
 const REACT19_FILES = {
-  react: 'react19/cjs/react.production.js',
-  scheduler: 'react-dom19/node_modules/scheduler/cjs/scheduler.production.js',
-  'react-dom': 'react-dom19/cjs/react-dom.production.js',
-  'react-dom-client': 'react-dom19/cjs/react-dom-client.production.js',
+  react: 'react/cjs/react.production.js',
+  scheduler: 'scheduler/cjs/scheduler.production.js',
+  'react-dom': 'react-dom/cjs/react-dom.production.js',
+  'react-dom-client': 'react-dom/cjs/react-dom-client.production.js',
 };
 
 const REACT19_CACHE = new Map();
@@ -53,7 +57,7 @@ async function react19Esm(name, stack = []) {
   if (stack.includes(name)) throw new Error('react19 dependency cycle: ' + stack.concat(name).join(' -> '));
   const rel = REACT19_FILES[name];
   if (!rel) throw new Error('react19 module unknown: ' + name);
-  const src = await readFile(path.join(ROOT, 'node_modules', rel), 'utf8');
+  const src = await readFile(path.join(REACT19_ROOT, rel), 'utf8');
   const imports = [];
   const names = [];
   let body = src

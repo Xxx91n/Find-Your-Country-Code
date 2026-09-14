@@ -1,6 +1,6 @@
 // 票 15 React 19 受控组件 E2E：能力探测命中 → 强制 diff 兜底；填充后组件状态与提交值真实同步。
-// fixture hermetic：React 19 不再发布 UMD，tests/server.mjs 现场把 npm 生产构建（react19/react-dom19
-// 别名包）转译为 ESM 供给（/gen/react19/*），无外部 CDN。React 16–18 基线回归见 framework-inject.spec.ts。
+// fixture hermetic：React 19 不再发布 UMD，tests/server.mjs 现场把 npm 生产构建（tests/vendor/react19
+// 独立安装根）转译为 ESM 供给（/gen/react19/*），无外部 CDN。React 16–18 基线回归见 framework-inject.spec.ts。
 import { test, expect } from 'playwright/test';
 import { installUserscript, wrapperFor, openPanel } from './helpers/userscript';
 

@@ -1,10 +1,11 @@
 name: Lockfile Regen
 
-# 联②（票 34 R1）：lockfile 失同步修复（预存红 EUSAGE：cch-25 钉死 package.json 未再生 lockfile）。
-# 以 package.json（票 25 钉死版）为真相源，CI 云端 npm install 再生 package-lock.json，
+# lockfile 再生与同步断言：以 package.json（钉死版）为真相源再生 package-lock.json，
+# 并以 npm ci --dry-run 断言与 package.json 同步（失同步即红）。
 # 以 artifact 交付（lockfile-regen-<run>）。本 workflow 不自动 push（避免自动提交越权）；
-# artifact 内容由维护者确认后入库，typecheck.yml 的 npm ci 随之恢复同步。
+# artifact 内容由维护者确认后入库。
 # 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)（见 CONTEXT.md）。
+# 票 43（A-021）：安装面根修后不再需要 peer 例外开关（React 18/19 分居两个 install root）。
 
 on:
   workflow_dispatch:
@@ -36,13 +37,13 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Regen lockfile (npm install with legacy-peer-deps)
-        run: npm install --legacy-peer-deps
+      - name: Regen lockfile
+        run: npm install
 
       - name: Assert lockfile regenerated and in sync
         run: |
           if [ ! -f package-lock.json ]; then echo "::error::package-lock.json missing"; exit 1; fi
-          npm ci --legacy-peer-deps --dry-run
+          npm ci --dry-run
 
       - name: Upload lockfile artifact
         uses: actions/upload-artifact@v4

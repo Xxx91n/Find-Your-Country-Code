@@ -118,7 +118,7 @@ tsconfig `strict: true` + `npm run typecheck`（tsc --noEmit）+ CI typecheck wo
 _Avoid_: 静态检查（泛称，不含 types-only 承诺与阻断语义）
 
 **依赖钉死（dependency pinning）**：
-依赖以显式 semver 范围写入 package.json（禁 `latest` 浮动）、经 package-lock.json + `npm ci` 复现安装的策略；`--legacy-peer-deps` 属登记在案的临时例外而非策略。
+依赖以显式 semver 范围写入 package.json（禁 `latest` 浮动）、经 package-lock.json + `npm ci` 复现安装的策略；同一项目内互斥的两个大版本（如 React 18/19）分居两个 install root（npm workspaces），使每棵安装树的 peerDependencies 各自自洽，安装面不需要 `--legacy-peer-deps`（票 43 / A-021 起）。
 _Avoid_: 版本锁定（指 lockfile 机制本身；钉死含范围书写纪律）
 
 （决策记录见 `docs/adr/0006-ci-hygiene-policy.md`。）

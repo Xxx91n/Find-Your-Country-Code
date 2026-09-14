@@ -33,11 +33,8 @@ jobs:
       - name: Ticket-27 acceptance gate
         run: node tests/scripts/verify-ticket-27.mjs
 
-  # E2E 证据作业（票 27）：共享 .github/workflows/e2e.yml 的 Install dependencies 步骤
-  # 在本票栈上仍因 react 18 / react-dom19 别名冲突 ERESOLVE 失败——该内联修复归属 cch/34，
-  # 集中 .npmrc 口径归属 cch/31 D-31a，二者均为独立分支，合流前本栈不可见（窗口报告 D-27a）。
-  # 本作业在本票自有 workflow 内复刻同一步骤并显式 --legacy-peer-deps，只运行本票新增的
-  # 弱信号 fixture 规格，不改动任何共享 CI 文件（避免与 cch/31 / cch/34 产生合并冲突）。
+  # E2E 证据作业（票 27）：只运行本票新增的弱信号 fixture 规格，不改动共享 CI 文件。
+  # 票 43（A-021）安装面根修后，React 18 / React 19 分居两个 install root，裸 npm ci 可复现。
   ticket-27-e2e:
     name: Ticket-27 E2E (weak-signal fixture)
     runs-on: ubuntu-latest
@@ -50,10 +47,8 @@ jobs:
         with:
           node-version: 22
 
-      # 共享安装面缺陷 D-27a：裸 npm install 遇 ERESOLVE（react-dom19 别名要求 react@^19，
-      # 根项目钉 react@^18.3.1）。与 cch/34 内联修复同口径；合流后由 .npmrc 统一，届时本行可删。
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
