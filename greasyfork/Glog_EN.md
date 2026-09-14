@@ -1,3 +1,12 @@
+## v1.6.0 Changelog
+
+- New: A global panel entry — open the country-code panel straight from the userscript menu, without depending on a 🌐 icon appearing on the page. The old dead end (no field confident enough → no icon → panel unreachable) is gone, and low-confidence fields can be summoned from the panel.
+- Improved: The low-key icon now sits inside the field's right edge, so form-container overflow can no longer clip it; its “ad-like” cues are reduced (no heavy shadow, no oversaturation) so it is easier to notice.
+- New: The panel language is switchable (follow browser / Chinese / English) and persisted via userscript storage, instead of always following the browser language.
+- Fixed: Clicking the icon no longer silently does nothing in nested iframes (Shadow-DOM-wrapped or multiply embedded) — the top frame can open the panel on behalf; when origin validation rejects a message, a visible notice is shown instead of a silent no-op.
+- Security: Cross-frame origin validation now covers more cases while staying strict (same-origin compares origin, cross-origin falls back to a source reference comparison) — the security boundary is not relaxed.
+- Improved: The dependency install conflict is fixed at the root (React 18/19 in separate install roots), making the build and test pipeline more stable.
+
 ## v1.5.0 Changelog
 
 - New: Weak-signal country/dial-code fields are now detected — fields with no visible text label that only carry attribute hints (name / id / placeholder / aria) move from "not detected" to the low-key tier (icon restored on hover); fixed-line area codes, honorific prefixes and pure numeric dropdowns still raise no false icons.
