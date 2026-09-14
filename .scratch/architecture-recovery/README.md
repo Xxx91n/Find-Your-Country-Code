@@ -261,12 +261,12 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 票 | 覆盖 | 状态 | 报告路径 | 波次 |
 |----|------|------|----------|------|
 | 36 门禁完整性返修 | A-014, A-015, A-020 | **done（复核通过）** — 12 CI run 实物全 success；A-020 跨票承载于 43 | `research/window-reports/36-gate-integrity-repair-report.md` | W1 |
-| 37 入口可达性 | A-012, A-013 | **⚠️ 实现属实、CI 证据缺失** — 未推送，无 run ID（待授权 push） | `research/window-reports/37-entry-point-accessibility-report.md` | W1 |
+| 37 入口可达性 | A-012, A-013 | **done（R1 复核通过）** — CI 先红(34845561008)后绿(0350110f/19d0b83b 各 5 run success)；修复 _pos 盒内锚点；本地 E2E 95 passed + verify-37 20/20 | `research/window-reports/37-entry-point-accessibility-report.md` | W1 |
 | 40 帧治理降级反馈 | A-017 | **done（复核通过）** — 4 CI run 实物全 success | `research/window-reports/40-frame-governance-degradation-report.md` | W1 |
 | 42 语言切换收口 | A-019 | **done（复核通过，含 R1）** — R1 返工后 7 run 实物 success | `research/window-reports/42-locale-switch-report.md` | W1 |
 | 43 依赖根修 | A-021 | **done（复核通过）** — 4 CI run success；提交信息转义缺陷另计 | `research/window-reports/43-dependency-peer-rootfix-report.md` | W1 |
-| 44 检测语义裁决与语料先行 | A-022, A-023 | **⚠️ 实现属实、CI 证据缺失** — 未推送，无 run ID（待授权 push） | `research/window-reports/44-detection-semantics-adjudication-report.md` | W1 |
-| 38 分发最后一公里 | A-011 | **⚠️ 实现属实、CI 证据缺失** — 分支未推送；GF 侧 Sync 待用户开通（A-011 部分完成） | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
+| 44 检测语义裁决与语料先行 | A-022, A-023 | **done（复核通过）** — 补 CI 后 4 run 全 success（无专属 verify-44 门，共享工作流覆盖） | `research/window-reports/44-detection-semantics-adjudication-report.md` | W1 |
+| 38 分发最后一公里 | A-011 | **done（复核通过）** — 补 CI 后 5 run 全 success（含 Verify-38 与 E2E 80 passed）；GF 侧 Sync 仍待用户开通 | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
 | 39 真实站点层启用 | A-016 | **done（复核通过）** — 7 run 实物全 success（含 Real-site smoke ×2）；live 启用数 0→2 | `research/window-reports/39-real-site-enablement-report.md` | W2 |
 | 41 过程证据出仓与升塔纪律 | A-018 | **ready-for-agent** | `research/window-reports/41-process-evidence-archive-report.md` | W3 |
 | 45 仓库与流程收口 | A-024, A-025 | **ready-for-agent** | `research/window-reports/45-repo-process-closeout-report.md` | W4 |
@@ -281,6 +281,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 42 | `prompts/42-locale-switch.md` |
 | 43 | `prompts/43-dependency-peer-rootfix.md` |
 | 44 | `prompts/44-detection-semantics-adjudication.md` |
+| 37-FIX | `prompts/37-entry-point-accessibility-fix.md`（返工轮次 R1） |
 | 38 | `prompts/38-distribution-last-mile.md` |
 | 39 | `prompts/39-real-site-enablement.md` |
 | 41 | `prompts/41-process-evidence-archive.md` |
@@ -324,6 +325,29 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 **frontier（W2 复核后重算）**：W2 实现层全清 → **W3 可开工：票 41（←36,37,38,39,40,42,43,44 均已落盘）**。W4（45）待 41。
 
 ⚠️ **开 41 前建议**：票 41 会归档 .scratch 冻结证据，而 37/38/44 的 CI 证据尚未补齐（P-1）——**先补 push 取 CI，再归档**。
+
+---
+### W2 补 CI 证据 + 票 37 返工轮次 R1（首脑复核，2026-09-14）
+
+- **CI 证据补齐（授权 push 三支）**：票 38 5 run 全 success（head 67b7aaec）；票 44 4 run 全 success（head a8ee1a83）；票 37 5 run 终态落档但 **E2E 失败**。
+
+- **票 37 失败（已实物复核）**：run `34845561008`，`tests/pseudo-select.spec.ts:46` 点击超时 30000ms，Playwright 日志 57 次重试均为 `#cch-pop`/`#cch-sw` 子树拦截指针事件；全量 88 passed / 1 failed。
+
+- **非 flaky 旁证**：同一 spec 在票 38（E2E 34845596301）与票 44（E2E 34845607981）分支均 **通过**（✓ 43），失败仅出现在含票 37 改动的分支。
+
+- **根因（R1 窗口独立归因）**：A-013 把 lowkey 图标由盒外 `right:-12px` 移入盒内 `right:6px`，包围盒左缘左移 ≈18px；面板按锚点左缘定位随之左移，把「面板左缘 vs 相邻字段图标右缘」的横向余量由 ≈27px 压到 ≈11px。余量是**字体度量相关**量——本地 Windows 10.9px（绿），Linux CI 漂移 >11px 即翻负（红）。**既非 flaky 也非 auto 图标被改位。**
+
+- **修复**：`src/ui/index.ts` `_pos()`——锚点为字段盒内图标时，面板左缘改锚到**字段右缘 + 8px**（余量恢复 ≈47px）；盒外 auto 路径零改动。未改图标定位、未削弱/删改任何断言或用例、未回退 A-012/A-013。
+
+- **R1 验收**：`verify-ticket-37.mjs` **20 PASS/0 FAIL**；`npx playwright test` **95 passed**（本地实物复跑）；`npm run typecheck` 0 错；CI 修复头 `0350110f` 与最终头 `19d0b83b` **各 5 run 全 success**（含 E2E 90 passed，票 18 pseudo-select ✓）。
+
+- **R1 增量**：新增密封回归 `tests/fixtures/lowkey-occlusion.html` + `entry-access.spec.ts:102` 用例（修前确定性红、修后绿）——把 CI-only 失败落成本地可复现断言；未触碰票 18 任何文件。
+
+- **报告**：R1 节已**追加**写入原 `research/window-reports/37-entry-point-accessibility-report.md`（未覆盖原记录）。
+
+**frontier（重算）**：W1 + W2 全部**实现层与 CI 证据均闭合** → **W3 可开工：票 41**（←36,37,38,39,40,42,43,44 均已落盘且 CI 已补）。W4（票 45）待 41。
+
+**仍待用户动作**：① 票 38 的 GF 侧 Sync 开通（手册 `docs/greasyfork-sync-setup.md`）；② 票 41 由用户手动开；③ P-2/P-3 已推送提交信息是否改写。
 
 ---
 ### 辩证校正（入档）
