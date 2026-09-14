@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>iframe 三层嵌套 fixture — 票 40</title></head>
+<body>
+<h1>三层嵌套帧治理（顶层字段 + 同源中间帧→跨域孙帧 + shadow 包裹跨域帧）</h1>
+<form id="top-form">
+  <label>国家区号
+    <select id="top-cc" name="countryCode">
+      <option value="">选择…</option>
+      <option value="+86">+86</option>
+      <option value="+81">+81</option>
+      <option value="+44">+44</option>
+      <option value="+1">+1</option>
+      <option value="+49">+49</option>
+      <option value="+33">+33</option>
+      <option value="+61">+61</option>
+      <option value="+7">+7</option>
+    </select>
+  </label>
+</form>
+<!-- 第 2 层：同源中间帧，其文档内再嵌第 3 层跨域孙帧 -->
+<iframe id="f-mid" src="/fixtures/iframe-mid.html" width="640" height="360"></iframe>
+<!-- open shadowRoot 包裹的跨域子帧：iframe 元素对顶层 DOM querySelectorAll 不可达，
+     但其浏览上下文仍是本页子帧（window.length/indexed 枚举与 DOM 封装无关） -->
+<!-- 第 2 层变体：跨域中间帧（alt 端口），其内孙帧与中间帧同源（仍与顶层跨域）——
+     顶层无法读中间帧 document，只能靠跨域 Window 索引枚举（window[i][j]）验证来源 -->
+<iframe id="f-mid-x" width="640" height="340"></iframe>
+<div id="shadow-host"></div>
+<script>
+(function () {
+  var alt = 'http://127.0.0.1:' + (Number(location.port) + 1);
+  document.getElementById('f-mid-x').src = alt + '/fixtures/iframe-mid-x.html';
+  var root = document.getElementById('shadow-host').attachShadow({ mode: 'open' });
+  var f = document.createElement('iframe');
+  f.id = 'f-shadow-x';
+  f.width = '640'; f.height = '300';
+  f.src = alt + '/fixtures/iframe-child.html';
+  root.appendChild(f);
+})();
+</script>
+</body>
+</html>
