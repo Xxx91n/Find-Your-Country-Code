@@ -10,7 +10,8 @@
 - **归档位置（仓库外）**：`D:\Aworker\mozilla\choose-your-country-evidence-archive\`（保留原 `.scratch/architecture-recovery/…` 相对结构；逐文件 SHA-256 与清单见归档根 `ARCHIVE-MANIFEST.json`）
 - **历史副本**：归档前工作树 = commit `b7b1f0a2`；任一归档文件可用 `git show b7b1f0a2:.scratch/architecture-recovery/<相对路径>` 取回
 - **引用约定**：本文件与 `decision-ledger.md` 中引用 `research/`（`window-reports/` 除外）、`verification/`、`report/`、`cycle3-closure/`、`cycle4-closure/`、`spec-cycle*.md` 的路径，一律相对**归档根**解析（不再位于本目录）
-- **归档范围**：199 文件 / 978KB；`git ls-files .scratch` 397 → 198（仅剩现役）
+- **归档范围**：冻结清单 199 文件 / 978KB（归档根 `ARCHIVE-MANIFEST.json` 逐文件 SHA-256）。其中 **188 文件已移出工作树**；**11 文件保留**——它们由未落地的 `cch/39-real-site-enablement` / `cch/43-dependency-peer-rootfix` / `cch/36-cycle5-brain` 创建，不在本票分支基线内，单一栈无法表达其删除（且不得移动他票分支），待其落地后归档
+- **量化**：`git ls-files .scratch` **397 → 209**（198 现役流程文件 + 11 在途票产物）
 
 ## 产物地图
 
