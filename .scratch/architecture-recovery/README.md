@@ -260,12 +260,12 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 
 | 票 | 覆盖 | 状态 | 报告路径 | 波次 |
 |----|------|------|----------|------|
-| 36 门禁完整性返修 | A-014, A-015, A-020 | **ready-for-agent** | `research/window-reports/36-gate-integrity-repair-report.md` | W1 |
-| 37 入口可达性 | A-012, A-013 | **ready-for-agent** | `research/window-reports/37-entry-point-accessibility-report.md` | W1 |
-| 40 帧治理降级反馈 | A-017 | **ready-for-agent** | `research/window-reports/40-frame-governance-degradation-report.md` | W1 |
-| 42 语言切换收口 | A-019 | **ready-for-agent** | `research/window-reports/42-locale-switch-report.md` | W1 |
-| 43 依赖根修 | A-021 | **ready-for-agent** | `research/window-reports/43-dependency-peer-rootfix-report.md` | W1 |
-| 44 检测语义裁决与语料先行 | A-022, A-023 | **ready-for-agent** | `research/window-reports/44-detection-semantics-adjudication-report.md` | W1 |
+| 36 门禁完整性返修 | A-014, A-015, A-020 | **done（复核通过）** — 12 CI run 实物全 success；A-020 跨票承载于 43 | `research/window-reports/36-gate-integrity-repair-report.md` | W1 |
+| 37 入口可达性 | A-012, A-013 | **⚠️ 实现属实、CI 证据缺失** — 未推送，无 run ID（待授权 push） | `research/window-reports/37-entry-point-accessibility-report.md` | W1 |
+| 40 帧治理降级反馈 | A-017 | **done（复核通过）** — 4 CI run 实物全 success | `research/window-reports/40-frame-governance-degradation-report.md` | W1 |
+| 42 语言切换收口 | A-019 | **done（复核通过，含 R1）** — R1 返工后 7 run 实物 success | `research/window-reports/42-locale-switch-report.md` | W1 |
+| 43 依赖根修 | A-021 | **done（复核通过）** — 4 CI run success；提交信息转义缺陷另计 | `research/window-reports/43-dependency-peer-rootfix-report.md` | W1 |
+| 44 检测语义裁决与语料先行 | A-022, A-023 | **⚠️ 实现属实、CI 证据缺失** — 未推送，无 run ID（待授权 push） | `research/window-reports/44-detection-semantics-adjudication-report.md` | W1 |
 | 38 分发最后一公里 | A-011 | **ready-for-agent** | `research/window-reports/38-distribution-last-mile-report.md` | W2 |
 | 39 真实站点层启用 | A-016 | **ready-for-agent** | `research/window-reports/39-real-site-enablement-report.md` | W2 |
 | 41 过程证据出仓与升塔纪律 | A-018 | **ready-for-agent** | `research/window-reports/41-process-evidence-archive-report.md` | W3 |
@@ -292,6 +292,21 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - **启动器自检**：10/10 PASS（行数 ≤23、违禁词 0、复述条款 0、handoff 通用调研要求各 1 次、路径全可解析、A-xxx 均已声明）。报告 `research/launcher-selfcheck.md`。
 - **B-1…B-10 backlog**：10/10 全部有去向（B-1→A-011/票38、B-2→A-024/票45、B-3→A-015/票36、B-4→A-014/票36、B-5→A-020/票36、B-6→A-022/票44、B-7→A-023/票44、B-8→A-016/票39、B-9→A-021/票43、B-10→A-025/票45）。
 
+### W1 复核结论（首脑，2026-09-14）
+
+> 报告：`research/cycle5-wave1-review.md`（声明→证据→结论对照表 + 账本维度 + 过程违规）
+
+- **实现层：W1 六票全部通过**（无源码返工）。实物验证：12 个票级门实跑全绿（09=36/36、13=28、15=28、18=35、37=20、42=42、02=36+G10 5/5、05=100、27=90、28=19、29=PASS、31=48）；全量 E2E **94 passed**；CI run 实物：36=12/40=4/42=7(抽验)/43=4 均 success。
+
+- **账本：6 票 10 条 A-xxx 均得实现证据**；弱化项：A-012/A-013（票37）、A-022/A-023（票44）**无 CI 证据**（未推送）；A-020 跨票承载于 43。
+
+- **过程违规（单独呈报，未代为追认）**：P-1 票 37/44 未推送无 CI 证据（违反 CI-only）；P-2 cch/43 提交信息为字面量 \uXXXX 转义不可读；P-3 cch/44 提交缺 `fix(cch-44):` 前缀；P-4 3 个 issue 勾选未提交；P-5 波内堆叠（36→43、37→42）；P-6 票37 报告以 but ID 充 commit。
+
+- **返工判定：无源码层面问题，不重发修复版启动器**；待处置均为证据/过程项。
+
+**frontier（W1 复核后重算）**：W1 实现层全清 → **W2 可开工：票 38（←36 ✅）、票 39（←40 ✅）**，两票可并行。W3（41）待 W2；W4（45）待 41。
+
+---
 ### 辩证校正（入档）
 
 - 锐评 Round 3「git 历史第三次归零 / tag 非 main 祖先」经实测**证伪**（origin/main 有父提交、163 commits、v1.3.4/v1.4.0/v1.5.0 均为祖先）——**未登记为 A、不立票**。
