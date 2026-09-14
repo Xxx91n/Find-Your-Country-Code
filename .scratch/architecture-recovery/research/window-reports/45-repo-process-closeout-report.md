@@ -2,7 +2,7 @@
 
 > Cycle-5 | 票: `issues/45-repo-process-closeout.md` | 覆盖 A-xxx: **A-024, A-025**
 > 分支：`cch/45-repo-process-closeout`（按 WORKFLOW §4.2 GitButler）| common base：`e2a10d8e`（Cycle-4 收口头）
-> 提交：`{{IMPL_SHA}}`（实现提交；本报告与其同批落盘）
+> 提交：`741c2807`（实现提交 `xqp`；本报告与其同批落盘）| 分支堆叠：`cch/45-repo-process-closeout` 锚定于 `cch/41-process-evidence-archive` 之上（`--above`，与 issue 声明 `Blocked by: 票 41` 一致）
 
 ## 0. 开工复述（阻塞项与必读清单）
 
