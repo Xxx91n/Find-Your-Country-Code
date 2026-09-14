@@ -99,6 +99,7 @@
 | 2026-09-12 | S8(票27R1) | 跨栈行为改动的组合从未被任何单票验证：票 27 的 attr:phrase +8 在合入 main 后使 verify-ticket-02 P8（dial 下拉+aria 强短语+锚，68→76）跨 auto 线，公共引擎门独红（run 34708464239）——票 27 只跑了自有门，票 34 的 EG 绿取自不含 27/28/29 的栈 | 行为面改动（评分/阈值/信号叠加）合入前必须在含全部前序票的合序栈复跑公共门（engine-gates/calibration），不得以单栈绿自证；公共门红即触发裁决返修 |
 | 2026-09-14 | S7(票44) | GitButler 在 Windows 保留设备名文件上静默失效：仓库根出现 0 字节文件 `nul`（Git Bash `>nul` 重定向产物）后，`but status`/`but diff` 一律报 `Error: 函数不正确。 (os error 1)`（ERROR_INVALID_FUNCTION），而 `but --version` / `but branch list` / `but * --help` 全部正常——表象像 CLI 损坏，实为工作树读取器对保留名 stat 失败；共享工作区下该文件同时阻断所有并行窗口的提交（诊断约 1 小时，先误判为「并行窗口改动 / 符号链接」） | 本工作区 shell 重定向统一用 `>/dev/null`，禁用 `>nul`；`but status` 报 os error 1 时先核验仓库内是否有 `nul`/`CON`/`PRN`/`AUX` 等保留名文件；已实测把 `nul` 写入 `.gitignore` 可解除阻断（文件在场也不报错） |
 | 2026-09-14 | S7(票41) | 过程证据膨胀 diff 面：`.scratch` 全部 397 文件被 git 跟踪（与「冻结目录禁改」约定相互矛盾），每次 diff/检出的表面积被档案噪声污染 | 冻结过程证据归档出工作树索引（归档不销毁：仓库外副本 + 历史 sha 双份），工作树只留现役流程文件；升塔纪律落 §4.5；`.gitignore` 零新增通配 |
+| 2026-09-14 | S7(票45) | 台账登记的外部状态会失效：A-024 记载「已合并的 `origin/cch/*` 11 支未清理」，票 45 开工实物核验（live `git ls-remote` + 逐支 `git merge-base --is-ancestor`）显示该 11 支（Cycle-4 land 副产物）**早已不在远端**，远端仅剩 9 支 Cycle-5 在途支且全部未合并——若按登记数字直接批删，会删掉在途交付 | 收口类票开工前必须重跑 `git ls-remote` + 逐支 `merge-base --is-ancestor` 实物核对，禁止沿用台账/报告的登记数字；「清理集为空」也是合法闭环，须以清理前后对比证据勾销 |
 
 ## §6 偏离点清单（呈报用户，逐条确认后才生效）
 
@@ -119,3 +120,26 @@
 2. **合规检查**：(a) prompts 内无 `worktree`/`git checkout`/`git branch` 违禁词；(b) prompts 不复述上游文件条款（只允许"遵循 §X"式引用）；(c) 所有引用路径可解析。
 3. **收口动作**：波次表勾销；若本周期产生新领域词汇 → `CONTEXT.md`（无则懒创建）；产生"不可逆决策 / 被否决路线" → `docs/adr/NNNN-*.md`；教训写回 §5。
 4. 回滚方案：整套架构恢复产物都在 `.scratch/architecture-recovery/`（未跟踪目录），整体删除即回滚；代码变更走 §4.2 的 `but undo` / `but discard`。
+
+## §8 证据边界（CI-only 政策与本地硬验收）
+
+> 依据：Cycle-4 backlog B-10（`cycle4-closure/03-backlog-and-merge-state.md`）→ 台账 **A-025**；票 45 条款化。行业对标：atomcode 深度调研（GitHub protected branches 官方文档 / microsoft/apm `merge-gate.yml` 单一聚合门禁 / pre-commit 官方文档 / 受监管环境部署门禁实操），2026-09-14，落盘 `research/atomcode-45-ci-evidence-boundary.md`。
+> **总原则（不可放松）**：行为面验收的证据**只认 CI run / artifact**，锚点为 commit sha + run ID。本地执行结果一律降级为「开发期自证」，不构成闭环证据。
+
+### §8.1 CI-only 政策
+
+1. **可 CI 复现的验收项，证据必须来自 CI**：门禁（typecheck / E2E / calibration / verify-* / engine-gates / lockfile）、构建产物、版本一致性断言，一律以 GitHub Actions run ID（+ job 结论，必要时 artifact 摘要）为证据。业界共识：客户端 hook 是 client-side validation（不随 clone 分发，`--no-verify` 是一等逃生口），**只有服务端 CI 是可信的验证层**。
+2. **本地自证的表述纪律**：报告与 issue 中出现的「本地全绿」必须显式标注为**本地自证**（附命令与输出摘要），不得作为勾销依据；与 CI 结论冲突时以 CI 为准。本地检查的业界定位是「降低 CI churn 的前置反馈回路」，不是保证。
+3. **CI 红即红**：不得以「本地跑过是绿的」「疑似 flaky」「环境差异」为由绕过红门。红门必须先归因并三选一留痕——① 自身改动；② 基线预存红（须给出同红基线 run ID）；③ CI 基础设施故障（须给出平台侧证据）。归因结论与处置一并落报告。
+4. **禁止以本地结果替代可 CI 化验收**：能进 CI 的断言必须进 CI。把可自动化的验收项留在本地执行以图省事，属护栏失效（等同 §5 已登记的「幸存者名单」式失真）。
+5. **韧性条款（CI-as-evidence 的已知失效模式）**：CI 的权威性依赖其自身可信度——flaky 用例须隔离并单独登记（不得靠静默重跑掩盖）；CI 平台侧事故须有应急流程与留痕；本地与 CI 同源化（同一份 config 两侧执行）以避免行为漂移诱发绕过习惯。
+
+### §8.2 本地硬验收（审计型）边界
+
+**定义**：本地硬验收 = 收口/复核阶段对**无法或不值得在 CI 复现**的产物所做的本地**只读**复核。典型对象：远端 ref 列表、归档文件 SHA-256、`.gitignore` 可提交性、跨文件一致性比对、历史 sha 可达性。
+
+1. **允许面（闭集）**：只读命令（`git ls-remote` / `cat-file` / `ls-tree` / `check-ignore` / `merge-base --is-ancestor` / `for-each-ref` 等）与不改变仓库状态的脚本；批量/聚合脚本落 `.scratch/architecture-recovery/research/scripts/*.mjs`（§2.6）。
+2. **禁止面**：不得以本地硬验收替代任何可 CI 复现的**行为面**验收（§8.1.1）；不得以本地硬验收放松任何 CI 门；不得用本地结果勾销行为面 AC。
+3. **例外登记（四要素，须显式落报告与 issue）**：① 为什么不可 CI 化；② 命令原文；③ 输出摘要；④ 复核窗口/复核人。
+4. **授权路径（默认不自动扩权）**：本地硬验收只覆盖「只读、无副作用」的核查。涉及**远端写**（push / 删除 ref / 改 tag）、凭证门控或不可逆动作，一律**逐次取得用户授权**，并在报告中留授权记录（谁、何时、授权范围）。
+5. **与 §4.5 的关系**：升塔纪律（先沉淀 fixture 再修脚本）不受本条款影响；塔尖真实站点层保持 advisory（§4.5.3）。人工门禁不是「免检」，而是「人作为检查器」，其产出必须与 CI 证据同格式落库——未落流程内的人工批准等于没批准。
