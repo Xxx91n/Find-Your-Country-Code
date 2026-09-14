@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { t, getLocale, setLocale, LOCALE_MODES } from '../i18n';
 import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
 import type { AnyEl, AnyRoot, CchFill, CchRules, CchStore, CchUI, Country, FillKind, OverrideRule, PrefsDoc, Signal, Tier } from '../types';
@@ -231,6 +231,8 @@ border-radius:8px;cursor:pointer;text-align:center}
     try { p = JSON.parse(GM_getValue(UI_PREFS_KEY, 'null')); } catch {}
     if (!p || typeof p !== 'object' || Array.isArray(p)) p = {};
     if (!p.lowkeyMode || !LOWKEY_MODES.includes(p.lowkeyMode)) p.lowkeyMode = 'dim';
+    // 票 42：语言偏好与 lowkeyMode 同文档、同独立键；非法/缺失值回落 auto（跟随浏览器）
+    if (!p.locale || !LOCALE_MODES.includes(p.locale as string)) p.locale = 'auto';
     this._prefs = p;
     return p;
   },
@@ -515,6 +517,27 @@ border-radius:8px;cursor:pointer;text-align:center}
     });
     lkRow.appendChild(lkBtn);
     bd.appendChild(lkRow);
+    // \u7968 42 [A-019]\uFF1A\u754C\u9762\u8BED\u8A00\u9009\u62E9\uFF08auto \u21C4 \u4E2D\u6587 \u21C4 English\uFF09\uFF0C\u5199\u5165 UI_PREFS_KEY \u540E\u5373\u65F6\u751F\u6548
+    const cap4 = document.createElement('div'); cap4.className = 'cch-rules-cap'; cap4.textContent = t('lang');
+    bd.appendChild(cap4);
+    const lgLabel = (v: string): string => (v === 'zh' ? t('langZh') : v === 'en' ? t('langEn') : t('langAuto'));
+    const lgRow = document.createElement('div'); lgRow.className = 'cch-rule-row';
+    const lgBtn = document.createElement('button');
+    lgBtn.type = 'button'; lgBtn.className = 'cch-rule-tier auto'; lgBtn.id = 'cch-locale-tg';
+    lgBtn.textContent = lgLabel(this.prefs().locale as string);
+    lgBtn.title = t('lang') + ' \u00B7 ' + t(getLocale() === 'zh' ? 'langZh' : 'langEn');
+    lgBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const modes = LOCALE_MODES;
+      const cur = modes.indexOf(this.prefs().locale as string);
+      const next = modes[(cur + 1) % modes.length];
+      this.setPref('locale', next);
+      setLocale(next);           // \u5373\u65F6\u751F\u6548\uFF1A\u540E\u7EED t() \u6309\u65B0\u8BED\u8A00\u51FA\u6587\u6848
+      this._applyLocaleText();   // \u5237\u65B0\u6784\u5EFA\u671F\u5199\u6B7B\u7684\u9762\u677F\u6587\u6848\uFF08\u5360\u4F4D/\u5206\u533A/\u53EC\u5524/\u8D1F\u53CD\u9988\uFF09
+      this._renderRules();
+    });
+    lgRow.appendChild(lgBtn);
+    bd.appendChild(lgRow);
     const ovs = R.pageOverrides();
     if (!ovs.length) {
       const e = document.createElement('div'); e.className = 'cch-empty'; e.textContent = t('rulesEmpty');
@@ -705,9 +728,25 @@ border-radius:8px;cursor:pointer;text-align:center}
     this._renderRows(favList, favData);
     this._renderRows(allList, allData);
   },
+  // \u7968 42\uFF1A\u8BED\u8A00\u5207\u6362\u540E\u5237\u65B0\u6784\u5EFA\u671F\u5199\u6B7B\u7684 t() \u6587\u6848\uFF08_render \u53EA\u7BA1\u884C\u6570\u636E\u4E0E\u53EF\u89C1\u6027\uFF09
+  _applyLocaleText(): void {
+    const P = this._popup;
+    if (!P) return;
+    const si = P.querySelector<HTMLInputElement>('#cch-si'); if (si) si.placeholder = t('search');
+    const tg = P.querySelector<HTMLElement>('#cch-rules-tg');
+    if (tg) { tg.title = t('rules'); tg.setAttribute('aria-label', t('rules')); }
+    const sm = P.querySelector<HTMLElement>('#cch-summon'); if (sm) sm.textContent = t('summon');
+    const fb = P.querySelector<HTMLElement>('#cch-fb'); if (fb) fb.textContent = t('feedback');
+    const fh = P.querySelector<HTMLElement>('.cch-sec-favs .cch-sec-hd'); if (fh) fh.textContent = t('favs');
+    const ah = P.querySelector<HTMLElement>('.cch-sec-all .cch-sec-hd'); if (ah) ah.textContent = t('all');
+  },
 };
 
 // ════════════════════════════════════════════════════════
+
+  // 票 42：面板/图标/菜单文案在 createUI 前尚未定型 —— 这里把持久化的语言选择应用到 i18n，
+  // 保证 main.ts 后续所有 t() 调用（Fill toast、GM 菜单命令、面板）都按持久化语言出文案。
+  try { setLocale(UI.prefs().locale); } catch {}
 
 return UI;
 }
