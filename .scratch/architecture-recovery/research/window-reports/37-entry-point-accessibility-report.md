@@ -92,3 +92,34 @@ CI run ID：未推送（WORKFLOW §4.2 未授权 push）——本地证据如下
 - src/i18n.ts 全文件为 \uXXXX ASCII 转义形态（非 UTF-8 CJK 字面量）；src/main.ts 存在
   混合行尾（CRLF 为主、菜单注册区为 LF）。跨文件精确串替换前须按字节探明编码形态，
   不能默认「中文=原文字面量 + 全文件单—EOL」。
+
+## CI 证据补录（首脑授权 push 后，2026-09-14）
+
+- 推送远端 head sha：`84b8ed7fadff4e72fc4d05aaf6966ca8bef9a212`（分支 `cch/37-entry-point-accessibility`）
+- 证据来源：`gh run list --repo Xxx91n/Find-Your-Country-Code --branch cch/37-entry-point-accessibility`
+  轮询至全部 run 达到 terminal（completed）后取终态。
+- 事件：全部 5 个 run 均为 `push`（无 `workflow_dispatch`）。
+
+| Run ID | Workflow | Conclusion | headSha | Event |
+|--------|----------|------------|---------|-------|
+| 34845561263 | Verify Ticket 37 (entry-point-accessibility) | success | 84b8ed7fadff4e72fc4d05aaf6966ca8bef9a212 | push |
+| 34845560986 | Engine Gates | success | 84b8ed7fadff4e72fc4d05aaf6966ca8bef9a212 | push |
+| 34845561039 | Lockfile Regen | success | 84b8ed7fadff4e72fc4d05aaf6966ca8bef9a212 | push |
+| 34845561077 | Typecheck | success | 84b8ed7fadff4e72fc4d05aaf6966ca8bef9a212 | push |
+| 34845561008 | E2E | **failure** | 84b8ed7fadff4e72fc4d05aaf6966ca8bef9a212 | push |
+
+**失败定位（不得粉饰）**：run `34845561008`（E2E），失败步骤为 job `e2e` 的 **`Run E2E`**。
+失败用例仅 1 条（88 passed / 1 failed）：
+
+- `tests/pseudo-select.spec.ts:34:3 › 伪 select 端到端（票 18） › 验收2/3 可编辑型: 召唤 → 面板选 Canada → 隐藏承值 input 原生 setter + input/change 事件`
+- 报错：`locator.click: Test timeout of 30000ms exceeded`，卡在 `tests/helpers/userscript.ts:45`
+  （`openPanel` 内 `wrapperFor(page,target).locator('.cch-btn').click()`）；
+  Playwright call log 显示目标按钮已 visible/enabled/stable，但 `<div id="cch-sw">…</div>`
+  （`#cch-pop` 子树）**intercepts pointer events**——即面板已展开并遮挡字段图标，点击被拦截。
+- 归因说明（证据层面，未做代码改动）：本票改动 lowkey 图标定位（盒外→字段右缘盒内）
+  与面板遮挡的相对几何关系相关，但该 spec 属票 18，本地 94/94 未复现；此失败究竟是
+  本票回归还是 CI 环境下的既有时序/遮挡 flake，**本窗口未做定论**，留待首脑裁决。
+
+**一句话判定**：CI 回链证据已补齐（5 个 run 终态全部落档，headSha 一致），但门禁**未全绿**——
+E2E 红（1 failed：票 18 pseudo-select 点击被 `#cch-pop` 子树拦截），故「CI 证据缺口」已闭合、
+「CI 绿灯」未达成。
