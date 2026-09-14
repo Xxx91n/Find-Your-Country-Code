@@ -104,3 +104,19 @@ $ node tests/scripts/38-gf-alignment-check.mjs --strict   → STRICT EXIT= 1
 1. 用户在 GF 脚本页开通 Sync from external URL（URL 见手册 §2）；开通后把 `gf-alignment-check.yml` 的调用改为 `--strict`。
 2. CI run 证据：本窗口未推送远端，两个新 workflow 的首次 run 需在 PR 产生后取得；本地已给出等价命令与完整输出摘要。
 3. 报告路径说明：任务书写 `research/window-reports/`，仓库实际既有约定为 `.scratch/architecture-recovery/research/window-reports/`（无顶层 `research/` 目录），按后者落盘。
+
+## CI 证据补录（首脑授权 push 后，2026-09-14）
+
+**推送远端头**：`67b7aaec3b05690fc1ac46fc84380b6325153d9d`（分支 `cch/38-distribution-last-mile`，event 均为 `push`；本地实现提交仍为 `5fd6ef3d`）。
+
+| run ID | workflow | conclusion | headSha | event |
+|---|---|---|---|---|
+| 34845596217 | Verify Ticket 38 (distribution-last-mile) | success | 67b7aaec3b05690fc1ac46fc84380b6325153d9d | push |
+| 34845596112 | Engine Gates | success | 67b7aaec3b05690fc1ac46fc84380b6325153d9d | push |
+| 34845596293 | Lockfile Regen | success | 67b7aaec3b05690fc1ac46fc84380b6325153d9d | push |
+| 34845596286 | Typecheck | success | 67b7aaec3b05690fc1ac46fc84380b6325153d9d | push |
+| 34845596301 | E2E | success | 67b7aaec3b05690fc1ac46fc84380b6325153d9d | push |
+
+**旁证**：E2E run 34845596301 的 `Run E2E` 步骤真实执行并全绿 —— 日志尾部 `80 passed (29.1s)`，0 failed；票 37 曾红的 `tests/pseudo-select.spec.ts:34:3`（可编辑型伪 select 承值）在本分支为 `✓ 43`（762ms）通过，同类面板拦截指针事件的失败**未复现**。Ticket-38 闸门作业 `Ticket-38 gate (version consistency + GF hard rules)` 步骤 success。
+
+**判定（一行）**：5/5 run 全部 completed/success，无失败、无 flaky，票 37 的 `pseudo-select.spec.ts:34` 回归未复现，CI 证据缺口已闭合。
