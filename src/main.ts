@@ -41,14 +41,51 @@ function init() { Store.init(); UI.css(); Store.subscribe(() => {
 // 跨帧存储一致性（收藏/站点规则）复用既有 GM 存储 + BroadcastChannel + GM_addValueChangeListener（不新造第二套）。
 // 票 24 安全加固：入站 origin 校验辅助——跨域子帧回退锚点。跨域下无法读子帧 origin 预期值，
 // 但引用比较合法：要求发送方是本页面嵌的 iframe/frame 窗口，挡掉弹窗/无关 window 伪造消息。
+// 票 40：帧枚举改双相递归——(1) 浏览上下文树 window.length/索引访问在跨域 Window 白名单内，
+// 覆盖任意深度任意 origin 的孙帧；(2) Chromium 实测 shadowRoot 内 iframe 不进 window.length，
+// 须 DOM 遍历穿透 open shadowRoot 收集 iframe/frame 比 contentWindow，同源帧文档继续递归。
+// 盲区（closed shadowRoot、跨域祖先下游的 shadow 帧）枚举不到即校验失败走降级提示，不放宽。
 function isEmbeddedFrame(source: MessageEventSource | null): boolean {
   if (!source) return false;
-  try {
-    const frames = document.querySelectorAll<HTMLIFrameElement>('iframe, frame');
-    for (let i = 0; i < frames.length; i++) {
-      if (frames[i].contentWindow === source) return true;
+  const seenW = new Set<Window>();
+  const seenRoot = new Set<Node>();
+  const stackW: Window[] = [window];
+  const stackRoot: Node[] = [document];
+  let budget = 512; // 自嵌套页面防御：枚举上限，超限按校验失败处理（降级提示，不放宽）
+  while (budget-- > 0 && (stackW.length || stackRoot.length)) {
+    const w = stackW.pop();
+    if (w && !seenW.has(w)) {
+      seenW.add(w);
+      let n = 0;
+      try { n = w.length; } catch { n = 0; }
+      for (let i = 0; i < n; i++) {
+        let f: Window | null = null;
+        try { f = (w as unknown as Window[])[i] || null; } catch { f = null; }
+        if (!f) continue;
+        if (f === (source as Window)) return true;
+        stackW.push(f);
+        try { if (f.document) stackRoot.push(f.document); } catch {} // 跨域帧 document 不可读，跳过
+      }
     }
-  } catch {}
+    const r = stackRoot.pop();
+    if (r && !seenRoot.has(r)) {
+      seenRoot.add(r);
+      try {
+        const tw = document.createTreeWalker(r, NodeFilter.SHOW_ELEMENT);
+        let el = tw.nextNode() as Element | null;
+        while (el && budget-- > 0) {
+          const sr = (el as HTMLElement).shadowRoot;
+          if (sr) stackRoot.push(sr); // open shadowRoot 穿透；closed 不可达即盲区
+          if (el.tagName === 'IFRAME' || el.tagName === 'FRAME') {
+            const cw = (el as HTMLIFrameElement).contentWindow;
+            if (cw && cw === (source as Window)) return true;
+            try { if (cw && cw.document) stackRoot.push(cw.document); } catch {}
+          }
+          el = tw.nextNode() as Element | null;
+        }
+      } catch {}
+    }
+  }
   return false;
 }
 // 顶层与本帧是否同源（跨域时读 top.location.href 抛 SecurityError）
@@ -64,7 +101,14 @@ if (IS_TOP_FRAME) {
     if (e.source === window) return; // 忽略自身
     // 票 24：入站 origin 校验——同源子帧强制 e.origin === location.origin；跨域子帧（票 12 全帧治理，
     // targetOrigin '*' 不可避免）退化为「本页面嵌入 iframe」来源锚点。
-    if (e.origin !== location.origin && !isEmbeddedFrame(e.source)) return;
+    // 票 40：校验失败降级为「用户可见提示」而非静默 return——校验条件不放宽（票 24 语义不变）。
+    // 文案就地双语：i18n 表为并行票 42 改动面，避免同文件同 hunk 依赖（收口时可收编进 MSG）。
+    if (e.origin !== location.origin && !isEmbeddedFrame(e.source)) {
+      UI.toast((navigator.language || 'zh').toLowerCase().startsWith('zh')
+        ? '嵌套帧来源无法验证，已拦截打开'
+        : 'Embedded frame could not be verified — panel not opened');
+      return;
+    }
     UI.open(null, null, null, { remoteSource: e.source as Window | null });
   });
 } else {
