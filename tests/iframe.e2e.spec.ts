@@ -75,11 +75,13 @@ test.describe('跨帧存储一致性', () => {
 });
 
 test.describe('菜单命令注册（元数据 grant + 顶层注册）', () => {
-  test('GM_registerMenuCommand 仅顶层注册一次', async ({ page }) => {
+  test('GM_registerMenuCommand 仅顶层注册（票 37：恢复检测 + 打开面板两条）', async ({ page }) => {
     await page.goto('/fixtures/iframe-same-origin.html');
     await expect(wrapperTop(page)).toHaveCount(1); // 等脚本就绪
     const topCount = await page.evaluate(() => (window as any).__cchMenuCount || 0);
-    expect(topCount).toBe(1);
+    expect(topCount).toBe(2);
+    const titles = await page.evaluate(() => ((window as any).__cchMenu || []).map((m: any) => m.title));
+    expect(titles.some((t: string) => /面板|panel/i.test(t))).toBe(true);
     const childCount = await childFrame(page, 'iframe-child').locator('body').evaluate(() => (window as any).__cchMenuCount || 0);
     expect(childCount).toBe(0);
   });

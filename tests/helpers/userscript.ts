@@ -22,8 +22,12 @@ const GM_STUB = `
   window.GM_getValue = (k, d) => { const s = read(); return k in s ? s[k] : d; };
   window.GM_setValue = (k, v) => { const s = read(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
   window.GM_addValueChangeListener = () => 0;
-  // 票 12:记录菜单命令注册(断言仅顶层注册)
-  window.GM_registerMenuCommand = () => { window.__cchMenuCount = (window.__cchMenuCount || 0) + 1; return 0; };
+  // 票 12:记录菜单命令注册(断言仅顶层注册)；票 37:同时记录 {title,fn} 供测试调用菜单命令
+  window.GM_registerMenuCommand = (title, fn) => {
+    window.__cchMenuCount = (window.__cchMenuCount || 0) + 1;
+    (window.__cchMenu = window.__cchMenu || []).push({ title, fn });
+    return 0;
+  };
 })();
 `;
 
