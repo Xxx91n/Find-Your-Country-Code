@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cycle-6 架构大脑调查 · Find-Your-Country-Code</title>
+<style>
+:root{
+  --bg:#0e1015; --panel:#171a21; --panel2:#1b1f28;
+  --bd:#262b36; --bd2:#323847;
+  --tx:#e6e9ef; --tx2:#aab3c2; --tx3:#7c8698;
+  --ac:#4ea1ff; --ac2:#22d3ee; --ok:#34d399; --wn:#fbbf24; --dg:#f87171; --pp:#a78bfa;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:44px 26px 90px}
+header{border-bottom:1px solid var(--bd);padding-bottom:26px;margin-bottom:34px}
+.kicker{font:600 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ac2);margin-bottom:14px}
+h1{margin:0 0 12px;font-size:31px;line-height:1.25;letter-spacing:-.01em}
+.sub{color:var(--tx2);font-size:14.5px;margin:0}
+.meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 11.5px/1 var(--mono);padding:6px 10px;border:1px solid var(--bd2);border-radius:999px;color:var(--tx2);background:var(--panel)}
+h2{font-size:20px;margin:52px 0 8px;letter-spacing:-.005em;display:flex;align-items:center;gap:11px}
+h2 .n{font:700 12px/1 var(--mono);color:var(--ac);border:1px solid var(--bd2);border-radius:7px;padding:5px 8px;background:var(--panel)}
+h3{font-size:16px;margin:26px 0 8px}
+p{margin:9px 0;color:var(--tx2)}
+.lead{color:var(--tx);font-size:16px}
+strong{color:var(--tx);font-weight:650}
+code{font:12.5px/1.5 var(--mono);background:#0a0c10;border:1px solid var(--bd);border-radius:5px;padding:1.5px 5px;color:#c9d3e3}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:13px;padding:20px 22px;margin:16px 0}
+.card.p2{background:var(--panel2)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:860px){.g2,.g3{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{font:600 11.5px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);background:#141821}
+td code{font-size:12px}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font:700 10.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:5px 9px;border-radius:6px;white-space:nowrap}
+.b-ok{background:rgba(52,211,153,.13);color:var(--ok);border:1px solid rgba(52,211,153,.35)}
+.b-dg{background:rgba(248,113,113,.13);color:var(--dg);border:1px solid rgba(248,113,113,.35)}
+.b-wn{background:rgba(251,191,36,.13);color:var(--wn);border:1px solid rgba(251,191,36,.35)}
+.b-ac{background:rgba(78,161,255,.13);color:var(--ac);border:1px solid rgba(78,161,255,.35)}
+.b-pp{background:rgba(167,139,250,.13);color:var(--pp);border:1px solid rgba(167,139,250,.35)}
+.b-gy{background:rgba(124,134,152,.14);color:var(--tx2);border:1px solid var(--bd2)}
+.kv{display:grid;grid-template-columns:132px 1fr;gap:6px 14px;font-size:13.5px}
+.kv dt{color:var(--tx3);font:600 11.5px/1.9 var(--mono);text-transform:uppercase;letter-spacing:.05em}
+.kv dd{margin:0;color:var(--tx2)}
+.kv dd code{font-size:12px}
+.note{border-left:3px solid var(--ac);background:rgba(78,161,255,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:13.5px;color:var(--tx2)}
+.note.warn{border-left-color:var(--wn);background:rgba(251,191,36,.06)}
+.note.bad{border-left-color:var(--dg);background:rgba(248,113,113,.06)}
+.note.good{border-left-color:var(--ok);background:rgba(52,211,153,.06)}
+svg{display:block;max-width:100%;height:auto}
+.diagram{background:#0a0c10;border:1px solid var(--bd);border-radius:11px;padding:16px;margin:14px 0}
+.cap{font:500 11.5px/1.5 var(--mono);color:var(--tx3);margin-top:9px;text-align:center}
+.tpl{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px}
+.tpl .id{font:700 11px/1 var(--mono);color:var(--ac2);letter-spacing:.08em}
+.tpl .nm{font-weight:650;font-size:14px;margin:7px 0 5px;color:var(--tx)}
+.tpl .ds{font-size:12.5px;color:var(--tx2);line-height:1.6}
+.tpl .src{font:500 10.5px/1.5 var(--mono);color:var(--tx3);margin-top:8px}
+.step{display:flex;gap:14px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--bd)}
+.step:last-child{border-bottom:none}
+.step .sid{font:700 12px/1 var(--mono);color:var(--bg);background:var(--ac);border-radius:7px;padding:7px 9px;flex:none;min-width:34px;text-align:center}
+.step .sc{flex:1}
+.step .st{font-weight:650;font-size:14px}
+.step .sd{font-size:13px;color:var(--tx2);margin-top:3px}
+.step .sev{font:600 10.5px/1 var(--mono);padding:4px 7px;border-radius:5px;flex:none}
+footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--bd);font-size:12.5px;color:var(--tx3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">架构大脑调查 · Cycle-6 · 宏观层</div>
+  <h1>从「写进去了」到「被找到、被证明」</h1>
+  <p class="sub">Find-Your-Country-Code（油猴脚本）架构优化调查。本报告为<b>只读调查产物</b>：不修改任何业务代码，只交付证据基线、深化机会与行业心智模型模板库。</p>
+  <div class="meta">
+    <span class="chip">基线 origin/main = 85990d2f · v1.6.0</span>
+    <span class="chip">3 个子代理并行只读审计</span>
+    <span class="chip">atomcode 3 次全景调研（R1/R2/R3）</span>
+    <span class="chip">3 个新登记摩擦点 A-026…A-030</span>
+  </div>
+</header>
+
+<h2><span class="n">00</span>目标（/goal · 不设预算）</h2>
+<p class="lead">上轮（Cycle-5）把「送达 + 可见 + 可信」做完了，但两个痛点指向同一个未完成的事：<b>脚本的功能「存在」不等于「能被找到」，更不等于「能被证明」</b>。本轮目标是把系统从「功能已实现」推进到「功能可被发现、可被解释、可被证明」。</p>
+<div class="grid g3">
+  <div class="card">
+    <span class="badge b-dg">G1 · 可配置</span>
+    <h3>设置能被找到</h3>
+    <p>语言设置今天埋在第 3 层且无任何直达入口。目标：任何设置都从<b>一个稳定的、与字段置信度无关的入口</b>可达。</p>
+    <p style="font-size:12.5px;color:var(--tx3)">判据：冷启动 ≤2 次点击到达语言设置；GM 菜单含「设置」项。</p>
+  </div>
+  <div class="card">
+    <span class="badge b-dg">G2 · 可解释</span>
+    <h3>生效与否可查询</h3>
+    <p>今天脚本零 console 输出、无自检面，评分证据链算完即丢。目标：任一页面都能回答「各工具是否生效、为何未生效」。</p>
+    <p style="font-size:12.5px;color:var(--tx3)">判据：存在诊断面，逐层点亮并给出已验证的根因。</p>
+  </div>
+  <div class="card">
+    <span class="badge b-dg">G3 · 可证明</span>
+    <h3>指定页全工具验证</h3>
+    <p>真实站点层 18 项能力只验证 2 项，核心「选国→填充」在真实页面上从未验证过一次。目标：在<b>自有指定页面</b>上完成 L0–L5 全断言。</p>
+    <p style="font-size:12.5px;color:var(--tx3)">判据：owned 指定页覆盖全部工具面且全绿；真实站点层保留 L0–L2。</p>
+  </div>
+</div>
+<div class="note">
+  <b>推进方式</b>：以 message 步骤（§06）为单位推进，每步一个可验收闭环；不设时间/成本预算。
+  <br><b>硬边界</b>：本大脑代理不直接修改代码——调查→立票→实施分离；实施走 to-spec / to-tickets / implement，版本控制走 but 独立分支。
+</div>
+
+<h2><span class="n">01</span>执行摘要</h2>
+<p class="lead">上轮把「送达、可见、可信」做完了，本轮四条硬证据指向一个共同的架构形状：<b>状态与行为已经写进代码，但既没有对用户可达的「配置面」，也没有对人与 CI 可读的「解释面」</b>。</p>
+<div class="grid g2">
+  <div class="card p2"><span class="badge b-dg">实证 1</span><h3 style="margin-top:10px">语言设置埋在第 3 层</h3><p>控件确实存在（<code>#cch-locale-tg</code>，<code>ui/index.ts:532</code>），但路径是「图标 → 面板 → ⚙ <code>#cch-rules-tg</code> → 滚动到底」。它排在豁免/规则/低调样式<b>之后</b>，而容器是 <code>overflow-y:auto</code>（<code>ui/index.ts:101</code>）——豁免域名越多，语言控件被推得越靠下。无独立入口、无 GM 菜单项。</p></div>
+  <div class="card p2"><span class="badge b-dg">实证 2</span><h3 style="margin-top:10px">指定页面只验证了 2/18 项能力</h3><p><code>tests/live/live-smoke.mjs</code> 全文无任何 <code>.click()</code> / <code>.fill()</code> / <code>locator()</code>；唯一读面是数 <code>.cch-wrapper</code> 节点。全量工具面 18 项中，L3 仅覆盖「注入发生」与「图标存在」，且不校验档位；核心价值「选国→填充」在真实站点上<b>从未被验证过一次</b>。</p></div>
+  <div class="card p2"><span class="badge b-dg">实证 3</span><h3 style="margin-top:10px">零可观测性、零自检面</h3><p><code>src/</code> 全目录 <code>console.</code> 调用点为 <b>0</b>；无 debug/trace/verbose 开关；无 doctor/self-test 入口。评分证据链 <code>signals[]</code>（<code>detect/index.ts:328,554</code>）算完后只写入私有 <code>WeakMap</code>（<code>:841-842</code>）与 <code>_lowFields</code>（<code>ui/index.ts:260</code>）——<b>算完即不可达</b>。</p></div>
+  <div class="card p2"><span class="badge b-dg">实证 4</span><h3 style="margin-top:10px">切换语言是手工逐项刷新</h3><p><code>_applyLocaleText()</code>（<code>ui/index.ts:750-760</code>）手工重写 6 处文本。漏刷：国家行 <code>.cch-fav</code> 的 <code>title</code>（<code>ui:711</code>）、<code>.cch-empty</code> 文案（<code>ui:699</code>）；图标 <code>title</code>/<code>aria-label</code> 硬编码 <code>'Country Code Helper'</code>（<code>ui:155-156</code>）<b>从未本地化</b>。行业模板要求「字典化后全量重渲染」而非手工逐项补。</p></div>
+</div>
+
+<div class="note bad">
+  <b>架构层诊断（一句话）</b>：本仓库当前的失败模式不是「功能写错了」，而是<b>「写入面」与「读出面」不对等</b>——代码里写入了语言偏好、档位判定、信号证据、注入状态，但读出面（用户可达的设置入口、可读的诊断输出、可断言的能力矩阵）都没有跟着长出来。两个痛点、三个子代理发现、三个未本地化字符串、一套无法驱动的测试 harness，全是这一件事的不同切面。
+</div>
+
+<h2><span class="n">02</span>痛点辩证核验</h2>
+<p>按「辩证看待」的要求，每条以命令/实读为准，不以自述为准。</p>
+<table>
+<thead><tr><th style="width:32%">主张</th><th style="width:16%">裁定</th><th>实测证据</th></tr></thead>
+<tbody>
+<tr><td>「没有能设置脚本语言的地方」</td><td><span class="badge b-ok">CONFIRMED</span><br><span style="font-size:11px;color:var(--tx3)">（但不是「不存在」）</span></td><td>控件存在：<code>#cch-locale-tg</code>（<code>ui/index.ts:532-545</code>），handler 含 <code>setPref</code>+<code>setLocale</code>+<code>_applyLocaleText</code>+<code>_renderRules</code>。失败在<b>可达性</b>：路径 3 层、容器可滚动、排序最后；GM 菜单仅 2 项（<code>main.ts:136-137</code>）无语言项；<code>openPanel</code> 开的是列表视图而非规则视图（<code>ui:296</code>）。</td></tr>
+<tr><td>「脚本根本没去实际测试指定网页上所有工具是否生效」</td><td><span class="badge b-dg">CONFIRMED（比表述更严重）</span></td><td>L3 覆盖 <b>2/18</b> 且均为存在性弱断言；<code>live-smoke.mjs</code> 无交互原语（grep <code>.click(/.fill(/locator(</code> = NONE）；GM 替身是空函数（<code>:50-51</code>）故菜单命令在 L3 不可驱动；核心填充断言 = 0。</td></tr>
+<tr><td>「真实站点层弱断言是照 Bitwarden BIT 口径」</td><td><span class="badge b-pp">SUPERSEDED</span></td><td>调研核验：BIT 原文为 “typically only testing that the username/email <b>was filled out properly</b>”——先例<b>恰恰断言填充结果</b>。本仓库 <code>_meta.assertionRule</code>（manifest:8）比其援引的先例更弱，把先例的填充断言也删掉了。且 <code>cdpNote</code>（manifest:14）已封死 CDP Autofill 作为填充断言的退路。</td></tr>
+<tr><td>「GM 菜单文案在持久化语言应用之前求值（所以永远跟不上用户选择）」</td><td><span class="badge b-dg">REFUTED</span></td><td>本大脑代理的初始假设，被子代理实物核验证伪：<code>main.ts:18</code> <code>createUI()</code> 在 IIFE 顶层<b>立即执行</b>，其工厂体末 <code>ui/index.ts:767</code> <code>setLocale(UI.prefs().locale)</code> 已执行；菜单注册在 <code>:135-137</code>，位于其后。产物同序（dist:2827 → :2691 → :2955）。<b>该假设不立票。</b></td></tr>
+<tr><td>「菜单标签问题完全不存在」</td><td><span class="badge b-wn">PARTIAL</span></td><td>真缺陷是<b>只求值一次</b>：运行时切换语言后已注册的菜单标签不更新（需重载）。行业模板给出正解——Tampermonkey <code>GM_registerMenuCommand</code> 支持 <code>id</code> <b>原地更新</b>（官方文档），本仓库未用。</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">03</span>能力 × 验证层覆盖矩阵（子代理实物审计）</h2>
+<p>18 项用户可见工具面 × 三层验证。✅ 全覆盖 / ⚠ 部分 / ❌ 无覆盖。</p>
+<table>
+<thead><tr><th>能力</th><th>L1 密封 E2E</th><th>L2 票门</th><th>L3 真实站点</th></tr></thead>
+<tbody>
+<tr><td>检测与分档</td><td>✅</td><td>✅</td><td>⚠ 仅判 wrapper 存在，不读档位</td></tr>
+<tr><td>🌐 图标注入（auto/lowkey）</td><td>✅</td><td>✅</td><td>⚠ 记录按钮数但不断言</td></tr>
+<tr><td>面板开/关</td><td>✅</td><td>⚠</td><td>❌</td></tr>
+<tr><td>搜索 / 过滤</td><td>✅</td><td>❌</td><td>❌</td></tr>
+<tr><td>收藏 增/移除/持久</td><td>⚠ 移除无 E2E</td><td>✅</td><td>❌</td></tr>
+<tr><td><b>选国 → 填充目标字段</b></td><td>✅</td><td>✅</td><td><b>❌（核心价值零覆盖）</b></td></tr>
+<tr><td>填充负反馈 + 失败 toast</td><td>✅</td><td>✅</td><td>❌</td></tr>
+<tr><td>手动召唤 <code>#cch-summon</code></td><td>✅</td><td>⚠</td><td>❌</td></tr>
+<tr><td>站点豁免开关</td><td>✅</td><td>✅</td><td>❌</td></tr>
+<tr><td>规则/覆盖列表 + ⚙ 入口</td><td>✅</td><td>✅</td><td>❌</td></tr>
+<tr><td>低调样式开关</td><td>✅</td><td>⚠</td><td>❌</td></tr>
+<tr><td>语言切换</td><td>✅</td><td>✅</td><td>❌</td></tr>
+<tr><td>GM 菜单命令</td><td>✅</td><td>✅</td><td>❌（替身为空函数）</td></tr>
+<tr><td>跨帧开面板/填充</td><td>✅</td><td>⚠</td><td>⚠ 仅注入</td></tr>
+<tr><td>变更重扫</td><td>✅</td><td>⚠</td><td>❌</td></tr>
+<tr><td>伪 select / 无 ARIA 下拉</td><td>✅</td><td>✅</td><td>❌</td></tr>
+<tr><td>intl-tel-input 适配</td><td>✅</td><td>✅</td><td>⚠ 仅注入</td></tr>
+<tr><td><code>__cchLastFill</code> 三态钩子</td><td>✅</td><td>✅</td><td>❌</td></tr>
+</tbody>
+</table>
+<div class="note warn"><b>L3 实际验证能力数 = 2 / 18</b>（且均为弱存在性断言）。L1/L2 覆盖充分（16 spec + 18 门），但两者全部跑本地 fixture（<code>playwright.config.ts</code> baseURL 指 127.0.0.1），<b>不构成真实站点证据</b>。这就是「绿 ≠ 真实世界成立」在本轮的具体形态。</div>
+
+<h2><span class="n">04</span>深化机会</h2>
+<p>每项含 Files / Problem / Solution / Benefits（以 locality 与 leverage 表述）/ Before-After 图 / 推荐强度。本轮的 5 项全部围绕一个主题：<b>把已写入的状态补上读出面</b>。</p>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C1 · 设置入口分层：给设置一个「一级地址」</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>src/main.ts:135-137</code> · <code>src/ui/index.ts:296,312,463-573,750-760</code></dd>
+    <dt>Problem</dt><dd>所有设置（语言/低调样式/豁免/规则）都挤在同一个 <code>#cch-rules-view</code> 里，而该视图的语义标签是「站点规则」；语言控件排在最后、在可滚动容器底部。无独立入口、无 GM 菜单项。<b>这是 Cycle-5「入口自锁」的同类缺陷在设置层的重演</b>：面板已可达，但设置仍需穿过语义不匹配的第二层。</dd>
+    <dt>Solution</dt><dd>按行业分层模板（1–3 高频项在首层、4+ 项归专门设置面）：把设置收敛到一个明确的「设置」视图（入口 = 面板头部一个 ⚙ 按钮 + GM 菜单新增一项 <code>t('settings')</code>），语言作为其中一项且<b>排在前部</b>而非末尾；面板首层只留最高频动作（搜索/收藏/填充）。不改评分引擎、不改任何设置语义。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：改动集中在 <code>ui/index.ts</code> 的视图切换与一个菜单注册点；<b>leverage 高</b>：一次性把「所有设置都难找」收敛为「一个入口找所有设置」，直接消解用户投诉。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 196" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#f87171" font-size="11" font-weight="700">BEFORE — 设置无一级地址（语言在第 3 层、滚动底）</text>
+      <g font-size="10.5">
+        <rect x="14" y="30" width="104" height="30" rx="7" fill="#1b1f28" stroke="#323847"/><text x="66" y="49" fill="#aab3c2" text-anchor="middle">图标 / 菜单</text>
+        <rect x="138" y="30" width="120" height="30" rx="7" fill="#1b1f28" stroke="#323847"/><text x="198" y="49" fill="#aab3c2" text-anchor="middle">面板（列表）</text>
+        <rect x="278" y="30" width="132" height="30" rx="7" fill="#1b1f28" stroke="#323847"/><text x="344" y="49" fill="#aab3c2" text-anchor="middle">⚙ 规则视图</text>
+        <rect x="430" y="30" width="112" height="30" rx="7" fill="#2a1418" stroke="#f87171"/><text x="486" y="49" fill="#f87171" text-anchor="middle">豁免 / 规则</text>
+        <rect x="562" y="30" width="104" height="30" rx="7" fill="#2a1418" stroke="#f87171"/><text x="614" y="49" fill="#f87171" text-anchor="middle">低调样式</text>
+        <path d="M118 45 H138 M258 45 H278 M410 45 H430 M542 45 H562" stroke="#4b5563" stroke-width="1.4" fill="none"/>
+        <rect x="562" y="72" width="104" height="30" rx="7" fill="#2a1418" stroke="#f87171" stroke-dasharray="4 3"/><text x="614" y="91" fill="#f87171" text-anchor="middle">语言（滚动底）</text>
+        <path d="M614 60 V72" stroke="#f87171" stroke-width="1.4" fill="none"/>
+        <text x="14" y="92" fill="#7c8698" font-size="10.5">容器 overflow-y:auto；豁免越多，语言越靠下 → 用户找不到</text>
+      </g>
+      <text x="14" y="132" fill="#34d399" font-size="11" font-weight="700">AFTER — 设置有一级地址（首层头部入口 + 菜单项）</text>
+      <g font-size="10.5">
+        <rect x="14" y="144" width="150" height="30" rx="7" fill="#16241f" stroke="#34d399"/><text x="89" y="163" fill="#34d399" text-anchor="middle">菜单「设置」/ ⚙</text>
+        <path d="M164 159 H206" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="206" y="144" width="160" height="30" rx="7" fill="#16241f" stroke="#34d399"/><text x="286" y="163" fill="#34d399" text-anchor="middle">设置视图（一级）</text>
+        <path d="M366 159 H408" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="408" y="144" width="120" height="30" rx="7" fill="#16241f" stroke="#34d399"/><text x="468" y="163" fill="#34d399" text-anchor="middle">语言（首位）</text>
+        <rect x="540" y="144" width="126" height="30" rx="7" fill="#1b1f28" stroke="#34d399"/><text x="603" y="163" fill="#34d399" text-anchor="middle">低调 / 豁免 / 规则</text>
+        <path d="M528 159 H540" stroke="#34d399" stroke-width="1.4" fill="none"/>
+      </g>
+    </svg>
+    <div class="cap">设置从「规则视图的尾部」提升为「一级设置面」</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C2 · i18n 完整性：全量重渲染 + 菜单原地更新 + 补齐未本地化文案</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>src/ui/index.ts:155-156,699,711,750-760</code> · <code>src/i18n.ts</code> · <code>src/main.ts:135-137</code></dd>
+    <dt>Problem</dt><dd>（a）切换语言走 <code>_applyLocaleText()</code> 手工逐项重写，已漏刷收藏 title 与空态文案；图标 <code>title</code>/<code>aria-label</code> 硬编码英文，从未本地化。（b）已注册的 GM 菜单标签只求值一次，运行时切换语言后不更新（需重载）。（c）<code>main.ts:107</code> 的帧校验提示是<b>就地双语三元表达式</b>，未走 i18n 表（注释自认「收口时可收编进 MSG」）——已是遗留债。</dd>
+    <dt>Solution</dt><dd>按行业模板：给需要本地化的节点打 <code>data-i18n</code> 标记，切换后<b>字典化全量重渲染</b>（<code>querySelectorAll('[data-i18n]')</code>）而非手工逐项补；菜单命令改用 <code>GM_registerMenuCommand(name, fn, { id })</code> 的 <b>id 原地更新</b>能力（Tampermonkey 官方文档），切换后重注册；把 <code>main.ts</code> 就地双语收编进 i18n 表。保持 <code>显式 > 浏览器 > 默认</code> 三级解析不变。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：本地化契约从「N 处手工刷新」收敛为「一处 data-i18n + 一次全量重渲染」；<b>leverage 中高</b>：新增文案不会再漏刷，且消除「切了语言但部分 UI 不变」的信任损耗。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 176" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#f87171" font-size="11" font-weight="700">BEFORE — 手工逐项刷新（漏刷 + 菜单冻结）</text>
+      <g font-size="10.5">
+        <rect x="14" y="30" width="150" height="28" rx="6" fill="#1b1f28" stroke="#323847"/><text x="89" y="48" fill="#aab3c2" text-anchor="middle">切换语言</text>
+        <rect x="184" y="30" width="240" height="28" rx="6" fill="#1b1f28" stroke="#323847"/><text x="304" y="48" fill="#aab3c2" text-anchor="middle">_applyLocaleText 手写 6 处</text>
+        <rect x="444" y="30" width="104" height="28" rx="6" fill="#2a1418" stroke="#f87171"/><text x="496" y="48" fill="#f87171" text-anchor="middle">漏刷 3 处</text>
+        <rect x="568" y="30" width="98" height="28" rx="6" fill="#2a1418" stroke="#f87171"/><text x="617" y="48" fill="#f87171" text-anchor="middle">菜单冻结</text>
+        <path d="M164 44 H184 M424 44 H444 M548 44 H568" stroke="#4b5563" stroke-width="1.4" fill="none"/>
+      </g>
+      <text x="14" y="92" fill="#34d399" font-size="11" font-weight="700">AFTER — data-i18n + 全量重渲染 + 菜单 id 原地更新</text>
+      <g font-size="10.5">
+        <rect x="14" y="104" width="150" height="28" rx="6" fill="#16241f" stroke="#34d399"/><text x="89" y="122" fill="#34d399" text-anchor="middle">切换语言</text>
+        <path d="M164 118 H204" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="204" y="104" width="196" height="28" rx="6" fill="#16241f" stroke="#34d399"/><text x="302" y="122" fill="#34d399" text-anchor="middle">[data-i18n] 全量重渲染</text>
+        <path d="M400 118 H440" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="440" y="104" width="104" height="28" rx="6" fill="#16241f" stroke="#34d399"/><text x="492" y="122" fill="#34d399" text-anchor="middle">零漏刷</text>
+        <rect x="560" y="104" width="106" height="28" rx="6" fill="#16241f" stroke="#34d399"/><text x="613" y="122" fill="#34d399" text-anchor="middle">菜单同步</text>
+        <path d="M544 118 H560" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <text x="14" y="158" fill="#7c8698" font-size="10.5">菜单命令用 GM_registerMenuCommand(..., { id }) 原地更新，无需重载</text>
+      </g>
+    </svg>
+    <div class="cap">本地化从「N 处手工刷新」收敛为「一处标记 + 一次全量重渲染」</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C3 · 自检面：把「为什么没生效」变成一条可追溯的决策链</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>src/detect/index.ts:290,328,554,841-842</code> · <code>src/ui/index.ts:28,260,456-460,736</code> · <code>src/main.ts:135-137</code> · <code>src/config.ts</code></dd>
+    <dt>Problem</dt><dd>三种静默失败今天都无解释：（a）无可信字段 → 无图标，理由（<code>gate:input-type</code>/<code>gate:aria-hidden</code>/<code>country-semantic:suppress</code>/<code>gate:visibility-hidden</code> 或分数不足）存在但从不外显；（b）子帧点图标无响应 → <code>_requestRemoteOpen</code> fire-and-forget，无 ack 无超时；（c）选国未填充 → 能报「失败」但不报「为何失败」（<code>FillResult</code> 无 reason 字段）。<code>signals[]</code> 算完即丢进私有容器。<b>这是「无法向用户解释自己」的根因</b>。</dd>
+    <dt>Solution</dt><dd>按行业三件套模板：（1）<b>决策链 trace 作单一事实来源</b>——注入/检测/填充各判定点 append <code>{step, verdict, msg, ts}</code>（对标 Flagr <code>evalDebugLog</code>），面板与 CI JSON <b>从同一份 trace 渲染</b>；（2）<b>面板逐层点亮</b>——每层一个布尔 + 一句已验证根因，第一处熄灭即答案（对标 Greasespot 排障树）；（3）<b>debug 开关门控 + 零开销</b>——trace 只在开启时记录（对标 uBlock logger「未打开则零 CPU/内存」）。入口 = GM 菜单新增「诊断」项 + 设置视图内一节。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：<code>signals[]</code> 已经存在，只是需要一条读出管道，不需重写引擎；<b>leverage 极高</b>：一次性把「脚本没反应」从死胡同变为可回答的问题，且<b>同一个 trace 同时服务用户与 CI</b>——直接兑现用户的第二条诉求。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#f87171" font-size="11" font-weight="700">BEFORE — 静默失败（三种无解释）</text>
+      <g font-size="10.5">
+        <rect x="14" y="30" width="176" height="28" rx="6" fill="#2a1418" stroke="#f87171"/><text x="102" y="48" fill="#f87171" text-anchor="middle">无图标（不知为何）</text>
+        <rect x="202" y="30" width="196" height="28" rx="6" fill="#2a1418" stroke="#f87171"/><text x="300" y="48" fill="#f87171" text-anchor="middle">点图标无响应（无 ack）</text>
+        <rect x="410" y="30" width="156" height="28" rx="6" fill="#2a1418" stroke="#f87171"/><text x="488" y="48" fill="#f87171" text-anchor="middle">填充失败（无 reason）</text>
+        <rect x="578" y="30" width="88" height="28" rx="6" fill="#2a1418" stroke="#f87171"/><text x="622" y="48" fill="#f87171" text-anchor="middle">signals 丢弃</text>
+      </g>
+      <text x="14" y="86" fill="#7c8698" font-size="10.5">src/ 零 console 输出；无 debug 开关；无诊断入口</text>
+      <text x="14" y="116" fill="#34d399" font-size="11" font-weight="700">AFTER — trace 单一事实来源 → 面板与 CI 共享</text>
+      <g font-size="10.5">
+        <rect x="14" y="128" width="140" height="30" rx="7" fill="#16241f" stroke="#34d399"/><text x="84" y="147" fill="#34d399" text-anchor="middle">判定点 append</text>
+        <path d="M154 143 H194" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="194" y="128" width="152" height="30" rx="7" fill="#16241f" stroke="#34d399"/><text x="270" y="147" fill="#34d399" text-anchor="middle">trace[]（唯一源）</text>
+        <path d="M346 143 H386" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="386" y="118" width="140" height="24" rx="6" fill="#16241f" stroke="#34d399"/><text x="456" y="134" fill="#34d399" text-anchor="middle">面板逐层点亮</text>
+        <rect x="386" y="148" width="140" height="24" rx="6" fill="#16241f" stroke="#34d399"/><text x="456" y="164" fill="#34d399" text-anchor="middle">CI --json</text>
+        <path d="M526 130 H566 M526 160 H566" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="566" y="118" width="100" height="24" rx="6" fill="#1b1f28" stroke="#34d399"/><text x="616" y="134" fill="#34d399" text-anchor="middle">用户看到「为何」</text>
+        <rect x="566" y="148" width="100" height="24" rx="6" fill="#1b1f28" stroke="#34d399"/><text x="616" y="164" fill="#34d399" text-anchor="middle">CI 可断言</text>
+      </g>
+      <text x="14" y="192" fill="#7c8698" font-size="10.5">debug 开关门控，未开启时零开销</text>
+    </svg>
+    <div class="cap">一份 trace 同时服务「用户看为何」与「CI 可断言」</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C4 · 指定页面全工具验证：owned 页面语料 + 断言阶梯 L0–L5</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>tests/live/site-manifest.json:8,14</code> · <code>tests/live/live-smoke.mjs</code> · <code>tests/live/pages/</code> · <code>tests/fixtures/</code> · <code>.scratch/architecture-recovery/WORKFLOW.md §4.5</code></dd>
+    <dt>Problem</dt><dd>用户要求「在指定网页上验证全部工具」——但当前「指定网页」有两类都不合适：mirror 目标只有 4 个本地小页（不覆盖真实站点形态），live 目标只有 2 个且受 Cloudflare 拦截、且 manifest 规则明文禁止深交互。同时 <code>live-smoke.mjs</code> 无交互原语、GM 替身为空函数，<b>结构上不可能验证工具面</b>。</dd>
+    <dt>Solution</dt><dd>按行业模板把「指定页面」拆为两类职责：<b>（1）owned 指定页面语料</b>——把真实站点形态<b>冻结快照</b>为自有页面（行业参照：Contentsquare 用自有 QA 域做全交互 E2E；本仓库 WORKFLOW §4.5「升塔纪律」已规定「先沉淀 fixture 再修脚本」），在这些页面上跑 <b>L0–L5 全断言</b>（L0 注入 / L1 无副作用 / L2 面板可开 / L3 交互原语 / L4 <b>写入生效</b> / L5 反馈提示），进 PR 门；（2）<b>真实站点层只保留 L0–L2</b>，并把断言口径从「仅 wrapper 存在」提升到<b>其援引先例的口径</b>（Bitwarden BIT：字段确实被填对）——即至少 L0+L4 的最弱形态，而非当前连填充都不看。语料清单大小成为「真实覆盖面」的可度量指标。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：断言阶梯与语料清单都是声明式的，runner 已就绪；<b>leverage 极高</b>：把「工具是否生效」从 2/18 推到 18/18，且以「指定页面」这个用户能理解的单位交付。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 214" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#f87171" font-size="11" font-weight="700">BEFORE — 断言只到 L0，且页面不可控</text>
+      <g font-size="10.5">
+        <rect x="14" y="30" width="120" height="26" rx="6" fill="#16241f" stroke="#34d399"/><text x="74" y="47" fill="#34d399" text-anchor="middle">L0 注入 ✓</text>
+        <rect x="142" y="30" width="120" height="26" rx="6" fill="#16241f" stroke="#34d399"/><text x="202" y="47" fill="#34d399" text-anchor="middle">L1 无异常 ✓</text>
+        <rect x="270" y="30" width="104" height="26" rx="6" fill="#2a1418" stroke="#f87171"/><text x="322" y="47" fill="#f87171" text-anchor="middle">L2 ✗</text>
+        <rect x="382" y="30" width="104" height="26" rx="6" fill="#2a1418" stroke="#f87171"/><text x="434" y="47" fill="#f87171" text-anchor="middle">L3 ✗</text>
+        <rect x="494" y="30" width="104" height="26" rx="6" fill="#2a1418" stroke="#f87171"/><text x="546" y="47" fill="#f87171" text-anchor="middle">L4 填充 ✗</text>
+        <rect x="606" y="30" width="60" height="26" rx="6" fill="#2a1418" stroke="#f87171"/><text x="636" y="47" fill="#f87171" text-anchor="middle">L5 ✗</text>
+        <text x="14" y="76" fill="#7c8698" font-size="10.5">L3 真实站点 = 第三方页（不可控、被挑战、禁深交互）；覆盖 2/18</text>
+      </g>
+      <text x="14" y="112" fill="#34d399" font-size="11" font-weight="700">AFTER — 两类页面分职：owned 跑全梯，真实站点保 L0–L2 + 弱填充</text>
+      <g font-size="10.5">
+        <rect x="14" y="126" width="316" height="74" rx="9" fill="#16241f" stroke="#34d399"/>
+        <text x="30" y="146" fill="#34d399" font-weight="700">owned 指定页面（真实形态快照）→ PR 门</text>
+        <text x="30" y="166" fill="#aab3c2">L0 注入 · L1 无副作用 · L2 面板可开</text>
+        <text x="30" y="184" fill="#aab3c2">L3 交互原语 · L4 写入生效 · L5 反馈提示</text>
+        <rect x="346" y="126" width="320" height="74" rx="9" fill="#1b1f28" stroke="#34d399"/>
+        <text x="362" y="146" fill="#34d399" font-weight="700">真实站点层（advisory）</text>
+        <text x="362" y="166" fill="#aab3c2">L0 注入 · L1 无副作用 · L2 面板可开</text>
+        <text x="362" y="184" fill="#aab3c2">+ 最弱填充断言（对齐其援引先例口径）</text>
+      </g>
+    </svg>
+    <div class="cap">「指定页面」拆为 owned 全梯 + 真实站点弱梯；覆盖面从 2/18 推向 18/18</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C5 · 测试 harness 交互原语：让验证能「驱动」而不只是「看见」</h3>
+    <span class="badge b-wn">Worth exploring</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>tests/live/live-smoke.mjs:50-51,95,104,153-154</code> · <code>tests/helpers/userscript.ts</code></dd>
+    <dt>Problem</dt><dd>harness 只有「数节点」的只读探针（<code>:95</code>），无 <code>click/fill/locator</code>；GM 替身 <code>GM_registerMenuCommand = () =&gt; 0</code>（<code>:50</code>）丢弃了回调，菜单命令无法被触发；而密封层 helper（<code>helpers/userscript.ts</code>）<b>已经实现了可调用菜单记录</b>——同一能力在两个 harness 里不对等。</dd>
+    <dt>Solution</dt><dd>把密封层的交互原语抽为共享模块（open→search→row-click→读 <code>value</code>），live harness 按需复用；GM 替身改为记录 <code>{title, fn}</code> 并可调用。断言用 web-first 形态（<code>expect(locator).toBeVisible()</code>）与 <code>expect.soft</code> 一次跑完报全量（第三方页一次访问成本高，能收的信息应一次收完）。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：两个 harness 的注入/替身逻辑收敛为一份；<b>leverage 中高</b>：它是 C4 的前置能力——没有交互原语，断言阶梯就无从落地。</dd>
+  </dl>
+</div>
+
+<h2><span class="n">05</span>行业心智模型模板库（可直接复用的轮子）</h2>
+<p>本节每一条都来自 atomcode 深度调研（Exa + Tavily + AnySearch 三引擎、官方文档优先、多源交叉）。<b>原则：复用成熟轮子，不重复开发。</b></p>
+
+<h3>设置入口与 i18n（R1，Confidence 高）</h3>
+<div class="grid g2">
+  <div class="tpl"><div class="id">S1</div><div class="nm">设置分层（1–3 首层 / 4+ 专门面）</div><div class="ds">1–3 个高频快捷开关 → 首层（popup/面板首屏）；<b>4 个以上或需分类 → 完整设置面</b>。混合型 = 首层放最高频 2–3 个 + 一个「设置」入口。反模式：把 15 个设置塞进首层「求简单」——实际是更小更难读。分组按<b>用户意图</b>（General/Appearance/Behavior/Advanced）而非实现细节。</div><div class="src">Chrome 官方 Give users options · ExtensionBooster 综述 · Dark Reader 案例</div></div>
+  <div class="tpl"><div class="id">S2</div><div class="nm">GM_config 模式（油猴事实标准）</div><div class="ds">声明式设置 schema（text/number/dropdown/bool）→ <code>GM_registerMenuCommand('设置', setup)</code> 打开面板 → <code>GM_setValue/getValue</code> 持久化 → <b>onsave 回调触发界面重渲染</b>。菜单项无图标/无子菜单/无法控制出现位置是已知局限（TM #2461）。</div><div class="src">Greasy Fork gm_config_toolbar · Tampermonkey 官方文档</div></div>
+  <div class="tpl"><div class="id">S3</div><div class="nm">菜单命令 id 原地更新</div><div class="ds"><code>GM_registerMenuCommand(name, fn, { id })</code> 支持用同一 <code>id</code> <b>原地更新</b>已注册的菜单项（含 title/accessKey/autoClose）。正解：语言切换后重注册同一 id 的菜单项，而非等用户重载页面。</div><div class="src">Tampermonkey 官方文档（已核验）</div></div>
+  <div class="tpl"><div class="id">S4</div><div class="nm">i18n 全量重渲染</div><div class="ds"><b>chrome.i18n 不能做运行时切换</b>（只绑定浏览器 UI 语言）→ 自建内联字典 + <code>t(key)</code>；解析优先级 <b>显式选择 &gt; 浏览器语言 &gt; 默认</b>（与 CSS 级联 / Accept-Language 协商同构）；切换后<b>字典化全量重渲染</b>（<code>[data-i18n]</code>）而非手工逐项改文本。i18next 类库运行时 205–422KB，对单文件 userscript 不可接受。</div><div class="src">Chrome i18n 官方文档 · 本仓库 A-019 已对齐解析优先级</div></div>
+</div>
+
+<h3>指定页面验证与断言阶梯（R2，Confidence 高）</h3>
+<div class="grid g2">
+  <div class="tpl"><div class="id">D1</div><div class="nm">断言阶梯 L0–L5</div><div class="ds">L0 注入发生 → L1 无副作用 → L2 面板可开 → L3 交互原语生效 → <b>L4 写入生效（字段 value + input/change 事件）</b> → L5 反馈提示。取舍规则：<b>L0–L2 适合真实站点层（低交互高鲁棒）；L3–L5 涉及多步驱动、flaky 乘性增长，应放自有页面层</b>。注意：CDP Autofill 域只观测原生管线，<b>不可用作脚本填充断言</b>（本仓库 cdpNote 已正确登记）。</div><div class="src">Playwright 官方 · Chrome 官方 E2E · 本仓库 site-manifest</div></div>
+  <div class="tpl"><div class="id">D2</div><div class="nm">owned 指定页面 + 交互原语</div><div class="ds">Playwright 官方铁律「Only test what you control」——第三方页不适合深交互。<b>Contentsquare 的解法：用自有 QA 域做全交互 E2E</b>（externally_connectable + 外接消息唤醒自测），28 个 E2E 自动化 17 个（73.7%）。落到本仓库：把真实站点形态<b>冻结快照为自有指定页</b>，在它上面跑 L0–L5。交互原语模板：inject / open-panel / search-type / select-country / fill-field / feedback-toast，全部用 web-first 断言 + <code>expect.soft</code> 一次收全量。</div><div class="src">Playwright 官方 best-practices · Contentsquare 工程博客 · QASkills 2026</div></div>
+  <div class="tpl"><div class="id">D3</div><div class="nm">flaky 治理：触发面隔离</div><div class="ds">advisory 的正确实现不是 try/catch，而是<b>把不稳定层从 blocking CI 的拓扑里物理移出</b>（仅 schedule + workflow_dispatch，永不进 pull_request）——这是唯一不会被「配置漂移/误触发」击穿的方案。skip 必须带非空 reason + ticket（Chromium <code>failing_test_names</code> 同构）。断言强度公式：<b>站点可控度 × 断言必要性 × flaky 成本</b>。</div><div class="src">QASkills 2026 flaky 治理 · Bitwarden BIT · 本仓库已对齐</div></div>
+  <div class="tpl"><div class="id">D4</div><div class="nm">真实站点弱断言（对齐先例口径）</div><div class="ds">Bitwarden BIT 原文：“inconsistently flaky, therefore typically only testing that the username/email <b>was filled out properly</b>”——先例<b>断言填充结果</b>。所以真实站点层可承受的断言上限就是「L0 + 最弱 L4」，而非「只看元素存在」。</div><div class="src">Bitwarden BIT（本仓库 manifest 已援引）</div></div>
+</div>
+
+<h3>自检与可观测性（R3，Confidence 高）</h3>
+<div class="grid g2">
+  <div class="tpl"><div class="id">O1</div><div class="nm">doctor 命令矩阵</div><div class="ds">已成工具类软件工业标准：<b>只读检查矩阵 + <code>--json</code> + 显式退出码 + 破坏性动作必须 <code>--fix</code> 门控</b>。mv3-doctor 三铁律：先读 manifest 判定角色再应用规则（“同一行代码在 SW 是 bug、在 content script 是对的”）、<code>--json</code> 供 CI/agent 消费、warning 不 fail。检查项含<b>一次真实启动冒烟</b>。</div><div class="src">mv3-doctor · vercel-labs agent-browser doctor · aspire/coderabbit doctor</div></div>
+  <div class="tpl"><div class="id">O2</div><div class="nm">诊断面板逐层点亮</div><div class="ds">Greasespot 排障树是母版：Add-on Enabled → Manager Enabled → Script Installed → Script Matched → Script Enabled → Script Errors。每层回答一个独立布尔，<b>第一处熄灭的层就是「为何没生效」的答案</b>。关键约束：提示的根因必须是<b>验证过的</b>根因（TM 的误导横幅是反例）。面板本身可兼作修复入口（uBlock logger → 过滤器创建）。</div><div class="src">Greasespot Wiki Troubleshooting · uBlock Logger wiki</div></div>
+  <div class="tpl"><div class="id">O3</div><div class="nm">决策链 trace 作单一事实来源</div><div class="ds">Flagr <code>evalDebugLog</code>：“评估是确定性的，但<b>背后的推理在原始调用中不可见</b>”——响应携带逐条 <code>{segmentID, msg}</code> 叙述「约束是否匹配、hash 落在哪」，从上往下读即可看到<b>在哪一步停下</b>。GrowthBook 同构（per-flag debug log + <code>enableDevMode</code> 开关）。规则：<b>trace 是唯一源，UI 面板与 CI JSON 从同一份 trace 渲染</b>；溯源粒度局限要明示。</div><div class="src">Flagr Debug Console 文档 · GrowthBook DevTools · Wingify FE</div></div>
+  <div class="tpl"><div class="id">O4</div><div class="nm">零开销 logger + 静默失败三招</div><div class="ds">uBlock：统一时间线记录「一切发生的事」+ 颜色编码动作类型，且<b>未打开时零 CPU/内存开销</b>——诊断面必须与运行热路径解耦。静默失败三招：<b>前移</b>（构建/保存时校验必需元数据）、<b>捕获</b>（注入探针 + <code>window.onerror</code> 上报 trace）、<b>归因</b>（文案指向已验证的开关；未知错误诚实报「未知 + 请开 debug」）。</div><div class="src">uBlock Logger wiki · TM #2060 / #2395 · mv3-doctor CI 模式</div></div>
+</div>
+
+<h2><span class="n">06</span>顶层建议与 message 步骤</h2>
+<div class="note good">
+  <b>顶层建议（先做哪一项）</b>：<b>C1 设置一级入口 + C3 自检面</b>。理由：这两项是<b>唯一直接对应你两条投诉</b>的改动，且共享一个交付物——一个「设置/诊断」视图（设置项 + 逐层点亮的自检结果），一处改动同时兑现「能被找到」与「能被解释」。C2 紧随（i18n 完整性，与 C1 同一改动面）。C5→C4 是「能被证明」的地基，因为<b>没有交互原语就搭不起断言阶梯</b>。<b>先让用户找得到，再让用户看得懂，最后让 CI 证得了。</b>
+</div>
+<div class="card">
+  <div class="step"><div class="sid">M1</div><div class="sc"><div class="st">设置一级入口（含语言首位）</div><div class="sd">面板头部 ⚙ + GM 菜单新增「设置」项；设置视图独立于「站点规则」语义；语言控件置于前部而非滚动底。验收：冷启动 ≤2 次点击到达语言设置；豁免域名数量不影响可达性。</div></div><span class="sev b-dg">C1</span></div>
+  <div class="step"><div class="sid">M2</div><div class="sc"><div class="st">i18n 全量重渲染 + 菜单原地更新 + 补齐文案</div><div class="sd">引入 <code>[data-i18n]</code> 字典化全量重渲染；菜单用 <code>GM_registerMenuCommand(..., { id })</code> 原地更新；补齐图标 title、收藏 title、空态文案，并把 <code>main.ts:107</code> 就地双语收编进 MSG。验收：切换后全 UI 无漏刷；菜单无需重载即跟随。</div></div><span class="sev b-dg">C2</span></div>
+  <div class="step"><div class="sid">M3</div><div class="sc"><div class="st">自检面：trace + 逐层点亮面板 + debug 开关</div><div class="sd">各判定点 append <code>{step,verdict,msg,ts}</code>；面板逐层点亮并给出已验证根因；<code>--json</code> 等价输出供 CI；trace 仅开启时记录（零开销）。验收：构造「无可信字段」页，面板能说出具体哪道门挡住了。</div></div><span class="sev b-dg">C3</span></div>
+  <div class="step"><div class="sid">M4</div><div class="sc"><div class="st">测试 harness 交互原语 + GM 替身可驱动</div><div class="sd">把密封层交互原语抽为共享模块（open→search→row-click→读 value）；GM 替身改为记录 <code>{title,fn}</code> 并可调用；断言改 web-first + <code>expect.soft</code> 一次收全量。</div></div><span class="sev b-wn">C5</span></div>
+  <div class="step"><div class="sid">M5</div><div class="sc"><div class="st">owned 指定页面语料 + L0–L5 全断言</div><div class="sd">把真实站点形态冻结为自有指定页；在其上跑 L0–L5（含 L4 写入生效）；进 PR 门。验收：owned 语料上 18/18 能力均有断言且全绿。</div></div><span class="sev b-dg">C4</span></div>
+  <div class="step"><div class="sid">M6</div><div class="sc"><div class="st">真实站点层口径对齐先例</div><div class="sd">把 <code>_meta.assertionRule</code> 从「只看 wrapper 存在」提升到其援引先例的口径（L0 + 最弱 L4 填充断言）；保留触发面隔离（advisory）。验收：≥1 个 live 目标在 L0+L4 下连续两次绿。</div></div><span class="sev b-dg">C4</span></div>
+  <div class="step"><div class="sid">M7</div><div class="sc"><div class="st">可观测性自身的测试补齐</div><div class="sd">为 trace / 诊断面板 / data 属性补断言（今天 <code>signals</code> 仅被离线 harness 直测引擎，从未经出厂产物可观测面验证）。验收：诊断面有密封断言。</div></div><span class="sev b-ac">C3</span></div>
+  <div class="step"><div class="sid">M8</div><div class="sc"><div class="st">（可选）C5-5/C5-6 文档卫生 + 真实站点清单扩充</div><div class="sd">上轮 backlog 的文档陈旧文本与 README 状态表标注；按 enablementRunbook 扩充 live 目标。</div></div><span class="sev b-gy">backlog</span></div>
+</div>
+
+<h2><span class="n">07</span>证据索引</h2>
+<div class="card p2">
+<dl class="kv">
+  <dt>代码证据</dt><dd><code>src/ui/index.ts:101,155-156,296,312,463-573,532-545,699,711,736,750-760,767</code> · <code>src/main.ts:18,107,135-137</code> · <code>src/i18n.ts:9,39-48</code> · <code>src/detect/index.ts:290,328,554,841-842</code> · <code>src/config.ts:53-54,62</code></dd>
+  <dt>测试证据</dt><dd><code>tests/live/live-smoke.mjs:50-51,95,104,153-154</code> · <code>tests/live/site-manifest.json:8,14</code> · <code>tests/locale-switch.spec.ts</code> · <code>tests/scripts/verify-ticket-42.mjs</code> · <code>tests/helpers/userscript.ts</code></dd>
+  <dt>子代理审计</dt><dd>3 个并行只读审计：设置可达性矩阵 · 能力×层覆盖矩阵（18×3） · 可观测性通道审计</dd>
+  <dt>深度调研</dt><dd>atomcode 3 次全景调研（R1 设置入口与 i18n · R2 指定页面全功能面验证 · R3 自检与可观测性），三引擎交叉，官方文档优先</dd>
+  <dt>上游</dt><dd><code>.scratch/architecture-recovery/handoffs/46-cycle5-closure.md</code>（Cycle-5 终态：v1.6.0 / 账本 15/15 implemented）</dd>
+</dl>
+</div>
+
+<footer>
+  <p><b>本报告为只读调查产物</b>——未修改任何源码、未推送任何提交。所有结论均以实读/实测为准；本大脑代理自己的 1 条假设（GM 菜单求值顺序）被子代理实物核验<b>证伪并标为 REFUTED，不立票</b>。</p>
+  <p>生成：Cycle-6 架构大脑调查 · 基线 origin/main = 85990d2f（v1.6.0）</p>
+</footer>
+
+</div>
+</body>
+</html>

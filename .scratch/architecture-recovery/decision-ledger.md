@@ -38,6 +38,11 @@
 | A-024 | 远端残留：已合并的 `origin/cch/*` 11 支未清理（Cycle-4 land 副产物） | 批清已确认合并的远端分支并 prune | 只删已确认合并的分支；不触碰 main；远端写操作须用户授权 | implemented（票 45：实物核验清理集为空——远端 9 支 `origin/cch/*` 全未合并，Cycle-4 11 支残留逐名 ABSENT，零删除零授权需求；WORKFLOW §8 证据边界条款化承载 A-025） |
 | A-025 | 边界未条款化：CI-only 政策与「审计型本地硬验收」的边界未写入流程（Cycle-4 收口逐次授权） | 在 WORKFLOW 中把 CI-only 政策与本地硬验收的边界条款化 | 不放松「证据只认 CI run/artifact」总原则；例外须显式登记与授权路径；不改既有 §5 教训条目格式 | implemented（票 45：WORKFLOW 新增 §8 证据边界——§8.1 CI-only 政策 + §8.2 本地硬验收边界，总原则不放松；atomcode 调研落盘 `research/atomcode-45-ci-evidence-boundary.md`） |
 
+| A-026 | 设置无一级入口：所有设置（语言/低调样式/豁免/规则）共用 `#cch-rules-view`，而该视图语义标签是「站点规则」；语言控件 `#cch-locale-tg`（`src/ui/index.ts:532-545`）排在豁免/规则/低调样式**之后**，容器 `overflow-y:auto`（`ui:101`）——豁免域名越多语言控件越靠下；无独立设置入口，GM 菜单仅 2 项（`src/main.ts:136-137`）无语言项；`openPanel` 开的是列表视图（`ui:296`）而非规则视图。用户实测反馈：「依旧没有能设置 i18n 选择脚本语言的地方」 | 给设置一个**一级地址**：面板头部 ⚙ + GM 菜单新增「设置」项；设置视图独立于「站点规则」语义；语言控件置于视图前部而非滚动底 | 不改评分引擎与任何设置语义；不降低既有档位阈值；面板仍只在顶层帧渲染（帧治理不变）；入口不得与豁免/负反馈语义冲突；保持「低调注入」与「高置信」的视觉分层 | current |
+| A-027 | i18n 不完整（四重）：（a）切换语言走 `_applyLocaleText()`（`src/ui/index.ts:750-760`）**手工逐项重写 6 处**，已漏刷收藏行 `.cch-fav` 的 `title`（`ui:711`）与空态文案（`ui:699`）；（b）图标 `title`/`aria-label` 硬编码 `'Country Code Helper'`（`ui:155-156`）**从未本地化**；（c）已注册的 GM 菜单标签**只求值一次**，运行时切换语言后不更新（需重载）；（d）`src/main.ts:107` 的帧校验提示是**就地双语三元表达式**，未走 i18n 表（注释自认「收口时可收编进 MSG」） | 本地化改为**字典化全量重渲染**（`[data-i18n]`）而非手工逐项补；菜单命令改用 `GM_registerMenuCommand(name, fn, { id })` **id 原地更新**（Tampermonkey 官方文档）使切换后无需重载即跟随；补齐未本地化文案并把 `main.ts:107` 就地双语收编进 MSG | 不破坏 `t()` 契约与中/英文案键；GM 存储键与收藏/规则解耦（沿用 `UI_PREFS_KEY` 独立键模式）；不新增依赖（i18next 类库运行时 205–422KB 不可接受）；保持 `显式 > 浏览器 > 默认` 三级解析语义 | current |
+| A-028 | 零可观测性 / 零自检面：`src/` 全目录 `console.` 调用点为 **0**；无 debug/trace/verbose 开关（`ui:239-241` 仅持久化 `lowkeyMode`/`locale`）；无 doctor/self-test 入口；评分证据链 `signals[]`（`detect/index.ts:328,554`）算完后只写入私有 `WeakMap`（`:841-842`）与 `_lowFields`（`ui:260`）——**算完即不可达**；三种静默失败均无解释：（a）无可信字段→无图标（理由存在于 `gate:input-type`/`gate:aria-hidden`/`country-semantic:suppress`/`gate:visibility-hidden` 或分数不足，但从不外显）；（b）子帧点图标无响应（`ui:456-460` fire-and-forget，无 ack 无超时）；（c）选国未填充（能报「失败」但不报「为何失败」，`FillResult` 无 reason 字段，`types.ts:22-28`） | 建自检/诊断面：各判定点 append `{step,verdict,msg,ts}` 形成**决策链 trace 作单一事实来源**（面板与 CI JSON 从同一份 trace 渲染）；面板**逐层点亮**并给出已验证根因（第一处熄灭即答案）；trace 由 debug 开关门控（未开启零开销） | 不重写评分引擎（`signals[]` 已存在，只需一条读出管道）；诊断面必须与运行热路径解耦（未开启零 CPU/内存）；根因提示必须是**验证过的**根因，未知错误诚实报「未知 + 请开 debug」；不得因开启诊断而改变检测/填充行为 | current |
+| A-029 | 真实站点层能力覆盖 2/18：`tests/live/live-smoke.mjs` 全文**无任何交互原语**（grep `.click(` / `.fill(` / `locator(` = NONE），唯一读面是数 `.cch-wrapper` 节点（`:95`）；`.cch-btn` 计数被记录但**不断言**（`:104` 的 `injectedOk` 不读档位、不读 value）；GM 替身为空函数（`:50-51` `GM_registerMenuCommand = () => 0`）致菜单命令在 L3 不可驱动（而密封层 `tests/helpers/userscript.ts` **已实现可调用菜单记录**——同一能力在两 harness 不对等）；核心「选国→填充」在真实站点**从未被验证过一次**；另：`site-manifest.json:8` 的 `assertionRule` 自称照 Bitwarden BIT，但 BIT 原文为「typically only testing that the username/email **was filled out properly**」——先例**断言填充结果**，本仓库比其援引先例更弱 | 建测试 harness 交互原语（open→search→row-click→读 value）并让 GM 替身可驱动；断言改 web-first + `expect.soft` 一次收全量；真实站点层断言口径从「仅 wrapper 存在」提升到**其援引先例的口径**（L0 + 最弱 L4 填充断言） | 不删除任何既有断言；密封 E2E 语义（零外网、PR 阻断）不变；真实站点层保持 advisory（仅 schedule + workflow_dispatch，永不进 pull_request）；skip 必须带非空 reason + ticket；不采 UA 伪造/反自动化指纹开关；证据只认 CI run/artifact | current |
+| A-030 | 无 owned 指定页面语料与断言阶梯：「指定网页」两类都不适合全工具验证——mirror 目标仅 4 个本地小页（不覆盖真实站点形态），live 目标仅 2 个且受 Cloudflare 拦截、且 manifest 规则明文禁止深交互；行业铁律「Only test what you control」（Playwright 官方）与 Contentsquare「用自有 QA 域做全交互 E2E」均指向：深交互验证必须跑在**自有可控页面**上；本仓库 WORKFLOW §4.5「升塔纪律」已规定「先沉淀 fixture 再修脚本」但未定义断言阶梯 | 把「指定页面」拆为两类职责：（1）**owned 指定页面语料**——真实站点形态**冻结快照**为自有页面，在其上跑 **L0–L5 全断言**（L0 注入 / L1 无副作用 / L2 面板可开 / L3 交互原语 / L4 写入生效 / L5 反馈提示）并进 PR 门；（2）真实站点层只保留 L0–L2。语料清单大小成为「真实覆盖面」的可度量指标 | 语料先行（无地基不立检测改动）；不得让 flaky 真实站点污染密封 E2E；不登录、不深交互于第三方页；CDP Autofill 域不得用作脚本填充断言（`cdpNote` 已登记）；性能红线（1000 节点 scan < 350ms）不回退 | current |
 ## 去向登记（spec 覆盖核对）
 
 ### Cycle-5（本周期，2026-09-14）
@@ -62,6 +67,19 @@
 
 **Cycle-5 覆盖核对**：A-011…A-025 共 **15 条**，全部有票去向；无去向记录 **0 条**。
 
+### Cycle-6（本周期，2026-09-15）
+
+| A-ID | 去向票（建议） | 说明 |
+|------|--------------|------|
+| A-026 | 票 48（M1） | 设置一级入口（含语言首位） |
+| A-027 | 票 48（M2） | i18n 全量重渲染 + 菜单 id 原地更新 + 补齐文案 |
+| A-028 | 票 49（M3+M7） | 自检/诊断面（trace 单一事实源 + 逐层点亮 + debug 开关） |
+| A-029 | 票 50（M4+M6） | harness 交互原语 + 真实站点口径对齐先例 |
+| A-030 | 票 51（M5） | owned 指定页面语料 + L0–L5 断言阶梯 |
+
+**Cycle-6 覆盖核对**：A-026…A-030 共 **5 条**，均有建议去向（票号待 to-tickets 阶段正式分配）；无去向记录 **0 条**。
+
+**Cycle-5（已完结）**：A-011…A-025 = 15/15 implemented（详见上节与 `handoffs/46-cycle5-closure.md`）。
 ### Cycle-4（历史，2026-09-12，审计链保留）
 
 - A-001 → 票 27（检测覆盖率下限补强）
