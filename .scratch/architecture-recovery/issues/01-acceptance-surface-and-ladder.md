@@ -19,7 +19,7 @@
 ---
 
 **验收证据**：逐项只读验证命令与输出摘要见 `.scratch/architecture-recovery/research/window-reports/01-acceptance-surface-and-ladder-report.md` §4.2。
-**提交锚点**：`cch/01-acceptance-surface-and-ladder` @ `SHA_BACKFILL`（回写提交）
+**提交锚点**：`cch/01-acceptance-surface-and-ladder` @ `ecd38b13`（交付提交；锚点回写见分支 head）
 **基线**：`cch/48-cycle6-ticketing` @ `6d0563d9`
 **报告**：`.scratch/architecture-recovery/research/window-reports/01-acceptance-surface-and-ladder-report.md`
 **状态**：子窗口自证完成，**待大脑复核**（WORKFLOW §4.3）。

@@ -2,7 +2,7 @@
 
 > 票：`issues/01-acceptance-surface-and-ladder.md` | 分支：`cch/01-acceptance-surface-and-ladder` | 日期：2026-09-16（Asia/Singapore）
 > 基线：`cch/48-cycle6-ticketing` head `6d0563d9`（本票堆叠于其上；`git merge-base HEAD 6d0563d9` = `6d0563d9`）
-> 提交锚点：`<见 §4.1 回写>`
+> 提交锚点：`ecd38b13`（分支 `cch/01-acceptance-surface-and-ladder`；锚点回写提交见分支 head）
 > 性质：**只产出定义**——零 harness、零源码改动。
 
 ---
@@ -54,7 +54,7 @@
 
 ### 4.1 提交锚点
 
-本票提交：`cch/01-acceptance-surface-and-ladder` @ `SHA_BACKFILL`（回写提交，见 §8）。
+本票提交：`cch/01-acceptance-surface-and-ladder` @ `ecd38b13`（交付提交；锚点回写见分支 head）。
 依赖分支：`cch/48-cycle6-ticketing` @ `6d0563d9`。
 
 ### 4.2 逐条
@@ -104,7 +104,7 @@
 
 ## 8 遗留与后续
 
-- **本票提交 sha 回写**：本报告 §4.1 与 `issues/01` 的锚点 sha 由紧接的「回写提交」补全（避免自引用循环）。
+- **本票提交 sha 回写**：交付提交 `ecd38b13` 已回写至 §4.1 与 `issues/01`；提交内容无法自引用自身 sha，故回写落在紧随其后的小提交（见分支 head）。
 - **待回写**：`tests/scripts/verify-ticket-31.mjs` 仍以 `__cchLastFill` 为断言依据（§2.2 约束已登记）；回写属票 05 / 07 范围，本票不越界改动。
 - **下游约束**：票 05（W2，blocked by 01）按 §3.3 建双端断言原语；票 06（W3）按 §4.2 建 owned 语料；票 07（W4）按 §4.2 第 3 条实现发布门；§2.1 第 14 项直接约束票 05 的原语集。
 - **observe 挂账载体**：§4.2「observe 挂账强制携带非空 reason + ticket」的载体实现属票 07。
