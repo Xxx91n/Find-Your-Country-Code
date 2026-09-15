@@ -417,6 +417,62 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 - 「在 release.yml 加 GF 发布步骤」经深度调研**推翻**（GF 无写入 API），已改写为拉取模型（A-011 显式约束）。
 
 ---
+## 第六周期（可配置 + 可解释 + 可证明，2026-09-16）
+
+> 输入：`report/architecture-review-cycle6.html`（架构大脑调查）+ `.scratch/cycle6-grill/decision-ledger.md`（D-001…D-016）+ `decision-ledger.md`（A-026…A-033）
+> Spec：`spec.md`（上一周期已归档 `spec-cycle5.md`）| Goal/messages：`.scratch/cycle6-grill/goal-and-messages.md`
+> Tickets：`issues/01-09-*.md`（9 张）| 自检：`research/launcher-selfcheck-cycle6.md`
+
+### 波次表（从 issue Blocked by 推导，未新造顺序）
+
+| 波次 | 票 | Blocked by | 并行性 | 焦点（覆盖 A-xxx） |
+|------|----|-----------|--------|-------------------|
+| **W1** | 01, 02, 03, 04 | 01←无； 02←无； 03←无； 04←无 | 同波互不堆叠，可并行 | 验收面与断言阶梯定义（A-029 · A-030） ＋ 设置面收口（A-026 · A-027） ＋ 诊断面（A-028） ＋ 域建模：发布门 ADR + CONTEXT 术语（A-033） |
+| **W2** | 05 | 05←01 | 单票 | harness 交互原语（A-029） |
+| **W3** | 06 | 06←05 | 单票 | 形态语料三层架构（A-030） |
+| **W4** | 07 | 07←06 | 单票 | 真实站点层全阶梯 + 发布门（A-029） |
+| **W5** | 08 | 08←07 | 单票 | 阶段 B：失效驱动修复（A-031 · A-032） |
+| **W6** | 09 | 09←01,02,03,04,05,06,07,08 | 单票 | Cycle-6 收口（（无；收口层）） |
+
+### 票务状态与 frontier（第六周期）
+
+| 票 | 标题 | 覆盖 A-xxx | 状态 | 报告路径 | 波次 |
+|----|------|-----------|------|----------|------|
+| 01 | 验收面与断言阶梯定义 | A-029 · A-030 | **ready-for-agent** | `research/window-reports/01-acceptance-surface-and-ladder-report.md` | W1 |
+| 02 | 设置面收口 | A-026 · A-027 | **ready-for-agent** | `research/window-reports/02-settings-surface-report.md` | W1 |
+| 03 | 诊断面 | A-028 | **ready-for-agent** | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
+| 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **ready-for-agent** | `research/window-reports/04-domain-modeling-report.md` | W1 |
+| 05 | harness 交互原语 | A-029 | **ready-for-agent** | `research/window-reports/05-harness-primitives-report.md` | W2 |
+| 06 | 形态语料三层架构 | A-030 | **ready-for-agent** | `research/window-reports/06-form-corpus-report.md` | W3 |
+| 07 | 真实站点层全阶梯 + 发布门 | A-029 | **ready-for-agent** | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
+| 08 | 阶段 B：失效驱动修复 | A-031 · A-032 | **ready-for-agent** | `research/window-reports/08-phase-b-failure-fixes-report.md` | W5 |
+| 09 | Cycle-6 收口 | （无；收口层） | **ready-for-agent** | `research/window-reports/09-cycle6-closeout-report.md` | W6 |
+
+### 发起窗口的 prompts
+
+| 票 | 启动器 |
+|----|--------|
+| 01 | `prompts/01-acceptance-surface-and-ladder.md` |
+| 02 | `prompts/02-settings-surface.md` |
+| 03 | `prompts/03-diagnostics-surface.md` |
+| 04 | `prompts/04-domain-modeling.md` |
+| 05 | `prompts/05-harness-primitives.md` |
+| 06 | `prompts/06-form-corpus.md` |
+| 07 | `prompts/07-real-site-and-release-gate.md` |
+| 08 | `prompts/08-phase-b-failure-fixes.md` |
+| 09 | `prompts/09-cycle6-closeout.md` |
+
+### 对账闸与自检
+
+- **对账闸（Step 0）**：A-027…A-033 共 **7 条 current** + A-026 **1 条 revised** = **8 条均有票去向**；无去向记录 **0 条**。
+- **启动器自检**：**9/9 PASS**（行数 ≤31、违禁词 0、复述 0、handoff 调研要求各 1 次、路径全可解析、A-xxx 均已声明）。
+
+### 辩证校正（入档）
+
+- 两条调研建议被用户裁决**覆盖**：① 「L4 不自动化」→ **自动化**；② 「真实站点止于 L0–L1」→ **跑全阶梯**。
+- 一条大脑假设被**证伪**：「GM 菜单求值顺序」经子代理实物核验为 REFUTED，未立票。
+
+---
 ## Backlog (跨周期遗留 + Cycle-3 新增遗留 — 等用户决定是否立票)
 
 ### 跨周期遗留（mmv2）
