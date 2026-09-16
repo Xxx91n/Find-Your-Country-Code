@@ -1,7 +1,8 @@
 # 窗口报告 06 — 形态语料三层架构
 
 > Cycle-6 | 票：`issues/06-form-corpus.md` | 覆盖 A-xxx：**A-030**
-> 分支：`cch/06-form-corpus`（按 WORKFLOW §4.2）| 提交：`a4b9150e`（32 文件 / +4144）
+> 分支：`cch/06-form-corpus`（按 WORKFLOW §4.2；**堆叠于 `cch/05-harness-primitives` 之上** —— 本票语义依赖票 05 原语 + 票 48 立票产物）
+> 实现提交：`4a9b3187`（32 文件 / +4144）| 文档提交：`3596390a`（报告 + issue 勾销 + 偏离点）
 > 基线：`85990d2f`（origin/main = v1.6.0，common base）
 > 报告日期：2026-09-16
 

@@ -20,7 +20,8 @@
 ---
 
 **验收证据**：逐项只读验证命令与输出摘要见 `.scratch/architecture-recovery/research/window-reports/06-form-corpus-report.md` §1（Delta 检查点见 §2；关键发现见 §3）。
-**提交锚点**：`cch/06-form-corpus` @ `a4b9150e`（Change-ID `pxk`，32 文件 / +4144）
+**提交锚点**：`cch/06-form-corpus` @ `4a9b3187`（Change-ID `pxk`，32 文件 / +4144）
+**文档提交**：`3596390a`（Change-ID `xku`，报告 + issue 勾销 + 偏离点）
 **基线**：common base `85990d2f`（origin/main = v1.6.0）；本票 issue / handoff / spec 属 `cch/48` 产物
 **报告**：`.scratch/architecture-recovery/research/window-reports/06-form-corpus-report.md`
 **atomcode 调研**：`.scratch/architecture-recovery/research/atomcode-06-form-corpus.md`（问题 verbatim 在 `prompt-06-atomcode.md`；三引擎 5 角度 + 原文核验 ≥6，Confidence 高）
