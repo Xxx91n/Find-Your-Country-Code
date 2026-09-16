@@ -68,9 +68,18 @@ test.describe('票 10 / A-034 — about:srcdoc 帧跨帧 origin 校验误判', (
     await recordFieldEvents(child, CHILD_SEL, ['input', 'change']);
     await openPanelRemote(child, CHILD_SEL, page);
     await selectCountry(page, 'cn', { query: 'China' });
-    expect(await readHostValue(child, CHILD_SEL), 'L3 srcdoc 帧宿主字段 value 应写入区号').toBe('+86');
-    expect(await readFieldEvents(child), 'L3 srcdoc 帧应派发 input/change 事件').toEqual(expect.arrayContaining(['input', 'change']));
-    await expect(feedbackToast(child), 'L4 srcdoc 帧应出现填充反馈').toContainText('+86');
+    // 跨帧链路是**异步**的：顶层 postMessage(FRAME_FILL_MSG) 之后**立即**关闭面板
+    // （ui/index.ts:820-821），子帧的 message 任务 + Fill.run 在其后执行
+    // ⇒ selectCountry 返回（面板已 detach）≠ 子帧写入完成。故 L3/L4 一律用
+    // **web-first 重试断言**，禁一次性读值（票 06 R1 同类竞态教训：本地快、CI 慢即翻红）。
+    await expect(child.locator(CHILD_SEL), 'L3 srcdoc 帧宿主字段 value 应写入区号')
+      .toHaveValue('+86', { timeout: 10_000 });
+    await expect.poll(async () => (await readFieldEvents(child)).slice(), {
+      message: 'L3 srcdoc 帧应派发 input/change 事件',
+      timeout: 10_000,
+    }).toEqual(expect.arrayContaining(['input', 'change']));
+    await expect(feedbackToast(child), 'L4 srcdoc 帧应出现填充反馈')
+      .toContainText('+86', { timeout: 10_000 });
   });
 
   test('L0 静默健康：缺陷态不产生未捕获异常（L0 绿不足以判生效）', async ({ page }) => {
@@ -112,8 +121,10 @@ test.describe('票 10 / A-034 — about:srcdoc 帧跨帧 origin 校验误判', (
     const popup = await popupPromise;
     await popup.waitForLoadState();
     await popup.evaluate(() => { window.opener?.postMessage({ __cch: 'cch-frame-v1', type: 'open' }, '*'); });
-    await expect(page.locator('#cch-pop'), '非嵌入来源的开面板请求不得生效').toHaveCount(0);
+    // 先等「降级提示」出现 —— 它证明该消息确已抵达顶层并被校验路径处理（而非「还没到」）；
+    // 再断言面板未打开（否则 count=0 会因时序而假通过）。
     await expect(feedbackToast(page), '应降级为可见提示（不放宽、不静默）').toContainText(/verified|无法验证/);
+    await expect(page.locator('#cch-pop'), '非嵌入来源的开面板请求不得生效').toHaveCount(0);
     await popup.close();
   });
 });
