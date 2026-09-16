@@ -4,7 +4,7 @@
 
 **Blocked by:** 票 07（真实站点层与发布门）—— 开工前实物核对已满足
 
-**Status:** implemented（实施提交 `16485782`；文档 `e652e6be`/`7ff21863`；竞态修复 `d4011dbf`/`62f2292a`；远端 tip `62f2292a`；CI 证据见文末）
+**Status:** implemented（实施提交 `16485782`；文档 `e652e6be`/`7ff21863`；竞态修复 `d4011dbf`/`62f2292a`；终态文档 `7f9044e7`；远端 tip `7f9044e7`；CI 证据见文末）
 
 **覆盖 A-xxx:** A-034（P0）
 
@@ -41,7 +41,7 @@
 
 ## CI 证据
 
-锚点：commit sha **`62f2292a`**（分支 `cch/10-srcdoc-origin-fix`，远端 tip）
+锚点：代码锚 **`62f2292a`**（CI 证据所在 sha）；终态文档 tip **`7f9044e7`**（分支 `cch/10-srcdoc-origin-fix`）
 
 | workflow | run ID | 结论 |
 |---|---|---|
