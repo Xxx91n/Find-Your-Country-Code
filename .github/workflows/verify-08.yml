@@ -1,0 +1,35 @@
+name: Verify Ticket 08 (phase-B failure-driven fixes)
+
+# 票 08（Cycle-6 · A-031 · A-032）结构门。
+# 触发：pull_request（ADR-0006 决策 2：非发版 workflow 声明 pull_request 门控）
+#       + 本票分支 push + 手动 dispatch。
+# 断言面：A-031 三形态已入校准语料且未先改检测代码（iti 内部搜索框 / ISO2 语言下拉为负例，
+#   无括号区号文本为正例，与括号对照例同档位）；A-032 两子形态 fixture 落盘 + N7 机理假设据实修正；
+#   豁免语义不回退（票 13 检查点一：闸门只改注入档位、不改检测登记；aria-hidden input 仍硬排除）；
+#   无回退与常量锁（语料 precision/recall=1、档位阈值与 L3 参数未动、性能红线 350ms 未弱化）。
+# node 钉 22：无 npm 依赖安装面、无浏览器、零外网（纯文本与纯函数断言）。
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/08-phase-b-failure-fixes'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-08-gate:
+    name: Ticket-08 gate (phase-B fixes A-031 A-032)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-08 acceptance gate
+        run: node tests/scripts/verify-ticket-08.mjs
