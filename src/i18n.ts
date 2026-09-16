@@ -19,7 +19,10 @@ const MSG = {
         feedback:'\u8FD9\u4E0D\u662F\u533A\u53F7\u5B57\u6BB5', rules:'\u7AD9\u70B9\u89C4\u5219', ruleExempt:'\u5728\u672C\u7AD9\u7981\u7528',
         rulesEmpty:'\u672C\u7AD9\u6682\u65E0\u89C4\u5219', ruleDeleted:'\u5DF2\u5220\u9664\u89C4\u5219', on:'\u5F00', off:'\u5173',
         lowkeyStyle:'\u4F4E\u8C03\u6837\u5F0F\uFF08\u4E2D\u7F6E\u4FE1\uFF09', lowkeyDim:'\u4F4E\u8C03\u663E\u793A', lowkeyHidden:'\u9690\u85CF\uFF0C\u4EC5\u53EC\u5524',
-        lang:'\u754C\u9762\u8BED\u8A00', langAuto:'\u81EA\u52A8\uFF08\u8DDF\u968F\u6D4F\u89C8\u5668\uFF09', langZh:'\u4E2D\u6587', langEn:'English' },
+        // ticket 03 [A-028]: diagnostics surface strings (independent view + summary entry + per-layer fix hints)
+        diagnostics:'\u8BCA\u65AD', diagOpen:'\u8BCA\u65AD', diagLayers:'\u56DB\u5C42\u5224\u5B9A', diagCounters:'\u8BA1\u6570\u5668', diagTimeline:'\u51B3\u7B56\u94FE\u65F6\u95F4\u7EBF', diagExport:'\u5BFC\u51FA\u8BCA\u65AD', diagTrace:'\u5168\u94FE\u8DEF trace', diagClear:'\u6E05\u7A7A\u8BCA\u65AD', diagEmpty:'\u6682\u65E0\u8BCA\u65AD\u8BB0\u5F55', diagTool:'\u5DE5\u5177\u5C42', diagInject:'\u6CE8\u5165\u5C42', diagLogic:'\u903B\u8F91\u5C42', diagWrite:'\u5199\u5165\u5C42', diagPass:'\u901A\u8FC7', diagFail:'\u5931\u8D25', diagUnknown:'\u672A\u77E5', diagAll:'\u5168\u90E8', diagTruncated:'\u8BB0\u5F55\u5DF2\u622A\u65AD', diagFixTool:'\u68C0\u67E5\u5B57\u6BB5\u8BC6\u522B\u4FE1\u53F7\u4E0E\u7AD9\u70B9\u89C4\u5219', diagFixInject:'\u68C0\u67E5\u6CE8\u5165\u6863\u4F4D\u4E0E\u53EF\u89C1\u6027\u95F8\u95E8', diagFixLogic:'\u68C0\u67E5\u9009\u9879\u5339\u914D\u4E0E\u76EE\u6807\u89E3\u6790', diagFixWrite:'\u68C0\u67E5\u5199\u5165\u540E\u8BFB\u56DE\u65AD\u8A00', diagExported:'\u8BCA\u65AD\u5DF2\u590D\u5236',
+        lang:'\u754C\u9762\u8BED\u8A00', langAuto:'\u81EA\u52A8\uFF08\u8DDF\u968F\u6D4F\u89C8\u5668\uFF09', langZh:'\u4E2D\u6587', langEn:'English',
+        settings:'\u8BBE\u7F6E', iconLabel:'\u533A\u53F7\u52A9\u624B' },
   en: { search:'Search country or code\u2026', favs:'Favorites', all:'All', none:'No results',
         ok:'Filled', copied:'No match \u2014 copied', fmtDiverge:'Filled (format may differ)', fillFailed:'Fill failed \u2014 enter manually', needTarget:'Click target field first',
         addFav:'Add to favorites', rmFav:'Remove from favorites',
@@ -31,7 +34,10 @@ const MSG = {
         feedback:'Not a country-code field', rules:'Site rules', ruleExempt:'Disable on this site',
         rulesEmpty:'No rules on this site', ruleDeleted:'Rule removed', on:'On', off:'Off',
         lowkeyStyle:'Low-key style (mid-confidence)', lowkeyDim:'Dim (visible)', lowkeyHidden:'Hidden (summonable)',
-        lang:'Interface language', langAuto:'Auto (follow browser)', langZh:'\u4E2D\u6587', langEn:'English' },
+        // ticket 03 [A-028]: diagnostics surface strings (independent view + summary entry + per-layer fix hints)
+        diagnostics:'Diagnostics', diagOpen:'Diagnostics', diagLayers:'Four layers', diagCounters:'Counters', diagTimeline:'Decision timeline', diagExport:'Export', diagTrace:'Full-chain trace', diagClear:'Clear', diagEmpty:'No diagnostics yet', diagTool:'Tool', diagInject:'Inject', diagLogic:'Logic', diagWrite:'Write', diagPass:'pass', diagFail:'fail', diagUnknown:'unknown', diagAll:'all', diagTruncated:'truncated', diagFixTool:'Check field signals and site rules', diagFixInject:'Check inject tier and visibility gate', diagFixLogic:'Check option matching and target resolution', diagFixWrite:'Check post-write read-back assertion', diagExported:'Diagnostics copied',
+        lang:'Interface language', langAuto:'Auto (follow browser)', langZh:'\u4E2D\u6587', langEn:'English',
+        settings:'Settings', iconLabel:'Country Code Helper' },
 };
 // \u81EA\u52A8\u5224\u5B9A\uFF1A\u6CBF\u7528\u65E2\u6709 navigator.language \u8BED\u4E49\uFF08\u4E0D\u6539\u7528 navigator.languages \u2014\u2014 \u90A3\u4F1A\u6539\u53D8\u65E2\u6709\u5224\u5B9A
 // \u884C\u4E3A\uFF0C\u5C5E\u8D8A\u7EBF\uFF0C\u4EC5\u4F5C\u4E3A\u540E\u7EED\u5019\u9009\u767B\u8BB0\u5728\u7A97\u53E3\u62A5\u544A\uFF09\u3002try/catch \u515C\u5E95 Node \u5355\u6D4B\u73AF\u5883\u65E0 navigator \u5168\u5C40

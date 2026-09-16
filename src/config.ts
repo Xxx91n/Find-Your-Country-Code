@@ -95,6 +95,11 @@ export const RULES_MAX_OVERRIDES = 500;              // 文档内覆盖规则上
 // ── 面板 UI 常量（票 07）[SP US17「低调样式可配置」/ US18「低置信手动召唤」] ──
 export const UI_PREFS_KEY = 'cch_ui_prefs_v1';          // UI 偏好 GM 键（独立键，与收藏/规则解耦）
 export const LOWKEY_MODES = ['dim', 'hidden'];           // 中置信注入样式：dim=低调可见；hidden=不注入仅面板召唤
+// ── 设置面深链（票 02 / A-026 · A-027）──
+// 深链目标一律用稳定标识符（语义 slug / 视图标记），不得绑内部实现名或易变排序位置（D-011）。
+// 视图标记挂在既有规则视图节点上（D-010 ③：不新建独立设置视图、不重排设置顺序）。
+export const SETTINGS_VIEW = 'settings';                 // 设置所在视图标记（data-cch-view 值）
+export const SETTINGS_SECTION_LOCALE = 'locale';         // 语言控件所在行 slug（data-cch-section 值）
 // ════════════════════════════════════════════════════════
 // 帧治理常量（票 12）[SP Implementation Decisions「帧治理」]
 // userscript 元数据无正向 all-frames 键;@match 命中 + 不设 @noframes = 全帧注入。
