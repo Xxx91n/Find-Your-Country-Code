@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · intl-tel-input v29 (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（mirror page）— id: iti-v29
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://intl-tel-input.com/
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : iti-v29（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载。仅保留**公开表单形态**（.iti 容器 /
+                 input[type=tel] / 国家选择器 / 内部搜索框 / role=listbox 项），
+                 已去品牌（无产品名 / logo / 文案）、去追踪（零外链 / 零分析）、
+                 内容替换（自拟国家子集）；不含真实 PII。
+  family       : iti
+  shape_notes  : 覆盖 A-031 误报面——`.iti` 容器内的**内部搜索框**
+                 `input[type=search][role=combobox][aria-autocomplete=list]`
+                 是真实误报面；listbox 项用 `data-dial-code` + `data-iso2`
+                 （v29 实测属性名，非 v16 系的 data-country-code）。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  :root { --line:#d0d5dd; --bg:#fff; --fg:#1f2933; }
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 32px; }
+  main { max-width: 480px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #52606d; font-size: 13px; margin: 0 0 20px; }
+  .iti { position: relative; display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; }
+  .iti__country-container { position: relative; }
+  .iti__selected-country { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 8px; background: #f5f7fa; border: 0; border-right: 1px solid var(--line); cursor: pointer; font: inherit; }
+  .iti__selected-country-primary { display: flex; align-items: center; gap: 4px; }
+  .iti__flag { width: 20px; height: 14px; background: #cbd2d9; border-radius: 2px; display: inline-block; }
+  .iti__flag.iti__cn { background: #de2910; }
+  .iti__flag.iti__us { background: #3c3b6e; }
+  .iti__flag.iti__gb { background: #012169; }
+  .iti__flag.iti__jp { background: #bc002d; }
+  .iti__flag.iti__de { background: #dd0000; }
+  .iti__flag.iti__ca { background: #d80621; }
+  .iti__flag.iti__sh { background: #012169; }
+  .iti__arrow { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #52606d; }
+  .iti__selected-dial-code { color: #52606d; font-size: 13px; }
+  .iti__country-selector { position: absolute; top: 100%; left: 0; z-index: 10; width: 320px; margin-top: 4px; background: #fff; border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(16,24,40,.12); padding: 8px; }
+  .iti__hide { display: none; }
+  .iti__search-input { width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
+  .iti__country-list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 220px; overflow-y: auto; }
+  .iti__country { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px; }
+  .iti__country:hover { background: #f0f4f8; }
+  .iti__country-name { flex: 1; }
+  .iti__dial-code { color: #52606d; }
+  .iti__tel-input { flex: 1; border: 0; padding: 10px 12px; font: inherit; outline: none; }
+  .field-row { margin-top: 18px; }
+  label { display: block; font-size: 13px; color: #52606d; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Phone number</h1>
+  <p class="hint">De-branded mirror of a public form shape (family: iti).</p>
+
+  <div class="iti iti--input-container iti--has-country-selector" id="iti-demo">
+    <div class="iti__country-container">
+      <button type="button" class="iti__selected-country" aria-label="Selected country">
+        <div class="iti__selected-country-primary">
+          <div class="iti__flag iti__cn"></div>
+          <div class="iti__arrow"></div>
+        </div>
+        <div class="iti__selected-dial-code">+86</div>
+      </button>
+
+      <div id="iti-0__country-selector" class="iti__country-selector iti__hide" role="dialog" aria-modal="true">
+        <div class="iti__search-input-wrapper">
+          <input id="iti-0__search-input" class="iti__search-input" type="search" placeholder="Search"
+                 role="combobox" aria-expanded="false" aria-label="Search"
+                 aria-controls="iti-0__country-listbox" aria-autocomplete="list" autocomplete="off">
+        </div>
+        <ul id="iti-0__country-listbox" class="iti__country-list" role="listbox">
+          <li class="iti__country" role="option" aria-selected="false" data-dial-code="86"  data-iso2="cn"><div class="iti__flag iti__cn"></div><span class="iti__country-name">China</span><span class="iti__dial-code">+86</span></li>
+          <li class="iti__country" role="option" aria-selected="false" data-dial-code="1"   data-iso2="us"><div class="iti__flag iti__us"></div><span class="iti__country-name">United States</span><span class="iti__dial-code">+1</span></li>
+          <li class="iti__country" role="option" aria-selected="false" data-dial-code="1"   data-iso2="ca"><div class="iti__flag iti__ca"></div><span class="iti__country-name">Canada</span><span class="iti__dial-code">+1</span></li>
+          <li class="iti__country" role="option" aria-selected="false" data-dial-code="44"  data-iso2="gb"><div class="iti__flag iti__gb"></div><span class="iti__country-name">United Kingdom</span><span class="iti__dial-code">+44</span></li>
+          <li class="iti__country" role="option" aria-selected="false" data-dial-code="81"  data-iso2="jp"><div class="iti__flag iti__jp"></div><span class="iti__country-name">Japan</span><span class="iti__dial-code">+81</span></li>
+          <li class="iti__country" role="option" aria-selected="false" data-dial-code="49"  data-iso2="de"><div class="iti__flag iti__de"></div><span class="iti__country-name">Germany</span><span class="iti__dial-code">+49</span></li>
+          <li class="iti__country" role="option" aria-selected="false" data-dial-code="247" data-iso2="sh"><div class="iti__flag iti__sh"></div><span class="iti__country-name">Ascension Island</span><span class="iti__dial-code">+247</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <input type="tel" id="phone" class="iti__tel-input" placeholder="90-1234-5678"
+           autocomplete="tel" inputmode="tel" aria-label="Phone number">
+  </div>
+
+  <div class="field-row">
+    <label for="fullname">Full name</label>
+    <input type="text" id="fullname" style="width:100%;padding:10px 12px;border:1px solid #d0d5dd;border-radius:6px;font:inherit">
+  </div>
+</main>
+
+<script>
+// 镜像页最小交互（复刻真实组件行为，使 L2–L4 可驱动；零外部依赖）
+(function () {
+  var root = document.getElementById('iti-demo');
+  var btn = root.querySelector('.iti__selected-country');
+  var selector = root.querySelector('.iti__country-selector');
+  var search = root.querySelector('.iti__search-input');
+  var list = root.querySelector('.iti__country-list');
+  var tel = root.querySelector('#phone');
+  var dial = root.querySelector('.iti__selected-dial-code');
+
+  function open() { selector.classList.remove('iti__hide'); search.setAttribute('aria-expanded', 'true'); }
+  function close() { selector.classList.add('iti__hide'); search.setAttribute('aria-expanded', 'false'); }
+
+  btn.addEventListener('click', function () {
+    if (selector.classList.contains('iti__hide')) open(); else close();
+  });
+
+  search.addEventListener('input', function () {
+    var q = search.value.trim().toLowerCase();
+    Array.prototype.forEach.call(list.querySelectorAll('.iti__country'), function (li) {
+      li.style.display = !q || li.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+    });
+  });
+
+  list.addEventListener('click', function (e) {
+    var li = e.target.closest('.iti__country');
+    if (!li) return;
+    var code = li.getAttribute('data-dial-code');
+    tel.value = '+' + code;                 // 页面侧可观测写入（L3 判据来源）
+    tel.dispatchEvent(new Event('input', { bubbles: true }));
+    tel.dispatchEvent(new Event('change', { bubbles: true }));
+    dial.textContent = '+' + code;
+    Array.prototype.forEach.call(list.querySelectorAll('.iti__country'), function (x) {
+      x.setAttribute('aria-selected', x === li ? 'true' : 'false');
+    });
+    close();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "id": "heroku-signup",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/heroku-signup.html",
+  "source_url": "https://signup.heroku.com/",
+  "root_selector": "#self_declared_country",
+  "node_count": 3,
+  "sha256": "44f49ac86c2d7f0c1da840d06cb2d66d876691aa8617e0641d09bedac095bb8f",
+  "tree": {
+    "tag": "select",
+    "class": [
+      "required"
+    ],
+    "attrs": {
+      "aria-label": "aaaaaaa/aaaaaa",
+      "aria-required": "aaaa",
+      "name": "aaaa·aaaaaaaa·aaaaaaa",
+      "placeholder": "aaaaaaa/aaaaaa",
+      "required": "aaaaaaaa"
+    },
+    "children": [
+      {
+        "tag": "option",
+        "repeat": 25
+      },
+      {
+        "tag": "option",
+        "repeat": 216
+      }
+    ]
+  }
+}

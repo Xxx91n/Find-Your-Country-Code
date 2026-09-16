@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · real-signup (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（mirror page）— id: heroku-signup
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://signup.heroku.com/
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : heroku-signup（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载。保留公开表单形态（字段名 / id / placeholder /
+                 aria-label / 原生 select 值域 / 隐藏 label 模式），去品牌 / 去追踪 /
+                 内容替换；不含真实 PII。
+  family       : real-signup（综合表单面）
+  shape_notes  : 忠实复刻实测字段集（first_name / last_name / email / company /
+                 select#self_declared_country / select#self_declared_state /
+                 checkbox / submit）——**真实页无电话字段、无区号下拉**；
+                 country 选项 value = 国名（非区号、非 ISO2）。
+                 label 与真实页一致为 `class="is-hidden"`（可视信号来自 placeholder / aria-label）。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 32px; }
+  main { max-width: 420px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #52606d; font-size: 13px; margin: 0 0 20px; }
+  .is-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .row { margin-bottom: 14px; }
+  input[type=text], input[type=email], select { width: 100%; padding: 10px 12px; border: 1px solid #d0d5dd; border-radius: 6px; font: inherit; }
+  .btn { width: 100%; padding: 11px 12px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; font: inherit; cursor: pointer; }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #52606d; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Create your account</h1>
+  <p class="hint">De-branded mirror of a public form shape (family: real-signup).</p>
+
+  <form id="signup" novalidate>
+    <div class="row">
+      <label class="is-hidden" for="first_name">First name</label>
+      <input type="text" name="first_name" id="first_name" class="required" autocapitalize="off" required
+             placeholder="First name" aria-required="true" aria-label="First name">
+    </div>
+    <div class="row">
+      <label class="is-hidden" for="last_name">Last name</label>
+      <input type="text" name="last_name" id="last_name" class="required" autocapitalize="off" required
+             placeholder="Last name" aria-required="true" aria-label="Last name">
+    </div>
+    <div class="row">
+      <label class="is-hidden" for="email">Email address</label>
+      <input type="email" name="email" id="email" class="required" autocapitalize="off" required
+             placeholder="Email address" aria-required="true" aria-label="Email address">
+    </div>
+    <div class="row">
+      <label class="is-hidden" for="company">Company name</label>
+      <input type="text" name="company" id="company" class="required" autocapitalize="off" required
+             placeholder="Company name" aria-label="Company name">
+    </div>
+    <div class="row">
+      <label class="is-hidden" for="self_declared_country">Country/Region</label>
+      <select name="self_declared_country" id="self_declared_country" class="required" required
+              placeholder="Country/Region" aria-required="true" aria-label="Country/Region">
+        <option value=""></option>
+        <option value="United States">United States</option>
+        <option value="United Kingdom">United Kingdom</option>
+        <option value="China">China</option>
+        <option value="Japan">Japan</option>
+        <option value="Germany">Germany</option>
+        <option value="Canada">Canada</option>
+        <option value="Afghanistan">Afghanistan</option>
+        <option value="Albania">Albania</option>
+        <option value="Algeria">Algeria</option>
+        <option value="Andorra">Andorra</option>
+        <option value="Angola">Angola</option>
+      </select>
+    </div>
+    <div class="row">
+      <label class="is-hidden" for="self_declared_state">State</label>
+      <select name="self_declared_state" id="self_declared_state" class="" placeholder="State" aria-label="State">
+        <option value=""></option>
+        <option value="California">California</option>
+        <option value="New York">New York</option>
+        <option value="Texas">Texas</option>
+        <option value="Washington">Washington</option>
+      </select>
+    </div>
+    <div class="row check">
+      <input type="checkbox" name="receive_newsletter" id="receive_newsletter_choice" value="receive_newsletter"
+             class="newsletter_checkbox" aria-label="Yes, I would like to receive product news">
+      <label for="receive_newsletter_choice">I would like to receive product news</label>
+    </div>
+    <div class="row">
+      <input type="submit" name="signup" value="Get Started" class="btn" id="signup-button" aria-label="Get Started">
+    </div>
+  </form>
+</main>
+
+<script>
+// 镜像页最小交互：无（原生控件自身可驱动）。保留空脚本位以便未来增补断言钩子。
+</script>
+</body>
+</html>

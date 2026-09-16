@@ -21,6 +21,8 @@ const MIME = {
 const ROUTES = [
   { prefix: '/test/', dir: path.join(ROOT, 'tests/manual') },
   { prefix: '/fixtures/', dir: path.join(ROOT, 'tests', 'fixtures') },
+  // 票 06（A-030）：形态语料镜像页（owned 指定页 = 断言主力）；hermetic，零外网
+  { prefix: '/corpus/', dir: path.join(ROOT, 'tests', 'corpus') },
   { prefix: '/vendor/intl-tel-input/', dir: path.join(ROOT, 'node_modules', 'intl-tel-input') },
   // 票 09 框架 fixture 本地 vendored（hermetic：E2E 无外部网络依赖）
   { prefix: '/vendor/react/', dir: path.join(ROOT, 'node_modules', 'react') },

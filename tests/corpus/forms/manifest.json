@@ -1,0 +1,457 @@
+{
+  "_meta": {
+    "name": "形态语料（form corpus）指纹与元数据清单",
+    "ticket": "06-form-corpus",
+    "covers": "A-030",
+    "generated_by": "tests/scripts/06-manifest.mjs",
+    "generated_at": "2026-09-16T10:32:42.074Z",
+    "role": "**库内唯一权威清单**。原始快照不入库；库内只留指纹与元数据。",
+    "layers": {
+      "mirror": "① 镜像页（入 git，测试主力）：去品牌 / 去追踪 / 内容替换，断言确定性最高",
+      "skeleton": "② 结构骨架（入 git，长期结构断言基线）：内容无关的归一化结构树",
+      "raw": "③ 原始快照（**仓库外 archive**）：raw HTML + 渲染后 DOM + 截图；库内只留 SHA-256 与元数据"
+    },
+    "compliance": {
+      "publicPagesOnly": "只采公开页；不登录、不提交表单、不抓取 PII",
+      "brandStripped": "剥离品牌内容（产品名 / logo / 文案）与追踪（分析 / 外链）",
+      "provenance": "每条标 source_url + captured_at + mirror_of + license_note",
+      "noPii": "不含真实 PII",
+      "rawNotInGit": "原始快照（含品牌内容与版权）一律出仓归档，不入 git"
+    },
+    "degradationLoop": {
+      "step1_recapture": "tests/scripts/06-capture-forms.mjs（重捕 → 仓库外 archive）",
+      "step2_skeleton": "tests/scripts/06-skeleton.mjs（派生内容无关结构树）",
+      "step3_structuralDiff": "tests/scripts/06-structural-diff.mjs（确定性结构 diff + 分级 bump 判定）",
+      "step4_replaySelfCheck": "npm run e2e（回放：owned 镜像页 L0–L4 断言）",
+      "discipline": "**绝不为修绿而盲目更新快照**——diff 非空即须先归因（站点改版 / 抓取环境 / 归一化缺陷），再决定 bump 与镜像页更新"
+    },
+    "naming": "「形态语料」与既有「校准语料」（tests/corpus/manifest.json）在语义轴上正交：一个管表单形态，一个管阈值标定"
+  },
+  "entries": [
+    {
+      "id": "iti-v29",
+      "family": "iti",
+      "adoption": "adopted",
+      "source_url": "https://intl-tel-input.com/",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "iti-v29",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": ".iti",
+      "shape_notes": "iti v29 形态：.iti 容器 + input[type=tel] + 国家按钮 + 内部搜索框 input[role=combobox][type=search][aria-autocomplete=list]（A-031 误报面）；listbox 项用 data-dial-code + data-iso2",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/iti-v29.html",
+        "bytes": 9124,
+        "sha256": "42ab30a2fea7b6478634e6ec83ed51e1e6bff6062a1dd07808bb7d643e859336"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/iti-v29.json",
+        "bytes": 10254,
+        "sha256": "598ab7ef92b3f75f17ec00e98b3c78366ef3cfec6e44df5bb391322b46d7f83e",
+        "tree_sha256": "cd60be1976af08f63712548afbc9aa9347e8c5e11a26c0f2c059b9791aaabc84",
+        "node_count": 36,
+        "root_selector": ".iti",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/iti-v29.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/iti-v29.html",
+          "bytes": 50480,
+          "sha256": "4d7ded847a0afc3e5dd47b39348f639978873dfbfa0b0fa2d6c4c6681f2c7e5b"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/iti-v29.html",
+          "bytes": 116125,
+          "sha256": "1d9a123db5d4e9e70980f3fda25dfc4e7147094fcce634ed0d003658c30d347e"
+        },
+        "frames": [],
+        "shot": {
+          "path": "corpus-forms/shot/iti-v29.png"
+        },
+        "ok": true
+      }
+    },
+    {
+      "id": "rpn-input",
+      "family": "phone-input-select",
+      "adoption": "adopted",
+      "source_url": "https://catamphetamine.gitlab.io/react-phone-number-input/",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "rpn-input",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": ".PhoneInput",
+      "shape_notes": "react-phone-number-input：input[type=tel] + 原生 select.PhoneInputCountrySelect 国家下拉（value 恰为 ISO2，文本为国名）",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/rpn-input.html",
+        "bytes": 4755,
+        "sha256": "620b1fa7c151ae05d49760d02785d26dd6de6f8336a9425038b021ac02028657"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/rpn-input.json",
+        "bytes": 2706,
+        "sha256": "9dd93b71e5b1c766c1569feba91142f2ceaad661dba06e6ec9b7bb47e054a1f2",
+        "tree_sha256": "bf3b1c60459e468be553227aba3f7fe0460aa00c412bb03f5c4ca80da9948296",
+        "node_count": 15,
+        "root_selector": ".PhoneInput",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/rpn-input.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/rpn-input.html",
+          "bytes": 58238,
+          "sha256": "0b63b58d2aae1da24be6b5b931334bcbe4bc5eef20a9a815bfc5d275a004f019"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/rpn-input.html",
+          "bytes": 359294,
+          "sha256": "c44484339126f1e722ef9de9e821d4477a5e934bd9cd5a261c6914e14f76eed6"
+        },
+        "frames": [],
+        "shot": {
+          "path": "corpus-forms/shot/rpn-input.png"
+        },
+        "ok": true
+      }
+    },
+    {
+      "id": "codepen-iti-v17",
+      "family": "iti-nested-frame",
+      "adoption": "adopted",
+      "source_url": "https://cdpn.io/webdevpuneet/fullpage/ExzVrPY",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "codepen-iti-v17",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": "iframe#result",
+      "shape_notes": "CodePen fullpage（ExzVrPY，iti v17）：与既有 live 目标同源；镜像页复刻「外层壳 + 嵌套预览帧 + iti v17 表单」（验收面 #14 跨隔离上下文）",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/codepen-iti-v17.html",
+        "bytes": 2347,
+        "sha256": "32eb6dffbde56678c6e96777383ac34515d7c6bfe165dd53c47953f18e67502d"
+      },
+      "child_mirror": {
+        "file": "tests/corpus/forms/mirrors/codepen-iti-v17-child.html",
+        "bytes": 4904,
+        "sha256": "b5ca4da57420fb22c532c6598ff77effb23ea6a7ed315230fb446a12ad1b1a33"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/codepen-iti-v17.json",
+        "bytes": 10029,
+        "sha256": "06afd66be41bf6bc5c577abfe6701c3678dc39652b43139db58bdbd00ee8444c",
+        "tree_sha256": "db5c1c8f4f3071371aa6e6f72c5a4f8602e617ec2b079c14a3832225ae47767c",
+        "node_count": 39,
+        "root_selector": ".iti",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/codepen-iti-v17.frame0.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/codepen-iti-v17.html",
+          "bytes": 9606,
+          "sha256": "110c253f97d4b6e33a91b93eab50da48ced1ea8c082c8d5fd117b12f27ae7a0a"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/codepen-iti-v17.html",
+          "bytes": 10026,
+          "sha256": "e0240b83b6e15f6d709904351c9e45f69c7cff4c6a41376ae323e57f16c30809"
+        },
+        "frames": [
+          {
+            "path": "corpus-forms/dom/codepen-iti-v17.frame0.html",
+            "bytes": 85834,
+            "sha256": "200cf576b70a47dfa9fd2cf2d8e58d701a16e747b28ed38c7460e1be0ffe5f37",
+            "url": "about:srcdoc"
+          }
+        ],
+        "shot": {
+          "path": "corpus-forms/shot/codepen-iti-v17.png"
+        },
+        "ok": true
+      }
+    },
+    {
+      "id": "mui-autocomplete",
+      "family": "pseudo-select",
+      "adoption": "adopted",
+      "source_url": "https://mui.com/material-ui/react-autocomplete/",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "mui-autocomplete",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": ".MuiAutocomplete-root",
+      "shape_notes": "MUI Autocomplete：input[role=combobox][aria-autocomplete=list][aria-controls] + role=listbox 浮层（可编辑型伪下拉）",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/mui-autocomplete.html",
+        "bytes": 6416,
+        "sha256": "40550d0c76ff3a029385a7dfecb3ca417e1923c492293e593857c8317b836e2b"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/mui-autocomplete.json",
+        "bytes": 4072,
+        "sha256": "7cb6c39e677eed78f7621af0bc44ed4e13d6fd64d4b40b18eabc04b60139b6a2",
+        "tree_sha256": "31b6981627aa45216bc1ae20bcbdf44e8067c394592cd540626d497a05400dd6",
+        "node_count": 12,
+        "root_selector": ".MuiAutocomplete-root",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/mui-autocomplete.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/mui-autocomplete.html",
+          "bytes": 701068,
+          "sha256": "910b4478578743f83aa178cbe3cac8d36eed6d36d2638e50df58c1bff80998db"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/mui-autocomplete.html",
+          "bytes": 922362,
+          "sha256": "4121be7287cc2d99d0cd492d0ccd6f2e8e1f32f2ba256740b31ae4db4bd25b5b"
+        },
+        "frames": [],
+        "shot": {
+          "path": "corpus-forms/shot/mui-autocomplete.png"
+        },
+        "ok": true
+      }
+    },
+    {
+      "id": "element-plus-select",
+      "family": "pseudo-select",
+      "adoption": "adopted",
+      "source_url": "https://element-plus.org/en-US/component/select.html",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "element-plus-select",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": ".el-select",
+      "shape_notes": "Element Plus Select：div 触发器 + readonly input.el-select__input[role=combobox][aria-controls] + 浮层 listbox（Vue 形态，select-only 型）",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/element-plus-select.html",
+        "bytes": 6252,
+        "sha256": "16b80fa8ad1f6e96b0061685963d1a5f7d1b0d46d21c12a14e8e580378a6b5ce"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/element-plus-select.json",
+        "bytes": 2742,
+        "sha256": "ee2794ebed00facb1f81855290b04e994e5cbd5fc1f6c86d663e94679b813a5b",
+        "tree_sha256": "2f1e93de7b293a0ca13d9f060d766d3ed781b062d19ba920252b8c12ae237559",
+        "node_count": 11,
+        "root_selector": ".el-select",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/element-plus-select.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/element-plus-select.html",
+          "bytes": 750444,
+          "sha256": "038e4bba07610fbf7dfadb11d829bf5b0d04cbbb64afd58aa1f7bd46890ea805"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/element-plus-select.html",
+          "bytes": 943820,
+          "sha256": "d283b79ebabcaef14e00af9b5d2de1d765fce399ba2be30e29ae98afe232830d"
+        },
+        "frames": [],
+        "shot": {
+          "path": "corpus-forms/shot/element-plus-select.png"
+        },
+        "ok": true
+      }
+    },
+    {
+      "id": "antd-select",
+      "family": "pseudo-select",
+      "adoption": "adopted",
+      "source_url": "https://ant.design/components/select",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "antd-select",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": ".ant-select",
+      "shape_notes": "Ant Design Select：div 触发器 + readonly input.ant-select-input[role=combobox][aria-haspopup=listbox]（React 形态，select-only 型）",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/antd-select.html",
+        "bytes": 6000,
+        "sha256": "333387ce2644923a0a42c57e5d8fe2780ac3cd3ae8acb8be8a7cbc4e0cad9ca7"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/antd-select.json",
+        "bytes": 1922,
+        "sha256": "7c8bece03ee2f6bcc852116160519d7861857db8a694a64c8ca9d9f4febcbd06",
+        "tree_sha256": "5ed6330adb220d80b787a36c5e17ad4cb8b1499b5066f58cf7fe8624c0cd4ff1",
+        "node_count": 7,
+        "root_selector": ".ant-select",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/antd-select.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/antd-select.html",
+          "bytes": 776653,
+          "sha256": "d06cc975fa3d8ee5eb530633d4c9665b96bb6edbc98ddca68965c3f5ad4ddc5a"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/antd-select.html",
+          "bytes": 815805,
+          "sha256": "4c1e0bb7091e8a1ea6308c93a8bc41ba477964e66ef96992aaba9cab96102290"
+        },
+        "frames": [],
+        "shot": {
+          "path": "corpus-forms/shot/antd-select.png"
+        },
+        "ok": true
+      }
+    },
+    {
+      "id": "chosen-select",
+      "family": "visual-replacement-hidden-select",
+      "adoption": "adopted",
+      "source_url": "https://harvesthq.github.io/chosen/",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "chosen-select",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": "select.chosen-select",
+      "shape_notes": "Chosen：视觉替换型隐藏 select 子形态 display:none（A-032 子形态 B，与语料 N7 假设一致）；对照子形态 A（Select2 width:1px + aria-hidden）在阶段 B（票 08）另建",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/chosen-select.html",
+        "bytes": 6562,
+        "sha256": "023c9e805a5a4c34545ef6fa0dc6f1ae209dbf655da0ebeb3bf368af6bce6d84"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/chosen-select.json",
+        "bytes": 712,
+        "sha256": "25f3666a081c69becd4825050e10b183e5f41cb2d0b038dd9551e98e662be37f",
+        "tree_sha256": "c09002b6a4acb1cb7918ee60f861b3ce72408459b37853aa77e711651f8c607e",
+        "node_count": 4,
+        "root_selector": "select.chosen-select",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/chosen-select.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/chosen-select.html",
+          "bytes": 85357,
+          "sha256": "adb3b6ea1666aa8d7663dc22c0fed8edf2a7bf95c90e0466e5307f0841a1532a"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/chosen-select.html",
+          "bytes": 97912,
+          "sha256": "f8bdd01aa182213622f50b3f95cab2806fea2a06c4d7dc9731dac2e2c45843a1"
+        },
+        "frames": [],
+        "shot": {
+          "path": "corpus-forms/shot/chosen-select.png"
+        },
+        "ok": true
+      }
+    },
+    {
+      "id": "heroku-signup",
+      "family": "real-signup",
+      "adoption": "adopted",
+      "source_url": "https://signup.heroku.com/",
+      "captured_at": "2026-09-16T10:19:55.086Z",
+      "mirror_of": "heroku-signup",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": "#self_declared_country",
+      "shape_notes": "真实注册页原生 select：选项 value = 国名、text = 国名（非区号、非 ISO2），与 rpn-input 的 ISO2 值域形成对照",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/heroku-signup.html",
+        "bytes": 5972,
+        "sha256": "870f1c44de176fad852d6807ba222f4ad4edbb90eafb8478f10045da7ab2e00c"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/heroku-signup.json",
+        "bytes": 789,
+        "sha256": "f974ae80c8ee7d9bdbe1c56f972ad9bf614ce60cc662922e83bb99aabc07c8a3",
+        "tree_sha256": "44f49ac86c2d7f0c1da840d06cb2d66d876691aa8617e0641d09bedac095bb8f",
+        "node_count": 3,
+        "root_selector": "#self_declared_country",
+        "skeleton_version": 1,
+        "derived_from": "archive",
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/heroku-signup.html"
+      },
+      "capture": {
+        "http_status": 200,
+        "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
+        "archive_dir": "corpus-forms",
+        "raw": {
+          "path": "corpus-forms/raw/heroku-signup.html",
+          "bytes": 283846,
+          "sha256": "42ab711a5b5cca4061fbb1d8e7dd247fe3298de2f2e8a964e63c795125de2a3d"
+        },
+        "dom": {
+          "path": "corpus-forms/dom/heroku-signup.html",
+          "bytes": 290154,
+          "sha256": "96e88ccd1b2b4cefb4cc49983dc97320a84f46c67b61de2906566df4511af95a"
+        },
+        "frames": [
+          {
+            "path": "corpus-forms/dom/heroku-signup.frame0.html",
+            "bytes": 55687,
+            "sha256": "76fa992b264f89158e1b8574058a9ae34275496933d63e571d52bd1df0b167dc",
+            "url": "https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&co=aHR0cHM6Ly9zaWdudXAuaGVyb2t1LmNvbTo0NDM.&hl=en&v=BnqMGSY_YP4cCmbNINHpJPkd&size=invisible&anchor-ms=20000&execute-ms=30000&cb=12wwwonqho26"
+          },
+          {
+            "path": "corpus-forms/dom/heroku-signup.frame1.html",
+            "bytes": 17704,
+            "sha256": "ba8b79951b5ab1407e452447328e066cc35799872e6c43ba50ddeaaf5e391fd5",
+            "url": "https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&co=aHR0cHM6Ly9zaWdudXAuaGVyb2t1LmNvbTo0NDM.&hl=en&v=BnqMGSY_YP4cCmbNINHpJPkd&size=normal&anchor-ms=20000&execute-ms=30000&cb=yxi3u06f097x"
+          },
+          {
+            "path": "corpus-forms/dom/heroku-signup.frame2.html",
+            "bytes": 39,
+            "sha256": "a7fe83ec64bb23eb28090598db3d166ed98e52e39d1afbbfd74c579553f93e4e",
+            "url": "about:blank"
+          },
+          {
+            "path": "corpus-forms/dom/heroku-signup.frame3.html",
+            "bytes": 39,
+            "sha256": "a7fe83ec64bb23eb28090598db3d166ed98e52e39d1afbbfd74c579553f93e4e",
+            "url": "about:blank"
+          },
+          {
+            "path": "corpus-forms/dom/heroku-signup.frame4.html",
+            "bytes": 39,
+            "sha256": "a7fe83ec64bb23eb28090598db3d166ed98e52e39d1afbbfd74c579553f93e4e",
+            "url": "about:blank"
+          },
+          {
+            "path": "corpus-forms/dom/heroku-signup.frame5.html",
+            "bytes": 30676,
+            "sha256": "adde78a2b86a1b4bf33739129198a5f56b322479dabf062e79aeb2ca6e409fd1",
+            "url": "https://www.recaptcha.net/recaptcha/enterprise/bframe?hl=en&v=BnqMGSY_YP4cCmbNINHpJPkd&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&bft=0dAFcWeA7m5GoDkAnPADVMnePqJRu4eUHliRjS0NDBbIShYW8vm4CH3B1Fc9X-imBdFiJFGyJ9EBL-0Elmo3H0BZ6ktUADzwrz_Q"
+          }
+        ],
+        "shot": {
+          "path": "corpus-forms/shot/heroku-signup.png"
+        },
+        "ok": true
+      }
+    }
+  ]
+}

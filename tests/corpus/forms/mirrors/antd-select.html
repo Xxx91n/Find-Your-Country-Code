@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · Ant Design Select (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（mirror page）— id: antd-select
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://ant.design/components/select
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : antd-select（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载。保留公开形态（.ant-select /
+                 input.ant-select-input[role=combobox][readonly][aria-haspopup=listbox] /
+                 .ant-select-item-option[role=option]），去品牌 / 去追踪 / 内容替换；
+                 不含真实 PII。
+  family       : pseudo-select（**select-only 型**：readonly INPUT 触发器）
+  shape_notes  : 与 element-plus 同族但类名/属性面不同（antd 选项文本 = 国名，
+                 `aria-label` 亦承载国名）；浮层真实为 rc-virtual-list 虚拟滚动，
+                 镜像降级为静态列表（形态等价，断言确定性更高）。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 32px; }
+  main { max-width: 360px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #52606d; font-size: 13px; margin: 0 0 20px; }
+  .ant-select { position: relative; display: flex; align-items: center; gap: 6px; min-height: 40px; border: 1px solid #d0d5dd; border-radius: 6px; padding: 0 8px; cursor: pointer; }
+  .ant-select-content { flex: 1; display: flex; align-items: center; }
+  .ant-select-selection-item { color: #1f2933; }
+  .ant-select-selection-placeholder { color: #98a2b3; }
+  .ant-select-input { border: 0; padding: 0; width: 1px; opacity: 0; }
+  .ant-select-suffix { color: #52606d; }
+  .ant-select-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; margin-top: 4px; background: #fff; border: 1px solid #d0d5dd; border-radius: 6px; box-shadow: 0 8px 24px rgba(16,24,40,.12); }
+  .ant-select-dropdown.hidden { display: none; }
+  .ant-select-item { list-style: none; margin: 0; padding: 4px; max-height: 200px; overflow-y: auto; }
+  .ant-select-item-option { padding: 8px; cursor: pointer; border-radius: 4px; }
+  .ant-select-item-option:hover { background: #f0f4f8; }
+  .ant-select-item-option-selected { color: #2563eb; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Country</h1>
+  <p class="hint">De-branded mirror of a public form shape (family: pseudo-select).</p>
+
+  <div class="ant-select" id="antd-demo">
+    <div class="ant-select-content ant-select-content-has-value">
+      <span class="ant-select-selection-placeholder">Select a country</span>
+      <input id="antd-input" class="ant-select-input" type="text" readonly role="combobox"
+             aria-haspopup="listbox" aria-autocomplete="list" aria-controls="antd-listbox"
+             aria-expanded="false" autocomplete="new-password" value="">
+    </div>
+    <div class="ant-select-suffix"><span class="anticon" aria-hidden="true">v</span></div>
+    <div class="ant-select-dropdown hidden">
+      <ul id="antd-listbox" class="ant-select-item" role="listbox">
+        <li id="antd-opt-cn" class="ant-select-item-option" role="option" data-value="CN" aria-label="China" aria-selected="false">China</li>
+        <li id="antd-opt-us" class="ant-select-item-option" role="option" data-value="US" aria-label="United States" aria-selected="false">United States</li>
+        <li id="antd-opt-gb" class="ant-select-item-option" role="option" data-value="GB" aria-label="United Kingdom" aria-selected="false">United Kingdom</li>
+        <li id="antd-opt-jp" class="ant-select-item-option" role="option" data-value="JP" aria-label="Japan" aria-selected="false">Japan</li>
+      </ul>
+    </div>
+  </div>
+
+  <p id="antd-selected" class="hint" style="margin-top:16px">Selected: (none)</p>
+</main>
+
+<script>
+(function () {
+  var root = document.getElementById('antd-demo');
+  var content = root.querySelector('.ant-select-content');
+  var trigger = root.querySelector('#antd-input');
+  var drop = root.querySelector('.ant-select-dropdown');
+  var list = root.querySelector('#antd-listbox');
+  var ph = root.querySelector('.ant-select-selection-placeholder');
+  var out = document.getElementById('antd-selected');
+
+  function open() { drop.classList.remove('hidden'); trigger.setAttribute('aria-expanded', 'true'); }
+  function close() { drop.classList.add('hidden'); trigger.setAttribute('aria-expanded', 'false'); }
+  function commit(li) {
+    Array.prototype.forEach.call(list.querySelectorAll('[role=option]'), function (o) {
+      o.setAttribute('aria-selected', o === li ? 'true' : 'false');
+      o.classList.toggle('ant-select-item-option-selected', o === li);
+    });
+    if (li) {
+      var name = li.getAttribute('aria-label') || li.textContent.trim();
+      ph.textContent = name; ph.classList.remove('ant-select-selection-placeholder');
+      out.textContent = 'Selected: ' + name;
+    }
+  }
+
+  content.addEventListener('click', function () {
+    if (drop.classList.contains('hidden')) open(); else close();
+  });
+  list.addEventListener('click', function (e) {
+    var li = e.target.closest('[role=option]');
+    if (!li) return;
+    commit(li); close();
+  });
+})();
+</script>
+</body>
+</html>
