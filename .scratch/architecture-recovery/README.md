@@ -447,6 +447,27 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 **frontier（W2 复核后重算）**：W3 = **票 06 形态语料三层架构**（← 票 05 已复核通过）→ **可开工**。后置链 07←06、08←07、09←01–08。
 
 ---
+### W3 复核结论（首脑，2026-09-16）
+
+> 报告：`research/cycle6-wave3-review.md`（声明→证据→结论对照表 + 账本维度 + 返工判定 + 过程违规）
+
+- **返工判定：存在源码层面问题 → 已重发修复版启动器** `prompts/06-form-corpus-fix.md`（37 行，0 违禁词）。
+
+- **R-1（源码层面）**：`06-probe-real.mjs:28` 设 UA（Chrome124）+ `:33-35` `domcontentloaded`→`networkidle(8000)`→`+1500ms`；而 `06-probe-mirrors.mjs:37-38` **无 UA** + `load`→`+1200ms` → **两份探测条件不一致**，而报告 §3.1 声称「同口径（`--user-agent` 同、等待窗口同）」。影响：headline 结论「镜像保真度 8/8 与真实页一致」**建立在一个未被控制为同口径的对比上**。
+
+- **其余 12 项声明全部实物属实**：三层语料（镜像 **9** + 骨架 **8** + manifest 指纹**重算逐字命中**）· 仓外 archive 实存（`raw`=8/`dom`=15/`shot`=8 + CAPTURE-MANIFEST.json）· **无 S3** · 退化回路 4 脚本（分级 `none/patch/minor/major`，**零 pixel 代码**）· 门 **187 PASS/0 FAIL** · spec **18 passed** · `server.mjs` 仅 +2 行 · 语料 README 四要素 · **单 `tests/` 根（无顶层 `corpus/`）** · 全量 E2E **135 passed** 无回归 · issue 7/7 勾销。
+
+- **账本**：A-030 = **implemented（待 CI），但保真度结论的证据强度受限**（见 R-1）。
+
+- **过程违规（单独呈报，未追认）**：P-2（重复）票 06 亦无 CI 证据（窗口 E-6 已自报）；P-9 报告 §3.1 方法陈述为假（并入 R-1）；P-10 报告称「渲染后 DOM 9」实为 **15**；P-11 报告 issue 路径漏 `.scratch/architecture-recovery/` 前缀。
+
+- **P-1 未复现（第二次）**：`pxk` 的 32 文件全部为本票产物，未触碰任何其他票。
+
+- **正面记录**：窗口**主动披露 7 项偏离**（E-2…E-7）且**自我拦截重写了一次伪影**（heroku-signup 首版自造 `#dial_code` 字段 → 按真实页字段集重写）；**主动披露堆叠触发 rebase 致实现 sha 由 `a4b9150e` 变为 `4a9b3187` 并回写锚点**。
+
+**frontier（W3 复核后重算）**：**票 06 返工轮次 R1 待开工**（修复版启动器已发）→ **W4（票 07 真实站点层全阶梯 + 发布门）暂不可开工**（blocked by 06，而 06 有未清返工）；W5（票 08）/ W6（票 09）依次后置。
+
+---
 ### 辩证校正（入档）
 
 - 锐评 Round 3「git 历史第三次归零 / tag 非 main 祖先」经实测**证伪**（origin/main 有父提交、163 commits、v1.3.4/v1.4.0/v1.5.0 均为祖先）——**未登记为 A、不立票**。
@@ -479,7 +500,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 03 | 诊断面 | A-028 | **done（复核通过）** — 7/7 声明实物属实；**单一采集路径代码级证实**；闸门 **58/0**、规格 **6 passed** 实测复现；**CI 证据待补（P-2）**；跨票改动 P-1 待裁定 | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
 | 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **⚠️ 实现属实、完成定义未满足** — 7/7 声明实物属实（ADR-0010 / ADR-0008 零 diff / 28→35 / 零碰撞）；但 **issue 5 项未勾销且无任何提交触碰过该 issue（P-4）** | `research/window-reports/04-domain-modeling-report.md` | W1 |
 | 05 | harness 交互原语 | A-029 | **done（复核通过）** — 8 项声明中 **7 项属实**（claim 6 为口径未标注）；闸门 **59/0**、live runtime 自证 **deep 6/6** 均主 Agent 独立复现；全量 E2E **117 passed** 无回归；未跨票改动；**CI 证据待补（P-2）** | `research/window-reports/05-harness-primitives-report.md` | W2 |
-| 06 | 形态语料三层架构 | A-030 | **ready-for-agent** | `research/window-reports/06-form-corpus-report.md` | W3 |
+| 06 | 形态语料三层架构 | A-030 | **⚠️ 实现属实、返工轮次 R1 待开工** — 13 项声明 **12 项属实**（claim 12「同口径双探测」被证伪）；门 **187/0**、spec **18 passed**、全量 E2E **135 passed** 均主 Agent 独立复现；未跨票改动；修复版启动器 `prompts/06-form-corpus-fix.md` | `research/window-reports/06-form-corpus-report.md` | W3 |
 | 07 | 真实站点层全阶梯 + 发布门 | A-029 | **ready-for-agent** | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
 | 08 | 阶段 B：失效驱动修复 | A-031 · A-032 | **ready-for-agent** | `research/window-reports/08-phase-b-failure-fixes-report.md` | W5 |
 | 09 | Cycle-6 收口 | （无；收口层） | **ready-for-agent** | `research/window-reports/09-cycle6-closeout-report.md` | W6 |
