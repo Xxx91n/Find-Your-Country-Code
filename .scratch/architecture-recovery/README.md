@@ -428,6 +428,25 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 **frontier（W1 复核后重算）**：W2 = **票 05 harness 交互原语**（← 票 01 已复核通过）→ **可开工**。后置链 06←05、07←06、08←07、09←01–08。
 
 ---
+### W2 复核结论（首脑，2026-09-16）
+
+> 报告：`research/cycle6-wave2-review.md`（声明→证据→结论对照表 + 账本维度 + 过程违规）
+
+- **实现层：票 05 通过**（无源码返工）。实物验证：闸门 `verify-ticket-05-harness.mjs` **59 PASS/0 FAIL**（exit 0）；**live runtime 自证** `CCH_LIVE_HEADLESS=1 node tests/live/live-smoke.mjs --target mirror-control` → `deep 6/6 通过` + 白名单契约 PASS（exit 0，无测试运行器的 runtime 里真实驱动 open→search→select→读回宿主 value）；全量 E2E **117 passed**（W1 为 110，新增本票用例）无回归。
+
+- **核心交付属实**：`tests/helpers/primitives.mjs`（309 行 / **43 导出** / 零 expect / 零 playwright-test / 零 sleep）；两 harness **零转换加载同一文件**；`live-smoke.mjs` 内联第二套 GM 替身与 PROBE **确已删除**；`userscript.ts` 收为薄门面且 **4 导出名不变**（19 spec 导入面不破）；GM 替身 **id 原地更新**语义（同 id 重注册只更新 title/fn、不增计数）。
+
+- **账本**：A-029 = **部分（2/3）** —— 定义层（T1 票 01）✅ + 原语层（T5 票 05）✅；**真实站点层全阶梯（T7 票 07）未开始**。A-030 未动（T6 在 W3）。
+
+- **过程违规（单独呈报，未追认）**：P-2（重复）票 05 亦无 CI 证据（远端零 `cch/*`，05 属行为面改动）；P-6 报告 §4.1 分支 tip 记为 `f27458ce` 实测 **bd7bf6c2**；P-7 提交信息称「57 断言」而现门 **59**；P-8 报告 §1 第 4 条**口径未标注**（首句明写「全仓 `expect.soft`」，后续子句未标口径——全仓实测 spec `waitForTimeout(` = 5、直写选择器 = 90，均为非本票 spec；本票口径下为 0）。
+
+- **P-1 未复现（重要）**：票 05 三个提交**只碰自己的工件**，**未修改任何其他票**——与票 03 的跨票改动形成对照，说明边界可守。
+
+- **返工判定：无源码层面问题，不重发修复版启动器。**
+
+**frontier（W2 复核后重算）**：W3 = **票 06 形态语料三层架构**（← 票 05 已复核通过）→ **可开工**。后置链 07←06、08←07、09←01–08。
+
+---
 ### 辩证校正（入档）
 
 - 锐评 Round 3「git 历史第三次归零 / tag 非 main 祖先」经实测**证伪**（origin/main 有父提交、163 commits、v1.3.4/v1.4.0/v1.5.0 均为祖先）——**未登记为 A、不立票**。
@@ -459,7 +478,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 02 | 设置面收口 | A-026 · A-027 | **done（复核通过）** — 8/8 声明实物属实；闸门 **33/0**、规格 **8 passed** 实测复现；`_applyLocaleText` 已删；**CI 证据待补（P-2）**；报告行号漂移待补正（P-5） | `research/window-reports/02-settings-surface-report.md` | W1 |
 | 03 | 诊断面 | A-028 | **done（复核通过）** — 7/7 声明实物属实；**单一采集路径代码级证实**；闸门 **58/0**、规格 **6 passed** 实测复现；**CI 证据待补（P-2）**；跨票改动 P-1 待裁定 | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
 | 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **⚠️ 实现属实、完成定义未满足** — 7/7 声明实物属实（ADR-0010 / ADR-0008 零 diff / 28→35 / 零碰撞）；但 **issue 5 项未勾销且无任何提交触碰过该 issue（P-4）** | `research/window-reports/04-domain-modeling-report.md` | W1 |
-| 05 | harness 交互原语 | A-029 | **ready-for-agent** | `research/window-reports/05-harness-primitives-report.md` | W2 |
+| 05 | harness 交互原语 | A-029 | **done（复核通过）** — 8 项声明中 **7 项属实**（claim 6 为口径未标注）；闸门 **59/0**、live runtime 自证 **deep 6/6** 均主 Agent 独立复现；全量 E2E **117 passed** 无回归；未跨票改动；**CI 证据待补（P-2）** | `research/window-reports/05-harness-primitives-report.md` | W2 |
 | 06 | 形态语料三层架构 | A-030 | **ready-for-agent** | `research/window-reports/06-form-corpus-report.md` | W3 |
 | 07 | 真实站点层全阶梯 + 发布门 | A-029 | **ready-for-agent** | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
 | 08 | 阶段 B：失效驱动修复 | A-031 · A-032 | **ready-for-agent** | `research/window-reports/08-phase-b-failure-fixes-report.md` | W5 |
