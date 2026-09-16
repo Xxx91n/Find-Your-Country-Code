@@ -48,11 +48,18 @@ test('\u9A8C\u65361 \u9762\u677F\u5207\u6362\u8BED\u8A00 \u2192 \u5199\u5165 GM 
   await openPanel(page, '#cc-strong');
   await expect(page.locator('#cch-si')).toHaveAttribute('placeholder', EN_SEARCH);
   await openRules(page);
-  const tg = page.locator('#cch-locale-tg');
-  await expect(tg).toBeVisible();
-  await expect(tg).toHaveText('Auto (follow browser)');
-  await tg.click(); // auto -> zh
-  await expect(tg).toHaveText('\u4E2D\u6587');
+  // \u7968 02 [A-027]\uFF1A\u8BED\u8A00\u63A7\u4EF6\u7531\u5FAA\u73AF\u6309\u94AE\u6539\u4E3A\u4E09\u9009\u4E00\u663E\u5F0F\u63A7\u4EF6\uFF08\u81EA\u52A8 / \u4E2D\u6587 / English \u5E76\u5217\u53EF\u89C1\uFF09
+  const opts = page.locator('#cch-locale-row [data-locale]');
+  await expect(opts).toHaveCount(3);
+  await expect(page.locator('#cch-locale-row [data-locale="auto"]')).toHaveText('Auto (follow browser)');
+  await expect(page.locator('#cch-locale-row [data-locale="zh"]')).toHaveText('\u4E2D\u6587');
+  await expect(page.locator('#cch-locale-row [data-locale="en"]')).toHaveText('English');
+  await expect(page.locator('#cch-locale-row [data-locale="auto"]')).toHaveClass(/on/); // \u521D\u59CB\u9009\u4E2D auto
+  await page.locator('#cch-locale-row [data-locale="zh"]').click(); // auto -> zh
+  await expect(page.locator('#cch-locale-row [data-locale="zh"]')).toHaveClass(/on/);
+  await expect(page.locator('#cch-locale-row [data-locale="auto"]')).not.toHaveClass(/on/);
+  // \u56DE\u5F52\u9489\uFF1A\u5FAA\u73AF\u6309\u94AE\u5165\u53E3\u4E0D\u5F97\u590D\u6D3B
+  await expect(page.locator('#cch-locale-tg')).toHaveCount(0);
   await expect(page.locator('#cch-si')).toHaveAttribute('placeholder', ZH_SEARCH);
   await expect(page.locator('.cch-sec-all .cch-sec-hd')).toHaveText('\u5168\u90E8');
   const p = await gmPrefs(page);
@@ -75,7 +82,7 @@ test('\u9A8C\u65363 \u8BED\u8A00\u504F\u597D\u5199\u5165 UI_PREFS_KEY\uFF0C\u4E0
   await boot(page);
   await openPanel(page, '#cc-strong');
   await openRules(page);
-  await page.locator('#cch-locale-tg').click();
+  await page.locator('#cch-locale-row [data-locale="zh"]').click();
   const bucket = await page.evaluate(() => JSON.parse(localStorage.getItem('__cch_gm__') || '{}'));
   const keys = Object.keys(bucket).sort();
   expect(keys).toContain('cch_ui_prefs_v1');

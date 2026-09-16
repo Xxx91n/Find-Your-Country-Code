@@ -22,10 +22,24 @@ const GM_STUB = `
   window.GM_getValue = (k, d) => { const s = read(); return k in s ? s[k] : d; };
   window.GM_setValue = (k, v) => { const s = read(); s[k] = v; try { localStorage.setItem(KEY, JSON.stringify(s)); } catch {} };
   window.GM_addValueChangeListener = () => 0;
-  // 票 12:记录菜单命令注册(断言仅顶层注册)；票 37:同时记录 {title,fn} 供测试调用菜单命令
-  window.GM_registerMenuCommand = (title, fn) => {
-    window.__cchMenuCount = (window.__cchMenuCount || 0) + 1;
-    (window.__cchMenu = window.__cchMenu || []).push({ title, fn });
+  // [票 12]记录菜单命令注册(断言仅顶层注册)；[票 37]同时记录 {title,fn} 供测试调用菜单命令。
+  // [票 02 A-027]还原 Tampermonkey >=5.0 / Violentmonkey >=2.15.9 的 id 原地更新语义：
+  //   传入 options.id 时，同 id 重注册只更新 title/fn，不新增条目、不递增计数；
+  //   无 id 的旧式调用保持追加语义（向后兼容）。id 语义是被测契约的一部分，不可简化掉。
+  window.__cchMenu = [];
+  window.__cchMenuIds = [];
+  window.__cchMenuCount = 0;
+  window.GM_registerMenuCommand = (title, fn, options) => {
+    const id = options && options.id != null ? String(options.id) : null;
+    if (id !== null) {
+      const hit = window.__cchMenu.find((c) => c.id === id);
+      if (hit) { hit.title = title; hit.fn = fn; return 0; } // 原地更新：不新增条目
+      window.__cchMenu.push({ id: id, title: title, fn: fn });
+      window.__cchMenuIds.push(id);
+    } else {
+      window.__cchMenu.push({ id: null, title: title, fn: fn });
+    }
+    window.__cchMenuCount = window.__cchMenu.length;
     return 0;
   };
 })();

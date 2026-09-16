@@ -8,7 +8,8 @@ import { ISO2_MAP } from './data/countries';
 import { IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from './config';
 import type { CchFill, CchRules } from './types';
 // GM_registerMenuCommand 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零）
-declare function GM_registerMenuCommand(title: string, fn: () => void): void;
+// 票 02 [A-027]：第三参 options 承载 id —— id 原地更新语义（TM ≥5.0 / VM ≥2.15.9）
+declare function GM_registerMenuCommand(title: string, fn: () => void, options?: { id?: string }): void;
 (function () {
 'use strict';
 const Store = createStore();
@@ -132,9 +133,20 @@ if (IS_TOP_FRAME) {
 // 票 37 [A-012]：第二条菜单命令「打开面板」——与字段分数无关的全局入口
 // （anchor=null 复用既有居中路径 ui/index.ts _pos 的 !anchor 分支；仅顶层注册，
 // 与 Tampermonkey 跨帧同名合并行为兼容——面板宿主本就只在顶层渲染）
+// 票 02 [A-026]：第三条菜单命令「设置」——零置信度入口，打开面板并显式切到设置所在视图。
+// 票 02 [A-027]：改用 GM_registerMenuCommand(name, fn, { id }) 的 id 原地更新语义，使语言切换后
+// 标签无需重载即跟随（Tampermonkey ≥5.0 / Violentmonkey ≥2.15.9 支持 options.id；Greasemonkey
+// 无 options 对象，降级为标签不更新——功能可达性不受影响）。稳定字符串 id 优于数字返回值：
+// 跨 frame / 跨会话一致。refreshMenu 由 UI._menuRefresh 在语言切换时重入（同批 id → 原地更新，不新增条目）。
+let refreshMenu: () => void = () => {};
 if (IS_TOP_FRAME && typeof GM_registerMenuCommand === 'function') {
-  try { GM_registerMenuCommand(t('ruleExemptRemoved'), () => { Rules.setExempt(location.href, false); }); } catch {}
-  try { GM_registerMenuCommand(t('openPanel'), () => { UI.open(null, null, null); }); } catch {}
+  refreshMenu = (): void => {
+    try { GM_registerMenuCommand(t('ruleExemptRemoved'), () => { Rules.setExempt(location.href, false); }, { id: 'cch-menu-restore' }); } catch {}
+    try { GM_registerMenuCommand(t('openPanel'), () => { UI.open(null, null, null); }, { id: 'cch-menu-panel' }); } catch {}
+    try { GM_registerMenuCommand(t('settings'), () => { UI.openSettings(); }, { id: 'cch-menu-settings' }); } catch {}
+  };
+  refreshMenu();
 }
+UI._menuRefresh = refreshMenu;
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : init();
 })();

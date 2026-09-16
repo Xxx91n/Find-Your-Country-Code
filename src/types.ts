@@ -124,6 +124,10 @@ export interface CchRules {
 }
 
 export interface CchUI {
+  // 票 02 [A-026/A-027]：设置一级入口（打开面板 + 显式切到设置所在视图 + 深链定位语言行）
+  openSettings(): void;
+  // 票 02 [A-027]：语言切换后重注册 GM 菜单命令的回调（{ id } 原地更新 → 标签免重载跟随）
+  _menuRefresh?: (() => void) | null;
   css(): void;
   toast(msg: string): void;
   attach(el: AnyEl, kind: FillKind, tier?: Tier, score?: number, signals?: Signal[], opts?: { force?: boolean }): void;
