@@ -1,6 +1,6 @@
 # 窗口报告 — 票 08：阶段 B：失效驱动修复
 
-> Cycle-6 | 覆盖 **A-031 · A-032** | 代码提交 **`41ad7dcd`**（fix）/ **`70126c9c`**（ci 门 workflow）
+> Cycle-6 | 覆盖 **A-031 · A-032** | 代码提交 **`41ad7dcd`**（fix）/ **`70126c9c`**（ci 门 workflow）/ 文档提交 **`fca837a2`**（本报告 + issue 勾销）
 > 分支：`cch/08-phase-b-failure-fixes`（堆叠于 `cch/10-srcdoc-origin-fix` 之上，见 E-2）
 > 任务书：`prompts/08-phase-b-failure-fixes.md` | handoff：`handoffs/08-phase-b-failure-fixes.md`
 > 证据口径：本地结果为**本地自证**（WORKFLOW §8.1.2）；行为面闭环以 §8 CI run 为准。
@@ -174,6 +174,8 @@
 | Typecheck | `35126203523` | **success** |
 | Lockfile Regen | `35126203500` | **success** |
 | E2E | `35126203506` | **failure**（`1 failed / 144 passed`；归因见 §8.1，**非本票**） |
+| Verify Ticket 08 / Engine Gates / Typecheck / Lockfile（文档提交 `fca837a2`） | `35126630913` / `35126631004` / `35126630958` / `35126630900` | 全 **success** |
+| E2E（文档提交 `fca837a2`） | `35126630880` | **failure**（`1 failed / 144 passed`，同测同断言） |
 
 ### 8.1 E2E 红归因（三选一留痕，§8.1.3）
 
@@ -185,6 +187,7 @@
 | CI | `41ad7dcd` run `35126057985` | `144 passed / 1 failed` — **同测同断言**（`L3 srcdoc 帧宿主字段 value 应写入区号`） |
 | 本地重复实跑 | `--repeat-each=5`（25 例） | **`25 passed`**（本地无固有 flaky） |
 | CI | `70126c9c` run `35126203506` | `144 passed / 1 failed` — **同测同断言**；`Expected: "+86" / Received: ""`（零写入） |
+| CI | `fca837a2` run `35126630880` | `144 passed / 1 failed` — 同测同断言（**CI 3/3 红**） |
 | 归因取证：fixture 字段形态对本票规则的暴露面 | 探针 `08-probe-srcdoc-inert.mjs` | `score=62 tier=lowkey injected=true`；信号 `kw:strong(30) | opts:plus-dial(32) | attr:phrase:…dedup(0)`；**`hasTextDialSignal=false`**、**`hasAriaHiddenGate=false`** |
 
 **归因结论（① 自身改动 / ② 基线预存红 / ③ CI 基础设施）——本项不属 ①，证据三条**：

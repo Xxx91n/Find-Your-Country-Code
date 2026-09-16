@@ -41,5 +41,7 @@
 | Typecheck | 35126203523 | success |
 | Lockfile Regen | 35126203500 | success |
 | E2E | 35126203506 | failure（`1 failed / 144 passed`）——唯一红为 `tests/srcdoc-origin.spec.ts:64`（**票 10 / A-034** 跨帧用例，非本票）；归因证据见窗口报告 §8.1 |
+| Verify-08 / Engine Gates / Typecheck / Lockfile（文档提交 `fca837a2`） | 35126630913 / 35126631004 / 35126630958 / 35126630900 | 全 success |
+| E2E（文档提交 `fca837a2`） | 35126630880 | failure（同上，同测同断言；**CI 3/3 红**） |
 
 窗口报告：`research/window-reports/08-phase-b-failure-fixes-report.md`
