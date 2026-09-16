@@ -57,6 +57,10 @@ const FILES = {
   server: 'tests/server.mjs',
   spec: 'tests/corpus-forms.spec.ts',
   workflow: '.github/workflows/verify-06.yml',
+  // R1：双探测口径同源（防回归锁）
+  probeCommon: '.scratch/architecture-recovery/research/scripts/06-probe-common.mjs',
+  probeMirrors: '.scratch/architecture-recovery/research/scripts/06-probe-mirrors.mjs',
+  probeReal: '.scratch/architecture-recovery/research/scripts/06-probe-real.mjs',
 };
 
 // == S0 自证（已知好样本干跑 [WORKFLOW §5 教训]）==
