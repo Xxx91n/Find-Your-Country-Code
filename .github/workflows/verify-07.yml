@@ -1,0 +1,32 @@
+name: Verify Ticket 07 (real-site full ladder + release gate)
+
+# 票 07（Cycle-6 · A-029）结构门 + 发布门自证。
+# 触发：pull_request（ADR-0006 决策 2 非发版 workflow PR 门控）+ 本票分支 push + 手动 dispatch。
+# 断言面：阶梯契约 / live 层五级实现 / 触发面隔离（不进 pull_request）/ 失败仅告警 /
+#   发布门不可静默绕过 / observe 挂账 reason+ticket / A-029 覆盖声明。
+# node 钉 22：无 npm 依赖安装面、无浏览器、零外网（纯文本与纯函数断言）。
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/07-real-site-and-release-gate'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-07-gate:
+    name: Ticket-07 gate (real-site full ladder L0-L4 + release gate A-029)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-07 acceptance gate
+        run: node tests/scripts/verify-ticket-07.mjs

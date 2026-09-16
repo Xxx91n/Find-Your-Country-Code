@@ -15,7 +15,35 @@ permissions:
   contents: write
 
 jobs:
+  # ══ 发布门（Cycle-6 票 07 / A-029；决策依据 ADR-0010 条款 2） ══
+  # 真实站点层最近一次运行必须为绿，或该失败已被**显式 ack 并立票**，否则不出包。
+  # 二者必居其一，不得静默绕过 —— 门以 needs 硬依赖挂在 release job 之前（门不过则 release 不运行）。
+  # 门逻辑落 tests/scripts/release-gate.mjs（ADR-0006 决策 1：CI 引用脚本住 tests/scripts/，
+  # workflows 禁止引用调研现场路径）。
+  # 注：发布门属发版系 workflow 的例外路径，不改变 ADR-0006 条款 2 的 PR 门控语义；
+  #     也不重开 ADR-0008 第二层（真实站点层仍不进 pull_request、失败仍只告警）。
+  release-gate:
+    name: Release gate (real-site layer green or explicitly acked)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Real-site layer release gate (green, or explicit ack + ticket)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node tests/scripts/release-gate.mjs
+
   release:
+    needs: release-gate
     runs-on: ubuntu-latest
 
     steps:
