@@ -60,6 +60,8 @@ const SETTLE_MS = Number(process.env.CCH_LIVE_SETTLE_MS || 800);
 const LIVE_TIMEOUT_MS = Number(process.env.CCH_LIVE_TIMEOUT_MS || 45000);
 const ASSERT_TIMEOUT_MS = Number(process.env.CCH_LIVE_ASSERT_MS || 60000);
 const POLL_MS = 500;
+// 票 10 补：跨帧写入的有界条件等待窗口（读侧采样，非固定 sleep 充当等待）
+const WRITE_WAIT_MS = 6000;
 // 票 07 [A-029]：阶梯级别全集（权威定义 tests/ACCEPTANCE-SURFACE.md §4.1）。
 const LADDER_ALL = ['L0', 'L1', 'L2', 'L3', 'L4'];
 const DRIVEN_LEVELS = ['L2', 'L3', 'L4'];
@@ -149,6 +151,31 @@ async function waitForChildFrame(page, match, deadline) {
     if (f) return f;
     if (Date.now() >= deadline) return null;
     await page.waitForTimeout(POLL_MS);
+  }
+}
+
+/**
+ * 票 10 补：采样式**有界条件等待**（与本文件 waitForChildFrame / 密封层 expect.poll 同构；
+ * 非「固定 sleep 充当等待」）。
+ *
+ * 为何需要：跨帧写入是**异步链** —— 顶层 src/ui/index.ts:820-821 先
+ * postMessage(FRAME_FILL_MSG) 再**同步** _closePopup()，子帧的 message 任务 +
+ * Fill.run 在其后执行 ⇒ selectCountry() 返回（面板已 detach）**不等于**写入已完成。
+ * 一次性读会产生 **CI-only 竞态**（本地快则过、CI 慢则红；票 10 自身密封用例已因此红过
+ * 一次：E2E run 35126041454）。
+ *
+ * 纪律：只把**读取**变为有界采样，判据（ok）**逐字不变** —— 不放宽、不删除、不新增断言。
+ * 且**不可能伪造绿**：票 10 修复前的失败是**确定性**的（srcdoc 帧内
+ * e.origin !== location.origin 必然判真 ⇒ 处理器提前 return），重试不可能改变其终态。
+ */
+async function readUntil(scope, read, ok, timeout = WRITE_WAIT_MS) {
+  const deadline = Date.now() + timeout;
+  let last = null;
+  for (;;) {
+    try { last = await read(); } catch { last = null; }
+    if (ok(last)) return last;
+    if (Date.now() >= deadline) return last;
+    await scope.waitForTimeout(POLL_MS);
   }
 }
 
@@ -260,12 +287,14 @@ async function runDeepChecks(page, probeFrame, t, plan) {
 
   if (surface === 'iti') {
     // ── L3（ITI 形态）：写入结果 = 选中国家状态（官方读 API → DOM 选中态） ──
-    const iti = await readItiSelectedCountry(probeFrame, t.selector || null).catch(() => null);
-    const dom = await readItiSelectedCountry(probeFrame, t.selector || null, { domOnly: true }).catch(() => null);
-    const events = await readFieldEvents(probeFrame).catch(() => []);
-    const itiEvents = await readItiCountryEvents(probeFrame).catch(() => []);
     const preIso = itiPre && itiPre.iso2 ? String(itiPre.iso2).toLowerCase() : null;
     const preAlready = preIso !== null && preIso === String(plan.iso).toLowerCase();
+    // 票 10 补：跨帧写入是异步链 ⇒ 读侧改为有界条件等待（判据不变，见 readUntil 注释）。
+    // 原生事件面在 ITI 分支仅作保留记录（ITI 从不派发原生 input/change），故不参与等待。
+    const iti = await readUntil(probeFrame, () => readItiSelectedCountry(probeFrame, t.selector || null), (v) => itiMatch(v, plan.iso, expected));
+    const dom = await readUntil(probeFrame, () => readItiSelectedCountry(probeFrame, t.selector || null, { domOnly: true }), (v) => itiMatch(v, plan.iso, expected));
+    const events = await readFieldEvents(probeFrame).catch(() => []);
+    const itiEvents = await readUntil(probeFrame, () => readItiCountryEvents(probeFrame), (e) => preAlready || (Array.isArray(e) && e.includes(ITI_COUNTRY_EVENT)));
     const seen = (v) => !v ? '不可读'
       : (v.iso2 ? (v.iso2 + '/' + (v.dialCode || '?') + ' via ' + v.via)
         : (v.dialCode ? ('dial=' + v.dialCode + ' via ' + v.via) : ('不可读 ' + JSON.stringify(v.raw))));
@@ -281,21 +310,26 @@ async function runDeepChecks(page, probeFrame, t, plan) {
       + '；原生事件序列 [' + events.join(',') + ']（保留记录：ITI 从不派发原生 input/change，不作 ITI 判据）');
   } else {
     // ── L3（普通字段形态）：写入结果 = 宿主字段 value（票 07 原判据，逐字保留） ──
-    const host = t.selector
-      ? { value: await readHostValue(probeFrame, t.selector).catch(() => null) }
-      : await readWrappedHostField(probeFrame).catch(() => null);
-    const actual = host ? host.value : null;
+    const readActual = async () => {
+      const h = t.selector
+        ? { value: await readHostValue(probeFrame, t.selector).catch(() => null) }
+        : await readWrappedHostField(probeFrame).catch(() => null);
+      return h ? h.value : null;
+    };
+    // 票 10 补：读侧有界条件等待（判据不变，见 readUntil 注释）
+    const actual = await readUntil(probeFrame, readActual, (v) => valueMatches(v, expected, !!t.deep));
     mark('L3', 'host-value', valueMatches(actual, expected, !!t.deep),
       'value=' + JSON.stringify(actual) + ' 期望=' + JSON.stringify(expected) + (t.deep ? '（精确）' : '（行内区号同源归一）'));
 
     // ── L3：事件面 input / change 各 ≥1 ──
-    const events = await readFieldEvents(probeFrame).catch(() => []);
+    const events = await readUntil(probeFrame, () => readFieldEvents(probeFrame), (e) => Array.isArray(e) && e.includes('input') && e.includes('change'));
     mark('L3', 'field-events', events.includes('input') && events.includes('change'), '序列 [' + events.join(',') + ']');
   }
 
   // ── L4：用户反馈出现。紧跟写入读取：toast 的 on 类只保持 2000ms（src/ui/index.ts:186）。
   // 判据 = 元素在场 + 文案非空（外部可观测）；on 类属 2000ms 视觉窗口状态位，记明细不作判据。
-  const fb = await readFeedback(probeFrame).catch(() => null);
+  // 票 10 补：读侧有界条件等待（判据不变，见 readUntil 注释）
+  const fb = await readUntil(probeFrame, () => readFeedback(probeFrame), (f) => !!(f && f.present && String(f.text || '').trim()));
   mark('L4', 'feedback', !!(fb && fb.present && String(fb.text || '').trim()),
     fb ? ('present=' + fb.present + ' on=' + fb.on + ' 文本=' + JSON.stringify(String(fb.text || '').slice(0, 60))) : '不可读');
 
