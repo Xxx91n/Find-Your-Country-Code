@@ -331,3 +331,26 @@ ls corpus ; echo "exit=$?"
 - ✅ `tests/corpus-forms.spec.ts:145`（本票跨帧 L3）—— **已由本次修复在 CI 上转绿**（同一 run 内该用例通过；`134 passed` 含本票 18 例）。
 
 **本票 CI 结论**：本票全部工件在 CI 上绿（verify-06 · typecheck · engine-gates · lockfile · 本票 18 例 E2E）；**唯一红为他票引入并已归因呈报**。
+
+### R1-13 终态 CI 证据（tip `f2304687`）与 bookkeeping 终止声明
+
+| 门 | run | 结果 |
+|---|---|---|
+| Verify Ticket 06 (form corpus) | **35090650159** | **success** |
+| Typecheck | 35090650206 | success |
+| Engine Gates | 35090650139 | success |
+| Lockfile Regen | 35090650151 | success |
+| E2E | 35090650166 | **failure · 1 failed / 134 passed**（唯一红 = `entry-access.spec.ts:42` 票 37，非本票） |
+
+与 `e5a0a542`（R1-12）**逐门一致** ⇒ 纯文档提交不改变任何门的行为。
+
+**bookkeeping 终止声明**：`f2304687` 之上的后续纯文档提交（含本节载体提交）**不再逐轮回填其自身 run ID**——否则形成「为记录 run 而提交、提交又产生 run」的无限回归。约定：**行为面 CI 证据以 R1-12（`e5a0a542`）与 R1-13（`f2304687`）为准**；纯文档提交以 `git show --stat` 的入库清单自证（R1-11 教训）。
+
+### R1-14 本轮收尾（R1 终态）
+
+- **主 Agent 缺陷处置**：三项检查**全部属实** → ① 口径对齐（唯一模块 `06-probe-common.mjs` + 两份探测改为消费）② 受控重跑一致性 **8/8**（未调参）③ 门 **S9** 防回归锁（22 断言，187→209）④ 两处次要补正（DOM 15、issue 前缀）。
+- **本票自身缺陷（自曝并修复）**：跨帧异步竞态（CI 红 → 改 web-first 等待）· 提交完整性事故（hunk-ID 部分提交 → 以文件 ID 补齐）。
+- **非本票红**：`tests/entry-access.spec.ts:42` 归因 `cch/03-diagnostics-surface`（run `35089332673`；`cch/47`/`cch/48` 均绿），按边界不修，**呈报大脑并建议立修复票**。
+- **CI 终态**：本票全部工件绿（verify-06 · typecheck · engine-gates · lockfile · 本票 18 例 E2E）。
+- **报告约束遵守**：本轮全部新增均为**追加**——原 §0–§7 与 §3.1 原文**一字未改**（`grep -c "^## 返工轮次 R1$"` = 1；原 headline 行仍在原位）。
+- **遗留待裁定**：R1-D1（远端 6 支祖先分支收敛）· R1-D5（他票引入的 E2E 红 → 修复票）。
