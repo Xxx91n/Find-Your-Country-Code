@@ -1,0 +1,32 @@
+name: Verify Ticket 11 (ITI L3 observable criterion)
+
+# \u89E6\u53D1\uFF1Apull_request\uFF08ADR-0006 \u51B3\u7B56 2\uFF1A\u975E\u53D1\u7248 workflow \u58F0\u660E pull_request \u95E8\u63A7\uFF09
+#       + \u672C\u7968\u5206\u652F push + \u624B\u52A8 dispatch\u3002
+# \u65AD\u8A00\u9762\uFF1A\u5171\u4EAB\u539F\u8BED\u53EA\u589E\u4E0D\u6539 / live \u5C42 L3 \u5199\u5165\u53E3\u5F62\u6001\u5206\u6D3E / \u7968 07 \u539F\u5224\u636E\u9010\u5B57\u4FDD\u7559\uFF08\u53EA\u5347\u4E0D\u964D\uFF09/
+#       \u5224\u5B9A\u6B21\u5E8F / manifest \u6210\u6587\u5951\u7EA6 / \u5BC6\u5C01\u5C42\u8986\u76D6\uFF08fixture + spec \u542B\u666E\u901A\u5B57\u6BB5\u5BF9\u7167\u7EC4\uFF09/ A-035 \u58F0\u660E\u3002
+# node \u9489 22\uFF1A\u65E0 npm \u4F9D\u8D56\u5B89\u88C5\u9762\u3001\u65E0\u6D4F\u89C8\u5668\u3001\u96F6\u5916\u7F51\uFF08\u7EAF\u6587\u672C\u4E0E\u7EAF\u51FD\u6570\u65AD\u8A00\uFF09\u3002
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/11-iti-l3-criterion'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-11-gate:
+    name: Ticket-11 gate (ITI L3 observable criterion A-035)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-11 acceptance gate
+        run: node tests/scripts/verify-ticket-11.mjs

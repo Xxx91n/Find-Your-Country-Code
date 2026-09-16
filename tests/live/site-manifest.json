@@ -14,6 +14,11 @@
     "cdpNote": "CDP Autofill 域（trigger / FilledField / addressFormFilled）只观测浏览器原生 AutofillManager 的填充管线，userscript 注入不可见（native value setter + 合成事件不经过 AutofillManager）——不得用作脚本填充断言；适配度评估见 cdp-autofill-fitness.mjs（opt-in，不进断言面）。",
     "ticket": 7,
     "coveredA": "A-029",
+    "ticketCoverage": {
+      "A-029": "票 07（真实站点层全阶梯 L0–L4 + 发布门）",
+      "A-035": "票 11（ITI 形态下 L3 的正确可观测判据；本文件的 ladderRule 不变，只新增 writeSurfaceRule）"
+    },
+    "writeSurfaceRule": "L3 写入口形态分派（票 11 / A-035）：L3 = 写入结果正确，其**可观测面**按写入口形态确定。普通字段（select / input / contenteditable）= 宿主 value 写入所选国家区号 + 派发 input/change（票 07 原判据，逐字不变）；ITI 接管字段 = **选中国家状态**（官方读 API getSelectedCountryData()/getSelectedCountry() → DOM 选中态 data-country-code / .iti__flag 类名 / title），并以 ITI 官方 countrychange 事件作事件面判据。依据：ITI 官方不承诺把区号写进它接管的 input.value（separateDialCode 模式下由独立元素 .iti__selected-dial-code 承载），且从不派发原生 input/change——旧判据在 ITI 形态下**不可满足**（确定性复现：tests/iti-l3-criterion.spec.ts + research/window-reports/11-iti-l3-criterion-report.md）。形态由宿主侧可观测事实自动判定（不靠本文件声明），本字段仅为成文契约。",
     "ladderRule": "全阶梯契约（票 07 / A-029；依据 tests/ACCEPTANCE-SURFACE.md §4.1/§4.2 + 用户裁决 D-004）：每个目标必须声明 ladder（本目标实际运行的阶梯级别，取值 L0–L4 子集）。expect=\"injected\" 的目标默认必须跑满 L0–L4 —— 真实站点层不得只停留在 L0–L1 弱断言（D-004(c)）；确不可驱动时才允许降级，且必须同时给出非空 degradeReason + ticket（§4.2「不可驱动时降级为 L0 + 最弱写入结果断言并登记非空原因」）。expect=\"observe\" 的条目为长期挂账（只记录不裁定），强制携带非空 reason + ticket（ADR-0010 条款 4）。五级定义：L0 静默健康（pageerror=0，永不单独算生效）/ L1 元素已注入（.cch-wrapper + data-cch-tier）/ L2 交互可驱动（面板可见 + 搜索收窄；跨帧为双端断言）/ L3 写入结果正确（宿主字段 value + input·change 派发）/ L4 用户反馈出现（#cch-toast 可见且文案非空）。阻断语义与 owned 页的差别只在触发面：本层永不进 pull_request，失败只告警；阻断只发生在 release.yml 发布门（ADR-0010）。",
     "ladderProbe": {
       "iso": "cn",

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ITI 写入口形态 fixture — 票 11 / A-035（L3 判据分派）</title>
+<!--
+  ══════════════════════════════════════════════════════════════
+  Cycle-6 票 11 / A-035：ITI 形态下 L3 的正确可观测判据（密封层 fixture）
+  ══════════════════════════════════════════════════════════════
+  形态来源（observed，非原文转载）：用户上报的 CodePen 回归复现 Pen（作者 webdevpuneet，
+    intl-tel-input 形态）——容器类实测含 iti--separate-dial-code。
+    （按 verify-ticket-39 G4e：密封面不得出现 live 目标 host，故此处不写裸域名）
+    · 库本体 = 仓库内钉版依赖 intl-tel-input@18.2.1（node_modules，经 /vendor/ 本地供给，零外网）
+  本 fixture 只复刻**公开表单形态**（.iti 容器 / input[type=text] / 国家选择器），无品牌内容、无 PII。
+
+  三个字段，各自独立 form（锚查找作用域 = el.closest('form')，不隔离会互相补分）：
+    1) #ctl-select  —— 普通 select 对照组（**原 L3 判据**必须仍成立：value == 区号 + input/change）
+    2) #iti-plain   —— 真实 ITI 默认模式
+    3) #iti-sep     —— 真实 ITI separateDialCode 模式（区号由独立元素承载，input.value 只留国家号码）
+  旧判据（value == 区号）在 #iti-sep 上**确定性红灯**——这是本票判定「ITI 形态 L3 判据必须改读
+  选中国家状态」的对照证据，不是放宽。
+-->
+<link rel="stylesheet" href="/vendor/intl-tel-input/build/css/intlTelInput.css">
+</head>
+<body>
+<h1>ITI 写入口形态（票 11 / A-035）</h1>
+<p>普通 select 对照组 + 两个真实 intl-tel-input 形态（默认 / separateDialCode）。</p>
+
+<form id="f-select">
+  <label for="ctl-select">Country code</label>
+  <select id="ctl-select" name="country_code">
+    <option value="+86">+86 China</option>
+    <option value="+1">+1 United States</option>
+    <option value="+44">+44 United Kingdom</option>
+  </select>
+</form>
+
+<form id="f-iti-plain">
+  <label for="iti-plain">Country code</label>
+  <input type="text" id="iti-plain" name="country_code_plain" autocomplete="tel-country-code">
+</form>
+
+<form id="f-iti-sep">
+  <label for="iti-sep">Country code</label>
+  <input type="text" id="iti-sep" name="country_code_sep" autocomplete="tel-country-code">
+</form>
+
+<script src="/vendor/intl-tel-input/build/js/intlTelInputWithUtils.js"></script>
+<script>
+(function () {
+  window.__itiPlain = window.intlTelInput(document.getElementById('iti-plain'), { initialCountry: 'us' });
+  window.__itiSep = window.intlTelInput(document.getElementById('iti-sep'), { initialCountry: 'us', separateDialCode: true });
+})();
+</script>
+</body>
+</html>

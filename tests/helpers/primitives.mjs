@@ -379,3 +379,143 @@ export async function invokeMenuCommand(scope, matcher) {
 export function injectionSatisfied(probe, target) {
   return !!probe && probe.wrappers > 0 && (!target || (probe.elementFound === true && probe.wrapped === true));
 }
+
+// ══════════════════════════════════════════════════════════════════
+// 票 11 / A-035：ITI 形态的 L3 可观测面原语（**只增不改**）
+//
+// 判定依据（atomcode 调研 + 本地确定性复现，见
+// research/atomcode-11-iti-l3-criterion.md 与
+// research/window-reports/11-iti-l3-criterion-report.md）：
+//   · ITI 官方**不承诺**把所选国家区号写进它接管的 input.value；separateDialCode
+//     模式下区号由独立元素承载，input.value 只留国家号码。
+//   · ITI **从不**派发原生 input / change；切国时派发官方自定义事件 countrychange。
+//   · 故 ITI 形态的「写入结果」= **选中国家状态**，其宿主侧可观测面为
+//     ① 官方读 API getSelectedCountryData()（v24 前）/ getSelectedCountry()（v24+）
+//     ② DOM 选中态（国家选择器的 data-country-code / .iti__flag 类名 / title）
+//     ③ 用户可见区号元素 .iti__selected-dial-code（separateDialCode 模式）
+// 本组原语只做「驱动 + 读取」，不含断言库（与共享层纪律一致）。
+// ══════════════════════════════════════════════════════════════════
+
+/** ITI 容器选择器（双代类名：v16–v20 `.intl-tel-input` / v21+ `.iti`）。 */
+export const ITI_CONTAINER_SELECTOR = '.iti, .intl-tel-input';
+
+/** 国家选择器（选中态宿主）：v21+ `.iti__selected-country` / v16–v20 `.iti__selected-flag`。 */
+export const ITI_SELECTED_SELECTOR = '.iti__selected-country, .iti__selected-flag, .selected-flag';
+
+/** ITI 事件记录键（与原生字段事件分开，互不覆盖）。 */
+export const ITI_EVENTS_KEY = '__cchItiEvents';
+
+/** ITI 官方在切国时广播的自定义事件名（v17 起，v16–v29 未改名）。 */
+export const ITI_COUNTRY_EVENT = 'countrychange';
+
+/** 写入口形态：'iti'（ITI 接管字段）| 'field'（普通 input / select / contenteditable）。 */
+export async function readWriteSurface(scope, target) {
+  return scope.evaluate((sel) => {
+    const el = sel
+      ? document.querySelector(sel)
+      : (function () {
+        const w = document.querySelector('.cch-wrapper');
+        return w ? Array.prototype.find.call(w.children, (c) => !c.classList.contains('cch-btn')) || null : null;
+      })();
+    if (!el) return 'field';
+    return el.closest('.iti, .intl-tel-input') ? 'iti' : 'field';
+  }, target || null);
+}
+
+/**
+ * 读回 ITI 形态的「选中国家状态」（L3 写入结果的正确可观测面）。
+ * options.domOnly = true 时跳过官方读 API，只读 DOM 选中态（用于独立路径交叉核验）。
+ * 返回 { iso2, dialCode, via, raw }；读不到时字段为 null（调用方按 fail-closed 处理）。
+ */
+export async function readItiSelectedCountry(scope, target, options = {}) {
+  return scope.evaluate((arg) => {
+    const el = arg.sel
+      ? document.querySelector(arg.sel)
+      : (function () {
+        const w = document.querySelector('.cch-wrapper');
+        return w ? Array.prototype.find.call(w.children, (c) => !c.classList.contains('cch-btn')) || null : null;
+      })();
+    if (!el) return { iso2: null, dialCode: null, via: null, raw: { err: 'host field not found' } };
+    const root = el.closest('.iti, .intl-tel-input');
+    if (!root) return { iso2: null, dialCode: null, via: null, raw: { err: 'not in iti container' } };
+    let iso2 = null;
+    let dialCode = null;
+    let via = null;
+
+    // ① 官方读 API（ITI 文档承诺的唯一读取途径）
+    if (!arg.domOnly) {
+      try {
+        const g = window.intlTelInputGlobals || window.intlTelInput;
+        if (g && typeof g.getInstance === 'function') {
+          const inst = g.getInstance(el);
+          if (inst) {
+            const c = typeof inst.getSelectedCountryData === 'function'
+              ? inst.getSelectedCountryData()
+              : (typeof inst.getSelectedCountry === 'function' ? inst.getSelectedCountry() : null);
+            if (c) {
+              iso2 = c.iso2 ? String(c.iso2).toLowerCase() : null;
+              dialCode = c.dialCode ? String(c.dialCode) : null;
+              via = 'instance-api';
+            }
+          }
+        }
+      } catch { /* 能力探测：不可达即降级到 DOM 路径（不得因此判失败） */ }
+    }
+
+    // ② DOM 选中态：国家选择器属性 / 国旗类名（v21 与 v29 两次改名，故用双代选择器）
+    const sc = root.querySelector(arg.selected);
+    if (!iso2 && sc) {
+      const cc = sc.getAttribute('data-country-code');
+      if (cc) { iso2 = String(cc).toLowerCase(); via = via || 'dom-data-country-code'; }
+    }
+    if (!iso2 && sc) {
+      const fl = sc.querySelector('.iti__flag');
+      const m = fl && /iti__([a-z]{2})\b/.exec(fl.className);
+      if (m) { iso2 = m[1]; via = via || 'dom-flag-class'; }
+    }
+
+    // ③ 用户可见区号：分离显示元素（separateDialCode）→ 国家选择器 title 的 ": +NN"
+    const dcode = sc ? sc.querySelector('.iti__selected-dial-code') : null;
+    if (!dialCode && dcode) {
+      const m = /^\+\s*(\d+)\s*$/.exec((dcode.textContent || '').trim());
+      if (m) dialCode = m[1];
+    }
+    if (!dialCode && sc) {
+      const m = /:\s*\+(\d+)/.exec(sc.getAttribute('title') || '');
+      if (m) dialCode = m[1];
+    }
+    return {
+      iso2: iso2,
+      dialCode: dialCode,
+      via: via,
+      raw: {
+        rootClass: root.className,
+        selectedTag: sc ? sc.tagName.toLowerCase() : null,
+        selectedClass: sc ? sc.className : null,
+        selectedTitle: sc ? sc.getAttribute('title') : null,
+        selectedDataCountryCode: sc ? sc.getAttribute('data-country-code') : null,
+        dialCodeText: dcode ? (dcode.textContent || '').trim() : null,
+      },
+    };
+  }, { sel: target || null, domOnly: !!options.domOnly, selected: ITI_SELECTED_SELECTOR });
+}
+
+/** 在宿主字段上挂 ITI 官方 countrychange 监听（与原生事件分开记录，互不覆盖）。 */
+export async function recordItiCountryEvents(scope, target) {
+  await scope.evaluate((arg) => {
+    const el = arg.sel
+      ? document.querySelector(arg.sel)
+      : (function () {
+        const w = document.querySelector('.cch-wrapper');
+        return w ? Array.prototype.find.call(w.children, (c) => !c.classList.contains('cch-btn')) || null : null;
+      })();
+    if (!el) throw new Error('host field not found');
+    window[arg.key] = [];
+    el.addEventListener(arg.type, () => window[arg.key].push(arg.type));
+  }, { sel: target || null, key: ITI_EVENTS_KEY, type: ITI_COUNTRY_EVENT });
+}
+
+/** 读回已记录的 ITI 事件序列。 */
+export async function readItiCountryEvents(scope, key = ITI_EVENTS_KEY) {
+  return scope.evaluate((k) => (window[k] || []).slice(), key);
+}
