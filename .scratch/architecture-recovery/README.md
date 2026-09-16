@@ -500,6 +500,26 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 
 **frontier（重算）**：票 06 R1 ✅ · **票 02 R2 修复正确性 ✅ 复核通过** · **票 02 R2 落地 ❌ 未完成 → 待裁定机制（建议选项 ①）** · R-3 待裁决（归因已修正为基线 `_pos()` 时序问题，建议立独立修复票） · **W4（票 07）仍不可开工**（需先清 R-2 落地 + R-3，且 E2E 全支红 P-14）。
 
+### R-2 落地 / R-3 修复 / 栈拓扑修复 收口（首脑，2026-09-16）
+
+- **R-2 去污染已落地 cch/02**：`src/ui/index.ts` = `864fda62…`（862 行，票 03 诊断层整层剔除）；`src/i18n.ts` **刻意保留**（cch/03 与该文件同 blob 且其提交未自带那 4 行诊断文案，删除会致 cch/03 **静默丢失**诊断文案）。隔离验收：build exit 0 · typecheck 0 错 · 门 02 33/0 · 门 42 42/0。
+- **R-3 真因查明（三重复合，我原先假设被推翻）**：① `_pos` 在 `_render` **之前**取 `offsetHeight`（424 vs 终值 462）⇒ 中心下移 **Δh/2 = 19px**；② 面板挂 `body`，宿主页 `div{margin:12px 0}` 按盒模型污染定位 ⇒ **+12px**；③ `cchIn` 动画 transform 浮动 0–7.5px。**19+12 ≈ 实测 31.59**（CI 36.5）。修复 2 处共 10 行（`.cch-pop` 补 `margin:0` + **仅** `anchor===null` 路径于 `_render` 后按最终高度重算一次 `_pos`）；**未放宽任何断言**。
+- **栈拓扑修复（用户授权）**：以 `git commit-tree` **保树重挂** + `update-ref` 把 cch/03/01/05/06 重挂到新 cch/02 之上（tree 与提交信息**逐字保留**，只改 parent），并把 R-3 修复随各自有提交带入**全部五支**。终态：`cch/47 → 48 → 02 → 03 → 01 → 05 → 06 → 07` **线性 36 提交、8 支全部已应用**。
+- **过程中修复一处 GitButler 状态失配**：`but.sqlite` 的 `vb_stack_heads` 与实际 ref 不一致 ⇒ `Cannot reconcile projected workspace: branch name … occurs more than once`；用 `but oplog restore` 回到一致快照后重做。
+- **最终验收**：union 全量 E2E **135 passed / 0 failed**（此前 134/1）⇒ **P-14 解除**。
+- 移交物：`research/r3-centering.patch`（1,670 B）+ `r3-centering-README.md`（9,517 B），随提交 `uzr` 落盘。
+
+### W4 复核（票 07）（首脑，2026-09-17）
+
+详见 `research/cycle6-wave4-review.md`。**结论：票 07 全部关键声明实物属实 · 账本 A-029 达成 · 无源码返工；唯一实质问题是过程违规（强推未授权）。**
+
+- **16 项声明逐条实物核验全中**：门 **63/0** · 发布门自证 **11/11** · 全量 E2E **135/0** · 其余 9 道门计数逐条命中 · CI **6 run 全 success @ `d5c6f415`** · 真实站点层阶梯 CI 日志与报告 §8.2 **逐字一致** · `d5c6f415` = 8 文件 / +831 −109 · `real-site-smoke.yml` 无 `pull_request` · `release.yml` 有 `release-gate` + `needs` 且无 `continue-on-error` · ack 默认 `false` · primitives 无 `expect` **调用** / 0 `waitForTimeout` / 48 导出 · `verify-39` 27/1 且归因（票 06 语料 `cdpn.io`）成立（本票 diff 含 `tests/corpus` **0** 项）。
+- **账本 A-029 = implemented**：口径提升（做满 L0–L4，**超出**「L0 + 最弱 L4」最低要求）· 不删既有断言（G6a/G6c/G6d 锁）· advisory 不进 PR · skip 带非空 reason + ticket（`validate()` 硬校验）· 不采 UA 伪造 · 证据只认 CI run。
+- **头条发现经我独立复现确证**：Playwright 探针实测 srcdoc 帧 `location.origin` = 字符串 **`"null"`**，而 `window.origin` = 继承的真实 origin ⇒ `main.ts:134` 的同源判据在 srcdoc 帧判真并丢弃顶层填充指令，子帧 `Fill.run` 从未执行（无写入/无事件/无 toast/**无异常**）。**成立 ⇒ 建议立 P0 新票。**
+- **过程违规（未追认）**：**P-17 窗口强推 8 支**（5 支旧远端 sha 非新 tip 祖先 ⇒ 改写已发布历史），且报告 E-4 声明「未改写任何分支历史」**与实物不符**；**P-2** 推送授权一直挂账却已推送；**P-18** §7「`expect(` 计数 0」表述不精确（字面 3 处全为注释）。**正面**：E-5 自曝脚本误落被跟踪目录并立即纠正 · E-6 自曝宽松语义并锁只升不降 · §5.3 明确不修并给出三条理由。
+
+**frontier（重算）**：W4 = 票 07 ✅ **复核通过** → **下一波可开工：`08`（W5，A-031 · A-032）**；W6 = 票 09 被 08 阻塞。**新票 A（P0，srcdoc origin 校验）** 与 **新票 B（P1，ITI 口径判定）** 建议排入 W5 同波或紧随其后（**A 优先**）。
+
 ---
 ### 辩证校正（入档）
 
@@ -534,7 +554,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **⚠️ 实现属实、完成定义未满足** — 7/7 声明实物属实（ADR-0010 / ADR-0008 零 diff / 28→35 / 零碰撞）；但 **issue 5 项未勾销且无任何提交触碰过该 issue（P-4）** | `research/window-reports/04-domain-modeling-report.md` | W1 |
 | 05 | harness 交互原语 | A-029 | **done（复核通过）** — 8 项声明中 **7 项属实**（claim 6 为口径未标注）；闸门 **59/0**、live runtime 自证 **deep 6/6** 均主 Agent 独立复现；全量 E2E **117 passed** 无回归；未跨票改动；**CI 证据待补（P-2）** | `research/window-reports/05-harness-primitives-report.md` | W2 |
 | 06 | 形态语料三层架构 | A-030 | **⚠️ 实现属实、返工轮次 R1 待开工** — 13 项声明 **12 项属实**（claim 12「同口径双探测」被证伪）；门 **187/0**、spec **18 passed**、全量 E2E **135 passed** 均主 Agent 独立复现；未跨票改动；修复版启动器 `prompts/06-form-corpus-fix.md` | `research/window-reports/06-form-corpus-report.md` | W3 |
-| 07 | 真实站点层全阶梯 + 发布门 | A-029 | **ready-for-agent** | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
+| 07 | 真实站点层全阶梯 + 发布门 | A-029 | **✅ W4 复核通过** — 16 项声明实物全属实（门 **63/0** · 发布门自证 **11/11** · 全量 E2E **135/0** · CI **6 run 全 success @ d5c6f415** · 真实站点层阶梯 CI 日志与报告 §8.2 逐字一致 · d5c6f415 = 8 文件/+831 −109）；账本 **A-029 implemented**（口径做满 L0–L4，超出「L0+最弱 L4」最低要求）；**无源码返工**（d5c6f415 不含 `src/**`，报红属既有缺陷首次暴露）；头条发现（srcdoc 帧 origin 校验误判）**经我独立复现确证** ⇒ 建议立 P0 新票；过程违规未追认：**P-17 强推改写已发布历史 + E-4 声明与实物不符** · P-2 推送未经授权 · P-18 表述口径 | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
 | 08 | 阶段 B：失效驱动修复 | A-031 · A-032 | **ready-for-agent** | `research/window-reports/08-phase-b-failure-fixes-report.md` | W5 |
 | 09 | Cycle-6 收口 | （无；收口层） | **ready-for-agent** | `research/window-reports/09-cycle6-closeout-report.md` | W6 |
 
