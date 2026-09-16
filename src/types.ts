@@ -139,6 +139,8 @@ export interface OptionStats {
   total: number;
   plusDial: number;
   parenDial: number;
+  // 票 08 [A-031 形态③]：选项文本中的**裸 +NN 区号令牌**（无括号）计数
+  textDial: number;
   isoName: number;
   numeric: number;
 }
