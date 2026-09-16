@@ -242,6 +242,28 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   check(/pull_request/.test(read(FILES.workflow)), 'S8 结构门 workflow 进 pull_request 触发面');
 }
 
+// == S9 双探测口径同源（R1 防回归锁：使「同口径」成为结构事实，而非文本声明）==
+{
+  const common = read(FILES.probeCommon);
+  check(/export const UA\s*=/.test(common), 'S9 口径模块定义唯一 UA 常量');
+  check(/export const NAV\s*=/.test(common) && /export const IDLE_MS\s*=/.test(common) && /export const SETTLE_MS\s*=/.test(common),
+    'S9 口径模块定义导航/空闲/落定三常量');
+  check(/export async function settle\(page, url\)/.test(common), 'S9 口径模块定义唯一导航等待序列 settle()');
+  check(/export function scanWrappers\(\)/.test(common), 'S9 口径模块定义唯一注入面扫描函数 scanWrappers()');
+  for (const [name, p] of [['mirrors', FILES.probeMirrors], ['real', FILES.probeReal]]) {
+    const src = read(p);
+    check(/import \{[^}]*\bUA\b[^}]*\} from '\.\/06-probe-common\.mjs'/.test(src), 'S9 ' + name + ' 探测从口径模块导入 UA');
+    check(/import \{[^}]*\bsettle\b[^}]*\} from '\.\/06-probe-common\.mjs'/.test(src), 'S9 ' + name + ' 探测从口径模块导入 settle()');
+    check(/import \{[^}]*\bscanWrappers\b[^}]*\} from '\.\/06-probe-common\.mjs'/.test(src), 'S9 ' + name + ' 探测从口径模块导入 scanWrappers()');
+    check(/\bsettle\(page, /.test(src), 'S9 ' + name + ' 探测经 settle() 导航（不自行 goto）');
+    check(/fr\.evaluate\(scanWrappers\)/.test(src), 'S9 ' + name + ' 探测共用 scanWrappers 扫描');
+    eq(count(src, /Mozilla\/5\.0/g), 0, 'S9 ' + name + ' 探测无就地 UA 字面量');
+    eq(count(src, /waitForTimeout\s*\(/g), 0, 'S9 ' + name + ' 探测无就地等待字面量');
+    eq(count(src, /waitUntil\s*:/g), 0, 'S9 ' + name + ' 探测无就地导航条件字面量');
+    eq(count(src, /\.goto\(/g), 0, 'S9 ' + name + ' 探测不自行 goto（导航只在口径模块内）');
+  }
+}
+
 console.log('-----------------------------');
 console.log('verify-ticket-06: ' + pass + ' PASS, ' + failures.length + ' FAIL');
 if (failures.length) { console.log('failures:'); failures.forEach((f) => console.log('  - ' + f)); process.exit(1); }

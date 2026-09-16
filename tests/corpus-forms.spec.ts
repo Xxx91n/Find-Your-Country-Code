@@ -167,9 +167,15 @@ test.describe('跨隔离上下文 · CodePen 嵌套帧（双端断言）', () =>
       await recordFieldEvents(child, '.tel-input');
       await searchType(page, 'china');
       await selectCountry(page, 'cn');
-      const v = await readHostValue(child, '.tel-input');
-      expect.soft(v, '子帧目标字段 value 应被写入 +86（链路 B 的子帧端结果）').toBe('+86');
-      expect.soft(await countFieldEvents(child, 'change'), '子帧字段应派发 change ≥1').toBeGreaterThanOrEqual(1);
+      // 跨帧写入是**异步**结果（顶层选国 → postMessage → 子帧 Fill.run），
+      // 且面板 detach 早于子帧落值：必须用 web-first 断言**等待**，不得在
+      // selectCountry 返回后立即读值（R1：CI 上该竞态曾使本步读到空串而本地绿；
+      // 验收面 §4.2 L2 同时禁止固定 sleep —— 等待一律靠可见状态/轮询）
+      await softHostValue(child, '.tel-input', '+86');
+      await expect.poll(() => countFieldEvents(child, 'change'), {
+        timeout: 5000,
+        message: '子帧字段应派发 change ≥1（跨帧异步结果，轮询等待）',
+      }).toBeGreaterThanOrEqual(1);
     });
   });
 });
