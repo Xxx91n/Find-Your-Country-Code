@@ -27,20 +27,22 @@ test.describe('票 37 [A-012] GM 菜单全局入口', () => {
     await installUserscript(page);
   });
 
-  // [票 02 A-026]：菜单新增唯一零置信度入口「设置」（本票前 GM 菜单无任何设置入口）
+  // [票 02 A-026]：菜单新增唯一零置信度入口「设置」；[票 03 A-028]：诊断面亦收敛为单一菜单项
+  // （四项：恢复本站检测 / 打开面板 / 设置 / 诊断）
   test('菜单登记「设置」命令（票 02 零置信度入口）', async ({ page }) => {
     await page.goto('/fixtures/entry-access.html');
-    await expect.poll(() => menuCount(page)).toBe(3);
+    await expect.poll(() => menuCount(page)).toBe(4);
     const titles = await page.evaluate(() => ((window as any).__cchMenu || []).map((c: any) => c.title));
     expect(titles.some((x: string) => /设置|settings/i.test(x)), 'GM 菜单应登记「设置」命令').toBe(true);
     const ids = await page.evaluate(() => (window as any).__cchMenuIds || []);
     expect(ids).toContain('cch-menu-settings'); // 稳定 id = 原地更新语义的前提
+    expect(ids).toContain('cch-menu-diag');     // 票 03：诊断面唯一入口（不逐功能设项）
   });
 
   test('菜单登记「打开面板」命令；无图标页面经菜单开面板且居中', async ({ page }) => {
     await page.goto('/fixtures/entry-access.html');
     // 脚本就绪（菜单注册发生在脚本求值时）且整页无注入图标
-    await expect.poll(() => menuCount(page)).toBe(3);
+    await expect.poll(() => menuCount(page)).toBe(4);
     await expect(page.locator('.cch-btn')).toHaveCount(0);
     await invokeMenuOpenPanel(page);
     const pop = page.locator('#cch-pop');
@@ -56,7 +58,7 @@ test.describe('票 37 [A-012] GM 菜单全局入口', () => {
 
   test('低置信页面：菜单开面板 → 召唤已登记字段 → 补挂图标', async ({ page }) => {
     await page.goto('/fixtures/entry-access.html');
-    await expect.poll(() => menuCount(page)).toBe(3);
+    await expect.poll(() => menuCount(page)).toBe(4);
     await expect(page.locator('.cch-btn')).toHaveCount(0); // 无任何图标
     await invokeMenuOpenPanel(page);
     // 已登记字段在面板内可见召唤入口
@@ -74,7 +76,7 @@ test.describe('票 37 [A-012] GM 菜单全局入口', () => {
   test('无目标字段时点国家行：needTarget 提示而非静默崩溃', async ({ page }) => {
     // GM 入口打开时 _target=null —— 行点击不得静默崩溃（入口语义无目标字段）
     await page.goto('/fixtures/entry-access.html');
-    await expect.poll(() => menuCount(page)).toBe(3);
+    await expect.poll(() => menuCount(page)).toBe(4);
     await invokeMenuOpenPanel(page);
     await page.locator('.cch-row[data-iso="cn" i]').first().click();
     await expect(page.locator('#cch-toast')).toHaveClass(/on/);

@@ -53,6 +53,8 @@ const fillBundle = [
   'if (typeof window === "undefined") { try { globalThis.window = undefined; } catch {} }',
   toModuleBody(readFileSync(join(ROOT, 'src', 'i18n.ts'), 'utf8')),
   toModuleBody(readFileSync(join(ROOT, 'src', 'iti-adapter', 'index.ts'), 'utf8')),
+  // 票 03 [A-028]：fill 引用诊断面常量（DIAG_REASON/DIAG_POINT_PREFIX）——函数束须同装 config
+  toModuleBody(readFileSync(join(ROOT, 'src', 'config.ts'), 'utf8')),
   toModuleBody(readFileSync(join(ROOT, 'src', 'fill', 'index.ts'), 'utf8')),
 ].join('\n');
 const { createFill } = new Function(stripTypes(fillBundle) + '\n;return { createFill };')();

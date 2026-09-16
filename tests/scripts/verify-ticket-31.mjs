@@ -102,6 +102,8 @@ const fillBody = toModuleBody(join(ROOT, 'src', 'fill', 'index.ts')).replace(/na
 const bundle = [
   PRELUDE,
   i18nBody,
+  // 票 03 [A-028]：fill 引用诊断面常量（DIAG_REASON/DIAG_POINT_PREFIX）——函数束须同装 config
+  toModuleBody(join(ROOT, 'src', 'config.ts')),
   toModuleBody(join(ROOT, 'src', 'iti-adapter', 'index.ts')),
   fillBody,
 ].join('\n');

@@ -158,8 +158,8 @@ test('验收4 菜单标签免重载即跟随（id 原地更新，不新增条目
     titles: ((window as any).__cchMenu || []).map((c: any) => c.title),
   }));
   expect(before.nav).toBe(1);
-  expect(before.count).toBe(3);
-  expect(before.ids).toEqual(['cch-menu-restore', 'cch-menu-panel', 'cch-menu-settings']);
+  expect(before.count).toBe(4);
+  expect(before.ids).toEqual(['cch-menu-restore', 'cch-menu-panel', 'cch-menu-settings', 'cch-menu-diag']);
   expect(before.titles).toContain(SETTINGS_EN);
   // 切到中文 → 菜单标签必须原地跟随（无 reload）
   await page.locator('#cch-pop ' + LOCALE_ROW + ' [data-locale="zh"]').click();
@@ -170,9 +170,9 @@ test('验收4 菜单标签免重载即跟随（id 原地更新，不新增条目
     titles: ((window as any).__cchMenu || []).map((c: any) => c.title),
   }));
   expect(after.nav).toBe(1);                    // 未发生导航 / 重载
-  expect(after.count).toBe(3);                  // 不新增条目
+  expect(after.count).toBe(4);                  // 不新增条目
   expect(after.ids).toEqual(before.ids);        // id 集合与顺序不变
-  expect(new Set(after.ids).size).toBe(3);      // 无重复 id
+  expect(new Set(after.ids).size).toBe(4);      // 无重复 id
   expect(after.titles).toContain(SETTINGS_ZH);  // 标签已跟随
   expect(after.titles).toContain('打开区号面板');
   expect(after.titles).not.toContain(SETTINGS_EN);

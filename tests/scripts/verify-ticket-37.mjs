@@ -47,7 +47,7 @@ const detSrc = readFileSync(join(ROOT, 'src', 'detect', 'index.ts'), 'utf8');
 const menuBlock = mainSrc.match(/if \(IS_TOP_FRAME && typeof GM_registerMenuCommand === 'function'\) \{[\s\S]*?\n\}/);
 check('G1a IS_TOP_FRAME 门内菜单注册块存在', !!menuBlock);
 const menuCalls = menuBlock ? (menuBlock[0].match(/GM_registerMenuCommand\(/g) || []).length : 0;
-check('G1b 顶层帧注册两条菜单命令', menuCalls === 2, 'calls=' + menuCalls);
+check('G1b 顶层帧注册四条菜单命令（票 37 打开面板 + 票 02 恢复/设置 + 票 03 诊断）', menuCalls === 4, 'calls=' + menuCalls);
 check('G1c 打开面板命令直达 UI.open(null,null,null)',
   /GM_registerMenuCommand\(\s*t\('openPanel'\)\s*,\s*\(\)\s*=>\s*\{\s*UI\.open\(null,\s*null,\s*null\)/.test(mainSrc));
 
@@ -86,7 +86,10 @@ check('G4g hover 恢复全权重（opacity:1 + translateY 保持）',
 
 // ══ G5：空目标守卫（GM 入口 _target=null 语义）══
 check('G5a 负反馈空目标 → needTarget toast',
-  /if \(!el\) \{ this\.toast\(t\('needTarget'\)\); return; \}/.test(uiSrc));
+  /if \(!el\) \{[\s\S]{0,240}?this\.toast\(t\('needTarget'\)\);\s*return;/.test(uiSrc));
+// 票 03 [A-028]：同一守卫必须同时落已验证因果的诊断记录（不得静默）
+check('G5a2 空目标同落诊断记录（票 03 LOGIC_NO_TARGET）',
+  /if \(!el\) \{[\s\S]{0,240}?LOGIC_NO_TARGET[\s\S]{0,160}?this\.toast\(t\('needTarget'\)\)/.test(uiSrc));
 check('G5b 行点击空目标 → needTarget toast',
   /if \(!this\._target\) \{ this\.toast\(t\('needTarget'\)\); return; \}/.test(uiSrc));
 
