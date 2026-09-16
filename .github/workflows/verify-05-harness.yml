@@ -1,0 +1,30 @@
+# 票 05（Cycle-6 · A-029）交互原语结构门
+# 触发：pull_request（ADR-0006 非发版 workflow PR 门控）+ 本票分支 push + 手动 dispatch。
+# 纯文本结构断言，无 npm 依赖安装面。
+name: Verify Ticket 05 (harness primitives)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/05-harness-primitives'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-05-gate:
+    name: Ticket-05 gate (harness primitives A-029)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-05 acceptance gate
+        run: node tests/scripts/verify-ticket-05-harness.mjs
