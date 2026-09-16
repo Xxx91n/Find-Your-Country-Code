@@ -473,10 +473,11 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 > 报告：`research/cycle6-wave3-r1-review.md`
 
 - **R-1（票 06 口径不一致）：已修复，复核通过。** 实物：`06-probe-common.mjs`（唯一口径模块）+ 两份探测**零就地字面量**；门 **209 PASS/0 FAIL**（我实跑，自计 = 209）；报告**追加式**（diff 父提交→当前 = **0 删除**，纯追加 198 行）；CI Verify-06 ×3 **success**。
-- **❗R-2（新，源码层面）：cch/02 在 CI 上构建失败** —— `src/ui/index.ts (4:41): "DIAG_TRACE_PREF" is not exported by "src/config.ts"`（CI run 35089321289，Build 步，未到测试步）。逐分支矩阵：cch/02 = 导出 **0** / 引用 **2** ✗，其余四支均 1/3 ✓。根因：`61f3ebe7`（fix(cch-02)）切走了**票 03 的部分在途改动**却未带配套导出。
+- **❗R-2（新，源码层面）：cch/02 在 CI 上构建失败** —— `src/ui/index.ts (4:41): "DIAG_TRACE_PREF" is not exported by "src/config.ts"`（CI run 35089321289，**Build userscript** 步，未到测试步）。逐分支矩阵：cch/02 = 导出 **0** / 引用 **2** ✗，其余四支均 1/3 ✓。根因：`06273351`（fix(cch-02)）切走了**票 03 的在途改动**却未带配套导出。
+- **❗R-2 范围补正（同日实物复核，**扩大**）**：不是「缺一个导出」，而是 cch/02 的 `src/ui/index.ts`（1,159 行）被扫入**票 03 诊断面整层**（`_diagLevel`/`_diagLayer` 态 · 摘要条 · 独立诊断视图 · 过滤器 · `deps.Diag` 读面；`grep "票 03"` 命中 25+ 处），而同分支 `src/config.ts` **零** DIAG 常量、`src/types.ts` **零** Diag 类型、`src/main.ts` **零** Diag 注入、`src/diag/` 目录**不存在** ⇒ 该分支是**嵌合体**。即便补导出，类型门仍红且诊断面永远渲染空。**修法必须是剔除被扫入的整层**。sha 亦修正：先前记的 `61f3ebe7` 是 rebase 前的孤儿提交（不属于任何分支），分支实际 sha = `06273351`。
 - **❗回溯修正 W1**：W1 判票 02「无源码返工」**作废**——该结论基于**并集树**（并集里票 03 的导出存在），**逐分支看 cch/02 不可构建**。已重发票 02 修复版启动器 `prompts/02-settings-surface-fix.md`（含**新增硬验收：逐分支 `npm run build` 必须绿**）。
-- **❗R-3（新）：entry-access 垂直居中 CI-only 红**（`:55` 期望 <30px 实测 **36.5px**；本地 7 passed）。归因链（我独立复现）：cch/47/48 **success** → cch/02 红（构建步）→ **cch/03 首个测试级红** → 01/05/06 继承。建议立修复票。
-- **过程违规（未追认）**：P-12 票 02 提交切走票 03 部分改动致分支不可构建；P-13 推送/rebase 后分支 sha 与本地复核对象不一致（`cch/01` 193018de → 18fbf99b）；P-14 **E2E 在全部已推分支上均 failure → 无分支可合入**；P-2 部分缓解（远端现 7 支 cch/*，cch/04 仍未推）。
+- **❗R-3（新）：entry-access 垂直居中 CI-only 红**（`:55` 期望 <30px 实测 **36.5px**；本地 7 passed）。归因链（我独立复现 + CI **步骤级**证据）：cch/47/48 **success** → cch/02 红于**构建步**（35089321289）→ **cch/03 首个测试级红**（35089332673，Run E2E）→ cch/01（35089341835）/ cch/05（35089351200）/ cch/06（35089360299）逐支继承。建议立修复票。
+- **过程违规（未追认）**：P-12 票 02 提交切走票 03 **整层诊断面**致分支不可构建；**P-13 已升级为方法级约束** —— 六个工作分支**本地 tip ≠ 远端 tip**（01: 9601b34b≠18fbf99b · 02: 3a936cec≠b95f672f · 03: 9e99c68b≠23229ed9 · 05: 0851ba32≠ede691c3 · 06: d54cb334≠1e661ed2；cch/04 未推），故「本地跑绿」不构成「推送后跑绿」的证据，跨支终态一律以 CI 为准；P-14 **E2E 在全部已推工作分支上均 failure → 无分支可合入**；P-2 部分缓解（远端现 7 支 cch/*，cch/04 仍未推）。
 - **正面记录**：票 06 R1 窗口**自曝提交完整性事故并修复**、**未以静默重跑掩盖红**、**拒修他票工件并呈报立票**——三项均符 WORKFLOW 纪律。
 
 **frontier（重算）**：票 06 R1 ✅ 通过；**票 02 返工 R2 待开工**（启动器已发）；**R-3 待裁决**；**W4（票 07）暂不可开工**（E2E 全支红）。
@@ -510,7 +511,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 票 | 标题 | 覆盖 A-xxx | 状态 | 报告路径 | 波次 |
 |----|------|-----------|------|----------|------|
 | 01 | 验收面与断言阶梯定义 | A-029 · A-030 | **done（复核通过）** — 7/7 声明实物属实；零源码改动；issue 6/6 勾销；**CI 证据待补（P-2）** | `research/window-reports/01-acceptance-surface-and-ladder-report.md` | W1 |
-| 02 | 设置面收口 | A-026 · A-027 | **⚠️ 存在源码层面问题（R-2 待返工）** — W1 的「无源码返工」结论**已回溯作废**（基于并集树，未做逐分支构建）：**cch/02 在 CI 上构建失败**（`DIAG_TRACE_PREF` 导入无配套导出）· 修复版启动器 `prompts/02-settings-surface-fix.md` · 原 W1 描述： — 8/8 声明实物属实；闸门 **33/0**、规格 **8 passed** 实测复现；`_applyLocaleText` 已删；**CI 证据待补（P-2）**；报告行号漂移待补正（P-5） | `research/window-reports/02-settings-surface-report.md` | W1 |
+| 02 | 设置面收口 | A-026 · A-027 | **⚠️ 存在源码层面问题（R-2 待返工）** — W1 的「无源码返工」结论**已回溯作废**（基于并集树，未做逐分支构建）：**cch/02 在 CI 上构建失败**（**构建步**；`ui/index.ts` 被扫入票 03 诊断面**整层**，而 config/types/main/`src/diag/` 四者全缺 ⇒ **嵌合体分支**，非「缺一个导出」）· 修复版启动器 `prompts/02-settings-surface-fix.md` · 原 W1 描述： — 8/8 声明实物属实；闸门 **33/0**、规格 **8 passed** 实测复现；`_applyLocaleText` 已删；**CI 证据待补（P-2）**；报告行号漂移待补正（P-5） | `research/window-reports/02-settings-surface-report.md` | W1 |
 | 03 | 诊断面 | A-028 | **done（复核通过）** — 7/7 声明实物属实；**单一采集路径代码级证实**；闸门 **58/0**、规格 **6 passed** 实测复现；**CI 证据待补（P-2）**；跨票改动 P-1 待裁定 | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
 | 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **⚠️ 实现属实、完成定义未满足** — 7/7 声明实物属实（ADR-0010 / ADR-0008 零 diff / 28→35 / 零碰撞）；但 **issue 5 项未勾销且无任何提交触碰过该 issue（P-4）** | `research/window-reports/04-domain-modeling-report.md` | W1 |
 | 05 | harness 交互原语 | A-029 | **done（复核通过）** — 8 项声明中 **7 项属实**（claim 6 为口径未标注）；闸门 **59/0**、live runtime 自证 **deep 6/6** 均主 Agent 独立复现；全量 E2E **117 passed** 无回归；未跨票改动；**CI 证据待补（P-2）** | `research/window-reports/05-harness-primitives-report.md` | W2 |

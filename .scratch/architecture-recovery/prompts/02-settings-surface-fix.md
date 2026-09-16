@@ -19,12 +19,12 @@
 
 本票 delta（返工轮次专属）:
 - **本票为返工轮次 R2**。先复核主 Agent 的检查结果，**不得先改代码再回头找依据**。
-- 主 Agent 已核实的缺陷（可直接复现）：**cch/02 在 CI 上构建失败** —— CI run `35089321289`（cch/02 @ b95f672f）在 **Build userscript 步**报 `src/ui/index.ts (4:41): "DIAG_TRACE_PREF" is not exported by "src/config.ts"` → `✗ Build failed in 148ms`。
-- 逐分支矩阵（`config.ts` 导出数 / `ui/index.ts` 引用数）：cch/01=1/3 ✓ · **cch/02=0/2 ✗** · cch/03=1/3 ✓ · cch/05=1/3 ✓ · cch/06=1/3 ✓。
-- 引入点：`git log -S DIAG_TRACE_PREF cch/02 -- src/config.ts` = **空**（从未导出）；`git log -S DIAG_TRACE_PREF cch/02 -- src/ui/index.ts` = `61f3ebe7`（fix(cch-02)）。该提交新增了**票 03 的 import 与注释块**（5 处「票 03 [A-028]」行），但未同步添加配套导出。
-- 处置方向：让 cch/02 **自身自洽可构建**。二选一：(a) **首选**：把 `61f3ebe7` 中**属于票 03 的改动从本票提交中剔除**（`src/ui/index.ts` 的票 03 import/注释块、`tests/entry-access.spec.ts`、`tests/iframe.e2e.spec.ts`），使本票只留自己的改动；(b) 若剔除后本票自己的 UI 改动确实依赖诊断视图，则**补齐本票所需的最小自洽集**并明写依赖关系。
-- **不得以「把 config.ts 的导出也补上」作为默认修法**——那会把票 03 的工件继续留在本票里，使跨票污染固化。
-- **新增硬验收（本票专属）**：**逐分支构建必须绿** —— 在 cch/02 分支内容上跑 `npm run build` 必须 exit 0（并集树绿不算数）。
+- 主 Agent 已核实的缺陷（可直接复现）：**cch/02 在 CI 上构建失败** —— run `35089321289`（cch/02 @ `b95f672f`）在 **Build userscript 步**报 `src/ui/index.ts (4:41): "DIAG_TRACE_PREF" is not exported by "src/config.ts"` → `✗ Build failed in 148ms`。
+- **污染范围（已实物坐实，勿低估）**：cch/02 的 `src/ui/index.ts`（1,159 行）被扫入了**票 03 诊断面的整层**（`_diagLevel`/`_diagLayer` 态、摘要条、独立诊断视图、过滤器、`deps.Diag` 读面；`grep "票 03"` 命中 25+ 处），而该分支 `src/config.ts` **零** DIAG 常量、`src/types.ts` **零** Diag 类型、`src/main.ts` **零** Diag 注入、`src/diag/` 目录**不存在** ⇒ 该分支是**嵌合体**，不是「缺一个导出」。
+- 引入点提示：该污染提交在分支上的实际 sha 是 **`06273351`**（fix(cch-02)）；先前引用的 `61f3ebe7` 是 rebase 前的孤儿提交，**不属于任何分支**（已核）。复核一律锚定推送后的分支对象。
+- 处置方向：让 cch/02 **自身自洽可构建**。二选一：(a) 以本票基线（`06273351` 的父提交）的 `src/ui/index.ts` 为底，**只重放票 02 自己的 delta**（GM 菜单「设置」一级入口 + 三选一语言控件 + `[data-i18n*]` 全量重渲染 + 删除 `_applyLocaleText` + `.cch-sec[hidden]` 修复 + 菜单稳定 id），剔除被扫入的票 03 整层；(b) 若本票 UI 改动确实依赖诊断视图，则**明写依赖关系并补齐本票所需的最小自洽集**（config 常量 + types + 接线），不得留半层。
+- **不得以「把 config.ts 的导出也补上」作为默认修法**——那会把票 03 的工件继续固化在本票里。
+- **新增硬验收（本票专属）**：**逐分支构建必须绿** —— 在 cch/02 分支内容上跑 `npm run build` 必须 exit 0，且 `npm run typecheck` 必须 0 错（并集树绿不算数）。
 - 不得触碰其他票的工件（票 01/03/04/05/06）；不得削弱或删除本票门 `verify-ticket-02-settings.mjs` 的任何断言。
 
 开工第一句：先复述本票的阻塞项、必读清单与主 Agent 的检查结果，确认无误后再动手。
