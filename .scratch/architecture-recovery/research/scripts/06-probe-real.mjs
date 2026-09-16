@@ -32,9 +32,7 @@ try {
     page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 60)));
     await installUserscript(page);
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
-      await page.waitForTimeout(1500);
+      await settle(page, url);
     } catch (e) {
       console.log(`===== ${id} =====  NAV-FAIL ${String(e.message).slice(0, 60)}`);
       await page.close();
@@ -43,21 +41,7 @@ try {
     const all = [];
     for (const fr of page.frames()) {
       try {
-        const snap = await fr.evaluate(() => {
-          const out = [];
-          document.querySelectorAll('.cch-wrapper').forEach((w) => {
-            const btn = w.querySelector('.cch-btn');
-            const t = w.firstElementChild || w;
-            out.push({
-              tag: t.tagName.toLowerCase(),
-              id: t.id || null,
-              cls: (t.className || '').toString().slice(0, 48),
-              tier: btn ? btn.getAttribute('data-cch-tier') : null,
-              score: btn ? btn.getAttribute('data-cch-score') : null,
-            });
-          });
-          return out;
-        });
+        const snap = await fr.evaluate(scanWrappers);
         if (snap.length) all.push({ frame: fr.url().slice(0, 60), snap });
       } catch {}
     }

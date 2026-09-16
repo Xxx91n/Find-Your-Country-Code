@@ -33,33 +33,16 @@ await new Promise((r) => setTimeout(r, 1200));
 const browser = await chromium.launch();
 try {
   for (const [id, file] of PAGES) {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ userAgent: UA });
     const errs = [];
     page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 80)));
     await installUserscript(page);
-    await page.goto(`http://127.0.0.1:${PORT}/corpus/forms/mirrors/${file}`, { waitUntil: 'load' });
-    await page.waitForTimeout(1200);
-    const scan = () => {
-      const out = [];
-      document.querySelectorAll('.cch-wrapper').forEach((w) => {
-        const btn = w.querySelector('.cch-btn');
-        const t = w.firstElementChild || w;
-        out.push({
-          tag: t.tagName.toLowerCase(),
-          id: t.id || null,
-          cls: (t.className || '').toString().slice(0, 60),
-          tier: btn ? btn.getAttribute('data-cch-tier') : null,
-          score: btn ? btn.getAttribute('data-cch-score') : null,
-          lowkey: btn ? btn.classList.contains('cch-btn-lowkey') : null,
-        });
-      });
-      return out;
-    };
+    await settle(page, `http://127.0.0.1:${PORT}/corpus/forms/mirrors/${file}`);
     let total = 0;
     const lines = [];
     for (const fr of page.frames()) {
       try {
-        const snap = await fr.evaluate(scan);
+        const snap = await fr.evaluate(scanWrappers);
         if (!snap.length) continue;
         total += snap.length;
         lines.push(`    [frame ${fr.url().slice(0, 56)}]`);

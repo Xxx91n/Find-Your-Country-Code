@@ -251,7 +251,7 @@ ls corpus ; echo "exit=$?"
 | 推送结果 | ✓ 7 支新建于 `origin`：`cch/47` bd5fab9b · `cch/48` 50383e3c · `cch/02` b95f672f · `cch/03` 23229ed9 · `cch/01` 18fbf99b · `cch/05` ede691c3 · **`cch/06` 78ff8938** |
 | verify-06 run（R1 前 tip） | **run `35089360445` — completed / success**（8s，commit 78ff8938，event=push） |
 | 同 tip 其他门 | Engine Gates `35089360312` success；Typecheck / E2E / Lockfile Regen 同批触发 |
-| R1 提交后的 run | 见 R1-9（回填） |
+| R1 提交后的 run（首次） | verify-06 **run `35089479043` — completed / success**（commit 6d0462ae）；Engine Gates `35089478749` success · Lockfile Regen `35089478924` success · Typecheck `35089478750` success · **E2E `35089478916` — failure**（两处红，归因见 R1-10） |
 
 **E-6（原「CI 证据待补」）在本轮闭合**：`cch/06-form-corpus` 已推送，`Verify Ticket 06 (form corpus)` 首次在 CI 上运行并**成功**。
 
@@ -261,10 +261,46 @@ ls corpus ; echo "exit=$?"
 |---|---|---|---|
 | R1-D1 | **推送含 6 支祖先分支** | `but push <branch>` 语义为「推该分支及其祖先」，故 `cch/47/48/02/03/01/05` 一并新建于远端（否则 `cch/06` 的提交无法被 CI 取到）。副作用：6 个他票分支出现在远端 | 呈报；非破坏性（仅新建远端分支，未改 `main`、未删 ref）；如需收敛请指示 |
 | R1-D2 | **score 跨标记体系不可比** | 见 R1-4 精度声明；一致性判定层级收窄为 wrappers + tier | 已在 R1-4/R1-6 显式建模，不再声称 score 一致 |
-| R1-D3 | **R1 前 tip 的 CI 已绿但非 R1 状态** | run `35089360445` 锚定 78ff8938（R1 前）；R1 提交另有一次 run | 见 R1-9 回填 |
+| R1-D3 | **R1 前 tip 的 CI 已绿但非 R1 状态** | run `35089360445` 锚定 78ff8938（R1 前）；R1 提交另有 run `35089479043`（verify-06 绿） | 见 R1-7 / R1-10 |
+| R1-D4 | **本票 spec 跨帧竞态（CI 红）** | `tests/corpus-forms.spec.ts` 跨帧 L3 步在 `selectCountry` 返回后**立即读值**，而跨帧写入是异步的（顶层选国 → postMessage → 子帧 Fill.run）；本地快而绿、CI 慢而红 | **本票已修**（改 web-first `softHostValue` 等待 + `expect.poll` 轮询），见 R1-10 |
+| R1-D5 | **E2E 第二处红非本票引入** | `tests/entry-access.spec.ts:42`（票 37 面板居中）在 CI 上红；本地绿 | 归因见 R1-10；按边界**不得触碰他票工件** → 呈报大脑并建议立修复票 |
 
 ### R1-9 收尾
 
 - 本轮交付：口径模块 `06-probe-common.mjs` + 两份探测对齐 + 门 S9（22 断言，187→209）+ 报告本节的更正与精度声明 + issue 两处补正 + 远端推送与 CI 证据。
 - 稳定引用：分支名 `cch/06-form-corpus` 为稳定锚；**提交 sha 会随他窗堆叠 rebase 漂移**（本周期已发生两次），引用时以分支名 + 本节为准。
-- 遗留：R1-D1（远端祖先分支收敛）待用户裁定。
+- 遗留：R1-D1（远端祖先分支收敛）、R1-D5（他票引入的 E2E 红）待大脑/用户裁定。
+
+### R1-10 CI 红归因（WORKFLOW §8.1.3：红门必须先归因并三选一留痕）
+
+首次推送后 `E2E` 在 `cch/06-form-corpus` 上红。**先排除另两类**：`main` 基线为绿（`E2E` run `34859864554` @ `85990d2f` — success）⇒ **非「基线预存红」**；无平台侧故障证据 ⇒ **非「CI 基础设施故障」**。故归入 **① 自身改动**，并进一步定位到具体提交：
+
+| 提交（分支） | E2E run | 失败步骤 | 结果 |
+|---|---|---|---|
+| `cch/47` bd5fab9b | 35089292895 | — | **success** |
+| `cch/48` 50383e3c | 35089307434 | — | **success** |
+| `cch/02` b95f672f | 35089321289 | **Build userscript** | 红（未到测试步） |
+| `cch/03` 23229ed9 | 35089332673 | Run E2E | 红 · `entry-access.spec.ts:42`（票 37） |
+| `cch/01` 18fbf99b | 35089341835 | Run E2E | 红 · 同上 |
+| `cch/05` ede691c3 | 35089351200 | Run E2E | 红 · 同上 |
+| `cch/06` 78ff8938 | 35089360299 | Run E2E | 红 · 同上 **+ `corpus-forms.spec.ts:145`（本票）** |
+| `cch/06` 6d0462ae | 35089478916 | Run E2E | 红 · 同上两项 |
+
+**两处红分属不同责任方：**
+
+**(A) `tests/corpus-forms.spec.ts:145`（跨隔离上下文 L3）—— 本票，已修。**
+- 失败断言：`子帧目标字段 value 应被写入 +86` → `Received: ""`。
+- 根因：跨帧写入是**异步**结果（顶层选国 → `postMessage` → 子帧 `Fill.run`），而本步在 `selectCountry`（等面板 detach）返回后**立即读值**——面板 detach 早于子帧落值。本地机器快 → 绿；CI 慢 → 读到空串。
+- 修法：改 **web-first 等待**——`softHostValue(child, '.tel-input', '+86')`（自动重试）+ `expect.poll(() => countFieldEvents(child,'change'), { timeout: 5000 })`（轮询）。**未用固定 sleep**（验收面 §4.2 L2 禁止固定 sleep）。
+- 本地复核：spec `18 passed` · 门 `209 PASS / 0 FAIL` · 全量 E2E `135 passed` · typecheck `exit 0`。
+
+**(B) `tests/entry-access.spec.ts:42`（票 37 面板居中）—— 非本票引入。**
+- 失败断言：`Math.abs(box.y + box.height/2 - vh.height/2) < 30` → `Received: 36.50001525878906`。
+- **引入点定位**：`cch/47`、`cch/48` 的 E2E **均为 success**；**首个测试级红出现在 `cch/03-diagnostics-surface`（23229ed9, run 35089332673）**，其后 `cch/01`/`cch/05`/`cch/06` 逐支继承同一失败 ⇒ 该红由**栈内他票（票 03 诊断面）引入**，本票仅为继承者。
+- 本地不复现（本地全量 E2E `135 passed`）⇒ 环境敏感（面板高度 / 视口度量在 CI runner 上的差异使居中偏移越过 30px 容差）。
+- 处置：按启动器边界「**不得触碰其他票的工件**」**不修**；呈报大脑并**建议立修复票**（候选修法二选一：① 票 37 居中容差按面板高度自适应；② 面板 `max-height` 钳制后居中语义显式化）。归属印证 WORKFLOW §5「跨栈行为改动的组合从未被任何单票验证」教训。
+- **未以静默重跑掩盖**（§8.1.5 禁令）。
+
+**(C) 附记**：`cch/02` 的 E2E 红发生在 **Build userscript** 步（未到测试步），与本票无关，一并登记供大脑收口。
+
+**本票 CI 状态小结**：`Verify Ticket 06 (form corpus)` **绿**（`35089360445` / `35089479043`）· `Typecheck` **绿** · `Engine Gates` **绿** · `Lockfile Regen` **绿** · `E2E` **红**（一处本票已修、一处他票引入已呈报）。
