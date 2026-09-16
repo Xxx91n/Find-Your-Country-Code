@@ -304,3 +304,30 @@ ls corpus ; echo "exit=$?"
 **(C) 附记**：`cch/02` 的 E2E 红发生在 **Build userscript** 步（未到测试步），与本票无关，一并登记供大脑收口。
 
 **本票 CI 状态小结**：`Verify Ticket 06 (form corpus)` **绿**（`35089360445` / `35089479043`）· `Typecheck` **绿** · `Engine Gates` **绿** · `Lockfile Regen` **绿** · `E2E` **红**（一处本票已修、一处他票引入已呈报）。
+
+### R1-11 提交完整性事故（本票自身缺陷，自曝并修复）
+
+**事故**：R1 首次提交（`6d0462ae`）我按 **hunk ID** 提交（`sm:8 rn:a yw:ae km:e oq:d vv:8`），而 `06-probe-mirrors.mjs` / `06-probe-real.mjs` / `verify-ticket-06.mjs` 各含**多个 hunk**——结果每个文件只入了被点名的那个 hunk：**探测主体改动（UA/settle/scanWrappers 消费）与门 S9 均未入库**，分支实际状态与提交信息不符（**P-7 类失真：提交信息断言与实物不一致**）。该次推送后 CI 跑的仍是**未修完**的状态。
+
+**发现方式**：`git show --stat 6d0462ae` 显示 `06-probe-mirrors.mjs +3` / `verify-ticket-06.mjs +4`（与「主体改动 + S9 共 20+ 行」不符）→ 与 `but diff` 残留 hunk 交叉核对后定位。
+
+**修复**：以**文件 ID**（`sm yw km oq uk vv`）重新提交 → `vrl`（tip `e5a0a542`）；核验 `but status` 无未提交改动、tip 内 S9 与探测主体改动齐备、门 **209 PASS / 0 FAIL**。
+
+**教训（建议写回 WORKFLOW §5）**：**多 hunk 文件一律用文件 ID 提交**；或在提交后立即以 `git show --stat <sha>` 核对「提交信息声明的文件与规模 ↔ 实际入库」。`but commit` 成功返回**不等于**全部改动入库。
+
+### R1-12 二次推送与 CI 终态（tip `e5a0a542`）
+
+| 门 | run | 结果 |
+|---|---|---|
+| Verify Ticket 06 (form corpus) | **35090400764** | **success** |
+| Typecheck | 35090400773 | success |
+| Engine Gates | 35090400767 | success |
+| Lockfile Regen | 35090400742 | success |
+| E2E | 35090400731 | **failure · 1 failed / 134 passed** |
+
+**E2E 失败清单（逐条归因）**：
+
+- ✘ `tests/entry-access.spec.ts:42`（票 37 面板居中）—— **非本票**；引入点为 `cch/03-diagnostics-surface`（run `35089332673`，47/48 均绿），见 R1-10 (B)。按启动器边界**不修**，呈报大脑并建议立修复票。
+- ✅ `tests/corpus-forms.spec.ts:145`（本票跨帧 L3）—— **已由本次修复在 CI 上转绿**（同一 run 内该用例通过；`134 passed` 含本票 18 例）。
+
+**本票 CI 结论**：本票全部工件在 CI 上绿（verify-06 · typecheck · engine-gates · lockfile · 本票 18 例 E2E）；**唯一红为他票引入并已归因呈报**。
