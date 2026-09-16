@@ -21,7 +21,7 @@
 
 **验收证据**：逐项只读验证命令与输出摘要见 `.scratch/architecture-recovery/research/window-reports/03-diagnostics-surface-report.md` §4.2（Delta 检查点见 §5）。
 **提交锚点**：`cch/03-diagnostics-surface` @ `1ee67dc0`（Change-ID `oto`）
-**文档提交**：`<本提交 sha>`（本报告 + atomcode 调研 + 本文件勾销）
+**文档提交**：`2c93d3a4`（Change-ID `mst`，本报告 + atomcode 调研 + 本文件勾销）
 **基线**：common base `85990d2f`（Cycle-5 归档）；**堆叠于 `cch/02-settings-surface` @ `4067ce71` 之上**（本票 issue / handoff / spec 文件属 `cch/48` 产物，WORKFLOW §4.2）
 **报告**：`.scratch/architecture-recovery/research/window-reports/03-diagnostics-surface-report.md`
 **本地自证**：`npx tsc --noEmit` → exit 0；`npm run build` → `166.70 kB │ gzip: 48.22 kB`；闸门 03 → `58 PASS, 0 FAIL`；`npx playwright test --workers=1` → `110 passed`

@@ -3,6 +3,7 @@
 > 票：`issues/03-diagnostics-surface.md` | 分支：`cch/03-diagnostics-surface` | 日期：2026-09-16（Asia/Singapore）
 > 基线：common base `85990d2f`（Cycle-5 归档）；依赖分支 `cch/02-settings-surface` @ `4067ce71`（本票堆叠于其上）
 > 提交锚点：`1ee67dc0`（分支 `cch/03-diagnostics-surface`，Change-ID `oto`；**堆叠于 `cch/02-settings-surface` @ `4067ce71` 之上**）
+> 文档提交：`2c93d3a4`（Change-ID `mst`，本报告 + atomcode 调研 + issue 勾销）
 > 性质：**行为面新增** —— 源码 + 密封 E2E + 结构闸门 + CI workflow。
 
 ---
@@ -71,6 +72,7 @@
 
 本票提交：`cch/03-diagnostics-surface` @ **`1ee67dc0`**（Change-ID `oto`；堆叠于 `cch/02-settings-surface` @ `4067ce71` 之上）。
 父提交核验：`git rev-parse 1ee67dc0^` → `4067ce716ef86eb0cf904591178fcc727ced87fa`（= `cch/02` tip，堆叠成立）。
+文档提交：**`2c93d3a4`**（Change-ID `mst`，本报告 + atomcode 调研 + `issues/03-diagnostics-surface.md` 勾销）。
 
 ### 4.2 逐条
 
