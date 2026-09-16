@@ -221,6 +221,7 @@ $ node tests/live/live-smoke.mjs --target live-codepen-editor
 | 真实站点层（单目标） | `node tests/live/live-smoke.mjs --target mirror-control` | L0–L4 全绿，EXIT=0 |
 | 真实站点层（单目标） | `node tests/live/live-smoke.mjs --target live-codepen-editor` | L0–L4 全绿 |
 | 真实站点层（全量） | `node tests/live/live-smoke.mjs` | 1 pass / 1 fail（A-034 归因）/ 3 observe / 2 skipped |
+| 全部门禁扫描（21 个票级结构门） | `for f in tests/scripts/verify-*.mjs; do node "$f"; done` | **20/21 全绿**；唯一红 = `verify-ticket-39.mjs`（`27 PASS, 1 FAIL`，红项 `G4e`），属**票 07 已登记的既有跨票红**（票 06 语料 provenance 带 `cdpn.io`）——本票改动**未使任何门新增失败**（02-settings 33/0 · 02 36/36+G10 5/5 · 03 58/0 · 05 100/100 · 05-harness 59/0 · 06 209/0 · 07 63/0 · 08 35/0 · 09 36/36 · 10 34/0 · **11 62/0** · 13 28/0 · 15 28/28 · 18 35/0 · 27 94/0 · 28 19/0 · 31 48/0 · 37 21/0 · 42 42/0） |
 
 ---
 
@@ -241,6 +242,8 @@ $ node tests/live/live-smoke.mjs --target live-codepen-editor
 | E-4 | 未修改 `tests/ACCEPTANCE-SURFACE.md` 与 `tests/corpus/forms/mirrors/iti-v29.html` | 两者文本均与 ITI 官方语义不符（§2 第 5/6 条），但均属**他票交付物 + 产品级口径变更**，且修改后者会使 PR 阻断门转红。本票只呈报 + 建新 fixture 补覆盖，建议后续单独立票 |
 | E-5 | 真实站点层单次运行有抖动 | `live-codepen-editor` 的 `errs` 在多次运行中 0/1 波动（票 07 报告已登记同一现象）；本层 advisory，如实登记不作因果断言 |
 | E-6 | 一次性诊断脚本落 OS 临时目录 | 按票 07 E-5 教训，未落 `.scratch/`；已清理（`git status` 无残留） |
+| E-7 | WORKFLOW §5 教训登记（已写回） | 本票产生一条过程教训（`String.raw` + `\uXXXX` 使工具文件源码字面保留转义 ⇒ 文本型结构门全量失配，返工一轮），按 §5「必须写回」已追加一行至 `.scratch/architecture-recovery/WORKFLOW.md` §5（**仅追加一行，未改其他内容**） |
+| E-8 | 本票曾引入并**已自纠**一处跨票回归（G4e） | 新增 fixture 的溯源注释一度含 live 目标 host（`cdpn.io`），被 `verify-ticket-39` 的 G4e 捕获 ⇒ 该门命中清单从 5 条增至 6 条。已按「密封面不得出现 live 目标 host」修正注释（改为不带裸域名的形态描述），并把修正 **amend 进实施提交**（因此实施 sha 由 `2c6e0af0` 变为 `0f195075`，报告/issue 锚点已同步重写）；复验后 G4e 命中清单**回到原有的 5 条票 06 语料文件**，本票零新增命中。完整 URL 仍保留在 `tests/live/site-manifest.json`（不在 G4e 密封面范围内）与本报告中，溯源未丢失 |
 
 ---
 
