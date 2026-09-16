@@ -411,6 +411,23 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 **待用户动作（按优先级）**：① 授权 land Cycle-5（或指定合并序）；② GF 脚本页填新同步 URL `https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest/download/find-your-country-code.user.js`；③ 授权 push cch/41+cch/45 补 CI；④ P-2/P-3 是否改写已推送提交信息；⑤ D-1 11 文件补归档。
 
 ---
+### W1 复核结论（首脑，2026-09-16）
+
+> 报告：`research/cycle6-wave1-review.md`（声明→证据→结论对照表 + 账本维度 + 过程违规）
+
+- **实现层：W1 四票全部通过**（无源码返工）。实物验证：票 02 闸门 **33 PASS/0 FAIL**、票 03 闸门 **58 PASS/0 FAIL**（主 Agent 独立复现）；全量 E2E **110 passed**；构建 exit 0；两个新 workflow 均带 `pull_request:`。
+
+- **账本**：A-026 / A-027 / A-028 / A-033 = implemented（待 CI）；**A-029 / A-030 = 部分**（本波只完成定义层，实作层在票 05/06/07）；A-031 / A-032 未开始（W5）。
+
+- **过程违规（单独呈报，未追认）**：P-1 票 03 的 `1ee67dc0` 修改了 4 张其他票的 7 个工件（已在提交信息披露且实质必要，但违反「不得修改其他 agent 工作」）；P-2 **四票全无 CI 证据**（远端零 `cch/*`，票 02/03 为行为面改动，违反 WORKFLOW §8.1）；P-3 波内堆叠（02→03、47→48→01）；P-4 票 04 完成定义未满足（issue 未勾销）；P-5 文档卫生（行号漂移/计数过期）。
+
+- **返工判定：无源码层面问题，不重发修复版启动器。**
+
+- **复核方法局限（披露）**：闸门/规格跑在 GitButler 多分支混合工作树上（各分支**并集**），非逐分支；逐分支绿需 push 后由 CI 证明。
+
+**frontier（W1 复核后重算）**：W2 = **票 05 harness 交互原语**（← 票 01 已复核通过）→ **可开工**。后置链 06←05、07←06、08←07、09←01–08。
+
+---
 ### 辩证校正（入档）
 
 - 锐评 Round 3「git 历史第三次归零 / tag 非 main 祖先」经实测**证伪**（origin/main 有父提交、163 commits、v1.3.4/v1.4.0/v1.5.0 均为祖先）——**未登记为 A、不立票**。
@@ -438,10 +455,10 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 
 | 票 | 标题 | 覆盖 A-xxx | 状态 | 报告路径 | 波次 |
 |----|------|-----------|------|----------|------|
-| 01 | 验收面与断言阶梯定义 | A-029 · A-030 | **ready-for-agent** | `research/window-reports/01-acceptance-surface-and-ladder-report.md` | W1 |
-| 02 | 设置面收口 | A-026 · A-027 | **ready-for-agent** | `research/window-reports/02-settings-surface-report.md` | W1 |
-| 03 | 诊断面 | A-028 | **ready-for-agent** | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
-| 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **ready-for-agent** | `research/window-reports/04-domain-modeling-report.md` | W1 |
+| 01 | 验收面与断言阶梯定义 | A-029 · A-030 | **done（复核通过）** — 7/7 声明实物属实；零源码改动；issue 6/6 勾销；**CI 证据待补（P-2）** | `research/window-reports/01-acceptance-surface-and-ladder-report.md` | W1 |
+| 02 | 设置面收口 | A-026 · A-027 | **done（复核通过）** — 8/8 声明实物属实；闸门 **33/0**、规格 **8 passed** 实测复现；`_applyLocaleText` 已删；**CI 证据待补（P-2）**；报告行号漂移待补正（P-5） | `research/window-reports/02-settings-surface-report.md` | W1 |
+| 03 | 诊断面 | A-028 | **done（复核通过）** — 7/7 声明实物属实；**单一采集路径代码级证实**；闸门 **58/0**、规格 **6 passed** 实测复现；**CI 证据待补（P-2）**；跨票改动 P-1 待裁定 | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
+| 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **⚠️ 实现属实、完成定义未满足** — 7/7 声明实物属实（ADR-0010 / ADR-0008 零 diff / 28→35 / 零碰撞）；但 **issue 5 项未勾销且无任何提交触碰过该 issue（P-4）** | `research/window-reports/04-domain-modeling-report.md` | W1 |
 | 05 | harness 交互原语 | A-029 | **ready-for-agent** | `research/window-reports/05-harness-primitives-report.md` | W2 |
 | 06 | 形态语料三层架构 | A-030 | **ready-for-agent** | `research/window-reports/06-form-corpus-report.md` | W3 |
 | 07 | 真实站点层全阶梯 + 发布门 | A-029 | **ready-for-agent** | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
