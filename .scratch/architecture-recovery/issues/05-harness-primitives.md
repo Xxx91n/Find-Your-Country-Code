@@ -19,7 +19,7 @@
 
 **验收证据**：逐项只读验证命令与输出摘要见 `.scratch/architecture-recovery/research/window-reports/05-harness-primitives-report.md` §4.2（Delta 检查点见 §5）。
 **提交锚点**：`cch/05-harness-primitives` @ `f27458ce`（Change-ID `rxx`）
-**文档提交**：本提交（sha 于回写提交中登记，见报告 §4.1）
+**文档提交**：`88d6112c`（Change-ID `wko`，本报告 + atomcode 调研 + 本文件勾销）
 **基线**：common base `85990d2f`（Cycle-5 归档）；**堆叠于 `cch/01-acceptance-surface-and-ladder` @ `36455b7b` 之上**（本票 issue / handoff / spec 文件属 `cch/48` 产物 —— `git cat-file -e 85990d2f:.scratch/architecture-recovery/issues/05-harness-primitives.md` 失败，不堆叠则本勾销会退化为整文件新增；WORKFLOW §4.2）
 **报告**：`.scratch/architecture-recovery/research/window-reports/05-harness-primitives-report.md`
 **本地自证**：`npx tsc --noEmit` → exit 0；`npm run build` → `166.70 kB │ gzip: 48.22 kB`；结构门 05-harness → `59 PASS, 0 FAIL`；`npx playwright test tests/harness-primitives.spec.ts` → `7 passed`；`npm run e2e` → `117 passed`；live mirror deep → `6/6`；`tests/scripts/` 电池 → `16/16 exit 0`

@@ -84,7 +84,7 @@ GM 菜单：`menuCommands` · `menuTitles` · `menuIds` · `menuCount` · `waitF
 
 本票提交：`cch/05-harness-primitives` @ **`f27458ce`**（Change-ID `rxx`；堆叠于 `cch/01-acceptance-surface-and-ladder` @ `36455b7b` 之上）。
 父提交核验：`git rev-parse cch/05-harness-primitives^` → `36455b7baf7d305c304db2c04da30bcf706140a6`（= `cch/01` tip，**堆叠成立**）。
-文档提交：**见 §9 遗留 1 的回写说明**（本报告 + atomcode 调研 + `issues/05-harness-primitives.md` 勾销）。
+文档提交：**`88d6112c`**（Change-ID `wko`；本报告 + atomcode 调研 + `issues/05-harness-primitives.md` 勾销）。回写提交：`but amend` 后的锚点回写（本段即回写产物）。
 
 ### 4.2 逐条
 
