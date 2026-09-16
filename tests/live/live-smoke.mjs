@@ -1,24 +1,27 @@
 // ══════════════════════════════════════════════════════════════════
-// live-smoke.mjs — 票 32 真实站点低频冒烟层（第二层）；票 39 增补嵌套帧断言
+// live-smoke.mjs — 真实站点低频冒烟层（第二层）
+//   票 32 [A-006] 建层 · 票 39 [A-016] 嵌套帧与有头启动 · 票 05 [A-029] 共享原语收敛
+//   · 票 07 [A-029] 升到全阶梯 L0–L4 + 发布门配套
 // 定位：与密封 E2E（第一层，CI 必跑、零外网、PR 阻断）解耦。本层只做「低频 / 手动触发 +
-//       可跳过白名单 + 弱断言 + 失败 advisory」，永不出现在 pull_request 触发面。
-// 硬校验（exit 1）：白名单契约（跳过条目必须带非空 reason + ticket）；expect="injected" 的
-//       目标必须真的注入（harness 自证）且全程无未捕获异常。
-// 软观测（不退出）：expect="observe" 的目标只记录观测值（供票 27/28/29 作复现基线）。
-// 票 39 增补（A-016）：
-//   - 嵌套帧断言：目标可声明 frame（子串匹配子帧 URL），断言在匹配子帧内求值
-//     （CodePen 编辑器页 + 嵌套 preview iframe / Pen fullpage 的 srcdoc 帧）；未声明则顶层帧。
-//   - 未捕获异常断言：expect="injected" 目标要求 pageerror 计数为 0。
-//   - 有头启动：真实站点普遍前置反爬托管挑战。默认 headless:false；CI 走 xvfb-run；无 DISPLAY
-//     时自动回退 headless 并打印告警（此时受挑战站点如实报错，不伪造绿）。CCH_LIVE_HEADLESS=1 强制 headless。
-//   - 挑战检测仅用于诊断文案（不作控制流）：避免本地化挑战标题（如「请稍候…」）导致误判；
-//     成败一律由「目标帧内 .cch-wrapper 是否出现」裁定。
-// 票 05 增补（A-029）：
-//   - GM 替身 / DOM 探针 / 交互原语改由 tests/helpers/primitives.mjs **唯一提供**（与密封层同一份
-//     文件），本层不再内联第二套 stub 与 PROBE —— 两 harness 收敛为同一份原语。
-//   - 自有镜像目标可声明 deep：用共享原语驱动 open→search→select→读回宿主 value（+input/change
-//     事件 + toast 反馈），作为「同一份原语在 live runtime（独立 node + playwright，无测试运行器）
-//     可用」的自证；第三方真实站点目标仍不深交互。
+//       可跳过白名单 + 全阶梯断言 + 失败 advisory」，永不出现在 pull_request 触发面。
+// 断言阶梯（权威定义 tests/ACCEPTANCE-SURFACE.md §4.1/§4.2；票 07 实现）：
+//   L0 静默健康    pageerror = 0（永不单独算生效）
+//   L1 元素已注入  目标字段被 .cch-wrapper 包裹，.cch-btn 的 data-cch-tier ∈ {auto, lowkey}
+//   L2 交互可驱动  面板 #cch-pop 可见 + 搜索收窄可见行（跨帧为双端断言：子帧图标 → 顶层面板）
+//   L3 写入结果正确 宿主字段 value 写入所选国家区号 + 派发 input / change
+//   L4 用户反馈出现 #cch-toast 出现且文案非空（外部可观测，非脚本自报）
+// 层归属（§4.2）：本层与 owned 页**都跑全阶梯**，差别只在阻断语义 —— 本层 advisory
+//   （仅 schedule + workflow_dispatch，失败只告警不阻断合入）；阻断只发生在 release.yml 发布门
+//   （ADR-0010：最近一次运行为绿，或失败已被显式 ack 并立票，否则不出包）。
+// 硬校验（exit 1）：白名单契约（跳过 / observe 挂账必须带非空 reason + ticket）；全阶梯契约
+//   （expect="injected" 必须声明 L0–L4，非全阶梯必须带非空 degradeReason + ticket）；
+//   expect="injected" 的目标必须真的注入、档位合法、全程无未捕获异常。
+// 软观测（不退出）：expect="observe" 的目标只记录观测值（长期挂账，只记录不裁定）。
+// 票 39 增补（A-016）：嵌套帧断言（frame 子串匹配子帧）；有头启动（headless:false）——真实站点
+//   普遍前置反爬托管挑战，CI 走 xvfb-run，无 DISPLAY 自动回退 headless 并告警（不伪造绿）；
+//   挑战检测仅用于诊断文案（不作控制流）。CCH_LIVE_HEADLESS=1 强制 headless。
+// 票 05 增补（A-029）：GM 替身 / DOM 探针 / 交互原语由 tests/helpers/primitives.mjs **唯一提供**
+//   （与密封层同一份文件），本层不再内联第二套 stub 与 PROBE。
 // 用法: node tests/live/live-smoke.mjs [--json out.json] [--out out.md] [--target id]
 // 前置: npm run build（需 dist/find-your-country-code.user.js）
 // ══════════════════════════════════════════════════════════════════
@@ -29,9 +32,12 @@ import http from 'node:http';
 import { chromium } from 'playwright';
 // 票 05 [A-029]：GM 替身 / DOM 探针 / 交互原语**唯一来源**（与密封层共用同一份文件）。
 // 本层不再内联第二套 GM stub 与 PROBE —— 那正是「两 harness 收敛为同一份原语」要消灭的东西。
+// 票 07 [A-029]：跨帧 open（链路 A）与未校准目标的宿主字段读取面同样出自该唯一来源。
 import {
-  DIST_PATH, installUserscript, injectionSatisfied, openPanel, readFeedback,
-  readFieldEvents, readHostValue, readInjection, readVisibleRows, recordFieldEvents, searchType, selectCountry,
+  DIST_PATH, installUserscript, injectionSatisfied, openPanel, openPanelRemote,
+  readFeedback, readFieldEvents, readHostValue, readInjection, readRowDialCode,
+  readVisibleRows, readWrappedHostField, recordFieldEvents, recordWrappedFieldEvents,
+  searchType, selectCountry,
 } from '../helpers/primitives.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -44,6 +50,9 @@ const SETTLE_MS = Number(process.env.CCH_LIVE_SETTLE_MS || 800);
 const LIVE_TIMEOUT_MS = Number(process.env.CCH_LIVE_TIMEOUT_MS || 45000);
 const ASSERT_TIMEOUT_MS = Number(process.env.CCH_LIVE_ASSERT_MS || 60000);
 const POLL_MS = 500;
+// 票 07 [A-029]：阶梯级别全集（权威定义 tests/ACCEPTANCE-SURFACE.md §4.1）。
+const LADDER_ALL = ['L0', 'L1', 'L2', 'L3', 'L4'];
+const DRIVEN_LEVELS = ['L2', 'L3', 'L4'];
 // 仅用于诊断文案（不作控制流）：覆盖常见本地化挑战标题 + 挑战帧 URL。
 const CHALLENGE_RE = /just a moment|checking your browser|attention required|enable javascript and cookies|verifying you are human|请稍候|稍候|einen moment|un momento|vérification|sicherheitsüberprüfung/i;
 const CHALLENGE_FRAME_RE = /challenges\.cloudflare\.com|cdn-cgi\/challenge-platform/i;
@@ -52,14 +61,12 @@ const NO_DISPLAY_LINUX = process.platform === 'linux' && !process.env.DISPLAY;
 const FORCE_HEADLESS = process.env.CCH_LIVE_HEADLESS === '1';
 const HEADLESS = FORCE_HEADLESS || NO_DISPLAY_LINUX;
 
-
-
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
 
 function arg(flag) { const i = process.argv.indexOf(flag); return i >= 0 ? process.argv[i + 1] : null; }
 function writeOut(path, content) { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, content); }
 
-// ── 契约校验：白名单必须可审计（跳过 ≠ 静默丢失） ──
+// ── 契约校验：白名单必须可审计（跳过 ≠ 静默丢失）+ 全阶梯必须逐目标声明（票 07） ──
 function validate(manifest) {
   const v = [];
   if (!Array.isArray(manifest.targets) || !manifest.targets.length) { v.push('targets 缺失或为空'); return v; }
@@ -82,7 +89,28 @@ function validate(manifest) {
         if (!t.deep || t.deep[f] === undefined || t.deep[f] === null || t.deep[f] === '') v.push(t.id + ': deep.' + f + ' 缺失');
       }
     }
+    // 票 07 [A-029]：全阶梯契约（tests/ACCEPTANCE-SURFACE.md §4.2）——逐目标声明实际运行的级别；
+    // expect="injected" 默认必须跑满 L0–L4（真实站点不得只停留在 L0–L1 弱断言，D-004(c)）；
+    // 非全阶梯 = 不可驱动降级，必须同时登记非空 degradeReason + ticket。
+    if (!Array.isArray(t.ladder) || !t.ladder.length) {
+      v.push(t.id + ': ladder 缺失或为空（全阶梯契约要求逐目标声明实际运行级别）');
+    } else {
+      for (const l of t.ladder) if (!LADDER_ALL.includes(l)) v.push(t.id + ': ladder 含非法级别 ' + l);
+      if (t.expect === 'injected') {
+        const full = LADDER_ALL.every((l) => t.ladder.includes(l));
+        if (!full && (!String(t.degradeReason || '').trim() || !String(t.ticket || '').trim())) {
+          v.push(t.id + ': 非全阶梯（' + t.ladder.join('/') + '）必须携带非空 degradeReason + ticket（§4.2 不可驱动降级登记）');
+        }
+      }
+    }
+    if (t.probe !== undefined) {
+      for (const f of ['iso', 'query']) if (!t.probe || !t.probe[f]) v.push(t.id + ': probe.' + f + ' 缺失');
+    }
     if (!t.enabled && (!t.reason || !t.ticket)) v.push(t.id + ': 跳过条目必须携带 reason + ticket（可审计白名单）');
+    // 票 07 [A-029]：observe 挂账（只记录不裁定）强制非空 reason + ticket（ADR-0010 条款 4）。
+    if (t.expect === 'observe' && (!String(t.reason || '').trim() || !String(t.ticket || '').trim())) {
+      v.push(t.id + ': observe 挂账必须携带非空 reason + ticket（不得匿名挂账）');
+    }
   }
   return v;
 }
@@ -121,55 +149,97 @@ async function diagnoseChallenge(page) {
   return { challenged: CHALLENGE_RE.test(title) || frameHit, title: title.slice(0, 60) };
 }
 
-// ── 票 05 [A-029]：共享原语驱动链（open → search → select → 读回宿主 value） ──
-// 只在自有镜像目标上跑（kind=mirror，零外网、确定性）；第三方真实站点不深交互。
-// 软收集：逐项 {label, pass, detail}，一次收全量，不因单项失败中断后续读取。
-async function runDeepChecks(frame, t) {
+// ── 阶梯判据纯函数（只做归约，不含断言库） ──
+const digits = (s) => String(s === null || s === undefined ? '' : s).replace(/\D+/g, '');
+// 精确模式（deep 已校准 expectValue）逐字比对；未校准模式按区号数字归一比对——
+// 期望值由面板国家行自带区号同源导出（readRowDialCode），不引入第二份区号表。
+function valueMatches(actual, expected, exact) {
+  if (actual === null || actual === undefined) return false;
+  if (exact) return String(actual) === String(expected);
+  const d = digits(actual), e = digits(expected);
+  return e.length > 0 && d.includes(e);
+}
+
+function reduceLevels(checks) {
+  const out = {};
+  for (const c of checks) {
+    const cur = out[c.level];
+    if (c.status === 'fail') out[c.level] = 'fail';
+    else if (c.status === 'pass' && cur !== 'fail') out[c.level] = 'pass';
+    else if (!cur) out[c.level] = c.status;
+  }
+  return out;
+}
+
+// ── 票 07 [A-029]：共享原语驱动链（L2 交互可驱动 → L3 写入结果正确 → L4 用户反馈出现） ──
+// 函数名沿用 runDeepChecks：verify-ticket-05-harness.mjs 组 S7 以该标识钉住「live 层存在共享原语
+// 驱动链」。票 07 把它的作用域从「mirror 专属 deep 链」扩到**全阶梯 L2–L4 驱动链**（真实站点同样
+// 驱动，不再止于 L0–L1），标识保持不变以不破坏既有门；只扩不缩，无断言删除。
+// 软收集：逐项 {level, label, status, detail}，一次收全量，不因单项失败中断后续读取。
+async function runDeepChecks(page, probeFrame, t, plan) {
   const checks = [];
-  const mark = (label, pass, detail) => checks.push({ label: label, pass: !!pass, detail: String(detail) });
-  const why = e => String((e && e.message) || e).split('\n')[0].slice(0, 160);
+  const mark = (level, label, pass, detail) => checks.push({ level, label, status: pass ? 'pass' : 'fail', detail: String(detail) });
+  const why = (e) => String((e && e.message) || e).split('\n')[0].slice(0, 160);
+  const framed = probeFrame !== page.mainFrame();
 
+  // ── L2：交互可驱动（面板可见）。跨帧 = 双端断言：子帧图标点击（一端）→ 顶层 #cch-pop 可见（另一端）。
   try {
-    await openPanel(frame, t.selector);
-    mark('open-panel', true, '#cch-pop 可见');
+    if (framed || !t.selector) await openPanelRemote(probeFrame, t.selector || null, page);
+    else await openPanel(probeFrame, t.selector);
+    mark('L2', 'panel-open', true, framed
+      ? ('跨帧双端：' + (t.selector || '首个已注入图标') + ' 图标点击于帧 "' + t.frame + '" → 顶层 #cch-pop 可见')
+      : '#cch-pop 可见');
   } catch (e) {
-    mark('open-panel', false, why(e));
+    mark('L2', 'panel-open', false, why(e));
     return checks;
   }
 
+  // ── L2：搜索收窄（可见状态迁移，非固定 sleep） ──
   try {
-    await recordFieldEvents(frame, t.selector, ['input', 'change']);
+    const before = (await readVisibleRows(page)).length;
+    await searchType(page, plan.query);
+    const rows = await readVisibleRows(page);
+    mark('L2', 'search-narrow', rows.length > 0 && rows.length < before,
+      '可见行 ' + before + ' → ' + rows.length + '（查询 "' + plan.query + '"）');
   } catch (e) {
-    mark('record-events', false, why(e));
+    mark('L2', 'search-narrow', false, why(e));
   }
 
+  // ── L3 前置：期望值同源导出 + 事件面监听（必须早于写入） ──
+  const expected = t.deep ? t.deep.expectValue : await readRowDialCode(page, plan.iso).catch(() => null);
   try {
-    await searchType(frame, t.deep.query);
-    // 可见行计数经共享原语读取（选择器唯一定义处 = primitives.mjs，本层不硬编码）
-    const visible = (await readVisibleRows(frame)).length;
-    mark('search-type', visible > 0, '可见行 ' + visible + '（查询 "' + t.deep.query + '"）');
+    if (t.selector) await recordFieldEvents(probeFrame, t.selector);
+    else await recordWrappedFieldEvents(probeFrame);
   } catch (e) {
-    mark('search-type', false, why(e));
+    mark('L3', 'record-events', false, why(e));
   }
 
+  // ── L3：选国 → 面板关闭（写入动作） ──
   try {
-    await selectCountry(frame, t.deep.iso);
-    mark('select-country', true, 'iso=' + t.deep.iso);
+    await selectCountry(page, plan.iso, { query: null });
+    mark('L3', 'select-country', true, 'iso=' + plan.iso + '（面板已关）');
   } catch (e) {
-    mark('select-country', false, why(e));
+    mark('L3', 'select-country', false, why(e));
     return checks;
   }
 
-  const value = await readHostValue(frame, t.selector).catch(() => null);
-  mark('read-host-value', value === t.deep.expectValue,
-    'value=' + JSON.stringify(value) + ' 期望=' + JSON.stringify(t.deep.expectValue));
+  // ── L3：写入结果正确（宿主字段 value） ──
+  const host = t.selector
+    ? { value: await readHostValue(probeFrame, t.selector).catch(() => null) }
+    : await readWrappedHostField(probeFrame).catch(() => null);
+  const actual = host ? host.value : null;
+  mark('L3', 'host-value', valueMatches(actual, expected, !!t.deep),
+    'value=' + JSON.stringify(actual) + ' 期望=' + JSON.stringify(expected) + (t.deep ? '（精确）' : '（行内区号同源归一）'));
 
-  const events = await readFieldEvents(frame).catch(() => []);
-  mark('field-events', events.includes('input') && events.includes('change'),
-    '序列 [' + events.join(',') + ']');
+  // ── L3：事件面 input / change 各 ≥1 ──
+  const events = await readFieldEvents(probeFrame).catch(() => []);
+  mark('L3', 'field-events', events.includes('input') && events.includes('change'), '序列 [' + events.join(',') + ']');
 
-  const fb = await readFeedback(frame).catch(() => null);
-  mark('feedback', !!fb && fb.present, fb ? ('on=' + fb.on + ' 文本=' + JSON.stringify(fb.text.slice(0, 60))) : '不可读');
+  // ── L4：用户反馈出现。紧跟写入读取：toast 的 on 类只保持 2000ms（src/ui/index.ts:186）。
+  // 判据 = 元素在场 + 文案非空（外部可观测）；on 类属 2000ms 视觉窗口状态位，记明细不作判据。
+  const fb = await readFeedback(probeFrame).catch(() => null);
+  mark('L4', 'feedback', !!(fb && fb.present && String(fb.text || '').trim()),
+    fb ? ('present=' + fb.present + ' on=' + fb.on + ' 文本=' + JSON.stringify(String(fb.text || '').slice(0, 60))) : '不可读');
 
   return checks;
 }
@@ -177,12 +247,12 @@ async function runDeepChecks(frame, t) {
 const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
 const violations = validate(manifest);
 const only = arg('--target');
+const ladderBase = (manifest._meta && manifest._meta.ladderProbe) ? manifest._meta.ladderProbe : { iso: 'cn', query: 'china' };
 
 if (!existsSync(DIST)) {
   console.log('缺少构建产物 ' + DIST + ' —— 先跑 npm run build（或 npm run e2e）');
   process.exit(2);
 }
-
 
 const selected = manifest.targets.filter(t => (only ? t.id === only : true));
 const skipped = selected.filter(t => !t.enabled);
@@ -202,8 +272,15 @@ async function runTarget(t) {
   const page = await ctx.newPage();
   const pageErrors = [];
   page.on('pageerror', e => pageErrors.push(String((e && e.message) || e).split('\n')[0].slice(0, 160)));
-  const rec = { id: t.id, kind: t.kind, expect: t.expect, frame: t.frame || null, frameUrl: null, status: 'unknown', detail: '', observed: null, deep: null, pageErrors: 0, elapsedMs: 0 };
+  const rec = {
+    id: t.id, kind: t.kind, expect: t.expect, frame: t.frame || null, frameUrl: null,
+    ladderDeclared: t.ladder || [], levels: {}, ladder: [], status: 'unknown', detail: '',
+    observed: null, deep: null, pageErrors: 0, elapsedMs: 0,
+  };
   const t0 = Date.now();
+  const plan = t.deep
+    ? { iso: t.deep.iso, query: t.deep.query }
+    : (t.probe ? { iso: t.probe.iso, query: t.probe.query } : { iso: ladderBase.iso, query: ladderBase.query });
   try {
     // 票 05：注入走共享原语（GM 替身 + 构建产物），与密封层同一份实现。
     await installUserscript(page);
@@ -231,45 +308,76 @@ async function runTarget(t) {
       rec.frameUrl = f.url().slice(0, 140);
     }
 
-    if (t.expect === 'injected') {
-      let probe = null;
-      for (;;) {
-        probe = await readInjection(probeFrame, t.selector || null).catch(() => null);
-        if (injectedOk(probe, t.selector) || Date.now() >= deadline) break;
-        await page.waitForTimeout(POLL_MS);
-      }
-      rec.observed = probe;
-      if (!injectedOk(probe, t.selector)) {
-        const diag = await diagnoseChallenge(page);
-        rec.status = 'fail';
-        rec.detail = '未注入 (wrappers=' + (probe ? probe.wrappers : 'n/a') + ', elementFound=' + (probe ? probe.elementFound : 'n/a') + ', wrapped=' + (probe ? probe.wrapped : 'n/a') + ')'
-          + (diag.challenged ? '；疑似反爬挑战未化解（title="' + diag.title + '"）' : '');
-        failures.push(t.id + ': ' + rec.detail);
-      } else if (pageErrors.length > 0) {
-        rec.status = 'fail';
-        rec.detail = '注入成立但存在未捕获异常 ' + pageErrors.length + ' 条：' + pageErrors[0];
-        failures.push(t.id + ': ' + rec.detail);
-      } else {
-        rec.status = 'pass';
-        rec.detail = '.cch-wrapper 已挂上目标字段' + (t.frame ? '（嵌套帧 ' + t.frame + ' 内）' : '') + '，无未捕获异常';
-        // 票 05 [A-029]：自有镜像目标额外跑共享原语驱动链，作为「同一份原语在 live runtime 可用」的自证。
-        if (t.kind === 'mirror' && t.deep) {
-          rec.deep = await runDeepChecks(probeFrame, t);
-          const okCount = rec.deep.filter(c => c.pass).length;
-          rec.detail += '；deep ' + okCount + '/' + rec.deep.length + ' 通过';
-          for (const c of rec.deep) {
-            if (!c.pass) failures.push(t.id + ' [deep:' + c.label + '] ' + c.detail);
-          }
-        }
-      }
-    } else {
+    if (t.expect === 'observe') {
+      // 长期挂账：只记录观测值，不裁定（ADR-0010 条款 4；reason + ticket 已在 validate 硬校验）
       await page.waitForTimeout(SETTLE_MS);
       const probe = await readInjection(probeFrame, t.selector || null).catch(() => null);
       rec.observed = probe;
       rec.status = 'observed';
+      rec.levels = { L0: pageErrors.length ? 'observed-errs' : 'observed-clean', L1: probe && probe.wrappers > 0 ? 'observed-injected' : 'observed-none' };
       rec.detail = !probe ? '帧不可求值'
         : (t.selector ? ('wrapped=' + probe.wrapped + ' wrappers=' + probe.wrappers + ' buttons=' + probe.buttons)
           : ('未校准（selector 为空，仅记录 wrapper/button 计数）wrappers=' + probe.wrappers + ' buttons=' + probe.buttons));
+      return rec;
+    }
+
+    // ── expect="injected"：按 manifest 声明的级别跑阶梯 ──
+    const declared = (l) => (t.ladder || []).includes(l);
+    const checks = [];
+
+    // L1：元素已注入（在 L0 之前探测，以便 L0 的 pageerror 归因更完整）
+    let probe = null;
+    for (;;) {
+      probe = await readInjection(probeFrame, t.selector || null).catch(() => null);
+      if (injectedOk(probe, t.selector) || Date.now() >= deadline) break;
+      await page.waitForTimeout(POLL_MS);
+    }
+    rec.observed = probe;
+    const tierOk = !t.selector || !probe || probe.tier === null || /^(auto|lowkey)$/.test(probe.tier);
+    const L1ok = injectedOk(probe, t.selector) && tierOk;
+    // L0 静默健康：全程 pageerror = 0（永不单独算生效）；失败分支以 pageErrors.length > 0 判定。
+    const L0fail = pageErrors.length > 0;
+    const L0ok = !L0fail;
+
+    checks.push({
+      level: 'L0', label: 'silent-health', status: declared('L0') ? (L0ok ? 'pass' : 'fail') : 'skip',
+      detail: 'pageerror=' + pageErrors.length + (pageErrors.length ? '（首条：' + pageErrors[0] + '）' : '') + '；永不单独算生效',
+    });
+    checks.push({
+      level: 'L1', label: 'injected', status: declared('L1') ? (L1ok ? 'pass' : 'fail') : 'skip',
+      detail: 'wrappers=' + (probe ? probe.wrappers : 'n/a') + ' elementFound=' + (probe ? probe.elementFound : 'n/a')
+        + ' wrapped=' + (probe ? probe.wrapped : 'n/a') + ' tier=' + (probe ? JSON.stringify(probe.tier) : 'n/a')
+        + (tierOk ? '' : '；档位非法（应为 auto|lowkey）'),
+    });
+
+    // L2–L4：仅当 L1 成立才可驱动（无图标则无从点击；不伪造绿，逐级登记为 skip）
+    let driven = [];
+    if (L1ok) {
+      driven = await runDeepChecks(page, probeFrame, t, plan);
+    } else {
+      driven = DRIVEN_LEVELS.map((l) => ({ level: l, label: 'blocked', status: 'skip', detail: 'L1 未成立，阶梯中断（如实登记，不伪造绿）' }));
+    }
+    for (const c of driven) {
+      if (!declared(c.level)) c.status = 'skip';
+      checks.push(c);
+    }
+
+    rec.ladder = checks;
+    rec.levels = reduceLevels(checks);
+    const failed = checks.filter(c => c.status === 'fail');
+    const passedLevels = LADDER_ALL.filter(l => rec.levels[l] === 'pass');
+    rec.deep = driven.filter(c => DRIVEN_LEVELS.includes(c.level))
+      .map(c => ({ target: t.id, label: c.label, pass: c.status === 'pass', detail: c.detail }));
+    if (failed.length) {
+      rec.status = 'fail';
+      const diag = await diagnoseChallenge(page);
+      rec.detail = failed.map(c => c.level + ':' + c.label + ' ' + c.detail).join(' | ')
+        + (diag.challenged ? '；疑似反爬挑战未化解（title="' + diag.title + '"）' : '');
+      for (const c of failed) failures.push(t.id + ' [' + c.level + ':' + c.label + '] ' + c.detail);
+    } else {
+      rec.status = 'pass';
+      rec.detail = '声明阶梯 ' + (t.ladder || []).join('/') + ' 全部通过（' + passedLevels.join('/') + '）'
+        + (t.frame ? '；嵌套帧 ' + t.frame : '');
     }
   } catch (e) {
     rec.status = t.expect === 'injected' ? 'fail' : 'error';
@@ -295,20 +403,30 @@ try {
 const gate = violations.length === 0 && failures.length === 0;
 
 const pad = (s, n) => String(s).padEnd(n);
-console.log('— 真实站点低频冒烟（票 32 / A-006；票 39 嵌套帧）: 选中 ' + selected.length + ' / 可跑 ' + runnable.length + ' / 跳过 ' + skipped.length + ' / 浏览器 ' + (HEADLESS ? 'headless' : 'headed'));
-for (const r of results) console.log('[' + pad(r.status, 8) + '] ' + pad(r.id, 26) + ' expect=' + pad(r.expect, 8) + ' errs=' + r.pageErrors + ' ' + r.detail);
+const levelStr = (rec) => LADDER_ALL.map(l => rec.levels[l] ? (rec.levels[l] === 'pass' ? l + '+' : l + '!') : l + '-').join(' ');
+console.log('— 真实站点低频冒烟（票 32/39/05/07 · A-006/A-016/A-029）全阶梯 L0–L4: 选中 ' + selected.length + ' / 可跑 ' + runnable.length + ' / 跳过 ' + skipped.length + ' / 浏览器 ' + (HEADLESS ? 'headless' : 'headed'));
+for (const r of results) console.log('[' + pad(r.status, 8) + '] ' + pad(r.id, 26) + ' expect=' + pad(r.expect, 8) + ' errs=' + r.pageErrors + ' ' + pad(levelStr(r), 22) + ' ' + r.detail);
 for (const s of skipped) console.log('[SKIPPED ] ' + pad(s.id, 26) + ' ticket=' + pad(s.ticket, 4) + ' reason=' + String(s.reason).slice(0, 70));
-console.log('白名单契约 + harness 自证: ' + (gate ? 'PASS' : 'FAIL'));
+console.log('白名单契约 + 全阶梯契约 + harness 自证: ' + (gate ? 'PASS' : 'FAIL'));
 for (const v of violations) console.log('  VIOLATION ' + v);
 for (const f of failures) console.log('  FAILURE ' + f);
 
+const ladderChecks = results.flatMap(r => (r.ladder || []).map(c => ({ target: r.id, level: c.level, label: c.label, status: c.status, detail: c.detail })));
 const summary = {
-  ticket: 39, coveredA: 'A-016', layer: 'real-site live smoke (advisory)',
+  ticket: 7, coveredA: 'A-029', layer: 'real-site live smoke (advisory) — full ladder L0–L4',
   manifest: 'tests/live/site-manifest.json',
+  ladderRule: 'tests/ACCEPTANCE-SURFACE.md §4.1/§4.2；本层与 owned 页都跑 L0–L4，差别只在阻断语义（本层 advisory，阻断只在 release.yml 发布门 ADR-0010）',
   launch: HEADLESS ? 'headless' : 'headed',
   gate: gate ? 'pass' : 'fail', violations, failures,
-  counts: { selected: selected.length, runnable: runnable.length, skipped: skipped.length, observed: results.filter(r => r.status === 'observed').length },
-  deepChecks: results.filter(r => r.deep).flatMap(r => r.deep.map(c => ({ target: r.id, label: c.label, pass: c.pass, detail: c.detail }))),
+  counts: {
+    selected: selected.length, runnable: runnable.length, skipped: skipped.length,
+    observed: results.filter(r => r.status === 'observed').length,
+    ladderChecks: ladderChecks.length,
+    ladderFailures: ladderChecks.filter(c => c.status === 'fail').length,
+  },
+  ladderCoverage: Object.fromEntries(LADDER_ALL.map(l => [l, selected.filter(t => (t.ladder || []).includes(l)).length])),
+  ladderChecks,
+  deepChecks: results.filter(r => r.deep).flatMap(r => r.deep),
   results,
   skipped: skipped.map(s => ({ id: s.id, ticket: s.ticket, reason: s.reason })),
 };
@@ -317,25 +435,29 @@ if (jsonPath) { writeOut(jsonPath, JSON.stringify(summary, null, 2) + '\n'); con
 const mdPath = arg('--out');
 if (mdPath) {
   const L = [];
-  L.push('# 真实站点低频冒烟报告（票 32 / A-006；票 39 / A-016）');
+  L.push('# 真实站点低频冒烟报告（票 32 / A-006 · 票 39 / A-016 · 票 07 / A-029）');
   L.push('');
-  L.push('- 层定位: advisory（仅 schedule / workflow_dispatch 触发，不进 PR 触发面）');
+  L.push('- 层定位: advisory（仅 schedule / workflow_dispatch 触发，不进 PR 触发面）；阻断只发生在 release.yml 发布门（ADR-0010）');
+  L.push('- 断言阶梯: L0 静默健康 / L1 元素已注入 / L2 交互可驱动 / L3 写入结果正确 / L4 用户反馈出现（tests/ACCEPTANCE-SURFACE.md §4.1）');
   L.push('- 浏览器: ' + (HEADLESS ? 'headless' : 'headed'));
-  L.push('- 白名单契约: ' + (violations.length ? 'FAIL' : 'PASS') + '；harness 自证: ' + (failures.length ? 'FAIL' : 'PASS'));
-  L.push('- 计数: 选中 ' + selected.length + ' / 可跑 ' + runnable.length + ' / 跳过 ' + skipped.length);
+  L.push('- 白名单契约 + 全阶梯契约: ' + (violations.length ? 'FAIL' : 'PASS') + '；harness 自证: ' + (failures.length ? 'FAIL' : 'PASS'));
+  L.push('- 计数: 选中 ' + selected.length + ' / 可跑 ' + runnable.length + ' / 跳过 ' + skipped.length + ' / 阶梯检查 ' + ladderChecks.length + '（失败 ' + ladderChecks.filter(c => c.status === 'fail').length + '）');
+  L.push('- 阶梯覆盖（声明该级别的目标数）: ' + LADDER_ALL.map(l => l + '=' + summary.ladderCoverage[l]).join(' '));
   L.push('');
-  L.push('| 目标 | 类型 | 期望 | 帧 | 状态 | 未捕获异常 | 观测 |');
-  L.push('|---|---|---|---|---|---|---|');
-  for (const r of results) L.push('| ' + [r.id, r.kind, r.expect, r.frame || '(顶层)', r.status, r.pageErrors, r.detail].join(' | ') + ' |');
-  for (const s of skipped) L.push('| ' + [s.id, s.kind, s.expect, s.frame || '(顶层)', 'skipped', '-', 'ticket=' + s.ticket].join(' | ') + ' |');
-  const deepRecs = results.filter(r => r.deep);
-  if (deepRecs.length) {
+  L.push('| 目标 | 类型 | 期望 | 帧 | 状态 | L0 | L1 | L2 | L3 | L4 | 未捕获异常 | 明细 |');
+  L.push('|---|---|---|---|---|---|---|---|---|---|---|---|');
+  for (const r of results) {
+    const cells = LADDER_ALL.map(l => (r.levels[l] ? (r.levels[l] === 'pass' ? 'pass' : r.levels[l]) : '-'));
+    L.push('| ' + [r.id, r.kind, r.expect, r.frame || '(顶层)', r.status, ...cells, r.pageErrors, r.detail].join(' | ') + ' |');
+  }
+  for (const s of skipped) L.push('| ' + [s.id, s.kind, s.expect, s.frame || '(顶层)', 'skipped', '-', '-', '-', '-', '-', '-', 'ticket=' + s.ticket].join(' | ') + ' |');
+  if (ladderChecks.length) {
     L.push('');
-    L.push('### 共享原语驱动链（票 05 / A-029；仅自有镜像目标）');
+    L.push('### 全阶梯逐项检查（票 07 / A-029；共享原语驱动，真实站点不再止于 L0–L1）');
     L.push('');
-    L.push('| 目标 | 检查 | 结果 | 明细 |');
-    L.push('|---|---|---|---|');
-    for (const r of deepRecs) for (const c of r.deep) L.push('| ' + [r.id, c.label, c.pass ? 'pass' : 'FAIL', c.detail].join(' | ') + ' |');
+    L.push('| 目标 | 级别 | 检查 | 结果 | 明细 |');
+    L.push('|---|---|---|---|---|');
+    for (const c of ladderChecks) L.push('| ' + [c.target, c.level, c.label, c.status, c.detail].join(' | ') + ' |');
   }
   L.push('');
   writeOut(mdPath, L.join('\n') + '\n');

@@ -131,6 +131,16 @@ export async function openPanel(scope, target) {
   await panel(scope).waitFor({ state: 'visible', timeout: WAIT_MS });
 }
 
+/**
+ * 目标字段旁图标按钮的定位器；target 为空时取页面内**首个**已注入图标
+ * （未校准真实站点：manifest 只声明「该帧内应出现 wrapper」，不预知字段选择器）。票 07 [A-029]。
+ */
+export function wrapperButton(scope, target) {
+  return target
+    ? wrapperFor(scope, target).locator(BUTTON_SELECTOR)
+    : scope.locator(WRAPPER_SELECTOR + ' > ' + BUTTON_SELECTOR).first();
+}
+
 /** open-panel（GM 菜单路径）：调用匹配的菜单命令 → 等面板可见。 */
 export async function openPanelViaMenu(scope, matcher = /面板|panel/i) {
   const r = await invokeMenuCommand(scope, matcher);
@@ -139,6 +149,17 @@ export async function openPanelViaMenu(scope, matcher = /面板|panel/i) {
   }
   await panel(scope).waitFor({ state: 'visible', timeout: WAIT_MS });
   return r;
+}
+
+/**
+ * open-panel（跨隔离上下文，验收面 §3.3 链路 A）：图标在子帧、面板只在顶层渲染——
+ * 点子帧图标 → 顶层代开面板。两端断言由调用方承担（本原语只驱动 + 等待）。
+ * 顶层与本帧同源时 buttonScope === panelScope，两条路径共用同一实现（不新造第二套）。
+ * 票 07 [A-029]：真实站点层全阶梯 L2 的跨帧判据来源。
+ */
+export async function openPanelRemote(buttonScope, target, panelScope) {
+  await wrapperButton(buttonScope, target).click();
+  await panel(panelScope).waitFor({ state: 'visible', timeout: WAIT_MS });
 }
 
 /** search-type：在面板搜索框输入查询（传空串即清空恢复全量）。 */
@@ -206,6 +227,42 @@ export async function readHostValue(scope, target) {
   return f ? f.value : null;
 }
 
+/**
+ * 读回「已被 .cch-wrapper 包裹的宿主字段」快照（{ tag, value, text }）。
+ * 未校准真实站点（未声明 selector）的 L3 判据来源：wrapper 的子元素去掉 .cch-btn 即宿主字段
+ * （注入结构见 src/ui/index.ts:217-229 —— wrap 先插到字段原位，再把字段与按钮 append 进来）。
+ * 票 07 [A-029]。
+ */
+export async function readWrappedHostField(scope) {
+  return scope.evaluate(() => {
+    const w = document.querySelector('.cch-wrapper');
+    if (!w) return null;
+    const el = Array.from(w.children).find((c) => !c.classList.contains('cch-btn'));
+    if (!el) return null;
+    const hasValue = 'value' in el;
+    return {
+      tag: el.tagName.toLowerCase(),
+      value: hasValue ? String(el.value) : (el.textContent || '').trim(),
+      text: (el.textContent || '').trim(),
+    };
+  });
+}
+
+/**
+ * 在「已被 .cch-wrapper 包裹的宿主字段」上装 input/change 监听；与 recordFieldEvents 共用
+ * 同一 EVENTS_KEY，故 readFieldEvents / countFieldEvents 直接读回。未校准真实站点的 L3 事件面判据来源。
+ * 票 07 [A-029]。
+ */
+export async function recordWrappedFieldEvents(scope, types = ['input', 'change']) {
+  await scope.evaluate((arg) => {
+    const w = document.querySelector('.cch-wrapper');
+    const el = w ? Array.from(w.children).find((c) => !c.classList.contains('cch-btn')) : null;
+    if (!el) throw new Error('wrapped host field not found');
+    window[arg.key] = [];
+    for (const t of arg.types) el.addEventListener(t, () => window[arg.key].push(t));
+  }, { types, key: EVENTS_KEY });
+}
+
 /** 在目标字段上装 input/change 监听（写入结果正确性的页面侧证据）。 */
 export async function recordFieldEvents(scope, target, types = ['input', 'change']) {
   await scope.evaluate((arg) => {
@@ -254,6 +311,21 @@ export async function readScore(scope, target) {
 export async function readVisibleRows(scope) {
   return scope.locator(ALL_LIST_ROWS_SELECTOR).evaluateAll((rows) =>
     rows.filter((r) => r.getClientRects().length > 0).map((r) => (r.textContent || '').trim()));
+}
+
+/**
+ * 读回某个国家行自带的区号（行内 .cch-fav[data-code] / .cch-cd 文本）。
+ * 未校准真实站点的 L3 期望值同源依据：断言「选国 → 宿主字段写入该行声明的区号」，
+ * 不依赖任何外部区号表。票 07 [A-029]。
+ */
+export async function readRowDialCode(scope, iso) {
+  return scope.evaluate((v) => {
+    const row = document.querySelector('.cch-list[data-sec="all"] .cch-row[data-iso="' + v + '" i]');
+    if (!row) return null;
+    const fav = row.querySelector('.cch-fav[data-code]');
+    const cd = row.querySelector('.cch-cd');
+    return (fav && fav.getAttribute('data-code')) || (cd ? (cd.textContent || '').trim() : null);
+  }, String(iso).toLowerCase());
 }
 
 // ── GM 菜单原语（记录 {title, fn} 且 fn 可调用） ──
