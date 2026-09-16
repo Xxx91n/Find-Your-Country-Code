@@ -112,7 +112,11 @@ function pseudoOptionStats(opts: AnyEl[]): OptionStats {
     if (iso && pseudoNameHit(iso, nameText)) isoName++;
     if (/^\d{1,4}$/.test(val || txt)) numeric++;
   }
-  return { total: opts.length, plusDial, parenDial, isoName, numeric };
+  // 票 08：pseudo 侧的裸 +NN 文本证据**本票不启用**（textDial 恒为 0）——
+  // 语料先行：当前语料无该形态的伪 select 正/负例，且伪 select 证据策略受
+  // ADR-0005「登记 + 手动召唤」档位约束（与原生 select 同口径不等价）。
+  // 该对称性缺口已作为残留登记在票 08 报告，待语料基础到位后再评估。
+  return { total: opts.length, plusDial, parenDial, textDial: 0, isoName, numeric };
 }
 
 function comboboxEvidence(el: AnyEl) {
@@ -232,7 +236,7 @@ function optStats(el: AnyEl): OptionStats {
     const o = raw[i];
     if ((o.value || '').trim()) opts.push(o);
   }
-  let plusDial = 0, parenDial = 0, isoName = 0, numeric = 0, placeholder = 0;
+  let plusDial = 0, parenDial = 0, textDial = 0, isoName = 0, numeric = 0, placeholder = 0;
   for (let i = 0; i < opts.length; i++) {
     const o = opts[i];
     // 票 13 [issue 验收5]：占位首项（请选择类）剔除出计分 —— 不进 total、不进任何分布
@@ -241,9 +245,18 @@ function optStats(el: AnyEl): OptionStats {
     const v = (o.value || '').trim();
     const t = (o.text || '').trim();
     const bare = v.replace(/^\+/, '').replace(/^00/, '');
-    if (DIAL_SET.has(bare)) plusDial++;
+    const valueIsDial = DIAL_SET.has(bare);
+    if (valueIsDial) plusDial++;
     else if (/^\d{1,4}$/.test(v)) numeric++;
     if (/\(\+\d{1,4}\)/.test(t) && DIAL_SET.has((t.match(/\(\+(\d{1,4})\)/) || [])[1] || '')) parenDial++;
+    // 票 08 [A-031 形态③]：选项文本中的**裸 +NN 区号令牌**（无括号）——与括号形式同类证据
+    // （libphonenumber 口径：白名单命中的区号才是证据本体，括号只是排版），故同权重计分。
+    // 两条护栏：① 括号形式归 parenDial（前置字符排除 '('），两者互斥不重复计分；
+    // ② 值本身已是区号时不计（同一证据 value/text 双写不重复计分，沿用票 27 去重纪律）。
+    else if (!valueIsDial) {
+      const tm = t.match(/(?:^|[^(\d])\+(\d{1,4})(?!\d)/);
+      if (tm && DIAL_SET.has(tm[1])) textDial++;
+    }
     // 票 13 [issue 验收3]：ISO2 成员测试以数据全集为域（ISO2_SET），替换「像 2 字母」
     // 形态学预筛；文本↔国家名互证保留（假两字母不撞库 [MD §4]）
     const vi = v.toLowerCase();
@@ -254,7 +267,7 @@ function optStats(el: AnyEl): OptionStats {
   }
   // total = 有效选项数（占位首项剔除后）；规模门槛与各分布占比均以有效计数为分母
   const total = opts.length - placeholder;
-  return { total, plusDial, parenDial, isoName, numeric };
+  return { total, plusDial, parenDial, textDial, isoName, numeric };
 }
 
 // 票 04：observer 配置与指纹属性面（两者对齐 —— 指纹读什么，observer 就监听什么）
@@ -356,7 +369,15 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
       const tag = el.tagName;
       // 票 18: aria-hidden input（MUI/react-select 隐藏承值 native input 形态 [票 17 observed]）
       // 不在可访问树内、非交互目标 —— 硬排除（防承值 input 凭 name 之类混入登记召唤面）
-      if (el.getAttribute && el.getAttribute('aria-hidden') === 'true' && el.getAttribute('role') !== 'combobox') {
+      // 票 08 [A-032]：**原生 select 例外** —— 组件库把承载值的原生 select 视觉替换后标注
+      // aria-hidden（Select2 实测 select.select2-hidden-accessible[aria-hidden=true]；
+      // 1Password 官方亦推荐隐藏承值字段标 aria-hidden）。业界共识：可见性是
+      // **降级层**而非硬门槛（Bitwarden viewable→hidden 兜底 / Chromium·Gecko 隐藏字段仍入解析）。
+      // 硬排除会把 score 归零 ⇒ 连登记召唤面都进不去 ⇒ 违反票 13 检查点一
+      // 「闸门只改注入档位、不改检测登记」。故 SELECT 不进此闸门：照常评分，再由下方可见性闸门把
+      // **注入档位**降为 none（aria-hidden 计入 _hiddenByStyle），登记与可填充性保留。
+      const ariaHidden = !!(el.getAttribute && el.getAttribute('aria-hidden') === 'true');
+      if (ariaHidden && tag !== 'SELECT' && el.getAttribute('role') !== 'combobox') {
         return { score: 0, tier: 'none', signals: [{ layer: 'L0', name: 'gate:aria-hidden', pts: 0 }] };
       }
       // INPUT 类型闸门：hidden/email/search/url/date 等永非区号字段（N6 [MD §3-N6]；email/type=tel 同页共存常见）
@@ -460,6 +481,12 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
         if (st.parenDial > 0) {
           score += add('L3', 'opts:(+NN)-text', Math.min(st.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
         }
+        // 票 08 [A-031 形态③]：选项文本中的裸 +NN 区号令牌（无括号）——与括号
+        // 形式同权重（证据本体是白名单命中的区号，括号只是排版差异）；
+        // 独立信号名便于诊断与门禁锚定。
+        if (st.textDial > 0) {
+          score += add('L3', 'opts:+NN-text', Math.min(st.textDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
+        }
         // 票 16：数字占比罚分独立叠加（不再与区号加分互斥短路）——混入高占比数字枚举的
         // 下拉两条证据同时入账，交由总分与分档裁决 [issue 16 验收2]
         if (st.numeric / st.total >= L3_NUMERIC_MIN_RATE) {
@@ -485,7 +512,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
       // 分越过 SCORE_AUTO(70)、由 lowkey 升 auto。本票是覆盖率**下限**补强（floor），
       // 不应抬高上限（ceiling）；首轮 config 注释亦已登记「不扩大 66-68 分正例越线」的意图。
       const attrPhrase = attrPhraseHit(attrStr);
-      const attrPhraseRedundant = !!st && (st.plusDial > 0 || st.parenDial > 0);
+      const attrPhraseRedundant = !!st && (st.plusDial > 0 || st.parenDial > 0 || st.textDial > 0);
       if (attrPhrase) {
         if (attrPhraseRedundant) {
           sig.push({ layer: 'L1', name: 'attr:phrase:' + attrPhrase + ':dedup(opts-dial)', pts: 0 });
@@ -573,7 +600,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
       // 国家选择器语义分层 [SP US7]：ISO 主导（无任何区号内容证据、无 strong kw）且未达高置信 →
       // 不自动注入（国家选择≠区号选择 [MD §2④]）；低置信档不适用，仅保留可召唤语义
       if (st && st.isoName / st.total >= 0.5 && st.plusDial === 0 && st.parenDial === 0 &&
-          kw !== 'strong' && tier !== 'auto') {
+          st.textDial === 0 && kw !== 'strong' && tier !== 'auto') {
         tier = 'none';
         sig.push({ layer: 'L2', name: 'country-semantic:suppress', pts: 0 });
       }
@@ -619,6 +646,11 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
     // 宁可漏闸不可误杀（检查点一「不误杀隐藏承值 select」优先）。
     _hiddenByStyle(el: AnyEl): boolean {
       try {
+        // 票 08 [A-032]：原生 select 上的 aria-hidden="true" 计入「不可见」——视觉替换型组件
+        // （Select2 实测 .select2-hidden-accessible）用它标注被隐藏的承值 select。只降**注入
+        // 档位**、不改**检测登记**（票 13 检查点一）：调用点 _process 的档位裁决据此把
+        // tier 降为 none，登记（≥ITI_LOW_REGISTER_SCORE）与可填充性完整保留。
+        if (el.tagName === 'SELECT' && el.getAttribute && el.getAttribute('aria-hidden') === 'true') return true;
         const view = (el.ownerDocument && el.ownerDocument.defaultView) ||
           (typeof window !== 'undefined' ? window : null);
         if (view && typeof view.getComputedStyle === 'function') {

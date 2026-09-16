@@ -98,6 +98,11 @@ class El {
   constructor(tag, props = {}) {
     this.tagName = String(tag).toUpperCase();
     this.attrs = props.attrs || {};
+    // 票 08：声明式样式 / 布局面（可选）—— 供可见性闸门（_hiddenByStyle）在
+    // 语料上真实可测（视觉替换型隐藏 select 的两子形态）。缺省 null：不声明即不参与，
+    // 行为与既有语料逐位一致（append-only 语义不变）。
+    this._style = props.style || null;
+    this._rect = props.rect || null;
     this._id = props.id || '';
     this._class = props.className || '';
     this._name = props.name || '';
@@ -167,6 +172,13 @@ export function buildElement(caseDef) {
     },
     getElementById(id) { const l = labelRegistry.find(x => x.id === id); return l ? { textContent: l.text } : null; },
     querySelectorAll() { return []; },
+    // 票 08：可见性判定面（_hiddenByStyle 读 defaultView.getComputedStyle）。
+    // 仅在用例显式声明 el.style 时返回该声明；未声明返回 {}
+    // ⇒ display/visibility/opacity/clip/clipPath 各判定项均不命中，与既有
+    // 「无测量能力 ⇒ fail-open 视为可见」逐位等价（不改既有用例行为）。
+    defaultView: {
+      getComputedStyle(el) { return (el && el._style) || {}; },
+    },
   };
   const elDef = caseDef.el || {};
   const el = new El(elDef.tag || 'input', {
@@ -175,8 +187,12 @@ export function buildElement(caseDef) {
     // type 必须进 attrs：引擎的 input 类型闸门（hidden/email/… 永非区号字段）读 getAttribute('type')
     attrs: { ...(elDef.type ? { type: elDef.type } : {}), ...(elDef.attrs || {}) },
     options: elDef.options,
+    style: elDef.style,
+    rect: elDef.rect,
   });
   el.ownerDocument = docMock;
+  // 票 08：仅在用例声明 rect 时提供布局度量（未声明 = 无此方法，与既有行为一致）
+  if (elDef.rect) el.getBoundingClientRect = () => elDef.rect;
   // 票 29：非原生 select 的自定义下拉（div/span 触发器）在真实 DOM 中以 ul>li 承载选项，
   // 选项值走 data-value（手写下拉的通用承载约定）、选项文本走 textContent。
   // harness 镜像该子树，使结构探测在语料上跑真实路径（引擎无 mock 专用分支）。
