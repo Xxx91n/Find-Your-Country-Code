@@ -23,7 +23,7 @@
 //                                  // 本期无面板 CRUD，格式预留；缺省回退 config.ts 全局阈值）
 //   }
 // ════════════════════════════════════════════════════════
-import { RULES_KEY, RULES_BROADCAST, RULE_TIERS, RULES_MAX_OVERRIDES } from '../config';
+import { RULES_KEY, RULES_BROADCAST, RULE_TIERS, RULES_MAX_OVERRIDES, SELF_ORIGIN } from '../config';
 import type { CchStore, Country, OverrideRule, OverrideRuleInput, RuleScope, RulesDoc } from '../types';
 
 // GM_* 为 userscript 宿主注入的全局（vite 构建无类型门禁；此处仅声明供 tsc 局部清零）
@@ -64,7 +64,10 @@ const Store = {
         this._bc = new BroadcastChannel('cch-favs-sync-v1');
         this._bc.addEventListener('message', e => {
           // 票 24 安全加固：只信任同源广播（BroadcastChannel 按 origin 天然隔离，此为纵深防御校验）
-          if (e.origin !== location.origin) return;
+          // 票 10 [A-034]：操作数由 location.origin 改为 SELF_ORIGIN —— srcdoc 帧内 location.origin
+          // 为字符串 "null"，而广播消息的 e.origin 为发送方真实 origin（实测 srcdoc 帧收到
+          // e.origin=父级 origin）⇒ 以 location.origin 比对必然误判并丢弃同源同步；普通文档下恒等。
+          if (e.origin !== SELF_ORIGIN) return;
           const msg = e && e.data;
           if (!msg || msg.sid === this._sid || msg.type !== 'favs-sync') return;
           if (!Array.isArray(msg.favs)) return;
@@ -94,7 +97,10 @@ const Store = {
         this._rulesBC = new BroadcastChannel(RULES_BROADCAST);
         this._rulesBC.addEventListener('message', e => {
           // 票 24 安全加固：只信任同源广播（BroadcastChannel 按 origin 天然隔离，此为纵深防御校验）
-          if (e.origin !== location.origin) return;
+          // 票 10 [A-034]：操作数由 location.origin 改为 SELF_ORIGIN —— srcdoc 帧内 location.origin
+          // 为字符串 "null"，而广播消息的 e.origin 为发送方真实 origin（实测 srcdoc 帧收到
+          // e.origin=父级 origin）⇒ 以 location.origin 比对必然误判并丢弃同源同步；普通文档下恒等。
+          if (e.origin !== SELF_ORIGIN) return;
           const msg = e && e.data;
           if (!msg || msg.sid === this._sid || msg.type !== RULES_BROADCAST) return;
           if (!this._normRulesDoc(msg.rules)) return;
