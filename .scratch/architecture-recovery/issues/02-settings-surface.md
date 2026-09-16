@@ -26,3 +26,5 @@
 **报告**：`.scratch/architecture-recovery/research/window-reports/02-settings-surface-report.md`
 **本地自证**：`npm run e2e` → `104 passed`；闸门 02 → `33 PASS, 0 FAIL`；闸门 42 → `42 PASS, 0 FAIL`
 **状态**：子窗口自证完成，**待大脑复核**（WORKFLOW §4.3）；**CI 证据缺位**（未 push，见报告 §8/§9）
+
+**返工轮次 R2（2026-09-16）**：本票分支在 CI 上构建失败（run `35089321289` @ b95f672f），根因为交付提交 `61f3ebe7` 被扫入并行票 03 的诊断面整层而缺配套导出（实测缺 3 个符号：`DIAG_REASON` / `DIAG_POINT_PREFIX` / `DIAG_TRACE_PREF`）。R2 已产出**全绿验证的修复补丁**（`research/cch02-r2-decontamination.patch` + `research/cch02-r2/` 全文，`-p1` 实测 CLEAN），但**落地被 GitButler 依赖机制阻断**（`depends on cch/03`；cch/02 与 cch/03 等 7 支同属一个 stack，`but unapply` 会连带卸栈），经用户裁定**移交大脑落地**。R2 逐分支验收（隔离检出，非并集）：`npm run build` exit 0 · `npm run typecheck` 0 错 · 门 02 33 PASS/0 FAIL · 门 42 42 PASS/0 FAIL · 全量 E2E 103 passed/1 failed（唯一红 = `entry-access` 垂直居中 = R-3，非本票）。详见报告 `## 返工轮次 R2`。

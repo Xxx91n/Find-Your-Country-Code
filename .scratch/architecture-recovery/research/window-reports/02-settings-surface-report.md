@@ -136,3 +136,94 @@
 4. **高亮时长 1.5s 无规范依据**：调研 §四.4 明确 1.6–2s 仅工程先例经验值（**candidate**），无 W3C/HIG 规定；若需权威依据需本地实测取舍。
 5. **Safari Userscripts（quoid）支持未知**：调研 §四.1 无官方文档命中，已按「不支持」保守处理。
 6. **`hidden=until-found` 未采用**：调研 §四.3 指出该状态不适用于视图互斥场景，故采用显式 `[hidden]{display:none}` 补规则。
+
+---
+
+## 返工轮次 R2
+
+> 轮次：R2（返工修复窗口）| 日期：2026-09-16（Asia/Singapore）| 启动器：`prompts/02-settings-surface-fix.md`
+> 复核依据：`research/cycle6-wave3-r1-review.md` §二 R-2 / §七 R-2 范围修正
+> 状态：**修复已完成并全绿验证；落地（写入 cch/02）被 GitButler 依赖机制阻断，按用户裁定移交大脑**
+
+### R2-1 复核主 Agent 的检查结果（先复核，后动手）
+
+| 主 Agent 声明 | 实物复核 | 结论 |
+|---|---|---|
+| CI run `35089321289`（cch/02 @ b95f672f）在 Build userscript 步失败，报 `src/ui/index.ts (4:41): DIAG_TRACE_PREF is not exported by src/config.ts` | `gh run view 35089321289`：job `e2e` 37s，`✓ Line-ending guard` 通过、`X Build userscript` 失败、`X Process completed with exit code 1` | ✅ **属实** |
+| 缺 1 个导出（`DIAG_TRACE_PREF`） | 实测 **3 个**值导入全缺：`DIAG_REASON` / `DIAG_POINT_PREFIX` / `DIAG_TRACE_PREF`（构建只报第一个） | ⚠️ **低估**（非「缺一个导出」） |
+| cch/02 是嵌合体：ui/index.ts 含票 03 整层，而 config / types / main / src/diag 全缺 | 逐文件矩阵（cch/02 @ 61f3ebe7）：ui/index.ts 1160 行、`票 03`×8、`DIAG_`×4、`_diagLevel|_diagLayer`×15、`Diag*`×17；config `DIAG_` 导出 **0**、types `Diag` **0**、main `Diag` **0**、`src/diag/` **不存在** | ✅ **属实** |
+| 污染范围「远大于 5 行 import」 | 实测污染**仅限 2 个文件**：`src/ui/index.ts`（票 03 整层）+ `src/i18n.ts`（票 03 的 diag* 文案键，zh/en 各 26 个）。**其余 src/ 与全部测试文件均 0 命中** | ⚠️ **收窄且精确化**（主 Agent 未定位 i18n.ts 这一处） |
+| §7.1：`61f3ebe7` 是不属于任何分支的孤儿提交；分支上同信息提交的实际 sha = `06273351` | 实测**颠倒**：`61f3ebe7` **是** `origin/cch/02-settings-surface`（b95f672f）的 fix 提交（`git merge-base --is-ancestor 61f3ebe7 b95f672f` = YES；被 5 个远端分支包含）；`06273351` **不被任何 ref 包含**（`git branch -a --contains 06273351` = 空）⇒ **孤儿是 06273351，不是 61f3ebe7** | ❌ **证伪（sha 归属颠倒）** |
+| §7.2 表：`src/types.ts` `:6` 有 `import type {... CchDiag, DiagCheck, DiagLayer, DiagLevel, DiagRecord, DiagSnapshot ...}` | 实测 types.ts 在 `61f3ebe7` **与** `06273351` 上 `Diag` 命中均为 **0**；`:6` 实为 DOM 索引签名注释行 | ❌ **证伪** |
+| §7.2 表：`src/types.ts` `grep Diag` = 0 命中 | 与实测一致 | ✅ 属实（但与其同格括号内叙述自相矛盾） |
+
+**复核结论**：R-2 的**实质判定成立**（cch/02 嵌合体、不可构建），但两处事实有误（sha 归属颠倒、types.ts 断言不成立）、一处低估（3 个符号而非 1 个）、一处未定位（i18n.ts）。**范围修正后更窄**：真正需动的只有 2 个文件。
+
+### R2-2 取径判定
+
+取 **(a) 以本票基线 `50383e3c` 的 `src/ui/index.ts` 为底，只重放票 02 自己的 delta**。依据：
+
+1. 票 02 的 6 项 delta 全部是**面板自身**功能（GM 菜单「设置」一级入口 / 三选一语言控件 / `[data-i18n*]` 全量重渲染 / 删除 `_applyLocaleText` / `.cch-sec[hidden]` 修复 / 菜单稳定 id），**无一项依赖诊断视图**。
+2. 基线 `50383e3c:src/ui/index.ts`（770 行、blob `42265f2b`）实测**干净**：`票 03`×0、`DIAG_`×0、`_diagLevel|_diagLayer`×0，且仍保留 `_applyLocaleText`（即票 02 尚未施加）。
+3. 未采用 (b)；**未以「补 config.ts 导出」为修法**（那会把票 03 工件固化在本票）。
+
+### R2-3 剔除范围与手法
+
+以 cch/02 的 `src/ui/index.ts`（1160 行）为源，按 `50383e3c → 61f3ebe7` 的 **26 个 hunk** 逐个分类（14 个纯票 02 / 6 个纯票 03 / 3 个 diag-only / 3 个混合），对票 03 部分做**行级删除 + 3 处替换**，产出 862 行。
+
+| 文件 | 前 | 后 | 剔除内容 |
+|---|---|---|---|
+| `src/ui/index.ts` | 1160 行 | **862 行** | 删除 298 行：`DIAG_*` import、`DIAG_LAYER_KEY`、`_diagLevel|_diagLayer` 态、诊断 CSS 块（32 行）、摘要条宿主、独立诊断视图宿主、诊断读面（`_diag` / `_diagFilter` / `_renderDiagSummary` / `_renderDiag` 共 215 行）、`_render` 内诊断分支与宿主查找、`PanelView` 类型化 |
+| `src/i18n.ts` | 59 行 | **55 行** | 删除 4 行：票 03 的 `// ticket 03 [A-028]: diagnostics surface strings` 注释 + `diagnostics:...` 键行（zh / en 各 2 行） |
+
+**3 处替换**：① 类型 import 行还原为基线的 12 项（剔除 `CchDiag` / `DiagCheck` / `DiagLayer` / `DiagLevel` / `DiagRecord` / `DiagSnapshot` / `PanelView`，断言与基线**逐字节相等**）；② `_view: 'list' as PanelView` → `'list' as 'list' | 'rules'`；③ 恢复基线的 `rulesSec.hidden = (this._view as 'list' | 'rules') !== 'rules'`——票 03 曾因 `PanelView` 化而移除该断言，**不恢复会触发 TS2367 收窄误报**（见 R2-4）。
+
+剔除后自检（隔离检出上）：`票 03` / `ticket 03` / `DIAG_` / `diag`（大小写不敏感）/ `PanelView` / `_diagLevel` / `_diagLayer` / `_renderDiag` / `sumBar` / `diagSec` **全部为 0**；票 02 的 11 处标记全部保留。
+
+### R2-4 逐分支验收（本票新增硬验收，**非并集**）
+
+方法：`git archive 61f3ebe7` 提取 cch/02 分支内容到隔离目录（非并集工作树），`mklink /J` 链入 node_modules，再施以修复。
+
+| 门 | 命令 | 结果 |
+|---|---|---|
+| **红（修复前）** | `npm run build` | **exit 1** —— `src/ui/index.ts (4:41): DIAG_TRACE_PREF is not exported by src/config.ts`，与 CI run 35089321289 **逐字一致**（独立复现） |
+| **绿（修复后）** | `npm run build` | **exit 0** —— `dist/find-your-country-code.user.js 132.73 kB` |
+| **绿（修复后）** | `npm run typecheck`（`tsc --noEmit`） | **exit 0 / 0 错** |
+| 结构门 | `node tests/scripts/verify-ticket-02-settings.mjs` | **33 PASS / 0 FAIL**（exit 0；未削弱删除任何断言） |
+| 回归门 | `node tests/scripts/verify-ticket-42.mjs` | **42 PASS / 0 FAIL**（exit 0） |
+| 全量 E2E | `npm run e2e`（= build + playwright） | **103 passed / 1 failed** |
+
+**E2E 唯一红**：`tests/entry-access.spec.ts:40`「菜单登记「打开面板」命令；无图标页面经菜单开面板且居中」——失败断言为 `:53` 垂直居中 `toBeLessThan(30)`，`Received 33.12`。**即 R-3**（主 Agent 已判定为跳票问题、建议另立修复票）。**本票不修**（属票 37 的面板定位工件，非本票授权范围）。
+
+**R-3 归因修正（实测）**：主 Agent 推测 R-3 由票 03 的诊断摘要条改变面板高度所致；**实测该推测不成立**——本票已剔除摘要条，`:53` 仍以 33.12 失败；而在主工作区（并集、含摘要条）同一 spec 本地**通过**（10 passed）。故 R-3 是 `_pos()`（**基线代码，票 02 未改**）在 `anchor=null` 分支用 `pop.offsetHeight` **调用时高度**定位、而面板随后因 `_render()` 填充行数据而**继续增高**所致的**时序 / 内容敏感**判定（中心随 Δh/2 下移），与摘要条无因果。
+
+### R2-5 落地阻断（移交大脑，用户裁定）
+
+**阻断事实**：修复内容无法以 `but commit -b cch/02-settings-surface` 落地——GitButler 依赖检查报 `depends on cch/03-diagnostics-surface (oto)`（改动的上下文行同时落在 cch/02 与 cch/03 上）。已实测并排除：
+
+| 路径 | 结果 |
+|---|---|
+| `but commit -b cch/02-settings-surface <file-ids>`（文件 ID，遵票 06 R1-11 教训） | ❌ 依赖报错（逐 hunk 列出 cch/02 / cch/03 归属） |
+| `but worktree` | ❌ `Error: worktree manipulation is not enabled (featureFlags.worktreeManipulation)`，且无 `add` 子命令 |
+| `but unapply cch/03` | ❌ `but branch list --json` 显示 2 个 stack；cch/03 与 cch/02 等 **7 支同属一个 stack**，卸载会连带卸下整栈（影响其他 agent） |
+| 重写已推送提交 | 未执行（GitButler 规则要求先问；且依赖机制问题可能依旧） |
+
+**用户裁定**：**「交给主 Agent 大脑解决这个问题」** ⇒ 本窗口**不自行落地**，改为交付已验证补丁 + 完整证据，由大脑选择落地机制。
+
+**移交物**（已落盘）：
+- `research/cch02-r2-decontamination.patch`（23634 B；`-p1` 可施于 cch/02 内容；已实测 `git apply --check -p1` **CLEAN**，且在 `core.autocrlf=false` 下应用结果与已验证文件**逐字节相等**）
+- `research/cch02-r2/src/ui/index.ts`（862 行 / 43319 B / LF）
+- `research/cch02-r2/src/i18n.ts`（55 行 / 6110 B / LF）
+- `research/cch02-r2-README.md`（移交说明：内容 / 应用方式 / 阻断 / 验证）
+
+### R2-6 交付物校验与过程自曝
+
+| 文件 | 行数 | 字节 | SHA-256（前 16） | BOM | EOL |
+|---|---|---|---|---|---|
+| `cch02-r2/src/ui/index.ts` | 862 | 43319 | `864fda62bff01eea` | 无 | LF |
+| `cch02-r2/src/i18n.ts` | 55 | 6110 | `1ce49046b4837c83` | 无 | LF |
+| `cch02-r2-decontamination.patch` | — | 23634 | `b56939ff03f25d93` | 无 | LF |
+
+**过程自曝（临时写工作区并已逐字节还原）**：为测试落地机制，本窗口曾将两份修复文件写入**主工作区**（工作树 = 7 支并集），`but commit` 被依赖机制拒绝后**立即从备份逐字节还原**：`git hash-object src/ui/index.ts` 回到 `5f66ebb0e8`（与 cch/03 版本一致）、`but status` 回到 `(no changes)`。此期间**未对任何分支的提交做任何修改**；若其他 agent 在此窗口（约 1 分钟）内有写入，其改动不受影响（本窗口未触碰 cch/02 以外的任何文件）。
+
+**当前 cch/02 分支状态**：**未变**（仍为 b95f672f / 本地 6962280a，仍不可构建）——本轮的产出是**已验证补丁 + 证据**，不是分支上的新提交。
