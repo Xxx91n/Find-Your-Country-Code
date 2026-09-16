@@ -227,8 +227,9 @@ $ node tests/live/live-smoke.mjs --target live-codepen-editor
 
 ## 8 CI 证据（WORKFLOW §8.1：行为面只认 CI run / artifact）
 
-> **状态：待补**（本报告落盘时尚未推送；§8.2.4 要求远端写逐次授权）。
-> 推送后需以本票分支的 PR 门（`Verify Ticket 11`）+ `E2E` + `Engine Gates` + `Typecheck` 的 run ID 回填本节；行为面闭环以该证据为准。
+> **状态：待补（已向用户请求推送授权，裁定为「暂不推送」）**。
+> **授权记录（§8.2.4）**：请求时间 2026-09-17（本会话）；请求范围 = 推送分支 `cch/11-iti-l3-criterion` 并触发 CI；**用户裁定：暂不推送** ⇒ 本票不产生远端写，CI 证据留作待补。
+> 后续若获授权推送，需以本票分支的 PR 门（`Verify Ticket 11`）+ `E2E` + `Engine Gates` + `Typecheck` 的 run ID 回填本节；行为面闭环以该证据为准。
 
 ---
 

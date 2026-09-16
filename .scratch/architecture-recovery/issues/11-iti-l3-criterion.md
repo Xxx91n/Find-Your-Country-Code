@@ -51,6 +51,6 @@
 
 ## CI 证据
 
-> **待补**：本票尚未推送（§8.2.4 远端写逐次授权）。推送后需回填 `Verify Ticket 11` / `E2E` / `Engine Gates` / `Typecheck` 的 run ID；行为面闭环以 CI 为准。
+> **待补**：已向用户请求推送授权，**裁定为「暂不推送」**（2026-09-17）⇒ 本票不产生远端写；行为面 CI 证据留作待补，本票以「本地自证」状态交接。若后续获授权，回填 `Verify Ticket 11` / `E2E` / `Engine Gates` / `Typecheck` 的 run ID。
 
 窗口报告：`research/window-reports/11-iti-l3-criterion-report.md`
