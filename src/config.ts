@@ -110,6 +110,20 @@ export const SETTINGS_SECTION_LOCALE = 'locale';         // 语言控件所在�
 export const IS_TOP_FRAME = (() => {
   try { return window.self === window.top; } catch { return false; }
 })();
+// 票 10 [A-034]：本帧「文档 origin」（全仓唯一定义；跨帧消息与跨帧存储的 origin 比对统一取此值）。
+// 缺陷：about:srcdoc / about:blank 帧的 location.origin 被序列化为字符串 "null"（URL 序列化），
+//   而帧文档的真实 origin 继承自父级 —— 只能由 window.origin 读出（实测 srcdoc 帧
+//   location.origin="null" / window.origin=父级 origin；且顶层可读 ⇒ isTopFrameSameOrigin() 判真）。
+//   ⇒ 以 location.origin 为操作数的同源判据在 srcdoc 帧必然误判，并丢弃合法跨帧指令。
+// 取径不放宽任何来源校验：普通文档下 window.origin 与 location.origin 恒等（票 24 语义不变）；
+// 回退分支仅在宿主不支持 window.origin 时启用，退回既有语义（不引入新行为、不放宽）。
+export const SELF_ORIGIN = (() => {
+  try {
+    const o = window.origin;
+    if (typeof o === 'string' && o) return o;
+  } catch {}
+  try { return location.origin; } catch { return 'null'; }
+})();
 export const FRAME_TAG = 'cch-frame-v1';
 export const FRAME_OPEN_MSG = 'open';
 export const FRAME_FILL_MSG = 'fill';

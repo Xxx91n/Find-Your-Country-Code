@@ -45,10 +45,20 @@ globalThis.GM_getValue = (k, d) => (k in BUCKET ? BUCKET[k] : d);
 globalThis.GM_setValue = (k, v) => { BUCKET[k] = v; };
 globalThis.GM_addValueChangeListener = (k, fn) => { LISTENERS.push({ k, fn }); return LISTENERS.length; };
 // ── BroadcastChannel mock：进程内多实例互投（跨标签页语义） ──
+// 保真度（票 10 [A-034] 修正 origin 面）：真实 BroadcastChannel 的 message 事件恒携带 origin
+//   （发送方 origin 的序列化；通道按 origin 隔离 ⇒ 对同源接收方恒等于接收方文档 origin）。
+//   旧版 fn({ data: msg }) 缺 origin ⇒ 被测的 origin 守卫在门内退化为 `undefined !== undefined`
+//   恒放行 —— 守卫从未被真实行使。票 10 的修复使其显形（Node 无 window/location ⇒ 本帧文档
+//   origin 为回退值 'null'，而 undefined !== 'null' 判真 ⇒ 误拦同源广播）。
+//   此处按平台语义补齐同一文档 origin；断言面零改动（不放宽、不删除）。
+const DOC_ORIGIN = (() => {
+  try { return window.origin; } catch {}
+  try { return location.origin; } catch { return 'null'; }
+})();
 class BC {
   constructor(name) { this.name = name; BC.all.push(this); this._handlers = []; }
   addEventListener(_t, fn) { this._handlers.push(fn); }
-  postMessage(msg) { for (const inst of BC.all) { if (inst !== this) for (const fn of inst._handlers) fn({ data: msg }); } }
+  postMessage(msg) { for (const inst of BC.all) { if (inst !== this) for (const fn of inst._handlers) fn({ data: msg, origin: DOC_ORIGIN }); } }
   close() {}
 }
 BC.all = [];

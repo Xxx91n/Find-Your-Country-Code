@@ -7,7 +7,7 @@ import { t } from './i18n';
 // 票 03 [A-028]：诊断面（结构化事件流唯一事实来源；面板与机器可读输出两个 serializer）
 import { createDiag } from './diag';
 import { ISO2_MAP } from './data/countries';
-import { IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, DIAG_TRACE_PREF } from './config';
+import { IS_TOP_FRAME, SELF_ORIGIN, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, DIAG_TRACE_PREF } from './config';
 import type { CchDiag, CchFill, CchRules } from './types';
 // GM_registerMenuCommand 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零）
 // 票 02 [A-027]：第三参 options 承载 id —— id 原地更新语义（TM ≥5.0 / VM ≥2.15.9）
@@ -113,11 +113,13 @@ if (IS_TOP_FRAME) {
     const m = e && e.data;
     if (!m || m.__cch !== FRAME_TAG || m.type !== FRAME_OPEN_MSG) return;
     if (e.source === window) return; // 忽略自身
-    // 票 24：入站 origin 校验——同源子帧强制 e.origin === location.origin；跨域子帧（票 12 全帧治理，
+    // 票 24：入站 origin 校验——同源子帧强制 e.origin === 本帧文档 origin；跨域子帧（票 12 全帧治理，
     // targetOrigin '*' 不可避免）退化为「本页面嵌入 iframe」来源锚点。
     // 票 40：校验失败降级为「用户可见提示」而非静默 return——校验条件不放宽（票 24 语义不变）。
+    // 票 10 [A-034]：操作数由 location.origin 改为 SELF_ORIGIN（window.origin）—— srcdoc 帧的
+    // location.origin 为字符串 "null" 会造成误判；普通文档下两者恒等 ⇒ 校验未放宽（注见 config.ts）。
     // 文案就地双语：i18n 表为并行票 42 改动面，避免同文件同 hunk 依赖（收口时可收编进 MSG）。
-    if (e.origin !== location.origin && !isEmbeddedFrame(e.source)) {
+    if (e.origin !== SELF_ORIGIN && !isEmbeddedFrame(e.source)) {
       UI.toast((navigator.language || 'zh').toLowerCase().startsWith('zh')
         ? '嵌套帧来源无法验证，已拦截打开'
         : 'Embedded frame could not be verified — panel not opened');
@@ -129,9 +131,12 @@ if (IS_TOP_FRAME) {
   // 子帧：监听顶层回传的填充/负反馈指令，对 _requestRemoteOpen 登记的 pending 字段执行
   window.addEventListener('message', e => {
     if (e.source !== window.top) return; // 只接受顶层指令
-    // 票 24：顶层同源时强制 e.origin === location.origin；顶层跨域（票 12 fixture 场景）与本帧 origin
+    // 票 24：顶层同源时强制 e.origin === 本帧文档 origin；顶层跨域（票 12 fixture 场景）与本帧 origin
     // 天然不同，无法同源比对，保留 e.source === window.top 唯一锚点（'*' 回发不可避免，见 ui/index.ts 注释）。
-    if (isTopFrameSameOrigin() && e.origin !== location.origin) return;
+    // 票 10 [A-034]：操作数由 location.origin 改为 SELF_ORIGIN —— srcdoc 帧（about:srcdoc）内
+    // location.origin 恒为字符串 "null"，而顶层回发消息的 e.origin 为真实继承 origin ⇒ 判真且不等
+    // ⇒ 顶层 FRAME_FILL_MSG 被静默丢弃（本票根因）。改用 window.origin 后两者相等，校验语义不变。
+    if (isTopFrameSameOrigin() && e.origin !== SELF_ORIGIN) return;
     const m = e && e.data;
     if (!m || m.__cch !== FRAME_TAG) return;
     if (m.type === FRAME_FILL_MSG) {
