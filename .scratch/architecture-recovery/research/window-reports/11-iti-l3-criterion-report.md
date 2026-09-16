@@ -158,7 +158,9 @@ ok 3 … ITI · #iti-sep separateDialCode 模式（区号由独立元素承载�
 
 ---
 
-## 5 验收项逐条勾销（各附只读验证命令 + 输出摘要）
+## 5 验收项逐条勾销（各附 commit sha + 只读验证命令 + 输出摘要）
+
+**实施提交**：`0f195075`（11 文件，+975 / −20）
 
 ### 验收项 1 —— 判定 ITI 形态下 L3 的可观测判据，给出官方语义或工业界依据
 
@@ -246,7 +248,7 @@ $ node tests/live/live-smoke.mjs --target live-codepen-editor
 
 | 完成定义项 | 状态 |
 |---|---|
-| issue 全部验收项勾销并各附 commit sha（只读验证命令 + 输出摘要） | ✅ §5 五条逐条（commit sha 于提交后回填） |
+| issue 全部验收项勾销并各附 commit sha（只读验证命令 + 输出摘要） | ✅ §5 五条逐条，锚 `0f195075` |
 | 报告落 `research/window-reports/11-iti-l3-criterion-report.md` | ✅ 本文件 |
 | 版本控制遵循 WORKFLOW §4.2（`but` 为唯一 git 写界面） | ✅ 全程 `but commit`，未使用 `git add/commit/push/checkout/merge/rebase/stash` |
 | 证据边界（§8.1） | ⚠️ 行为面 CI 证据待推送后回填（§8） |
