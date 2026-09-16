@@ -1,0 +1,31 @@
+# 票 03 验收门：本票验收门（verify-ticket-03.mjs：单一事实来源 / 四层判定 / 分级门控与惰性构造 /
+# 环形缓冲容量上限 / 已验证因果闭集 / 诊断自保 / 热路径 O(1) / 接线静态断言 / 判定面零改动）。
+# 触发：pull_request（ADR-0006 非发版 workflow PR 门控）+ 本票分支 push + 手动 dispatch。
+# 纯文本 + 模块级断言，无 npm 依赖安装面（node 22 起提供 module.stripTypeScriptTypes）。
+name: Verify Ticket 03 (diagnostics surface)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/03-diagnostics-surface'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-03-gate:
+    name: Ticket-03 gate (diagnostics surface A-028)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-03 acceptance gate
+        run: node tests/scripts/verify-ticket-03.mjs

@@ -115,3 +115,62 @@ export const FRAME_OPEN_MSG = 'open';
 export const FRAME_FILL_MSG = 'fill';
 export const FRAME_FEEDBACK_MSG = 'feedback';
 
+// ════════════════════════════════════════════════════════
+// 诊断面常量（票 03 / A-028）
+// [AM] research/cycle6-investigation.md O2/O3/O4：Greasespot 排障树逐层点亮（第一处熄灭即答案）/
+//      Flagr evalDebugLog 决策链作单一事实来源（UI 面板与 CI JSON 从同一份 trace 渲染）/
+//      uBlock Logger 未打开零开销 + 静默失败三招（前移·捕获·归因）
+// [SP] spec.md S-02：结构化诊断事件流唯一事实来源 + 分级门控 + 环形缓冲容量上限
+// [DL] .scratch/cycle6-grill/decision-ledger.md D-012：恒开 = error/warn + 计数器；
+//      门控 = info/trace 全链路（惰性构造）；D-013：术语「诊断面」「判定记录」
+// 纪律：reason 取自 DIAG_REASON 闭集（禁止自由合成）；layer 由 reason 前缀推导，不手传。
+// ════════════════════════════════════════════════════════
+
+export const DIAG_VERSION = 1;              // 机器可读输出 schema 版本（CI 断言可钉）
+export const DIAG_CAPACITY = 200;           // 环形缓冲固定容量（每页上限；溢出丢最旧并计数）
+export const DIAG_TRACE_PREF = 'diagTrace'; // UI_PREFS_KEY 内的全链路 trace 门控键（默认 false）
+
+// 四层判定（issue 验收2）：工具失效 / 注入失效 / 脚本逻辑失效 / 写入结果。
+// 层不手传——由 reason 前缀推导（层与原因不可能漂移）。
+export const DIAG_LAYERS = ['tool', 'inject', 'logic', 'write'];
+
+// reason 闭集。前缀即层：tool-* / inject-* / logic-* / write-*。
+// 「已验证因果」的工程含义：每条 reason 只在一个已核实的判定点产生，且携带该点 id（point）。
+export const DIAG_REASON = {
+  UNKNOWN: 'unknown-open-debug',
+  TOOL_RECOGNIZED: 'tool-field-recognized',
+  TOOL_EXCLUDED_PAGE: 'tool-page-excluded',
+  TOOL_GATE_INPUT_TYPE: 'tool-gate-input-type',
+  TOOL_GATE_ARIA_HIDDEN: 'tool-gate-aria-hidden',
+  TOOL_GATE_DISABLED: 'tool-gate-disabled',
+  TOOL_GATE_OPTIONS_FEW: 'tool-gate-options-under-2',
+  TOOL_GATE_PSEUDO_VETO: 'tool-gate-pseudo-veto',
+  TOOL_GATE_CUSTOM_NO_DIAL: 'tool-gate-custom-no-dial-evidence',
+  TOOL_GATE_COUNTRY_SEMANTIC: 'tool-gate-country-semantic-suppress',
+  TOOL_SCORE_BELOW_LOWKEY: 'tool-score-below-lowkey',
+  INJECT_ATTACHED: 'inject-icon-attached',
+  INJECT_GATE_VISIBILITY: 'inject-gate-visibility-hidden',
+  INJECT_GATE_REGISTER_ONLY: 'inject-gate-register-only',
+  INJECT_GATE_RULE_NONE: 'inject-gate-rule-none',
+  INJECT_NO_KIND: 'inject-no-kind-resolved',
+  INJECT_SUMMONED: 'inject-icon-summoned',
+  LOGIC_RESOLVED: 'logic-fill-target-resolved',
+  LOGIC_NO_TARGET: 'logic-no-target-field',
+  LOGIC_OPTION_UNMATCHED: 'logic-select-option-unmatched',
+  LOGIC_PSEUDO_UNMATCHED: 'logic-pseudo-option-unmatched',
+  LOGIC_ITI_DECLINED: 'logic-iti-adapter-declined',
+  WRITE_ASSERTED: 'write-post-assert-passed',
+  WRITE_MISMATCH: 'write-post-assert-mismatch',
+  WRITE_COPIED: 'write-fell-back-to-clipboard',
+  WRITE_CLIPBOARD_FAILED: 'write-clipboard-unavailable',
+};
+
+// 判定点 id 前缀（point 命名空间；供面板过滤器与 CI 断言稳定匹配）
+export const DIAG_POINT_PREFIX = {
+  SCAN: 'scan:',
+  GATE: 'gate:',
+  INJECT: 'inject:',
+  LOGIC: 'logic:',
+  WRITE: 'write:',
+  RULE: 'rule:',
+};

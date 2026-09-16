@@ -27,9 +27,11 @@ import {
   SCORE_AUTO, SCORE_LOWKEY, ITI_CONTAINER_SCORE, ITI_LOW_REGISTER_SCORE,
   RESCAN_DEBOUNCE_MS,
   OWN_ROOT_ID, WRAPPER_CLASS,
+  // 票 03 [A-028]：诊断面常量（reason 闭集 + 判定点命名空间）
+  DIAG_REASON, DIAG_POINT_PREFIX,
 } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
-import type { AnyEl, AnyRoot, CchRules, CchUI, FillKind, OptionStats, ScoreResult, Signal, Tier } from '../types';
+import type { AnyEl, AnyRoot, CchDiag, CchRules, CchUI, FillKind, OptionStats, ScoreResult, Signal, Tier } from '../types';
 
 // 真实拨号前缀集合（源自 COUNTRIES 国家数据；内容验证的值域基准 [MD §5-0② 整体分布判定]）
 const DIAL_SET = new Set(COUNTRIES.map(c => c.code.slice(1)));
@@ -283,7 +285,32 @@ const SCAN_SELECTORS = [
 // 迭代 Set 去重版避免同一 selector 字符串被重复 querySelectorAll（数组顺序不变，仅收敛唯一集合）
 const SCAN_SELECTOR_SET = new Set(SCAN_SELECTORS);
 
-export function createDetect(UI: CchUI, Rules: CchRules | null) {
+export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag | null) {
+  // ══ 票 03 [A-028]：注入/拆除/登记的统一收口 ══
+  // 计数器恒开（一次属性自增，无分配）；全链路明细走门控 trace（惰性构造，关时零求值）。
+  // 收口一处的意义：D-012「单一事实来源」在接入层的同构要求——若每个调用点各记一遍，
+  // 计数与记录就会漂移；收口后 attach/detach/register 三事各只有一个真相源。
+  const _attach = (el: AnyEl, kind: FillKind, tier?: Tier, score?: number, signals?: Signal[]): void => {
+    if (Diag) {
+      Diag.counter('injected');
+      if (tier === 'lowkey') Diag.counter('lowkey');
+      // detail 值为平铺标量（DiagDetail 索引签名）；undefined 不是合法标量——缺值一律落 null
+      Diag.trace(DIAG_POINT_PREFIX.INJECT + 'attach', DIAG_REASON.INJECT_ATTACHED, () => ({ kind: kind, tier: tier === undefined ? null : tier, score: score === undefined ? null : score }));
+    }
+    UI.attach(el, kind, tier, score, signals);
+  };
+  const _detach = (el: AnyEl): void => {
+    if (Diag) Diag.counter('detached');
+    UI.detach(el);
+  };
+  // 登记面 = ADR-0005「登记 + 手动召唤」：低分登记与伪 select 档位上限共用同一出口
+  const _register = (el: AnyEl, kind: FillKind, score: number, signals: Signal[]): void => {
+    if (Diag) {
+      Diag.counter('registered');
+      Diag.trace(DIAG_POINT_PREFIX.INJECT + 'register', DIAG_REASON.INJECT_GATE_REGISTER_ONLY, () => ({ kind, score, sig: signals.length }));
+    }
+    UI.rememberLow(el, kind, score, signals);
+  };
   const Detect = {
     // 票 04：WeakSet 终态 → 属性指纹快照。fp 只判"变没变"；attach 真值以 DOM 实况为准
     // （el.closest('.cch-wrapper')），state.attached 仅供跳过路径的自愈补挂。
@@ -554,6 +581,31 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       return { score, tier, signals: sig, pseudo: pseudoHit };
     },
 
+    // ══ 票 03 [A-028]：reason 派生器 ══
+    // 检查点四「fail 记录的 reason 必须指向已验证因果」：reason 只能来自本函数——
+    // 逐条读取评分/闸门阶段已经产生的信号名（即已验证的判定依据），按「最终裁决优先」
+    // 的优先级取第一条命中。禁止在各调用点手传字符串：手传就会与信号漂移，
+    // 漂移后 reason 不再是「已验证因果」而只是「作者当时的说法」。
+    // 优先级＝判定发生的先后倒序：注入层闸门（_process 结算）压过评分层闸门。
+    _reasonOf(res: ScoreResult): string {
+      const names = ((res && res.signals) || []).map(s => String(s && s.name));
+      const has = (p: string): boolean => names.some(n => n === p || n.indexOf(p) === 0);
+      // 注入层（最终裁决）
+      if (has('gate:adr-0005-register-only')) return DIAG_REASON.INJECT_GATE_REGISTER_ONLY;
+      if (has('gate:visibility-hidden')) return DIAG_REASON.INJECT_GATE_VISIBILITY;
+      // 评分层（工具失效）
+      if (has('country-semantic:suppress')) return DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC;
+      if (has('pseudo:veto:')) return DIAG_REASON.TOOL_GATE_PSEUDO_VETO;
+      if (has('custom:gate:no-dial-evidence')) return DIAG_REASON.TOOL_GATE_CUSTOM_NO_DIAL;
+      if (has('options<2')) return DIAG_REASON.TOOL_GATE_OPTIONS_FEW;
+      if (has('gate:aria-hidden')) return DIAG_REASON.TOOL_GATE_ARIA_HIDDEN;
+      if (has('gate:input-type:')) return DIAG_REASON.TOOL_GATE_INPUT_TYPE;
+      if (has('gate:disabled')) return DIAG_REASON.TOOL_GATE_DISABLED;
+      // 无闸门命中：以分档结算作因果（低于低调线 = 证据不足；否则 = 已识别）
+      if (res && res.tier === 'none') return DIAG_REASON.TOOL_SCORE_BELOW_LOWKEY;
+      return DIAG_REASON.TOOL_RECOGNIZED;
+    },
+
     // ══ 票 13：可见性闸门判定（[AM 结论4] Bitwarden dom-element-visibility /
     // KeePassXC #2184 教训同构）══
     // 只负责「元素当前是否不可见」；注入档位降级在 _process（闸门只改注入档位，
@@ -614,15 +666,25 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       // 票 05：豁免域名 = 完全跳过检测（[AM 结论5] 1Password data-1p-ignore 心智：
       // 用户显式干预压过一切启发式；不评分/不注入/不登记召唤）
       if (Rules && typeof Rules.isPageExcluded === 'function' && Rules.isPageExcluded()) {
+        // 票 03 [A-028]：豁免是「工具失效」的一个已验证原因（用户显式规则压过一切启发式）
+        if (Diag) {
+          Diag.counter('scans');
+          Diag.warn(DIAG_POINT_PREFIX.RULE + 'excluded-page', DIAG_REASON.TOOL_EXCLUDED_PAGE, null);
+        }
         if (typeof UI._pruneLow === 'function') UI._pruneLow();
         return;
       }
       const t0 = Date.now();
       this._pruneWatchers();
       const roots = this._deepRoots(root);
+      let cand = 0;
       for (const sel of SCAN_SELECTOR_SET) {
-        this._collect(roots, sel).forEach(el => this._process(el));
+        const list = this._collect(roots, sel);
+        cand += list.length;
+        list.forEach(el => this._process(el));
       }
+      // 票 03：计数器恒开（一次属性自增；不挂热路径对象分配）
+      if (Diag) { Diag.counter('scans'); Diag.counter('candidates', cand); }
       if (typeof UI._pruneLow === 'function') UI._pruneLow();
       const ms = Date.now() - t0;
       // 可选性能探针（票 04 基线）：页面不设置 __cchPerfHook 即零开销
@@ -756,29 +818,29 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
           const fp = this._fingerprint(el) + '|rule:' + forced;
           const st = this._state.get(el);
           if (st && st.fp === fp) {
-            if (st.attached && !wrapElR) UI.attach(el, kind, forced, 0, []);
+            if (st.attached && !wrapElR) _attach(el, kind, forced, 0, []);
             return;
           }
           const rec = { fp, kind, tier: forced, score: 0, signals: [{ layer: 'R', name: 'rule:forced', pts: 0 }], attached: false };
           this._state.set(el, rec);
           if (forced === 'none') {
-            if (wrapElR) UI.detach(el);
+            if (wrapElR) _detach(el);
             return;
           }
           if (wrapElR) {
             const btn = wrapElR.querySelector ? wrapElR.querySelector('.cch-btn') : null;
             const prevTier = btn && btn.getAttribute('data-cch-tier');
-            if (prevTier && prevTier !== forced) { UI.detach(el); UI.attach(el, kind, forced, 0, []); }
+            if (prevTier && prevTier !== forced) { _detach(el); _attach(el, kind, forced, 0, []); }
             rec.attached = true;
             return;
           }
-          UI.attach(el, kind, forced, 0, []);
+          _attach(el, kind, forced, 0, []);
           rec.attached = true;
           return;
         }
         if (pageTier === 'none') {
           // 页面级 none 覆盖：等同引擎判 none（撤图标；不登记召唤）
-          if (wrapElR) UI.detach(el);
+          if (wrapElR) _detach(el);
           return;
         }
       }
@@ -793,7 +855,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       // 指纹未变：跳过重评（等价旧 _done 短路）；已 attached 但 wrapper 被站点剥离 → 用缓存自愈补挂
       if (st && st.fp === fp) {
         if (st.attached && st.kind && !wrapEl) {
-          UI.attach(el, st.kind, st.tier, st.score, st.signals);
+          _attach(el, st.kind, st.tier, st.score, st.signals);
         }
         return;
       }
@@ -808,6 +870,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       } else {
         // 票 16：iti 容器信号已并入 scoreElement（US10 取消评分外无条件 100 分短路）
         res = this.scoreElement(el);
+        if (Diag) Diag.counter('scored'); // 票 03：评分引擎实跑次数（恒开）
         // 票 05 + 票 30 [A-004]：页面级分档覆盖（auto/lowkey 双向重映射；仅显式 scope:'page' 规则）——页面档即「本页注入档位下限」：
         // auto 覆盖把 lowkey/none 全部提升注入（用户显式规则自担误报风险，对标
         // KeePassXC Site Preferences 用户干预压过启发式）；lowkey 覆盖同理；
@@ -833,6 +896,19 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
             signals: (res.signals || []).concat([{ layer: 'L2', name: 'gate:adr-0005-register-only', pts: 0 }]) };
         }
       }
+      // ══ 票 03 [A-028]：判定记录 ══
+      // 分级门控（检查点二）：计数器恒开；「近失」（评分已达登记线却未注入 —— A-028
+      // 三类静默失效的同族：用户看得见字段却看不到图标）升 warn 恒开；其余逐元素
+      // 全链路走门控 trace（惰性构造，关时零求值、零记录）。
+      // reason 一律由 _reasonOf 从既有信号派生（检查点四），调用点不手传。
+      if (Diag) {
+        const rsn = this._reasonOf(res);
+        if (res.tier === 'none' && res.score >= ITI_LOW_REGISTER_SCORE) {
+          Diag.warn(DIAG_POINT_PREFIX.GATE + 'verdict-none', rsn, null);
+        } else {
+          Diag.trace(DIAG_POINT_PREFIX.SCAN + 'verdict', rsn, () => ({ score: res.score, tier: res.tier, sig: ((res && res.signals) || []).length }));
+        }
+      }
       // kind 分发（票 04 教训：先枚举下游消费方 UI.attach / UI.rememberLow / Fill.run 三策略）：
       // iti 字段仍走适配层填充，不可回落 input 策略
       kind = kind || (res.pseudo ? 'pseudo'
@@ -841,11 +917,15 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
       const rec = { fp, kind, tier: res.tier, score: res.score, signals: res.signals, attached: false };
       this._state.set(el, rec);
 
-      if (!kind) return;
+      if (!kind) {
+        // 票 03：已识别为注入档却无 kind 可分发 —— 注入层失效（warn 恒开）
+        if (Diag) Diag.warn(DIAG_POINT_PREFIX.INJECT + 'no-kind', DIAG_REASON.INJECT_NO_KIND, null);
+        return;
+      }
 
       if (res.tier === 'none') {
-        if (wrapEl && !summonedWrap) UI.detach(el); // 误挂移除（用户召唤图标除外 [票 13]）
-        if (res.score >= ITI_LOW_REGISTER_SCORE) UI.rememberLow(el, kind, res.score, res.signals);
+        if (wrapEl && !summonedWrap) _detach(el); // 误挂移除（用户召唤图标除外 [票 13]）
+        if (res.score >= ITI_LOW_REGISTER_SCORE) _register(el, kind, res.score, res.signals);
         return;
       }
       // auto / lowkey
@@ -853,13 +933,13 @@ export function createDetect(UI: CchUI, Rules: CchRules | null) {
         const btn = wrapEl.querySelector ? wrapEl.querySelector('.cch-btn') : null;
         const prevTier = btn && btn.getAttribute('data-cch-tier');
         if (prevTier && prevTier !== res.tier) {
-          UI.detach(el); // 档位变化：拆了重挂，样式与 data-cch-tier 同步
-          UI.attach(el, kind, res.tier, res.score, res.signals);
+          _detach(el); // 档位变化：拆了重挂，样式与 data-cch-tier 同步
+          _attach(el, kind, res.tier, res.score, res.signals);
         }
         rec.attached = true;
         return;
       }
-      UI.attach(el, kind, res.tier, res.score, res.signals); // 漏挂补上
+      _attach(el, kind, res.tier, res.score, res.signals); // 漏挂补上
       rec.attached = true;
     },
   };

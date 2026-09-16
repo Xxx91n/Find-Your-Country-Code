@@ -80,7 +80,7 @@ const UI = read('src/ui/index.ts');
 
 // == S5 \u83DC\u5355 id \u539F\u5730\u66F4\u65B0 ==
 {
-  eq(count(MAIN, /id:\s*'cch-menu-[a-z-]+'/g), 3, 'S5 \u4E09\u6761\u83DC\u5355\u547D\u4EE4\u5747\u5E26\u7A33\u5B9A id');
+  eq(count(MAIN, /id:\s*'cch-menu-[a-z-]+'/g), 4, 'S5 \u56DB\u6761\u83DC\u5355\u547D\u4EE4\u5747\u5E26\u7A33\u5B9A id');
   check(/UI\._menuRefresh\s*=\s*refreshMenu/.test(MAIN), 'S5 \u83DC\u5355\u5237\u65B0\u56DE\u8C03\u5DF2\u63A5\u7EBF');
   check(/this\._menuRefresh\(\)/.test(UI), 'S5 \u8BED\u8A00\u5207\u6362\u89E6\u53D1\u83DC\u5355\u5237\u65B0');
   check(/openSettings\(\)/.test(MAIN), 'S5 \u83DC\u5355\u300C\u8BBE\u7F6E\u300D\u9879\u8C03\u7528 UI.openSettings()');

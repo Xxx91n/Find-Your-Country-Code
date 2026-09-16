@@ -1,6 +1,8 @@
 import { t } from '../i18n';
+// 票 03 [A-028]：诊断面常量（reason 闭集 + 判定点命名空间）
+import { DIAG_REASON, DIAG_POINT_PREFIX } from '../config';
 import { createItiAdapter } from '../iti-adapter';
-import type { AnyEl, CchFill, CchUI, Country, FillKind, FillResult } from '../types';
+import type { AnyEl, CchDiag, CchFill, CchUI, Country, DiagDetail, FillKind, FillResult } from '../types';
 
 // ════════════════════════════════════════════════════════
 // 注入安全层（票 09）：单一注入函数 _inject —— INPUT/SELECT/TEXTAREA 统一
@@ -53,7 +55,7 @@ const _probe = {
 };
 
 
-export function createFill(UI: CchUI): CchFill {
+export function createFill(UI: CchUI, Diag?: CchDiag | null): CchFill {
 const Fill = {
   _itiAdapter: createItiAdapter(),
 
@@ -94,7 +96,10 @@ const Fill = {
   },
 
   fillIti(el: AnyEl, country: Country): boolean {
-    return this._itiAdapter.fill(el, country, (v) => this._inject(el, v));
+    const ok = !!this._itiAdapter.fill(el, country, (v) => this._inject(el, v));
+    // 票 03：适配层拒填 = 脚本逻辑层失效的可验证原因
+    if (!ok) return this._decline(DIAG_REASON.LOGIC_ITI_DECLINED, { iso: country.iso });
+    return ok;
   },
 
   fillSelect(el: AnyEl, country: Country): boolean {
@@ -134,7 +139,8 @@ const Fill = {
       this._inject(el, m.value, { selectedIndex: idx >= 0 ? idx : undefined });
       return true;
     }
-    return false;
+    // 票 03：四条匹配阶梯全空 = 选项未匹配（脚本逻辑层失效的可验证原因）
+    return this._decline(DIAG_REASON.LOGIC_OPTION_UNMATCHED, { iso: country.iso });
   },
 
   fillInput(el: AnyEl, country: Country): boolean {
@@ -272,7 +278,9 @@ const Fill = {
     }
     // select-only 型（及无承值可编辑型回退）: 开面板 + 点击/键盘选值
     if (this._pseudoFillByListbox(el, country)) return true;
-    return this._pseudoFillByKeys(el, country);
+    if (this._pseudoFillByKeys(el, country)) return true;
+    // 票 03：两条伪 select 填充路径均未命中 = 伪选项未匹配
+    return this._decline(DIAG_REASON.LOGIC_PSEUDO_UNMATCHED, { iso: country.iso });
   },
 
   // ══ 票 31（A-005）: 观测面 — 只增观测，不改三策略写入路径 ══
@@ -302,6 +310,50 @@ const Fill = {
       return digitsOnly;
     } catch { return false; }
   },
+  // ══ 票 03 [A-028]：写入结果三元组（提交前状态 → 写入动作 → 提交后断言）══
+  // 对标 Playwright trace 的 {before, action, after} 与 K8s reconcile 的 desired/observed
+  // 状态：判定权交给「提交后断言」，不由写入动作自称成功（D-002 判定权在页面侧可观测）。
+  // 读取面与写入面分离：本方法不写任何值，只读回。
+  _readBack(el: AnyEl, kind: FillKind | null): string {
+    let node: AnyEl | null = el;
+    if (kind === 'pseudo') {
+      try { const c = this._carrier(el); if (c) node = c; } catch {}
+    }
+    if (!node) return '';
+    // 注意：用下标取值，不用点号赋值形态 —— 保持 fill 内点号直接赋值唯一
+    // （verify-ticket-09 S1 以该形态确认原生 setter 路径未被绕开）
+    let raw: unknown = undefined;
+    try { raw = node['value']; } catch { raw = undefined; }
+    if (typeof raw === 'string') return raw;
+    // 无值属性（DIV/BUTTON 触发器，listbox 路径）：回退到用户实际看到的可见文本
+    try { return String(node.textContent || '').trim(); } catch { return ''; }
+  },
+  _assertWrite(el: AnyEl, kind: FillKind | null, res: FillResult, pre: string): FillResult {
+    const post = this._readBack(el, kind);
+    // 断言面＝「写后读回值非空且与提交前不同」；空值/未变化即断言失败
+    // （诚实报告未证实，而非把「策略自称成功」当成写入成功）
+    const asserted = post !== '' && post !== pre;
+    const triple = { pre: pre, post: post, asserted: asserted };
+    res.pre = triple.pre;
+    res.post = triple.post;
+    res.asserted = asserted;
+    res.reason = asserted ? DIAG_REASON.WRITE_ASSERTED : DIAG_REASON.WRITE_MISMATCH;
+    if (Diag) {
+      const point = DIAG_POINT_PREFIX.WRITE + 'post-assert';
+      if (asserted) {
+        Diag.trace(point, DIAG_REASON.WRITE_ASSERTED, () => ({ kind: kind, pre: triple.pre, post: triple.post, iso: res.iso }));
+      } else {
+        Diag.warn(point, DIAG_REASON.WRITE_MISMATCH, null);
+      }
+    }
+    return res;
+  },
+  // 策略拒因（逻辑层失效）：由策略自身在「找不到目标/选项」处声明，不由上层猜
+  _decline(reason: string, detail: DiagDetail | null): boolean {
+    if (Diag) Diag.warn(DIAG_POINT_PREFIX.LOGIC + 'decline', reason, detail);
+    return false;
+  },
+
   _last(res: FillResult): void {
     try { if (typeof window !== 'undefined' && window) window.__cchLastFill = res; } catch {}
   },
@@ -311,6 +363,9 @@ const Fill = {
   // 现 run 返回 FillResult 且落 window.__cchLastFill（同步部分先落，剪贴板异步定态）。
   // 反馈不阻塞分发：填充与事件派发全部同步完成后才 await 剪贴板（toast 为末端）。
   run(el: AnyEl, kind: FillKind | null, country: Country): Promise<FillResult> {
+    // 票 03 [A-028]：提交前状态先落（写入动作之前读回，三元组才成立）
+    const pre = this._readBack(el, kind);
+    if (Diag) Diag.counter('fills');
     let ok = false;
     if (kind === 'iti')         ok = this.fillIti(el, country);
     else if (kind === 'select') ok = this.fillSelect(el, country);
@@ -320,8 +375,14 @@ const Fill = {
     if (ok) {
       // 格式分歧观测仅挂 input 策略（iti/select/pseudo 的写入形态由组件/原生语义保证）
       if (kind !== 'iti' && kind !== 'select' && kind !== 'pseudo') res.fmtDiff = this._inputFmtDiff(el, country);
+      // 票 03：写入动作完成 → 提交后断言（与策略自称解耦）
+      this._assertWrite(el, kind, res, pre);
       UI.toast((res.fmtDiff ? t('fmtDiverge') : t('ok')) + ': ' + country.flag + ' ' + country.code);
       res.status = 'filled';
+      if (Diag) {
+        Diag.counter('filled');
+        Diag.trace(DIAG_POINT_PREFIX.LOGIC + 'resolved', DIAG_REASON.LOGIC_RESOLVED, () => ({ kind: kind, iso: country.iso }));
+      }
       this._last(res);
       return Promise.resolve(res);
     }
@@ -332,6 +393,12 @@ const Fill = {
       .then(() => navigator.clipboard.writeText(country.code))
       .then(() => { res.status = 'copied'; }, () => { res.status = 'failed'; })
       .then(() => {
+        if (Diag) {
+          const rsn = res.status === 'copied' ? DIAG_REASON.WRITE_COPIED : DIAG_REASON.WRITE_CLIPBOARD_FAILED;
+          res.reason = rsn;
+          Diag.counter(res.status === 'copied' ? 'copied' : 'failed');
+          Diag.warn(DIAG_POINT_PREFIX.WRITE + 'fallback', rsn, null);
+        }
         UI.toast((res.status === 'copied' ? t('copied') : t('fillFailed')) + ': ' + country.code);
         this._last(res);
         return res;

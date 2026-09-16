@@ -1,7 +1,9 @@
 import { t, getLocale, setLocale, LOCALE_MODES } from '../i18n';
 import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, SETTINGS_SECTION_LOCALE, SETTINGS_VIEW } from '../config';
+// 票 03 [A-028]：诊断面常量（reason 闭集 + 判定点命名空间 + 门控开关持久键）
+import { DIAG_REASON, DIAG_POINT_PREFIX, DIAG_TRACE_PREF } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
-import type { AnyEl, AnyRoot, CchFill, CchRules, CchStore, CchUI, Country, FillKind, OverrideRule, PrefsDoc, Signal, Tier } from '../types';
+import type { AnyEl, AnyRoot, CchDiag, CchFill, CchRules, CchStore, CchUI, Country, DiagCheck, DiagLayer, DiagLevel, DiagRecord, DiagSnapshot, FillKind, OverrideRule, PanelView, PrefsDoc, Signal, Tier } from '../types';
 // GM_* 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零；与 store 的声明互不冲突）
 declare function GM_getValue(key: string, defaultValue?: string): string;
 declare function GM_setValue(key: string, value: string): void;
@@ -18,7 +20,15 @@ export function matchingOverrides(el: AnyEl | null, overrides: unknown): Overrid
   return out;
 }
 
-export function createUI(Store: CchStore, deps: { Fill: CchFill | null; Rules: CchRules | null }): CchUI {
+// 票 03 [A-028]：四层判定的展示名与修复提示一律走静态 i18n 键映射——
+// t() 的入参类型是编译期字面量联合，动态拼接（'diag'+layer）会静默丢类型保护。
+const DIAG_LAYER_KEY: Record<DiagLayer, 'diagTool' | 'diagInject' | 'diagLogic' | 'diagWrite'> = {
+  tool: 'diagTool', inject: 'diagInject', logic: 'diagLogic', write: 'diagWrite',
+};
+
+// 票 03 [A-028]：诊断面经 deps 注入（ui 不 import detect/fill，跨模块依赖约束不变）——
+// main.ts 是唯一的装配点，面板与机器可读输出因此读同一份实例、同一份 records。
+export function createUI(Store: CchStore, deps: { Fill: CchFill | null; Rules: CchRules | null; Diag?: CchDiag | null }): CchUI {
 const UI = {
   _root: null as HTMLElement | null, _popup: null as HTMLElement | null,
   _target: null as AnyEl | null, _kind: null as FillKind | null,
@@ -26,7 +36,9 @@ const UI = {
   _remoteSource: null as Window | null,
   _viewportHandler: null as (() => void) | null, _rafPending: false,
   _lowFields: new Map<AnyEl, { kind: FillKind; score: number; signals: Signal[] }>(),
-  _prefs: null as PrefsDoc | null, _view: 'list' as 'list' | 'rules', _query: '',
+  _prefs: null as PrefsDoc | null, _view: 'list' as PanelView, _query: '',
+  // 票 03 [A-028]：诊断视图的过滤态（会话内保持；与诊断数据本身解耦，不写回事实源）
+  _diagLevel: 'all' as DiagLevel | 'all', _diagLayer: 'all' as DiagLayer | 'all',
   _menuRefresh: null as (() => void) | null, _flashTimer: undefined as number | undefined,
 
   css(): void {
@@ -48,10 +60,6 @@ user-select:none;line-height:1;padding:0}
 background:var(--cch-surface);border:1px solid var(--cch-border);border-radius:16px;
 box-shadow:0 18px 48px rgba(2,8,23,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
 width:320px;max-height:min(78vh,460px);display:flex;flex-direction:column;overflow:hidden;
-/* 面板挂 document.body，宿主页的裸 div 规则（如 entry-access fixture 的 div{margin:12px 0}）
-   会按其盒模型污染面板：margin 把定位后的面板整体推离 _pos 算出的 top，居中/锚定都偏。
-   面板自带 fixed 定位与显式坐标，margin 必须清零以与宿主页样式解耦。 */
-margin:0;
 animation:cchIn .12s ease;z-index:2147483647}
 @keyframes cchIn{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 #cch-sw{padding:12px 12px 10px;border-bottom:1px solid rgba(15,23,42,.08);background:var(--cch-surface-strong)}
@@ -103,6 +111,10 @@ border-radius:8px;cursor:pointer;text-align:center}
 #cch-sw{display:flex;gap:6px;align-items:center}
 #cch-rules-tg{flex-shrink:0;width:30px;height:32px;border:1px solid rgba(15,23,42,.12);background:rgba(255,255,255,.88);color:var(--cch-subtext);border-radius:10px;cursor:pointer;font-size:14px;line-height:1;padding:0}
 #cch-rules-tg:hover{color:#0f766e;border-color:rgba(15,118,110,.45)}
+/* [票 03 A-028]：诊断入口常驻头部（与齿轮同构）——诊断视图内摘要条被隐藏，
+   入口若寄居摘要条则该视图成为单向门。 */
+#cch-diag-tg{flex-shrink:0;height:32px;padding:0 9px;border:1px solid rgba(15,23,42,.12);background:rgba(255,255,255,.88);color:var(--cch-subtext);border-radius:10px;cursor:pointer;font-size:11px;line-height:1}
+#cch-diag-tg:hover{color:#0f766e;border-color:rgba(15,118,110,.45)}
 #cch-si{flex:1;min-width:0;width:auto}
 #cch-fb{margin:6px 12px 0;padding:6px 10px;font-size:12px;color:#9f1239;background:rgba(190,18,60,.05);border:1px dashed rgba(190,18,60,.3);border-radius:8px;cursor:pointer;text-align:center}
 #cch-fb:hover{background:rgba(190,18,60,.1);color:#be123c}
@@ -126,7 +138,42 @@ border-radius:8px;cursor:pointer;text-align:center}
 .cch-locale-seg{display:flex;gap:4px;flex:1;min-width:0}
 .cch-locale-opt{flex:1 1 0;min-width:0;padding:4px 6px;font-size:11px;line-height:1.25;border:1px solid rgba(15,23,42,.12);border-radius:8px;background:rgba(255,255,255,.88);color:#475569;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cch-locale-opt:hover{border-color:rgba(15,118,110,.45);color:#0f766e}
-.cch-locale-opt.on{background:rgba(15,118,110,.1);border-color:rgba(15,118,110,.45);color:#0f766e;font-weight:700}`;
+.cch-locale-opt.on{background:rgba(15,118,110,.1);border-color:rgba(15,118,110,.45);color:#0f766e;font-weight:700}
+/* 票 03 [A-028]：诊断面 —— 既有界面摘要条 + 独立诊断视图（决策链时间线/层矩阵/过滤器/导出） */
+#cch-diag-sum{display:flex;align-items:center;gap:6px;margin:6px 12px 0;padding:6px 8px;font-size:11px;color:var(--cch-subtext);background:rgba(15,23,42,.03);border:1px solid rgba(15,23,42,.08);border-radius:8px}
+.cch-diag-sumtxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Monaco,monospace;font-size:10px}
+#cch-diag-tg{flex-shrink:0;padding:3px 8px;font-size:11px;border:1px solid rgba(15,118,110,.35);background:rgba(15,118,110,.08);color:#0f766e;border-radius:7px;cursor:pointer}
+#cch-diag-tg:hover{background:rgba(15,118,110,.16)}
+.cch-sec-diag{flex:1 1 auto;min-height:120px}
+/* [票 03 A-028]：摘要条为 ID 选择器 + display:flex，会压过 UA 的 [hidden]{display:none}——
+   与票 02 对 .cch-sec 的同类修复同构：诊断/设置视图下摘要条必须真正隐藏，不得叠显。 */
+#cch-diag-sum[hidden]{display:none}
+.cch-diag-bd{flex:1 1 auto;min-height:0;padding:8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.cch-diag-hd{display:flex;align-items:center;gap:6px}
+.cch-diag-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.02em}
+.cch-diag-chip.pass{background:rgba(15,118,110,.12);color:#0f766e}
+.cch-diag-chip.fail{background:rgba(190,18,60,.12);color:#9f1239}
+.cch-diag-chip.unknown{background:rgba(100,116,139,.14);color:#475569}
+.cch-diag-tgl{flex:1;padding:3px 8px;font-size:11px;border:1px solid rgba(15,23,42,.12);background:rgba(255,255,255,.88);color:var(--cch-subtext);border-radius:7px;cursor:pointer}
+.cch-diag-tgl.on{border-color:rgba(15,118,110,.45);background:rgba(15,118,110,.1);color:#0f766e;font-weight:700}
+.cch-diag-cnt{font-family:ui-monospace,SFMono-Regular,Monaco,monospace;font-size:10px;color:var(--cch-subtext);line-height:1.45;word-break:break-word}
+.cch-diag-flt{display:flex;flex-wrap:wrap;gap:4px}
+.cch-diag-f{padding:2px 7px;font-size:10px;border:1px solid rgba(15,23,42,.12);background:rgba(255,255,255,.88);color:var(--cch-subtext);border-radius:6px;cursor:pointer}
+.cch-diag-f.on{border-color:rgba(15,118,110,.45);background:rgba(15,118,110,.1);color:#0f766e;font-weight:700}
+.cch-diag-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;padding:4px 6px;border-bottom:1px solid rgba(15,23,42,.06);font-size:10px;font-family:ui-monospace,SFMono-Regular,Monaco,monospace}
+.cch-diag-row:last-child{border-bottom:none}
+.cch-diag-seq{flex-shrink:0;color:#8a95a3;min-width:26px;text-align:right}
+.cch-diag-lv{flex-shrink:0;font-weight:700;text-transform:uppercase}
+.cch-diag-lv.error{color:#9f1239}
+.cch-diag-lv.warn{color:#92400e}
+.cch-diag-lv.info{color:#0f766e}
+.cch-diag-lv.trace{color:#64748b}
+.cch-diag-ly{flex-shrink:0;color:#475569}
+.cch-diag-pt{flex-shrink:0;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:96px}
+.cch-diag-rn{flex:1;min-width:0;color:var(--cch-subtext);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cch-diag-dt{flex-basis:100%;color:#8a95a3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cch-diag-exp{width:100%;padding:5px 8px;font-size:11px;border:1px solid rgba(15,23,42,.12);background:rgba(255,255,255,.88);color:var(--cch-subtext);border-radius:8px;cursor:pointer}
+.cch-diag-exp:hover{border-color:rgba(15,118,110,.45);color:#0f766e}`;
     document.head.appendChild(s);
   },
 
@@ -169,8 +216,8 @@ border-radius:8px;cursor:pointer;text-align:center}
     const btn = document.createElement('button');
     btn.className = 'cch-btn' + (tier === 'lowkey' ? ' cch-btn-lowkey' : '');
     btn.type = 'button';
-    btn.title = 'Country Code Helper';
-    btn.setAttribute('aria-label', 'Country Code Helper');
+    btn.title = t('iconLabel');
+    btn.setAttribute('aria-label', t('iconLabel'));
     btn.setAttribute('data-cch-tier', tier);
     // 票 13：召唤挂载标记 —— detect 闸门识别该图标为用户显式行为，不回拆（summonedWrap）
     if (opts && opts.force) btn.setAttribute('data-cch-summon', '1');
@@ -282,12 +329,15 @@ border-radius:8px;cursor:pointer;text-align:center}
     const rec = this._lowFields.get(el);
     if (!rec) return false;
     this._lowFields.delete(el);
+    // 票 03 [A-028]：召唤 = 注入层的用户显式事件（计数器恒开）
+    const D = this._diag();
+    if (D) D.counter('summoned');
     if (el.closest('.' + WRAPPER_CLASS)) return true;
     this.attach(el, rec.kind, 'auto', rec.score, rec.signals, { force: true });
     return true;
   },
 
-  open(target: AnyEl | null, kind: FillKind | null, anchor: AnyEl | null, opts: { remoteSource?: Window | null } = {}): void {
+  open(target: AnyEl | null, kind: FillKind | null, anchor: AnyEl | null, opts: { remoteSource?: Window | null; view?: PanelView } = {}): void {
     opts = opts || {};
     // 票 12:子帧不渲染面板宿主——图标点击经 postMessage 请求顶层代开
     if (!IS_TOP_FRAME && !opts.remoteSource) {
@@ -310,7 +360,8 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
     if (!opts.remoteSource) this._closePopup();
     this._remoteSource = opts.remoteSource || null; // 关旧面板后设(关时会清)
-    this._view = 'list'; // 每次开面板重置为列表视图（召唤/负反馈入口常显）
+    // 票 03 [A-028]：默认列表视图；诊断入口（opts.view='diag'）直接落到独立诊断视图
+    this._view = opts.view || 'list';
     this._anchor = anchor;
 
     const pop = document.createElement('div');
@@ -340,6 +391,19 @@ border-radius:8px;cursor:pointer;text-align:center}
     });
     sw.appendChild(tg);
 
+    // 票 03 [A-028]：诊断面入口——头部常驻按钮，与齿轮同构（视图态 _view 会话内保持）。
+    // 必须常驻头部：诊断视图内摘要条被隐藏，入口若寄居摘要条则诊断视图成为单向门。
+    const dg = document.createElement('button');
+    dg.type = 'button'; dg.id = 'cch-diag-tg';
+    dg.setAttribute('data-i18n', 'diagOpen');
+    dg.textContent = t('diagOpen');
+    dg.addEventListener('click', e => {
+      e.stopPropagation();
+      this._view = this._view === 'diag' ? 'list' : 'diag';
+      this._render('');
+    });
+    sw.appendChild(dg);
+
     // 低置信字段召唤入口 [SP US18]：可见性由 _render 按 _lowFields 维护
     const sm = document.createElement('div');
     sm.id = 'cch-summon';
@@ -362,6 +426,18 @@ border-radius:8px;cursor:pointer;text-align:center}
     fb.textContent = t('feedback');
     fb.addEventListener('click', e => { e.stopPropagation(); this._feedback(); });
     pop.appendChild(fb);
+
+    // ══ 票 03 [A-028]：既有界面上的诊断入口与摘要 ══
+    // 分层（S-02）：独立诊断视图负责全链路时间线；既有界面只给「整体健康度 + 计数器一行
+    // + 打开完整诊断」。摘要与时间线同源（同一份 snapshot()），不各自采集。
+    const sumBar = document.createElement('div');
+    sumBar.id = 'cch-diag-sum';
+    sumBar.setAttribute('role', 'status');
+    const sumTxt = document.createElement('span');
+    sumTxt.className = 'cch-diag-sumtxt';
+    // 入口按钮已上移面板头部（#cch-diag-tg）；摘要条只承载「整体健康度 + 计数器一行」
+    sumBar.appendChild(sumTxt);
+    pop.appendChild(sumBar);
 
     const body = document.createElement('div');
     body.className = 'cch-body';
@@ -398,8 +474,15 @@ border-radius:8px;cursor:pointer;text-align:center}
     rulesSec.className = 'cch-sec cch-sec-rules';
     rulesSec.id = 'cch-rules-view';
     rulesSec.setAttribute('data-cch-view', SETTINGS_VIEW); // 票 02 [A-026]：设置所在视图的稳定标识符
-    rulesSec.hidden = (this._view as 'list' | 'rules') !== 'rules';
+    rulesSec.hidden = this._view !== 'rules';
     body.appendChild(rulesSec);
+
+    // 票 03 [A-028]：独立诊断视图容器（内容由 _renderDiag 从事实源渲染；此处只建宿主）
+    const diagSec = document.createElement('section');
+    diagSec.className = 'cch-sec cch-sec-diag';
+    diagSec.id = 'cch-diag-view';
+    diagSec.hidden = true;
+    body.appendChild(diagSec);
     pop.appendChild(body);
 
     document.body.appendChild(pop);
@@ -407,12 +490,6 @@ border-radius:8px;cursor:pointer;text-align:center}
     this._bindViewportTracking();
     this._bindPopupEvents(pop);
     this._render('');
-
-    // 居中路径（anchor===null）的垂直居中基于 offsetHeight，而上面这次 _pos 发生在
-    // _render 之前——此时列表还是空的，offsetHeight 明显偏小；_render 同步填充行数据后
-    // 面板继续长高，中心随 Δh/2 下移，判定因此对时序/内容敏感（R-3 红灯）。
-    // 在内容定型后按最终高度重算一次；仅作用于居中路径，锚定路径语义不变。
-    if (!anchor) this._pos(pop, anchor);
 
     const close = (e: MouseEvent) => {
       if (!pop.contains(e.target as Node) && e.target !== anchor) {
@@ -498,7 +575,14 @@ border-radius:8px;cursor:pointer;text-align:center}
       return;
     }
     // 票 37 [A-012]：GM 菜单入口打开时无目标字段——负反馈点击明示而非静默
-    if (!el) { this.toast(t('needTarget')); return; }
+    // 票 03 [A-028]：GM 菜单入口打开面板时无目标字段 —— 逻辑层失效的可验证原因
+    // （此前仅 toast，诊断面无痕迹；现既 toast 又留判定记录）
+    if (!el) {
+      const D0 = this._diag();
+      if (D0) D0.warn(DIAG_POINT_PREFIX.LOGIC + 'no-target', DIAG_REASON.LOGIC_NO_TARGET, null);
+      this.toast(t('needTarget'));
+      return;
+    }
     const R = this._rules();
     let remembered = false;
     if (R) {
@@ -793,6 +877,223 @@ border-radius:8px;cursor:pointer;text-align:center}
     list.appendChild(frag);
   },
 
+  // ══ 票 03 [A-028]：诊断面读面 ══
+  // ui 不 import detect/fill（跨模块依赖约束），诊断实例由 main.ts 经 deps 注入；
+  // 装配点唯一 —— 面板与机器可读输出读同一份实例、同一份 records。
+  _diag(): CchDiag | null { return deps.Diag || null; },
+  // 过滤器：级别 + 层两个正交维度；只作用于面板展示，不改事实源
+  _diagFilter(r: DiagRecord): boolean {
+    if (this._diagLevel !== 'all' && r.level !== this._diagLevel) return false;
+    if (this._diagLayer !== 'all' && r.layer !== this._diagLayer) return false;
+    return true;
+  },
+  // 既有界面摘要（列表视图常显）：整体健康度 + 计数器一行 + 截断标记。
+  // 与完整视图同源（同一份 snapshot()）—— 摘要不得自成一套采集。
+  _renderDiagSummary(): void {
+    const bar = this._popup && this._popup.querySelector<HTMLElement>('#cch-diag-sum');
+    if (!bar) return;
+    const D = this._diag();
+    if (!D) { bar.hidden = true; return; }
+    const txt = bar.querySelector<HTMLElement>('.cch-diag-sumtxt');
+    if (!txt) return;
+    let snap: DiagSnapshot | null = null;
+    try { snap = D.snapshot(); } catch {}
+    if (!snap) return;
+    const cs = snap.counters;
+    txt.textContent = t(snap.health === 'pass' ? 'diagPass' : snap.health === 'fail' ? 'diagFail' : 'diagUnknown')
+      + ' · scans ' + cs.scans + ' · inj ' + cs.injected + ' · reg ' + cs.registered
+      + ' · fills ' + cs.filled + '/' + cs.fills + ' · err ' + cs.errors
+      + (snap.truncated ? ' · ' + t('diagTruncated') : '');
+  },
+  // 独立诊断视图（S-02）：决策链时间线 + 四层检查矩阵 + 过滤器 + 导出。
+  // 面板与机器可读输出同源（D-012）：本函数只读 records() / snapshot() / checks() 三个出口。
+  // 面板不持有任何独立状态 —— 双写漂移（面板 ok / JSON fail）在架构上不可能发生。
+  _renderDiag(): void {
+    const sec = this._popup && this._popup.querySelector<HTMLElement>('#cch-diag-view');
+    if (!sec) return;
+    sec.textContent = '';
+    const D = this._diag();
+    if (!D) {
+      const e0 = document.createElement('div');
+      e0.className = 'cch-empty';
+      e0.textContent = t('diagEmpty');
+      sec.appendChild(e0);
+      return;
+    }
+    let recs: DiagRecord[] = [];
+    let snap: DiagSnapshot | null = null;
+    let chk: DiagCheck[] = [];
+    try { recs = D.records(); snap = D.snapshot(); chk = D.checks(); } catch {}
+    const bd = document.createElement('div');
+    bd.className = 'cch-diag-bd';
+
+    // ① 整体健康度 + 全链路 trace 门控开关（error/warn/计数器恒开，仅 trace 可关）
+    const hd = document.createElement('div');
+    hd.className = 'cch-diag-hd';
+    const hv = snap ? snap.health : 'unknown';
+    const chip = document.createElement('span');
+    chip.className = 'cch-diag-chip ' + hv;
+    chip.textContent = t(hv === 'pass' ? 'diagPass' : hv === 'fail' ? 'diagFail' : 'diagUnknown');
+    const tgl = document.createElement('button');
+    tgl.type = 'button'; tgl.id = 'cch-diag-trace-tg';
+    tgl.className = 'cch-diag-tgl' + (D.traceOn() ? ' on' : '');
+    tgl.textContent = t('diagTrace');
+    tgl.addEventListener('click', e => {
+      e.stopPropagation();
+      const on = !D.traceOn();
+      D.setTrace(on);
+      // 门控持久化到 UI 偏好（UI_PREFS_KEY，GM 存储）——与 DIAG_TRACE_PREF 的文档契约一致；
+      // 不用 localStorage（页面作用域，与偏好文档分家）
+      this.setPref(DIAG_TRACE_PREF, on);
+      this._renderDiag();
+    });
+    hd.appendChild(chip);
+    hd.appendChild(tgl);
+    bd.appendChild(hd);
+
+    // ② 四层检查矩阵（与机器可读输出同享 checks() 定义：层 id + 状态 + 原因 + 修复提示）
+    const lc = document.createElement('div');
+    lc.className = 'cch-rules-cap';
+    lc.textContent = t('diagLayers');
+    bd.appendChild(lc);
+    const lm = document.createElement('div');
+    lm.id = 'cch-diag-layers';
+    chk.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'cch-rule-row';
+      const nm = document.createElement('span');
+      nm.className = 'cch-rule-host';
+      nm.textContent = t(DIAG_LAYER_KEY[c.layer]);
+      const st = document.createElement('span');
+      st.className = 'cch-rule-tier ' + (c.status === 'pass' ? 'auto' : c.status === 'fail' ? 'none' : 'lowkey');
+      st.textContent = t(c.status === 'pass' ? 'diagPass' : c.status === 'fail' ? 'diagFail' : 'diagUnknown');
+      const rs = document.createElement('span');
+      rs.className = 'cch-rule-note';
+      rs.textContent = c.reason || '-';
+      row.appendChild(nm);
+      row.appendChild(st);
+      row.appendChild(rs);
+      if (c.fix) {
+        const fx = document.createElement('span');
+        fx.className = 'cch-rule-note';
+        fx.textContent = t(c.fix);
+        row.appendChild(fx);
+      }
+      lm.appendChild(row);
+    });
+    bd.appendChild(lm);
+
+    // ③ 计数器（恒开通道的可读投影）
+    if (snap) {
+      const cs = snap.counters;
+      const cc = document.createElement('div');
+      cc.className = 'cch-diag-cnt';
+      cc.textContent = t('diagCounters') + ': scans ' + cs.scans + ' · cand ' + cs.candidates + ' · scored ' + cs.scored
+        + ' · inj ' + cs.injected + ' · reg ' + cs.registered + ' · fills ' + cs.filled + '/' + cs.fills
+        + ' · err ' + cs.errors + ' · warn ' + cs.warns + ' · drop ' + cs.dropped;
+      bd.appendChild(cc);
+    }
+
+    // ④ 过滤器（级别 + 层）
+    const fl = document.createElement('div');
+    fl.className = 'cch-diag-flt';
+    const mkF = (grp: string, val: string, label: string, on: boolean): HTMLElement => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cch-diag-f' + (on ? ' on' : '');
+      b.setAttribute('data-filter', grp + ':' + val);
+      b.textContent = label;
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        if (grp === 'level') this._diagLevel = val as DiagLevel | 'all';
+        else this._diagLayer = val as DiagLayer | 'all';
+        this._renderDiag();
+      });
+      return b;
+    };
+    const lvAll: string[] = ['all', 'error', 'warn', 'info', 'trace'];
+    for (let i = 0; i < lvAll.length; i++) {
+      fl.appendChild(mkF('level', lvAll[i], lvAll[i] === 'all' ? t('diagAll') : lvAll[i], this._diagLevel === lvAll[i]));
+    }
+    const lyAll: string[] = ['all', 'tool', 'inject', 'logic', 'write'];
+    for (let i = 0; i < lyAll.length; i++) {
+      fl.appendChild(mkF('layer', lyAll[i], lyAll[i] === 'all' ? t('diagAll') : lyAll[i], this._diagLayer === lyAll[i]));
+    }
+    bd.appendChild(fl);
+
+    // ⑤ 决策链时间线（倒序：最新在上；行字段全部来自记录，不硬编码）
+    const tc = document.createElement('div');
+    tc.className = 'cch-rules-cap';
+    tc.textContent = t('diagTimeline');
+    bd.appendChild(tc);
+    const list = document.createElement('div');
+    list.id = 'cch-diag-list';
+    const shown = recs.filter(r => this._diagFilter(r));
+    if (!shown.length) {
+      const e1 = document.createElement('div');
+      e1.className = 'cch-empty';
+      e1.textContent = t('diagEmpty');
+      list.appendChild(e1);
+    }
+    for (let i = shown.length - 1; i >= 0; i--) {
+      const r = shown[i];
+      const row = document.createElement('div');
+      row.className = 'cch-diag-row ' + r.level;
+      const sq = document.createElement('span');
+      sq.className = 'cch-diag-seq';
+      sq.textContent = String(r.seq);
+      const lv = document.createElement('span');
+      lv.className = 'cch-diag-lv ' + r.level;
+      lv.textContent = r.level;
+      const ly = document.createElement('span');
+      ly.className = 'cch-diag-ly';
+      ly.textContent = r.layer;
+      const pt = document.createElement('span');
+      pt.className = 'cch-diag-pt';
+      pt.textContent = r.point;
+      const rn = document.createElement('span');
+      rn.className = 'cch-diag-rn';
+      rn.textContent = r.reason + (r.verified ? '' : ' (' + t('diagUnknown') + ')');
+      row.appendChild(sq);
+      row.appendChild(lv);
+      row.appendChild(ly);
+      row.appendChild(pt);
+      row.appendChild(rn);
+      if (r.detail) {
+        const dt = document.createElement('span');
+        dt.className = 'cch-diag-dt';
+        dt.textContent = JSON.stringify(r.detail);
+        row.appendChild(dt);
+      }
+      list.appendChild(row);
+    }
+    bd.appendChild(list);
+
+    // ⑥ 导出（人读文本投影，与 snapshot 同源）与清空
+    const ex = document.createElement('button');
+    ex.type = 'button'; ex.id = 'cch-diag-export';
+    ex.className = 'cch-diag-exp';
+    ex.textContent = t('diagExport');
+    ex.addEventListener('click', e => {
+      e.stopPropagation();
+      const txt = D.text();
+      try { if (navigator.clipboard) navigator.clipboard.writeText(txt); } catch {}
+      this.toast(t('diagExported'));
+    });
+    bd.appendChild(ex);
+    const cl = document.createElement('button');
+    cl.type = 'button';
+    cl.className = 'cch-diag-exp';
+    cl.textContent = t('diagClear');
+    cl.addEventListener('click', e => {
+      e.stopPropagation();
+      D.clear();
+      this._renderDiag();
+    });
+    bd.appendChild(cl);
+    sec.appendChild(bd);
+  },
+
   _render(q: string): void {
     this._query = q;
     if (!this._popup) return;
@@ -801,6 +1102,9 @@ border-radius:8px;cursor:pointer;text-align:center}
     const rulesSec = this._popup.querySelector<HTMLElement>('#cch-rules-view');
     const sm = this._popup.querySelector<HTMLElement>('#cch-summon');
     const fb = this._popup.querySelector<HTMLElement>('#cch-fb');
+    // 票 03 [A-028]：诊断宿主（摘要条在列表视图常显；完整视图单独切换）
+    const diagSec = this._popup.querySelector<HTMLElement>('#cch-diag-view');
+    const sumBar = this._popup.querySelector<HTMLElement>('#cch-diag-sum');
     // 票 02 [A-027]：行数据始终重渲染 —— 语言切换后收藏行 title / 空态文案不得残留旧语言
     // （旧实现只在列表视图渲染行，停在设置视图时切换语言即漏刷）
     if (favList && allList) {
@@ -821,14 +1125,30 @@ border-radius:8px;cursor:pointer;text-align:center}
       if (allList && allList.closest('.cch-sec')) allList.closest<HTMLElement>('.cch-sec')!.hidden = true;
       if (sm) sm.hidden = true;
       if (fb) fb.hidden = true;
+      if (sumBar) sumBar.hidden = true;
+      if (diagSec) diagSec.hidden = true;
       if (rulesSec) { rulesSec.hidden = false; this._renderRules(); }
       return;
     }
+    if (this._view === 'diag') {
+      // 票 03 [A-028]：独立诊断视图 —— 隐藏列表/召唤/负反馈/规则/摘要条，仅渲染诊断区。
+      // 与设置视图同构（同一套视图切换纪律），不新造导航模型。
+      if (favList && favList.closest('.cch-sec')) favList.closest<HTMLElement>('.cch-sec')!.hidden = true;
+      if (allList && allList.closest('.cch-sec')) allList.closest<HTMLElement>('.cch-sec')!.hidden = true;
+      if (sm) sm.hidden = true;
+      if (fb) fb.hidden = true;
+      if (rulesSec) rulesSec.hidden = true;
+      if (sumBar) sumBar.hidden = true;
+      if (diagSec) { diagSec.hidden = false; this._renderDiag(); }
+      return;
+    }
     if (rulesSec) rulesSec.hidden = true;
+    if (diagSec) diagSec.hidden = true;
     if (favList && favList.closest('.cch-sec')) favList.closest<HTMLElement>('.cch-sec')!.hidden = false;
     if (allList && allList.closest('.cch-sec')) allList.closest<HTMLElement>('.cch-sec')!.hidden = false;
     if (sm) sm.hidden = this._lowFields.size === 0;
     if (fb) fb.hidden = false;
+    if (sumBar) { sumBar.hidden = false; this._renderDiagSummary(); }
   },
   // 票 02 [A-027]：字典化全量重渲染 —— 面板 chrome 文案由 [data-i18n*] 标记统一刷新，
   // 替代原 _applyLocaleText() 手工逐项重写（漏刷收藏行 title / 空态文案的根因）。

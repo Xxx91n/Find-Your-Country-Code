@@ -9,6 +9,7 @@
 // 全局经 declare global 声明（GM_* 仍保留在使用模块内局部 declare，不在此收敛）。
 // ════════════════════════════════════════════════════════
 
+export type PanelView = 'list' | 'rules' | 'diag';
 export type Tier = 'auto' | 'lowkey' | 'none';
 export type FillKind = 'select' | 'iti' | 'input' | 'pseudo';
 
@@ -17,6 +18,83 @@ export type FillKind = 'select' | 'iti' | 'input' | 'pseudo';
 // [atomcode 票31 §3.2]：状态是操作返回的结构化结果，不是文案副产物。
 // fmtDiff：仅 input 策略有意义——字段声明式数字约束（pattern/inputmode=numeric/type=number）
 // 与写入格式推测不一致（期望 digits 得 plus）的只读观测旗标，不改写入行为。
+// ── 诊断面（票 03 / A-028）：结构化诊断事件流作唯一事实来源 ──
+// 字段集对标调研报告 Q2 最小集（7 字段）与 GrowthBook evalFeature 的「枚举 reason + ruleId」归因范式：
+// level（门控分级）/ layer（四层判定归属）/ point（产生本记录的判定点 id）/ verdict（CI 断言主键）
+// / reason（封闭枚举，仅 fail 时指向已验证因果）/ detail（平铺属性）。
+// verdict 三值用极性正向命名（KEP-1623 教训）：pass=好状态，不造双重否定复合态。
+export type DiagLevel = 'error' | 'warn' | 'info' | 'trace';
+export type DiagLayer = 'tool' | 'inject' | 'logic' | 'write';
+export type DiagVerdict = 'pass' | 'fail' | 'unknown';
+export type DiagDetail = Record<string, string | number | boolean | null>;
+export interface DiagRecord {
+  seq: number;      // 单调序号（环形缓冲内唯一；导出可判截断）
+  ts: number;       // 毫秒时间戳（人读时间线）
+  level: DiagLevel;
+  layer: DiagLayer;
+  point: string;    // 判定点 id（命名空间见 DIAG_POINT_PREFIX）
+  verdict: DiagVerdict;
+  reason: string;   // DIAG_REASON 闭集取值
+  verified: boolean;// reason 是否已比对闭集（false = 已降级为 unknown-open-debug）
+  detail: DiagDetail | null;
+}
+export interface DiagCounters {
+  scans: number; candidates: number; scored: number;
+  injected: number; lowkey: number; registered: number; summoned: number; detached: number;
+  fills: number; filled: number; copied: number; failed: number;
+  errors: number; warns: number; traces: number; dropped: number;
+}
+export interface DiagLayerState {
+  verdict: DiagVerdict;
+  point: string;
+  reason: string;
+  ts: number;
+}
+// 修复提示的 i18n 键（字面量联合：t() 的键为编译期字面量，禁止动态拼接）
+// 无已知修复手段则 null——不猜。
+export type DiagFixKey = 'diagFixTool' | 'diagFixInject' | 'diagFixLogic' | 'diagFixWrite';
+// 检查矩阵（D-012：面板与机器面同享同一份定义，仅 runner 不同）
+export interface DiagCheck {
+  id: string;
+  layer: DiagLayer;
+  status: DiagVerdict;
+  reason: string;
+  point: string;
+  ts: number;
+  fix: DiagFixKey | null;  // 修复提示的 i18n 键（无已知修复手段则 null，不猜）
+}
+export interface DiagSnapshot {
+  version: number;
+  generatedAt: number;
+  url: string;
+  frame: string;
+  trace: boolean;      // 全链路 trace 门控当前状态
+  capacity: number;
+  dropped: number;     // 环形缓冲溢出丢弃总数
+  truncated: boolean;  // dropped > 0
+  health: DiagVerdict;
+  counters: DiagCounters;
+  layers: Record<DiagLayer, DiagLayerState>;
+  checks: DiagCheck[];
+  records: DiagRecord[];
+}
+export interface CchDiag {
+  // 恒开通道（error/warn + 计数器）——高开销诊断才门控，可观测性不门控
+  error(point: string, reason: string, detail?: DiagDetail | null): void;
+  warn(point: string, reason: string, detail?: DiagDetail | null): void;
+  counter(key: keyof DiagCounters, by?: number): void;
+  // 门控通道（info/trace）——惰性构造：detail 以 thunk 传入，门控关时永不求值
+  info(point: string, reason: string, thunk?: (() => DiagDetail | null) | null): void;
+  trace(point: string, reason: string, thunk?: (() => DiagDetail | null) | null): void;
+  // 读面（两个 serializer 读同一份数据，面板不持有独立状态）
+  traceOn(): boolean;
+  setTrace(on: boolean): boolean;
+  records(): DiagRecord[];
+  checks(): DiagCheck[];
+  snapshot(): DiagSnapshot;
+  text(): string;   // 人读文本投影（与 snapshot 同源，供复制/导出）
+  clear(): void;
+}
 export type FillStatus = 'filled' | 'copied' | 'failed';
 
 export interface FillResult {
@@ -25,7 +103,15 @@ export interface FillResult {
   iso: string;
   code: string;
   fmtDiff: boolean;
+  // 票 03（A-028）写入结果三元组（提交前状态 → 写入动作 → 提交后断言）。
+  // 对标 Playwright trace before/action/after 三快照 + K8s 期望态/实际态：
+  // status 仍为脚本自报（票 31 契约不变，D-002 降为诊断项），asserted 才是提交后断言结论。
+  reason?: string;   // DIAG_REASON 闭集取值（已验证因果）
+  pre?: string;      // 提交前读回值
+  post?: string;     // 提交后断言读回值
+  asserted?: boolean;// 提交后断言是否成立（读回值承载所选国家的区号/ISO 证据）
 }
+
 
 export interface Country {
   code: string;
@@ -128,6 +214,9 @@ export interface CchUI {
   openSettings(): void;
   // 票 02 [A-027]：语言切换后重注册 GM 菜单命令的回调（{ id } 原地更新 → 标签免重载跟随）
   _menuRefresh?: (() => void) | null;
+  // 票 03 [A-028]：UI 偏好读/写面（GM 存储，独立键 UI_PREFS_KEY）——诊断面 trace 门控经此持久化
+  prefs(): PrefsDoc;
+  setPref(key: string, val: unknown): void;
   css(): void;
   toast(msg: string): void;
   attach(el: AnyEl, kind: FillKind, tier?: Tier, score?: number, signals?: Signal[], opts?: { force?: boolean }): void;
@@ -140,7 +229,7 @@ export interface CchUI {
   _popup: HTMLElement | null;
   _target: AnyEl | null;
   _kind: FillKind | null;
-  open(target: AnyEl | null, kind: FillKind | null, anchor: AnyEl | null, opts?: { remoteSource?: Window | null }): void;
+  open(target: AnyEl | null, kind: FillKind | null, anchor: AnyEl | null, opts?: { remoteSource?: Window | null; view?: PanelView }): void;
 }
 
 export interface CchFill {
@@ -178,6 +267,8 @@ declare global {
     // 票 31：最近一次填充的三态结果（测试面唯一可读钩子；成功/降级/写入值同步落，
     // 剪贴板异步定态；E2E 经 page.evaluate 读取，勿再加第二套钩子 [handoff 31 信号设计]）
     __cchLastFill?: FillResult;
+    // 票 03：机器可读诊断输出（与面板同源；自动化/CI 的唯一读取口）
+    __cchDiag?: () => DiagSnapshot;
     // iti 插件宿主全局与页面 jQuery（跨版本鸭子探测面，运行时守卫 + try/catch 兜底）
     intlTelInput?: ItiApi;
     intlTelInputGlobals?: ItiApi;

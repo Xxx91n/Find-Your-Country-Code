@@ -4,9 +4,11 @@ import { createFill } from './fill';
 import { createUI } from './ui';
 import { createRules } from './rules';
 import { t } from './i18n';
+// 票 03 [A-028]：诊断面（结构化事件流唯一事实来源；面板与机器可读输出两个 serializer）
+import { createDiag } from './diag';
 import { ISO2_MAP } from './data/countries';
-import { IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG } from './config';
-import type { CchFill, CchRules } from './types';
+import { IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, DIAG_TRACE_PREF } from './config';
+import type { CchDiag, CchFill, CchRules } from './types';
 // GM_registerMenuCommand 为 userscript 宿主注入的全局（模块内 declare 供 tsc 局部清零）
 // 票 02 [A-027]：第三参 options 承载 id —— id 原地更新语义（TM ≥5.0 / VM ≥2.15.9）
 declare function GM_registerMenuCommand(title: string, fn: () => void, options?: { id?: string }): void;
@@ -15,12 +17,23 @@ declare function GM_registerMenuCommand(title: string, fn: () => void, options?:
 const Store = createStore();
 Store.init();
 const Rules = createRules(Store);
-const deps: { Fill: CchFill | null; Rules: CchRules | null } = { Fill: null, Rules: null };
+// 票 03 [A-028]：诊断面实例在装配点唯一创建（单一事实来源的物理保证）——
+// 同一个实例注入 UI（读面：面板）与 Detect/Fill（写面：采集），两个 serializer 读同一份 records。
+const deps: { Fill: CchFill | null; Rules: CchRules | null; Diag: CchDiag | null } = { Fill: null, Rules: null, Diag: null };
 const UI = createUI(Store, deps);
-const Fill = createFill(UI);
+const Diag = createDiag({
+  // 门控读持久化偏好（默认 false = 零开销）；error/warn 与计数器恒开，不受此开关影响
+  trace: (() => { try { return !!UI.prefs()[DIAG_TRACE_PREF]; } catch { return false; } })(),
+  // env 惰性读取：仅在 snapshot() 时求值，不挂热路径
+  env: () => ({ url: location.href, frame: IS_TOP_FRAME ? 'top' : 'child' }),
+});
+deps.Diag = Diag;
+const Fill = createFill(UI, Diag);
 deps.Fill = Fill;
-const Detect = createDetect(UI, Rules);
+const Detect = createDetect(UI, Rules, Diag);
 deps.Rules = Rules;
+// 票 03：机器可读输出（与面板同源；自动化/CI 的唯一读取口）
+try { window.__cchDiag = () => Diag.snapshot(); } catch {}
 // 票 04：观测总装收口到 Detect.watch()——顶层 body observer + 每 shadow root observer
 // （scan 穿透时自动挂）+ SPA 路由 hook（pushState/replaceState/popstate），统一 350ms 防抖
 // 票 07：订阅收口 —— 规则文档变更（负反馈/规则管理/跨标签页同步）→ 防抖重扫 + 豁免即时拆图标；
@@ -144,6 +157,8 @@ if (IS_TOP_FRAME && typeof GM_registerMenuCommand === 'function') {
     try { GM_registerMenuCommand(t('ruleExemptRemoved'), () => { Rules.setExempt(location.href, false); }, { id: 'cch-menu-restore' }); } catch {}
     try { GM_registerMenuCommand(t('openPanel'), () => { UI.open(null, null, null); }, { id: 'cch-menu-panel' }); } catch {}
     try { GM_registerMenuCommand(t('settings'), () => { UI.openSettings(); }, { id: 'cch-menu-settings' }); } catch {}
+    // 票 03 [A-028]：诊断面入口收敛为单一 GM 菜单项（不逐功能设项）——直接落到独立诊断视图。
+    try { GM_registerMenuCommand(t('diagnostics'), () => { UI.open(null, null, null, { view: 'diag' }); }, { id: 'cch-menu-diag' }); } catch {}
   };
   refreshMenu();
 }
