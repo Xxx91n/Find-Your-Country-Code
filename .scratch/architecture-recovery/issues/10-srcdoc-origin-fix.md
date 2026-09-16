@@ -4,12 +4,12 @@
 
 **Blocked by:** 票 07（真实站点层与发布门）—— 开工前实物核对已满足
 
-**Status:** implemented（实施提交 `f4aad220`；文档提交 `914b690e`；CI 证据见文末）
+**Status:** implemented（实施提交 `16485782`；文档 `e652e6be`/`7ff21863`；竞态修复 `d4011dbf`/`62f2292a`；远端 tip `62f2292a`；CI 证据见文末）
 
 **覆盖 A-xxx:** A-034（P0）
 
 - [x] 修复 `src/main.ts:134`：`if (isTopFrameSameOrigin() && e.origin !== location.origin) return;` 在 srcdoc 帧判真并丢弃顶层 `FRAME_FILL_MSG`
-  - 证据：`grep -n "SELF_ORIGIN" src/main.ts` → `139: if (isTopFrameSameOrigin() && e.origin !== SELF_ORIGIN) return;`（`f4aad220`）
+  - 证据：`grep -n "SELF_ORIGIN" src/main.ts` → `139: if (isTopFrameSameOrigin() && e.origin !== SELF_ORIGIN) return;`（`16485782`）
   - 行为（同目标同阶梯）：`npx playwright test tests/srcdoc-origin.spec.ts --retries=0` → 修复前 **`1 failed / 4 passed`**（`L3 value 期望 "+86" / 实得 ""`，连跑 3 次逐次同因）→ 修复后 **`5 passed`**
 - [x] 同面排查并修复 `src/main.ts:120` 与 `src/store/index.ts:67` / `:97`（BroadcastChannel 同源校验）
   - 证据：`node tests/scripts/verify-ticket-10.mjs` → `PASS G2d`（main:120）/ `G2e`（main:134）/ `G2f`（store 命中数 = 2）/ `G2g`（全 src 无以 `location.origin` 作比较操作数的残留）
@@ -18,9 +18,12 @@
   - 证据：`node .scratch/architecture-recovery/research/scripts/10-probe-srcdoc-origin.mjs` → 修复前 `locationOrigin: "null" / windowOrigin: "http://127.0.0.1:4273"`、`fill.hostValue: ""`、`fieldEvents: []`、`feedback.present: false`、`lastFill: null`、`pageErrors: 0`；修复后同探针 `hostValue: "+86"`、`fieldEvents: ["input","change"]`、`feedback.present: true`、`lastFill.asserted: true`
   - 报告：`research/window-reports/10-srcdoc-origin-fix-report.md` §2 验收项 3（对照表）
 - [x] 真实站点层 `live-codepen-pen-fullpage` 的 L3/L4 转绿（以 CI run 证据为准）
-  - 证据：见文末「CI 证据」（推送后追加 `real-site-smoke.yml` 的 `workflow_dispatch` run）
+  - 证据（CI，advisory）：`real-site-smoke.yml` run **35154465918** @ `62f2292a` → `[pass] live-codepen-pen-fullpage expect=injected errs=0 L0+ L1+ L2+ L3+ L4+`（声明阶梯 L0/L1/L2/L3/L4 全部通过）
+  - 反向对照（修复前）：票 07 CI run 35120058687 同目标 `L0+ L1+ L2+ L3! L4!` —— 同目标同阶梯的红→绿对照成立
+  - 过程：首轮 run 35153907646 仍红，经归因为**读侧竞态**（非填充未落地；本地同目标全阶梯全通过）后以 `62f2292a` 修复读侧（判据逐字不变，不可能伪造绿）
 - [x] 密封 E2E 135 例、`verify-37`、`verify-42`、`verify-39` 均不回归
-  - E2E：`npx playwright test --retries=0` → **`140 passed / 0 failed`**（135 既有 + 5 新增；门 G4a 静态锁住既有 spec 零删减）
+  - E2E（CI）：run **35154458773** @ `62f2292a` → **`143 passed / 0 failed`**（135 既有 + 5 新增 + 并行票 11 3 例；门 G4a 静态锁住既有 spec 零删减）
+  - E2E（本地自证）：`npx playwright test --retries=0` → `140 passed / 0 failed`
   - `verify-37`：`21 PASS, 0 FAIL`；`verify-42`：`42 PASS, 0 FAIL`
   - `verify-39`：`27 PASS, 1 FAIL` —— **既有非本票红**（`G4e` 命中 5 处全在 `tests/corpus/forms/**`，票 06 语料 provenance 引入；票 07 报告 §4 与 W4 复核已归因留痕；本票 diff 不含 `tests/corpus/**` 与 `site-manifest.json`）
 - [x] 声明本票覆盖的 A-xxx：A-034
@@ -38,8 +41,17 @@
 
 ## CI 证据
 
-锚点：commit sha `f4aad220`（分支 `cch/10-srcdoc-origin-fix`）
+锚点：commit sha **`62f2292a`**（分支 `cch/10-srcdoc-origin-fix`，远端 tip）
 
-> 待推送后追加（推送属远端写，按 WORKFLOW §8.2.4 需用户逐次授权）。
+| workflow | run ID | 结论 |
+|---|---|---|
+| Verify Ticket 10 | 35154458779 | success |
+| E2E | 35154458773 | success（`143 passed`） |
+| Engine Gates | 35154458960 | success |
+| Typecheck | 35154458814 | success |
+| Lockfile Regen | 35154458842 | success |
+| Real-site smoke（advisory，第二轮） | **35154465918** | job success；`live-codepen-pen-fullpage` **L0–L4 全通过**；`live-codepen-editor` 同轮 flaky 红（帧发现阶段，已如实登记） |
+
+推送授权：WORKFLOW §8.2.4 逐次授权（用户裁定「仅新建 cch/10，最小足迹」）；每次推送前后 `git ls-remote` 全量 diff 均仅 `cch/10` 一行变动（详见窗口报告 §7 E-10）。
 
 窗口报告：`research/window-reports/10-srcdoc-origin-fix-report.md`

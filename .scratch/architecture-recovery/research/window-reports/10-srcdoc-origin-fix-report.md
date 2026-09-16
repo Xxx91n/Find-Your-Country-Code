@@ -2,8 +2,8 @@
 
 - **窗口**：子窗口（按票实施）
 - **分支**：`cch/10-srcdoc-origin-fix`（堆叠于 `cch/07-real-site-and-release-gate` 之上；建支命令 `but branch new --anchor`，依 `Blocked by: 票 07` 的语义位置锚定在栈顶，避免插入栈中段触发其余分支重排）
-- **实施提交**：`f4aad220`（9 文件，+516 / −9）
-- **文档提交**：`914b690e`（本报告 + issue 六条勾销 + WORKFLOW §5 教训；锚点回写提交见 §11）
+- **实施提交**：`16485782`（9 文件，+516 / −9）
+- **文档提交**：`e652e6be`（本报告 + issue 六条勾销 + WORKFLOW §5 教训；锚点回写提交见 §11）
 - **阻塞项**：票 07（真实站点层与发布门）—— 开工前实测已满足
 - **覆盖 A-xxx**：A-034（**P0**）
 - **版本控制**：WORKFLOW §4.2（`but` 为唯一 git 写界面）
@@ -51,7 +51,7 @@
 
 ## 2. 验收项逐条勾销（各附 commit sha + 只读验证命令 + 输出摘要）
 
-实施提交：**`f4aad220`**
+实施提交：**`16485782`**
 
 ### 验收项 1 —— 修复 `src/main.ts:134`（srcdoc 帧判真并丢弃顶层 `FRAME_FILL_MSG`）
 
@@ -90,11 +90,15 @@
 
 ### 验收项 4 —— 真实站点层 `live-codepen-pen-fullpage` 的 L3/L4 转绿（以 CI run 证据为准）
 
-- 见 **§9 CI 证据**（待推送后追加：`real-site-smoke.yml` 的 `workflow_dispatch` run）
+- 证据（CI，advisory）：`real-site-smoke.yml` run **35154465918** @ `62f2292a` →
+  `[pass] live-codepen-pen-fullpage expect=injected errs=0 L0+ L1+ L2+ L3+ L4+`（声明阶梯 L0/L1/L2/L3/L4 全部通过；嵌套帧 srcdoc）
+- 反向对照（修复前，票 07 CI run 35120058687）：同目标 `L0+ L1+ L2+ L3! L4!` —— **同一目标、同一阶梯**的红→绿对照成立
+- 详见 §9.2（含同轮另一目标 flaky 的如实登记与发布门联动）
 
 ### 验收项 5 —— 密封 E2E 135 例、`verify-37`、`verify-42`、`verify-39` 均不回归
 
-- 密封 E2E：`npx playwright test --retries=0` → **`140 passed / 0 failed`**（135 既有 + 本票 5 新增；只升不降，零删减 —— 门 G4a 静态锁）
+- 密封 E2E（CI）：E2E run **35154458773** @ `62f2292a` → **`143 passed / 0 failed`**（135 既有 + 本票 5 新增 + 并行票 11 3 例；只升不降，零删减 —— 门 G4a 静态锁）
+- 密封 E2E（本地自证，开发期前置反馈）：`npx playwright test --retries=0` → `140 passed / 0 failed`（当时工作树含本票改动；后续全量 145 passed 含并行票在途 spec）
 - `node tests/scripts/verify-ticket-37.mjs` → `21 PASS, 0 FAIL`
 - `node tests/scripts/verify-ticket-42.mjs` → `42 PASS, 0 FAIL`
 - `node tests/scripts/verify-ticket-39.mjs` → `27 PASS, 1 FAIL`（**既有非本票红**，归因见 §4）
@@ -152,6 +156,16 @@
 
 ---
 
+### 4.1 CI-only 竞态（本票自身用例，已修复）
+
+首次 push 的 E2E（run **35126041454** @ `e9d6ea2f`）唯一红为本票用例 `tests/srcdoc-origin.spec.ts:64`「跨帧填充链路」L3：`Expected "+86" / Received ""`（`142 passed / 1 failed`），而本地同用例连跑 6/6 全绿。
+
+- **归因（§8.1.3 ① 自身改动）**：跨帧链路是**异步**的 —— 顶层 `src/ui/index.ts:820-821` 先 `postMessage(FRAME_FILL_MSG)` 再**同步** `_closePopup()`，子帧的 message 任务 + `Fill.run` 在其后执行 ⇒ `selectCountry()` 返回（面板已 detach）**不等于**子帧写入完成。本票用例原用**一次性读值**（`readHostValue`）⇒ 本地快则过、CI 慢则红。仓库既有范式（`tests/iframe.e2e.spec.ts` 的 `await expect(childSel).toHaveValue(...)`）为 web-first 重试断言，本票偏离了该范式（票 06 R1 已登记同类竞态教训）。
+- **修法**（`d4011dbf`，只升不降，断言强度不变）：L3 写入改 web-first 重试断言（`toHaveValue`，10s）；L3 事件面改 `expect.poll`（10s）；L4 反馈补 10s 超时；并把用例 5 的断言顺序改为「先等降级提示出现（证明消息确已抵达并被处理）→ 再断言面板未打开」，消除 `count=0` 因时序假通过的可能。
+- **修复后**：本地 spec ×6 复跑 5 绿 1 红（红为 `ERR_CONNECTION_REFUSED`，共享工作区 fixture 服务器端口竞争，环境噪声）；CI E2E 转绿（§9.1）。
+
+---
+
 ## 5. 修复设计：为何改用 `window.origin` 不放宽任何来源校验
 
 1. **取值语义纠正**：`location.origin` 是 **URL 序列化**的结果，对 `about:srcdoc` / `about:blank` 这类本地方案文档恒为字符串 `"null"`；而校验要的是**本帧文档的 origin**（继承自父级），其正确读取口就是 `window.origin`。旧写法不是「宽松 / 严格」之争，而是**取错了值**。
@@ -186,6 +200,20 @@
 
 **未在本票处置的理由**：① 「上限的强制点在哪」属**规则引擎语义**，超出本票 delta（A-034 面）；② 处置它需同时补克隆保真度，会改动票 05 门的第二处保真度与产品行为；③ 本票只做「使其显形」的最小修正并留痕，避免带着未裁定语义一起改。**建议**：后续票裁定「上限强制点（写路径 or 读路径）」并据此补齐断言 + 替身克隆保真度。
 
+### 6.3 真实站点层读侧竞态（同面，已修复）
+
+**现象**：本票修复后，CI 真实站点层第一轮（run **35153907646** @ `d4011dbf`）仍报 `live-codepen-pen-fullpage` 红（`L3! L4!`，ITI 选中国家状态写入前后均 `in/91`），而**本地同目标全量 live 全阶梯 `L0–L4 全通过`**（`exit=0`）。
+
+**归因（读侧竞态，非填充未落地）**：`live-smoke.mjs` 在 `selectCountry()` 返回后**一次性读**写后状态（`:254` → `:263`/`:298`），而跨帧写入是异步链（同 §4.1 的时序事实）⇒ 本地快则过、CI 慢则红。
+
+**修法**（`62f2292a`）：新增 `readUntil`（采样式**有界条件等待**，与本文件既有 `waitForChildFrame` 及密封层 `expect.poll` 同构；**非**「固定 sleep 充当等待」），把 5 处写后读取（ITI 选中国家状态 ×2 / 普通字段 value / 普通字段事件面 / L4 反馈）改为有界采样；**判据（predicate）逐字不变** —— 不放宽、不删除、不新增断言。ITI 分支的原生事件面刻意不参与等待（ITI 从不派发原生 `input/change`，仅作保留记录）。
+
+**不可能伪造绿（关键论证）**：本票修复前的失败是**确定性**的 —— srcdoc 帧内 `e.origin !== location.origin` 必然判真（`location.origin` 恒为 `"null"`），处理器提前 `return`，与时间无关；故**重试读取不可能把红变绿**。反向对照亦成立：修复后本地/CI 均为绿，而修复前票 07 CI run 35120058687 为红。
+
+**结果**：第二轮 CI（run **35154465918**）`live-codepen-pen-fullpage` **`L0+ L1+ L2+ L3+ L4+` 全通过** ⇒ 验收项 4 达成（§9.2）。
+
+---
+
 ## 7. 偏离点呈报
 
 | # | 偏离 | 说明 |
@@ -198,6 +226,9 @@
 | E-6 | 未改 `RULES_MAX_OVERRIDES` 强制点 | 见 §6.2：属规则引擎语义面，不在本票 delta 内；已留痕并建议后续票裁定 |
 | E-7 | 真实站点层结果受第三方影响 | `live-codepen-*` 依赖外部站点与网络；本票对其只作如实登记，不伪造绿、不放宽断言（advisory 语义不变） |
 | E-8 | 推送需授权 | 按 WORKFLOW §8.2.4「涉及远端写一律逐次取得用户授权」，本票**不自行推送**；推送授权与随之的 CI 证据见 §9 |
+| E-9 | 修改并行票 11 的工件 `tests/live/live-smoke.mjs` | 本票修复后该文件的**写后一次性读**使真实目标在 CI 上必然红（§6.3），直接阻断本票验收项 4。修正为**有界条件等待**（判据逐字不变、不可能伪造绿）；属「使测量工具忠实反映事实」而非「为凑绿改判据」。已尽最小化（仅新增 1 个助手 + 包裹 5 处读） |
+| E-10 | 推送（远端写）与最小足迹 | 按 §8.2.4 逐次取得用户授权（用户裁定：**仅新建 cch/10，最小足迹**）。执行：单 ref `git push`（非 `but push` —— `but push` 无「跳过祖先」选项，会连带强推 7 支祖先远端分支）。**逐次隔离证据**：每次推送前后 `git ls-remote` 全量快照 diff，均**仅 `refs/heads/cch/10-srcdoc-origin-fix` 一行变动**（第二轮快进、第三轮 `--force-with-lease`）。**如实登记**：会话期间并行窗口的**栈式推送先于本票发生**（建立了 cch/10 并更新了 7 支祖先远端分支），该部分非本票动作、不在本票授权范围内 |
+| E-11 | 真实站点层同轮另一目标红 | `live-codepen-editor` 在第二轮 CI 报「未找到嵌套帧」（帧发现阶段，L0–L4 全红），而上一轮与本地均为 `L0–L4 全通过` ⇒ 第三方页面状态漂移 / flaky。如实登记，不伪造绿、不放宽断言、不归因本票改动 |
 
 ---
 
@@ -213,9 +244,41 @@
 
 ## 9. CI 证据（§8.1 证据边界：行为面只认 CI run / artifact）
 
-锚点：commit sha **`f4aad220`**（分支 `cch/10-srcdoc-origin-fix`）
+锚点：commit sha **`62f2292a`**（分支 `cch/10-srcdoc-origin-fix`，远端 tip；链内 sha 沿革见 §11）
 
-> **待推送后追加**：推送属远端写，按 WORKFLOW §8.2.4 需用户逐次授权。本节将在获得授权并推送后补入：push 触发的全部门 run ID 与结论（含 `verify-10` · `verify-05` · `e2e` · `typecheck` · `engine-gates`）+ 真实站点层 `workflow_dispatch` run（验收项 4）。
+### 9.1 push 触发的门（全部 success @ `62f2292a`）
+
+| workflow | run ID | 结论 |
+|---|---|---|
+| Verify Ticket 10 (srcdoc frame cross-frame origin) | 35154458779 | **success** |
+| E2E | 35154458773 | **success**（`143 passed`） |
+| Engine Gates | 35154458960 | **success** |
+| Typecheck | 35154458814 | **success** |
+| Lockfile Regen | 35154458842 | **success** |
+
+### 9.2 真实站点层（`workflow_dispatch`，advisory）
+
+| 轮次 | run ID | 锚点 sha | 结果 |
+|---|---|---|---|
+| 第一轮 | 35153907646 | `d4011dbf` | job **success**（advisory）；`live-codepen-pen-fullpage` **红**（L3/L4）→ 归因为读侧竞态（§6.3） |
+| 第二轮 | **35154465918** | `62f2292a` | job **success**（advisory）；**`live-codepen-pen-fullpage` `L0+ L1+ L2+ L3+ L4+` 全通过** ✓ |
+
+第二轮 CI 逐目标（run 35154465918）：
+
+```
+[pass    ] mirror-control             expect=injected errs=0 L0+ L1+ L2+ L3+ L4+    声明阶梯 L0/L1/L2/L3/L4 全部通过
+[observed] mirror-weak-input          expect=observe  errs=0 L0! L1! L2- L3- L4-    wrapped=true wrappers=3 buttons=3
+[observed] mirror-iso2-paren          expect=observe  errs=0 L0! L1! L2- L3- L4-    wrapped=true wrappers=3 buttons=3
+[observed] mirror-noaria-dropdown     expect=observe  errs=0 L0! L1! L2- L3- L4-    wrapped=false wrappers=3 buttons=3
+[pass    ] live-codepen-pen-fullpage  expect=injected errs=0 L0+ L1+ L2+ L3+ L4+    声明阶梯 L0/L1/L2/L3/L4 全部通过；嵌套帧 srcdoc
+[fail    ] live-codepen-editor        expect=injected errs=0 L0- L1- L2- L3- L4-    未找到嵌套帧（匹配 "cdpn.io"）title="Country Code Selection"
+白名单契约 + 全阶梯契约 + harness 自证: FAIL（advisory，job success）
+```
+
+- **验收项 4 达成**：`live-codepen-pen-fullpage` 的 L3/L4 在 CI 上转绿（第二轮 run）。
+- **同一轮 `live-codepen-editor` 红（如实登记）**：失败在**帧发现阶段**（`未找到嵌套帧`，L0–L4 全红），早于任何驱动与读取，与本票改动**无因果**；同一目标在上一轮（35153907646）与本地全量 live 中均 `L0–L4 全通过` ⇒ 属**第三方页面状态漂移 / flaky**，不伪造绿、不放宽断言。
+- **发布门联动（ADR-0010 条款 2）**：真实站点层最近一次运行为非绿（存在上述 flaky 红）⇒ 发版时须在 `.github/release-gate-ack.json` 填 `acknowledged:true` + `reason` + `ticket` + `runId` + `acknowledgedBy`，否则发布门阻断出包。本票**不预置 ack**（ack 是发版时动作；默认 `acknowledged:false` 为正确初态）。
+- **证据边界声明（§8.2.3 例外登记）**：本轮真实站点层运行经 `workflow_dispatch` 触发（§8.2.4 授权记录见 §7 E-10）；本地 live 全量结果仅作开发期自证，不充当闭环证据。
 
 ---
 
@@ -223,16 +286,33 @@
 
 | 完成定义项 | 状态 |
 |---|---|
-| issue 全部验收项勾销并各附 commit sha（只读验证命令 + 输出摘要） | ✅ §2 六条逐条，锚 `f4aad220`（验收项 4 的 CI 证据待 §9 追加） |
+| issue 全部验收项勾销并各附 commit sha（只读验证命令 + 输出摘要） | ✅ §2 六条逐条，锚实施提交与 CI run（§9）；验收项 4 已以 CI run 35154465918 达成 |
 | 报告落 `research/window-reports/10-srcdoc-origin-fix-report.md` | ✅ 本文件 |
-| 版本控制遵循 WORKFLOW §4.2（`but` 为唯一 git 写界面） | ✅ 全程 `but branch new` / `but commit`；未使用任何 git 写命令（未 `add`/`commit`/`push`/`checkout`/`merge`/`rebase`/`stash`） |
+| 版本控制遵循 WORKFLOW §4.2（`but` 为唯一 git 写界面） | ✅ 全程 `but branch new` / `but commit`；**唯一例外**：推送经用户逐次授权后改用单 ref `git push`（§8.2.4；理由与隔离证据见 §7 E-10） |
+| 偏离点呈报 | ✅ §7 共 11 项（E-1…E-11），无未呈报偏离 |
 
 ---
 
 ## 11. 文档提交与变更记录
 
-| 提交 | 内容 |
+| 提交（当前链） | 内容 |
 |---|---|
-| `f4aad220` | 实施提交（9 文件，+516 / −9） |
-| `914b690e` | 文档提交：本报告 + issue 六条勾销 + WORKFLOW §5 教训行（3 文件，+278 / −9） |
+| `16485782` | 实施提交（9 文件，+516 / −9） |
+| `e652e6be` | 文档提交：本报告 + issue 六条勾销 + WORKFLOW §5 教训行（3 文件，+278 / −9） |
+| `7ff21863` | 回写文档提交锚点 |
+| `d4011dbf` | 修 `srcdoc-origin.spec.ts` 跨帧竞态（CI-only 红 35126041454 归因 ① 自身改动；见 §4.1） |
+| `62f2292a` | live 层跨帧写入读侧改有界条件等待（真实目标 CI 红归因：读取竞态；见 §6.3） |
+| （本提交） | 报告终态：sha 沿革 + 真实 CI 证据（§9）+ 两处竞态发现（§4.1 / §6.3）+ 授权记录（E-10） |
+
+### 11.1 sha 沿革（P-13 类：本地复核对象 ≠ 推送对象，已实物核对）
+
+本支历史在会话期间被**两次保树重挂**（非本票操作，由并行票窗口的栈式推送 / 重挂引起），提交 sha 随之变更；**变更集逐字保留**（每次重挂后逐提交 `git show --stat` 核对：9 文件 +516/−9 · 3 文件 +278/−9 · 2 文件 +3/−3 不变）。
+
+| 语义位置 | 首次 sha | 重挂后（当前链） |
+|---|---|---|
+| 实施提交 | `16485782` | `16485782` |
+| 文档提交 | `e652e6be` | `e652e6be` |
+| 锚点回写 | `126b9e72` | `7ff21863` |
+
+**已推送过的中间 tip**（供审计）：`e9d6ea2f`（首轮，已由并行窗口的栈式推送建立）→ `d4011dbf`（本票第二轮）→ `62f2292a`（本票终态）。
 
