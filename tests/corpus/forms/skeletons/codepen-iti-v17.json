@@ -1,0 +1,359 @@
+{
+  "id": "codepen-iti-v17",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/codepen-iti-v17.frame0.html",
+  "source_url": "https://cdpn.io/webdevpuneet/fullpage/ExzVrPY",
+  "root_selector": ".iti",
+  "node_count": 39,
+  "sha256": "db5c1c8f4f3071371aa6e6f72c5a4f8602e617ec2b079c14a3832225ae47767c",
+  "tree": {
+    "tag": "div",
+    "class": [
+      "iti",
+      "iti--allow-dropdown",
+      "iti--separate-dial-code"
+    ],
+    "children": [
+      {
+        "tag": "div",
+        "class": [
+          "iti__flag-container"
+        ],
+        "children": [
+          {
+            "tag": "div",
+            "class": [
+              "iti__selected-flag"
+            ],
+            "attrs": {
+              "aria-activedescendant": "aaa-#··aaaa-aa",
+              "aria-controls": "ref",
+              "aria-owns": "ref",
+              "role": "aaaaaaaa"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "class": [
+                  "iti__flag",
+                  "iti__in"
+                ]
+              },
+              {
+                "tag": "div",
+                "class": [
+                  "iti__selected-dial-code"
+                ],
+                "text": "+##"
+              },
+              {
+                "tag": "div",
+                "class": [
+                  "iti__arrow"
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "ul",
+            "class": [
+              "iti__country-list",
+              "iti__hide"
+            ],
+            "attrs": {
+              "aria-label": "aaaa aa aaaaaaaaa",
+              "role": "aaaaaaa"
+            },
+            "children": [
+              {
+                "tag": "li",
+                "class": [
+                  "iti__country",
+                  "iti__preferred"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "#",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__flag-box"
+                    ],
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__flag",
+                          "iti__us"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__country-name"
+                    ],
+                    "text": "aaaaaa aaaaaa"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__dial-code"
+                    ],
+                    "text": "+#"
+                  }
+                ]
+              },
+              {
+                "tag": "li",
+                "class": [
+                  "iti__country",
+                  "iti__preferred"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "##",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__flag-box"
+                    ],
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__flag",
+                          "iti__gb"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__country-name"
+                    ],
+                    "text": "aaaaaa aaaaaaa"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__dial-code"
+                    ],
+                    "text": "+##"
+                  }
+                ]
+              },
+              {
+                "tag": "li",
+                "class": [
+                  "iti__divider"
+                ],
+                "attrs": {
+                  "aria-disabled": "aaaa",
+                  "role": "aaaaaaaaa"
+                }
+              },
+              {
+                "tag": "li",
+                "class": [
+                  "iti__country",
+                  "iti__standard"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "##",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__flag-box"
+                    ],
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__af",
+                          "iti__flag"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__country-name"
+                    ],
+                    "text": "aaaaaaaaaaa (············)"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__dial-code"
+                    ],
+                    "text": "+##"
+                  }
+                ],
+                "repeat": 50
+              },
+              {
+                "tag": "li",
+                "class": [
+                  "iti__country",
+                  "iti__standard"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "###",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__flag-box"
+                    ],
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__al",
+                          "iti__flag"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__country-name"
+                    ],
+                    "text": "aaaaaaa (aaaaa·aa)"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__dial-code"
+                    ],
+                    "text": "+###"
+                  }
+                ],
+                "repeat": 166
+              },
+              {
+                "tag": "li",
+                "class": [
+                  "iti__country",
+                  "iti__standard"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "#",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__flag-box"
+                    ],
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__as",
+                          "iti__flag"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__country-name"
+                    ],
+                    "text": "aaaaaaaa aaaaa"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__dial-code"
+                    ],
+                    "text": "+#"
+                  }
+                ],
+                "repeat": 27
+              },
+              {
+                "tag": "li",
+                "class": [
+                  "iti__active",
+                  "iti__country",
+                  "iti__standard"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "##",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__flag-box"
+                    ],
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__flag",
+                          "iti__in"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__country-name"
+                    ],
+                    "text": "aaaaa (····)"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__dial-code"
+                    ],
+                    "text": "+##"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "input",
+        "class": [
+          "form-control"
+        ],
+        "attrs": {
+          "autocomplete": "aaa",
+          "name": "aaaa",
+          "placeholder": "aaaaa aaaaaa",
+          "type": "aaaa"
+        }
+      }
+    ]
+  }
+}

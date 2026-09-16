@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "name": "形态语料（form corpus）候选指定页清单",
+    "ticket": "06-form-corpus",
+    "covers": "A-030",
+    "created": "2026-09-16",
+    "role": "**输入清单**（hand-maintained）。指纹与元数据由 tests/corpus/forms/manifest.json 承载（generated ledger）。",
+    "candidateRule": "候选非承诺（D-014）：候选页须过 D-008 合规口径（只采公开页 / 剥离品牌内容 / 标 source_url + captured_at / 不含真实 PII）后才得入库；原始快照一律出仓归档，不入 git。",
+    "adoptionValues": "adopted = 已派生镜像页 + 结构骨架入库；skeleton-only = 仅结构骨架入库（镜像页未派生，附 reason）；deferred = 未采用（附 reason）",
+    "captureTool": "tests/scripts/06-capture-forms.mjs（退化回路第 1 步；输出仓库外 archive）",
+    "mirrorRoot": "tests/corpus/forms/mirrors/（单一 tests/ 根下；ADR-0006 条款 5）"
+  },
+  "sources": [
+    {
+      "id": "iti-v29",
+      "url": "https://intl-tel-input.com/",
+      "family": "iti",
+      "adoption": "adopted",
+      "form_selector": ".iti",
+      "notes": "iti v29 形态：.iti 容器 + input[type=tel] + 国家按钮 + 内部搜索框 input[role=combobox][type=search][aria-autocomplete=list]（A-031 误报面）；listbox 项用 data-dial-code + data-iso2"
+    },
+    {
+      "id": "rpn-input",
+      "url": "https://catamphetamine.gitlab.io/react-phone-number-input/",
+      "family": "phone-input-select",
+      "adoption": "adopted",
+      "form_selector": ".PhoneInput",
+      "notes": "react-phone-number-input：input[type=tel] + 原生 select.PhoneInputCountrySelect 国家下拉（value 恰为 ISO2，文本为国名）"
+    },
+    {
+      "id": "codepen-iti-v17",
+      "url": "https://cdpn.io/webdevpuneet/fullpage/ExzVrPY",
+      "family": "iti-nested-frame",
+      "adoption": "adopted",
+      "form_selector": "iframe#result",
+      "skeleton_frame": 0,
+      "skeleton_root": ".iti",
+      "mirror_file": "codepen-iti-v17.html",
+      "child_mirror_file": "codepen-iti-v17-child.html",
+      "notes": "CodePen fullpage（ExzVrPY，iti v17）：与既有 live 目标同源；镜像页复刻「外层壳 + 嵌套预览帧 + iti v17 表单」（验收面 #14 跨隔离上下文）"
+    },
+    {
+      "id": "mui-autocomplete",
+      "url": "https://mui.com/material-ui/react-autocomplete/",
+      "family": "pseudo-select",
+      "adoption": "adopted",
+      "form_selector": ".MuiAutocomplete-root",
+      "notes": "MUI Autocomplete：input[role=combobox][aria-autocomplete=list][aria-controls] + role=listbox 浮层（可编辑型伪下拉）"
+    },
+    {
+      "id": "element-plus-select",
+      "url": "https://element-plus.org/en-US/component/select.html",
+      "family": "pseudo-select",
+      "adoption": "adopted",
+      "form_selector": ".el-select",
+      "notes": "Element Plus Select：div 触发器 + readonly input.el-select__input[role=combobox][aria-controls] + 浮层 listbox（Vue 形态，select-only 型）"
+    },
+    {
+      "id": "antd-select",
+      "url": "https://ant.design/components/select",
+      "family": "pseudo-select",
+      "adoption": "adopted",
+      "form_selector": ".ant-select",
+      "notes": "Ant Design Select：div 触发器 + readonly input.ant-select-input[role=combobox][aria-haspopup=listbox]（React 形态，select-only 型）"
+    },
+    {
+      "id": "chosen-select",
+      "url": "https://harvesthq.github.io/chosen/",
+      "family": "visual-replacement-hidden-select",
+      "adoption": "adopted",
+      "form_selector": "select.chosen-select",
+      "notes": "Chosen：视觉替换型隐藏 select 子形态 display:none（A-032 子形态 B，与语料 N7 假设一致）；对照子形态 A（Select2 width:1px + aria-hidden）在阶段 B（票 08）另建"
+    },
+    {
+      "id": "heroku-signup",
+      "url": "https://signup.heroku.com/",
+      "family": "real-signup",
+      "adoption": "adopted",
+      "form_selector": "#self_declared_country",
+      "notes": "真实注册页原生 select：选项 value = 国名、text = 国名（非区号、非 ISO2），与 rpn-input 的 ISO2 值域形成对照"
+    }
+  ]
+}

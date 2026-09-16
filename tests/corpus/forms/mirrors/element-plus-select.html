@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · Element Plus Select (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（mirror page）— id: element-plus-select
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://element-plus.org/en-US/component/select.html
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : element-plus-select（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载。保留公开形态（.el-select /
+                 input.el-select__input[role=combobox][readonly][aria-controls] /
+                 .el-select-dropdown__item[role=option]），去品牌 / 去追踪 / 内容替换；
+                 不含真实 PII。
+  family       : pseudo-select（**select-only 型**：readonly INPUT 触发器）
+  shape_notes  : 触发器 `input.el-select__input` 带 `readonly` → 填充引擎走
+                 「开面板 + 点击 option」路径（ADR-0005 select-only 型）。
+                 真实页浮层 teleport 到 body；镜像保持同源文档内（`aria-controls`
+                 经 `document.getElementById` 可达，形态等价）。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 32px; }
+  main { max-width: 360px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #52606d; font-size: 13px; margin: 0 0 20px; }
+  .el-select { position: relative; }
+  .el-select__wrapper { display: flex; align-items: center; gap: 6px; border: 1px solid #d0d5dd; border-radius: 6px; padding: 0 8px; min-height: 40px; cursor: pointer; }
+  .el-select__selection { flex: 1; display: flex; align-items: center; min-width: 0; }
+  .el-select__input-wrapper.is-hidden { width: 0; overflow: hidden; }
+  .el-select__input { border: 0; padding: 0; width: 1px; opacity: 0; }
+  .el-select__placeholder { color: #52606d; }
+  .el-select__placeholder.is-transparent { color: #98a2b3; }
+  .el-select__suffix { color: #52606d; }
+  .el-select-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; margin-top: 4px; background: #fff; border: 1px solid #d0d5dd; border-radius: 6px; box-shadow: 0 8px 24px rgba(16,24,40,.12); }
+  .el-select-dropdown.hidden { display: none; }
+  .el-select-dropdown__list { list-style: none; margin: 0; padding: 4px; max-height: 200px; overflow-y: auto; }
+  .el-select-dropdown__item { padding: 8px; cursor: pointer; border-radius: 4px; }
+  .el-select-dropdown__item:hover { background: #f0f4f8; }
+  .el-select-dropdown__item.selected { color: #2563eb; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Country</h1>
+  <p class="hint">De-branded mirror of a public form shape (family: pseudo-select).</p>
+
+  <div class="el-select" id="ep-demo">
+    <div class="el-select__wrapper" tabindex="0">
+      <div class="el-select__selection">
+        <div class="el-select__selected-item el-select__input-wrapper is-hidden">
+          <input id="el-id-1024-382" class="el-select__input" type="text" role="combobox" readonly
+                 aria-controls="el-select-listbox" aria-haspopup="listbox" aria-expanded="false"
+                 aria-autocomplete="none" spellcheck="false" value="">
+        </div>
+        <div class="el-select__selected-item el-select__placeholder is-transparent">
+          <span>Select</span>
+        </div>
+      </div>
+      <div class="el-select__suffix"><i class="el-icon el-select__caret">v</i></div>
+    </div>
+    <div class="el-select-dropdown hidden">
+      <ul id="el-select-listbox" class="el-select-dropdown__list" role="listbox">
+        <li id="el-opt-cn" class="el-select-dropdown__item" role="option" data-value="CN" aria-selected="false">China (+86)</li>
+        <li id="el-opt-us" class="el-select-dropdown__item" role="option" data-value="US" aria-selected="false">United States (+1)</li>
+        <li id="el-opt-gb" class="el-select-dropdown__item" role="option" data-value="GB" aria-selected="false">United Kingdom (+44)</li>
+        <li id="el-opt-jp" class="el-select-dropdown__item" role="option" data-value="JP" aria-selected="false">Japan (+81)</li>
+      </ul>
+    </div>
+  </div>
+
+  <p id="ep-selected" class="hint" style="margin-top:16px">Selected: (none)</p>
+</main>
+
+<script>
+(function () {
+  var root = document.getElementById('ep-demo');
+  var wrapper = root.querySelector('.el-select__wrapper');
+  var trigger = root.querySelector('.el-select__input');
+  var drop = root.querySelector('.el-select-dropdown');
+  var list = root.querySelector('#el-select-listbox');
+  var ph = root.querySelector('.el-select__placeholder span');
+  var out = document.getElementById('ep-selected');
+
+  function open() { drop.classList.remove('hidden'); trigger.setAttribute('aria-expanded', 'true'); }
+  function close() { drop.classList.add('hidden'); trigger.setAttribute('aria-expanded', 'false'); }
+  function commit(li) {
+    Array.prototype.forEach.call(list.querySelectorAll('[role=option]'), function (o) {
+      o.setAttribute('aria-selected', o === li ? 'true' : 'false');
+      o.classList.toggle('selected', o === li);
+    });
+    if (li) { ph.textContent = li.textContent.trim(); ph.classList.remove('is-transparent'); out.textContent = 'Selected: ' + li.textContent.trim(); }
+  }
+
+  wrapper.addEventListener('click', function () {
+    if (drop.classList.contains('hidden')) open(); else close();
+  });
+  list.addEventListener('click', function (e) {
+    var li = e.target.closest('[role=option]');
+    if (!li) return;
+    commit(li); close();
+  });
+})();
+</script>
+</body>
+</html>

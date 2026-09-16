@@ -1,0 +1,102 @@
+{
+  "id": "element-plus-select",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/element-plus-select.html",
+  "source_url": "https://element-plus.org/en-US/component/select.html",
+  "root_selector": ".el-select",
+  "node_count": 11,
+  "sha256": "2f1e93de7b293a0ca13d9f060d766d3ed781b062d19ba920252b8c12ae237559",
+  "tree": {
+    "tag": "div",
+    "class": [
+      "el-select"
+    ],
+    "children": [
+      {
+        "tag": "div",
+        "class": [
+          "el-select__wrapper",
+          "el-tooltip__trigger",
+          "el-tooltip__trigger"
+        ],
+        "children": [
+          {
+            "tag": "div",
+            "class": [
+              "el-select__selection"
+            ],
+            "children": [
+              {
+                "tag": "div",
+                "class": [
+                  "el-select__input-wrapper",
+                  "el-select__selected-item",
+                  "is-hidden"
+                ],
+                "children": [
+                  {
+                    "tag": "input",
+                    "class": [
+                      "el-select__input"
+                    ],
+                    "attrs": {
+                      "aria-activedescendant": "",
+                      "aria-autocomplete": "aaaa",
+                      "aria-controls": "ref",
+                      "aria-haspopup": "aaaaaaa",
+                      "autocomplete": "aaa",
+                      "readonly": "",
+                      "role": "aaaaaaaa",
+                      "type": "aaaa"
+                    }
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "class": [
+                  "el-select__placeholder",
+                  "el-select__selected-item",
+                  "is-transparent"
+                ],
+                "children": [
+                  {
+                    "tag": "span",
+                    "text": "aaaaaa"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "class": [
+              "el-select__suffix"
+            ],
+            "children": [
+              {
+                "tag": "i",
+                "class": [
+                  "el-icon",
+                  "el-select__caret",
+                  "el-select__icon"
+                ],
+                "children": [
+                  {
+                    "tag": "svg",
+                    "children": [
+                      {
+                        "tag": "path"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

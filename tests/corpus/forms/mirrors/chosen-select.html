@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · Chosen (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（mirror page）— id: chosen-select
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://harvesthq.github.io/chosen/
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : chosen-select（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载。保留公开形态（原生 select 被 JS 替换后
+                 `display:none` + `.chosen-container` 可见替身 + `.chosen-results`
+                 选项），去品牌 / 去追踪 / 内容替换；不含真实 PII。
+  family       : visual-replacement-hidden-select
+  shape_notes  : A-032 子形态 **B（`display:none`）**——Chosen 实测
+                 `select.chosen-select` 为 `display:none`，与语料 N7 假设一致；
+                 对照子形态 A（Select2 `width:1px + aria-hidden`，非零尺寸）在
+                 阶段 B（票 08）另建。原生 select 仍承载值（视觉替换型豁免面）。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 32px; }
+  main { max-width: 360px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #52606d; font-size: 13px; margin: 0 0 20px; }
+  .chosen-select { display: none; }
+  .chosen-container { position: relative; }
+  .chosen-single { display: flex; align-items: center; justify-content: space-between; min-height: 40px; padding: 0 10px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; cursor: pointer; text-decoration: none; color: #1f2933; }
+  .chosen-single div b { display: inline-block; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #52606d; }
+  .chosen-single.chosen-default span { color: #98a2b3; }
+  .chosen-drop { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; margin-top: 4px; background: #fff; border: 1px solid #d0d5dd; border-radius: 6px; box-shadow: 0 8px 24px rgba(16,24,40,.12); }
+  .chosen-drop.hidden { display: none; }
+  .chosen-search { padding: 6px; }
+  .chosen-search-input { width: 100%; padding: 6px 8px; border: 1px solid #d0d5dd; border-radius: 4px; font: inherit; }
+  .chosen-results { list-style: none; margin: 0; padding: 4px; max-height: 200px; overflow-y: auto; }
+  .chosen-results li { padding: 8px; cursor: pointer; border-radius: 4px; }
+  .chosen-results li:hover, .chosen-results li.highlighted { background: #f0f4f8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Country</h1>
+  <p class="hint">De-branded mirror of a public form shape (family: visual-replacement-hidden-select).</p>
+
+  <select class="chosen-select" data-placeholder="Choose a Country..." tabindex="1" aria-label="Country">
+    <option value=""></option>
+    <option value="United States">United States</option>
+    <option value="United Kingdom">United Kingdom</option>
+    <option value="China">China</option>
+    <option value="Japan">Japan</option>
+    <option value="Germany">Germany</option>
+    <option value="Canada">Canada</option>
+  </select>
+
+  <div class="chosen-container chosen-container-single" id="chosen-demo" title="Country">
+    <a class="chosen-single chosen-default" tabindex="0"><span>Choose a Country...</span><div><b></b></div></a>
+    <div class="chosen-drop hidden">
+      <div class="chosen-search"><input class="chosen-search-input" type="text" autocomplete="off" tabindex="2" aria-label="Search"></div>
+      <ul class="chosen-results" role="listbox"></ul>
+    </div>
+  </div>
+
+  <p id="chosen-selected" class="hint" style="margin-top:16px">Selected: (none)</p>
+</main>
+
+<script>
+// 复刻 Chosen 的视觉替换：原生 select 被隐藏，可见替身承载展示与交互
+(function () {
+  var sel = document.querySelector('select.chosen-select');
+  var root = document.getElementById('chosen-demo');
+  var single = root.querySelector('.chosen-single');
+  var singleText = single.querySelector('span');
+  var drop = root.querySelector('.chosen-drop');
+  var search = root.querySelector('.chosen-search-input');
+  var results = root.querySelector('.chosen-results');
+  var out = document.getElementById('chosen-selected');
+
+  function buildResults(q) {
+    var query = (q || '').trim().toLowerCase();
+    results.innerHTML = '';
+    Array.prototype.forEach.call(sel.options, function (o) {
+      if (!o.value) return;
+      if (query && o.text.toLowerCase().indexOf(query) < 0) return;
+      var li = document.createElement('li');
+      li.className = 'active-result';
+      li.setAttribute('role', 'option');
+      li.setAttribute('data-value', o.value);
+      li.textContent = o.text;
+      results.appendChild(li);
+    });
+  }
+
+  function open() { drop.classList.remove('hidden'); buildResults(search.value); search.focus(); }
+  function close() { drop.classList.add('hidden'); }
+  function select(value) {
+    sel.value = value;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    singleText.textContent = value;
+    single.classList.remove('chosen-default');
+    out.textContent = 'Selected: ' + value;
+    close();
+  }
+
+  single.addEventListener('click', function () {
+    if (drop.classList.contains('hidden')) open(); else close();
+  });
+  search.addEventListener('input', function () { buildResults(search.value); });
+  results.addEventListener('click', function (e) {
+    var li = e.target.closest('li');
+    if (li) select(li.getAttribute('data-value'));
+  });
+  // 原生 select 被外部写入（填充引擎 select 策略）→ 同步可见替身（页面侧可观测 L3 判据）
+  sel.addEventListener('change', function () {
+    if (sel.value) { singleText.textContent = sel.value; single.classList.remove('chosen-default'); out.textContent = 'Selected: ' + sel.value; }
+  });
+})();
+</script>
+</body>
+</html>

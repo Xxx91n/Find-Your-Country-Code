@@ -1,0 +1,81 @@
+{
+  "id": "antd-select",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/antd-select.html",
+  "source_url": "https://ant.design/components/select",
+  "root_selector": ".ant-select",
+  "node_count": 7,
+  "sha256": "5ed6330adb220d80b787a36c5e17ad4cb8b1499b5066f58cf7fe8624c0cd4ff1",
+  "tree": {
+    "tag": "div",
+    "class": [
+      "acss-1p3uiiz",
+      "ant-select",
+      "ant-select-css-var",
+      "ant-select-filled",
+      "ant-select-show-arrow",
+      "ant-select-single",
+      "ant-select-sm"
+    ],
+    "children": [
+      {
+        "tag": "div",
+        "class": [
+          "ant-select-content",
+          "ant-select-content-has-value"
+        ],
+        "text": "#.#.#",
+        "children": [
+          {
+            "tag": "input",
+            "class": [
+              "ant-select-input"
+            ],
+            "attrs": {
+              "aria-autocomplete": "aaaa",
+              "aria-haspopup": "aaaaaaa",
+              "autocomplete": "aaa-aaaaaaaa",
+              "readonly": "",
+              "role": "aaaaaaaa",
+              "type": "aaaa"
+            }
+          }
+        ]
+      },
+      {
+        "tag": "div",
+        "class": [
+          "ant-select-suffix"
+        ],
+        "children": [
+          {
+            "tag": "span",
+            "class": [
+              "anticon",
+              "anticon-down"
+            ],
+            "attrs": {
+              "aria-label": "aaaa",
+              "role": "aaa"
+            },
+            "children": [
+              {
+                "tag": "svg",
+                "attrs": {
+                  "aria-hidden": "aaaa",
+                  "data-icon": "aaaa"
+                },
+                "children": [
+                  {
+                    "tag": "path"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

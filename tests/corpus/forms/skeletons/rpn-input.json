@@ -1,0 +1,109 @@
+{
+  "id": "rpn-input",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/rpn-input.html",
+  "source_url": "https://catamphetamine.gitlab.io/react-phone-number-input/",
+  "root_selector": ".PhoneInput",
+  "node_count": 15,
+  "sha256": "bf3b1c60459e468be553227aba3f7fe0460aa00c412bb03f5c4ca80da9948296",
+  "tree": {
+    "tag": "div",
+    "class": [
+      "PhoneInput"
+    ],
+    "children": [
+      {
+        "tag": "div",
+        "class": [
+          "PhoneInputCountry"
+        ],
+        "children": [
+          {
+            "tag": "select",
+            "class": [
+              "PhoneInputCountrySelect"
+            ],
+            "attrs": {
+              "aria-label": "aaaaa aaaaaa aaaaaaa"
+            },
+            "children": [
+              {
+                "tag": "option",
+                "repeat": 233
+              },
+              {
+                "tag": "option",
+                "repeat": 13
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "class": [
+              "PhoneInputCountryIcon"
+            ],
+            "attrs": {
+              "aria-hidden": "aaaa"
+            },
+            "children": [
+              {
+                "tag": "svg",
+                "class": [
+                  "PhoneInputCountryIconImg"
+                ],
+                "children": [
+                  {
+                    "tag": "title",
+                    "text": "aaaaaaaaaaaaa"
+                  },
+                  {
+                    "tag": "g",
+                    "class": [
+                      "PhoneInputInternationalIconGlobe"
+                    ],
+                    "children": [
+                      {
+                        "tag": "path",
+                        "repeat": 4
+                      },
+                      {
+                        "tag": "line"
+                      },
+                      {
+                        "tag": "line"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "path",
+                    "class": [
+                      "PhoneInputInternationalIconPhone"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "class": [
+              "PhoneInputCountrySelectArrow"
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "input",
+        "class": [
+          "PhoneInputInput"
+        ],
+        "attrs": {
+          "autocomplete": "aaa",
+          "placeholder": "aaaaa aaaaa aaaaaa",
+          "type": "aaa"
+        }
+      }
+    ]
+  }
+}
