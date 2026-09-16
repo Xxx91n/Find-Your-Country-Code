@@ -8,7 +8,14 @@
 //   L0 静默健康    pageerror = 0（永不单独算生效）
 //   L1 元素已注入  目标字段被 .cch-wrapper 包裹，.cch-btn 的 data-cch-tier ∈ {auto, lowkey}
 //   L2 交互可驱动  面板 #cch-pop 可见 + 搜索收窄可见行（跨帧为双端断言：子帧图标 → 顶层面板）
-//   L3 写入结果正确 宿主字段 value 写入所选国家区号 + 派发 input / change
+//   L3 写入结果正确 按**写入口形态**分派（票 11 / A-035）：
+//                   · 普通字段（select / input / contenteditable）→ 宿主 value 写入所选国家区号
+//                     + 派发 input / change（票 07 原判据，逐字不变）
+//                   · ITI 接管字段 → **选中国家状态**（官方读 API → DOM 选中态）
+//                     + ITI 官方 countrychange 事件。依据：ITI 官方**不承诺**把区号写进其
+//                     input.value（separateDialCode 模式下由独立元素承载），且**从不**派发
+//                     原生 input / change——见 research/atomcode-11-iti-l3-criterion.md
+//                     与 research/window-reports/11-iti-l3-criterion-report.md
 //   L4 用户反馈出现 #cch-toast 出现且文案非空（外部可观测，非脚本自报）
 // 层归属（§4.2）：本层与 owned 页**都跑全阶梯**，差别只在阻断语义 —— 本层 advisory
 //   （仅 schedule + workflow_dispatch，失败只告警不阻断合入）；阻断只发生在 release.yml 发布门
@@ -38,6 +45,9 @@ import {
   readFeedback, readFieldEvents, readHostValue, readInjection, readRowDialCode,
   readVisibleRows, readWrappedHostField, recordFieldEvents, recordWrappedFieldEvents,
   searchType, selectCountry,
+  // 票 11 [A-035]：ITI 形态写入口判定 + 选中国家状态读取面（与普通字段判据分派）
+  ITI_COUNTRY_EVENT, readItiCountryEvents, readItiSelectedCountry, readWriteSurface,
+  recordItiCountryEvents,
 } from '../helpers/primitives.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -160,6 +170,18 @@ function valueMatches(actual, expected, exact) {
   return e.length > 0 && d.includes(e);
 }
 
+// 票 11 [A-035]：ITI 形态的写入结果归约——优先按**国家身份**（iso2）比对；iso2 不可读时
+// 退到官方读 API / DOM 选中态给出的区号数字比对（同一事实的两条读取路径，非放宽判据）。
+function itiMatch(state, iso, expected) {
+  if (!state) return false;
+  if (state.iso2) return String(state.iso2).toLowerCase() === String(iso || '').toLowerCase();
+  if (state.dialCode) {
+    const d = digits(state.dialCode), e = digits(expected);
+    return e.length > 0 && d === e;
+  }
+  return false;
+}
+
 function reduceLevels(checks) {
   const out = {};
   for (const c of checks) {
@@ -205,13 +227,26 @@ async function runDeepChecks(page, probeFrame, t, plan) {
     mark('L2', 'search-narrow', false, why(e));
   }
 
-  // ── L3 前置：期望值同源导出 + 事件面监听（必须早于写入） ──
+  // ── L3 前置：写入口形态判定 + 期望值同源导出 + 事件面监听（必须早于写入） ──
+  // 票 11 [A-035]：ITI 接管字段的「写入结果」不是 input.value——ITI 官方不承诺把区号写进
+  // 该 value（separateDialCode 模式下由独立元素承载），且从不派发原生 input/change。
+  // 故先按宿主侧可观测事实判定写入口形态，再按形态分派 L3 判据（普通字段路径逐字不变）。
+  const surface = await readWriteSurface(probeFrame, t.selector || null).catch(() => 'field');
   const expected = t.deep ? t.deep.expectValue : await readRowDialCode(page, plan.iso).catch(() => null);
   try {
     if (t.selector) await recordFieldEvents(probeFrame, t.selector);
     else await recordWrappedFieldEvents(probeFrame);
   } catch (e) {
     mark('L3', 'record-events', false, why(e));
+  }
+  let itiPre = null;
+  if (surface === 'iti') {
+    try {
+      await recordItiCountryEvents(probeFrame, t.selector || null);
+      itiPre = await readItiSelectedCountry(probeFrame, t.selector || null).catch(() => null);
+    } catch (e) {
+      mark('L3', 'record-iti-events', false, why(e));
+    }
   }
 
   // ── L3：选国 → 面板关闭（写入动作） ──
@@ -223,17 +258,40 @@ async function runDeepChecks(page, probeFrame, t, plan) {
     return checks;
   }
 
-  // ── L3：写入结果正确（宿主字段 value） ──
-  const host = t.selector
-    ? { value: await readHostValue(probeFrame, t.selector).catch(() => null) }
-    : await readWrappedHostField(probeFrame).catch(() => null);
-  const actual = host ? host.value : null;
-  mark('L3', 'host-value', valueMatches(actual, expected, !!t.deep),
-    'value=' + JSON.stringify(actual) + ' 期望=' + JSON.stringify(expected) + (t.deep ? '（精确）' : '（行内区号同源归一）'));
+  if (surface === 'iti') {
+    // ── L3（ITI 形态）：写入结果 = 选中国家状态（官方读 API → DOM 选中态） ──
+    const iti = await readItiSelectedCountry(probeFrame, t.selector || null).catch(() => null);
+    const dom = await readItiSelectedCountry(probeFrame, t.selector || null, { domOnly: true }).catch(() => null);
+    const events = await readFieldEvents(probeFrame).catch(() => []);
+    const itiEvents = await readItiCountryEvents(probeFrame).catch(() => []);
+    const preIso = itiPre && itiPre.iso2 ? String(itiPre.iso2).toLowerCase() : null;
+    const preAlready = preIso !== null && preIso === String(plan.iso).toLowerCase();
+    const seen = (v) => !v ? '不可读'
+      : (v.iso2 ? (v.iso2 + '/' + (v.dialCode || '?') + ' via ' + v.via)
+        : (v.dialCode ? ('dial=' + v.dialCode + ' via ' + v.via) : ('不可读 ' + JSON.stringify(v.raw))));
+    mark('L3', 'iti-selected-country', itiMatch(iti, plan.iso, expected),
+      '写入前 ' + seen(itiPre) + ' → 写入后 ' + seen(iti)
+      + '；期望 iso=' + plan.iso + '（区号 ' + JSON.stringify(expected) + '）'
+      + '；ITI 形态判据 = 选中国家状态（input.value 非 ITI 官方承诺面）');
+    mark('L3', 'iti-dom-marker', itiMatch(dom, plan.iso, expected),
+      'DOM 选中态（独立于官方读 API）' + seen(dom) + '；期望 iso=' + plan.iso);
+    mark('L3', 'iti-country-event', itiEvents.includes(ITI_COUNTRY_EVENT) || preAlready,
+      'ITI 官方事件序列 [' + itiEvents.join(',') + ']'
+      + (preAlready ? '；写入前已为目标国家，库按官方语义不广播（状态判定为主判据）' : '')
+      + '；原生事件序列 [' + events.join(',') + ']（保留记录：ITI 从不派发原生 input/change，不作 ITI 判据）');
+  } else {
+    // ── L3（普通字段形态）：写入结果 = 宿主字段 value（票 07 原判据，逐字保留） ──
+    const host = t.selector
+      ? { value: await readHostValue(probeFrame, t.selector).catch(() => null) }
+      : await readWrappedHostField(probeFrame).catch(() => null);
+    const actual = host ? host.value : null;
+    mark('L3', 'host-value', valueMatches(actual, expected, !!t.deep),
+      'value=' + JSON.stringify(actual) + ' 期望=' + JSON.stringify(expected) + (t.deep ? '（精确）' : '（行内区号同源归一）'));
 
-  // ── L3：事件面 input / change 各 ≥1 ──
-  const events = await readFieldEvents(probeFrame).catch(() => []);
-  mark('L3', 'field-events', events.includes('input') && events.includes('change'), '序列 [' + events.join(',') + ']');
+    // ── L3：事件面 input / change 各 ≥1 ──
+    const events = await readFieldEvents(probeFrame).catch(() => []);
+    mark('L3', 'field-events', events.includes('input') && events.includes('change'), '序列 [' + events.join(',') + ']');
+  }
 
   // ── L4：用户反馈出现。紧跟写入读取：toast 的 on 类只保持 2000ms（src/ui/index.ts:186）。
   // 判据 = 元素在场 + 文案非空（外部可观测）；on 类属 2000ms 视觉窗口状态位，记明细不作判据。
@@ -416,6 +474,8 @@ const summary = {
   ticket: 7, coveredA: 'A-029', layer: 'real-site live smoke (advisory) — full ladder L0–L4',
   manifest: 'tests/live/site-manifest.json',
   ladderRule: 'tests/ACCEPTANCE-SURFACE.md §4.1/§4.2；本层与 owned 页都跑 L0–L4，差别只在阻断语义（本层 advisory，阻断只在 release.yml 发布门 ADR-0010）',
+  writeSurfaceRule: 'L3 判据按写入口形态分派（票 11 / A-035）：ITI 接管字段 → 选中国家状态（官方读 API / DOM 选中态 / 官方 countrychange 事件）；普通字段 → 宿主 value + input·change（票 07 原判据逐字不变）',
+  amendedBy: 'ticket 11 (A-035) — ITI 形态 L3 判据收敛',
   launch: HEADLESS ? 'headless' : 'headed',
   gate: gate ? 'pass' : 'fail', violations, failures,
   counts: {
