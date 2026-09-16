@@ -4,7 +4,7 @@
 
 **Blocked by:** 票 07（真实站点层与发布门）—— 开工前实物核对已满足
 
-**Status:** implemented（实施提交 `f4aad220`；CI 证据见文末）
+**Status:** implemented（实施提交 `f4aad220`；文档提交 `914b690e`；CI 证据见文末）
 
 **覆盖 A-xxx:** A-034（P0）
 
