@@ -60,6 +60,9 @@
 | A-031 | 检测误报面缺口（三个新形态）：调研实测发现——(1) iti v29 的**内部搜索框** `INPUT[role=combobox][type=search][aria-autocomplete=list][aria-controls=iti-0__country-listbox]` 就在 `.iti` 容器内（`intl-tel-input.com` 实测），是真实误报面；(2) **值恰为 ISO2 的语言/locale 下拉**（如 `#opt_uiTranslations` 值域 52 个 ISO2 形值 `sq|Albanian (sq)`），构成伪区号陷阱；(3) **无括号区号文本** `AC|Ascension Island +247`——现有 `parenDial` 只认括号形式，L3 下拉选项内容验证漏此形态 | 把这三个形态先沉淀进校准语料（正/负例），再据此评估是否需扩检测信号或加抑制规则；iti v29 内部搜索框至少登记为负例（不得注入） | 语料先行（无地基不立检测改动，沿用 A-023）；不引入误报后门；性能红线（1000 节点 scan < 350ms）不回退；**不得据此直接改检测代码**——按 D-001 阶段 B 由验证清单驱动 | current |
 | A-032 | 视觉替换型隐藏 select 的**机理与语料假设不符**：Select2 实测 `select.select2-hidden-accessible` 为 `width:1px` + `aria-hidden="true"`（**非零尺寸**，`_hiddenByStyle` 不触发），而语料 N7 假设的是零尺寸/display:none；且 `tests/fixtures/` 内 `grep select2|chosen` **零命中**（仅 corpus N7 合成）。另 `harvesthq.github.io/chosen` 实测 `select.chosen-select` 为 `display:none`（与 N7 一致）——**同一类形态有两种不同机理** | 为视觉替换型隐藏 select 的两个子形态（`width:1px+aria-hidden` 与 `display:none`）各建至少一个 fixture；据实修正语料 N7 的机理假设 | 不得改变可见性闸门对「隐藏但承载值的原生 select（视觉替换型）」的既有豁免语义；语料先行；不引入误报后门 | current |
 | A-033 | 域建模债：本轮新增机制/概念未入域模型——(1) **「发布门」无 ADR**（PR 不阻断、发布门阻断的取舍），未来读者会问「为何发布要绑在一个 flaky 的第三方层上」；(2) CONTEXT.md 现有 29 条术语，**缺本轮确立的 7 条**：「验收阶梯」「发布门」「形态语料」「结构骨架」「镜像页」「诊断面」「判定记录」 | 为「发布门」立一条 ADR（PR 不阻断 / 发布门阻断的取舍与替代方案）；CONTEXT.md 补入上述 7 条术语，与既有 29 条逐条比对无冲突 | ADR 不得改写 ADR-0008 第二层（D-005 已定不重开）；术语不得含实现细节（CONTEXT.md 是词汇表）；不得为可逆/无取舍的小事立 ADR；7 条为上限 | current |
+| A-034 | 跨帧填充指令在 `about:srcdoc` 帧被**静默丢弃**（真实缺陷；票 07 首次暴露）：`src/main.ts:134` 的 `if (isTopFrameSameOrigin() && e.origin !== location.origin) return;` —— srcdoc 帧内 `isTopFrameSameOrigin()` 为 true（顶层同源、`window.top.location.href` 可读），而 `location.origin` 被 Chrome 序列化为字符串 `"null"`（真实 origin 仍为继承值，可由 `window.origin` 读出）⇒ 判据判真且不等 ⇒ 直接 `return`，顶层 `FRAME_FILL_MSG` 被丢弃；子帧 `UI._target` 已正确登记但处理器提前返回，`Fill.run` 从未执行 ⇒ 无写入 / 无 input·change 事件 / 无 toast / **且无异常**（故 L0 `errs=0` 仍为绿，缺陷被弱断言掩盖）。同缺陷面：`src/store/index.ts:67` 与 `:97` 亦以 `location.origin` 作 BroadcastChannel 同源校验 | origin 比对改用 `window.origin`（srcdoc 帧下为继承的真实 origin），或对 `location.origin === "null"` 回退到 `window.origin`；覆盖面含 `src/main.ts:134`、`src/main.ts:120`、`src/store/index.ts:67` 与 `:97` | **不得放宽跨帧来源校验**（票 24 语义不变）；**不得**以删除校验替代修复；跨域顶层场景（票 12 fixture）既有拒绝语义不得回归；密封 E2E 135 例不得回归；证据只认 CI run | current |
+| A-035 | ITI 接管字段的 L3 判据口径未判定：票 07 的 L3 判据（写后读回宿主 `input.value` == 区号）对 `select`/普通 `input` 成立（`mirror-control` 绿），但 ITI 形态下 `Fill` 走 `createItiAdapter().fill()` 的 `setNumber`/`setSelectedCountry` 官方 API（`src/iti-adapter/index.ts:76-102`），该路径按 ITI 语义切换国家/号码，**不承诺**把区号写进宿主 `input.value` ⇒ `live-codepen-editor` 的 L3 报红，而同帧 L4 toast 为「已填入: 🇨🇳 +86」（`Fill.run` 自认成功）——**L3 与 L4 结论相悖**，需先判定正确可观测判据 | 判定 ITI 形态下 L3 的正确可观测判据（候选：ITI 选中态 `iti__selected-country` / `data-country-code` / 号码输入框值 / 官方 `getNumber()` 回读），据实收敛断言并给出依据与影响面 | **判定前不得以「改判据」方式消除红项**；不得放宽 L3 的「写后读回」语义；不得删除既有断言；判据需有 ITI 官方语义或工业界依据（调研留痕） | current |
+
 ## 去向登记（spec 覆盖核对）
 
 ### Cycle-5（本周期，2026-09-14）
@@ -96,8 +99,10 @@
 | A-031 | T8 | 阶段 B：三个新误报面先入语料再评估（本周期不预先修） |
 | A-032 | T8 | 阶段 B：视觉替换型隐藏 select 两子形态各建 fixture + 修正 N7 假设 |
 | A-033 | T4 | 域建模：发布门 ADR + CONTEXT.md 补 7 术语 |
+| A-034 | T10 | 修复 `about:srcdoc` 帧跨帧 origin 校验误判（**P0**；真实站点层 L3/L4 转绿的前置，进而影响 ADR-0010 发布门「必须绿」判据） |
+| A-035 | T11 | 判定 ITI 形态 L3 的正确可观测判据（**P1**；判定前不得以改判据方式消红） |
 
-**Cycle-6 覆盖核对**：A-027…A-033 共 **7 条 current** + A-026 **1 条 revised**（仅保留「GM 菜单设置项」一条）= **8 条均有票去向**；无去向记录 **0 条**。
+**Cycle-6 覆盖核对**：A-026…A-035 共 **10 条**（A-026 = revised，仅保留「GM 菜单设置项」一条；A-027…A-035 = current），**全部有票去向**；无去向记录 **0 条**。
 
 **D-xxx 决策账本**（grill 产物）：`.scratch/cycle6-grill/decision-ledger.md`（D-001…D-016；13 current / 3 revised）。
 ### Cycle-4（历史，2026-09-12，审计链保留）
