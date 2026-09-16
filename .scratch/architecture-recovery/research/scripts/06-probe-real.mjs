@@ -1,13 +1,15 @@
 // 票 06 侦察脚本（非交付物）：对**真实页**跑一次真实注入，与镜像页探测结果对照，
 // 判定「镜像保真度」是否足以承载检测结论（防伪影）。
+// 口径纪律（R1）：UA / 等待序列 / 扫描函数一律取自 06-probe-common.mjs，
+// 与 06-probe-mirrors.mjs 逐字同源；不得就地重写其中任何一项。
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { installUserscript } from '../../../../tests/helpers/primitives.mjs';
+import { UA, settle, scanWrappers } from './06-probe-common.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..', '..', '..');
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 const PAGES = [
   ['iti-v29', 'https://intl-tel-input.com/'],

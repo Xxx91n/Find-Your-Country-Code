@@ -24,7 +24,8 @@
 **文档提交**：`3596390a`（Change-ID `xku`，报告 + issue 勾销 + 偏离点）
 **基线**：common base `85990d2f`（origin/main = v1.6.0）；本票 issue / handoff / spec 属 `cch/48` 产物
 **报告**：`.scratch/architecture-recovery/research/window-reports/06-form-corpus-report.md`
-**atomcode 调研**：`.scratch/architecture-recovery/research/atomcode-06-form-corpus.md`（问题 verbatim 在 `prompt-06-atomcode.md`；三引擎 5 角度 + 原文核验 ≥6，Confidence 高）
+**atomcode 调研**：`.scratch/architecture-recovery/research/atomcode-06-form-corpus.md`（问题 verbatim 在 `.scratch/architecture-recovery/research/prompt-06-atomcode.md`；三引擎 5 角度 + 原文核验 ≥6，Confidence 高）
 **本地自证**：`node tests/scripts/verify-ticket-06.mjs` → **187 PASS, 0 FAIL**；`npx playwright test tests/corpus-forms.spec.ts` → `18 passed`；`npm run e2e` → `135 passed`；`npm run typecheck` → exit 0；结构 diff → `tier: NONE`
 **关键发现（阶段 B 输入）**：真实页形态上工具仅注入 **2/8**（`iti-v29` tier=auto score=88 · `codepen-iti-v17` 子帧 tier=auto）；镜像页与真实页**同口径探测 8/8 一致** —— 该结果是真实形态的测量而非镜像伪影。本周期**不预先修**（D-016）；失效清单交票 08
 **状态**：子窗口自证完成，**待大脑复核**（WORKFLOW §4.3）；**CI 证据缺位**（未 push，见报告 §4 E-6）
+**返工轮次 R1**：主 Agent 复核发现「双探测未控同口径」（`06-probe-mirrors.mjs` 无 UA 且等待序列与 `06-probe-real.mjs` 不同）→ 已提取唯一口径模块 `06-probe-common.mjs`（UA + settle + scanWrappers 单一定义）并受控重跑双探测：**一致性仍为 8/8**（§3.1 headline 成立，但此前陈述了未持有的控制）；门新增 **S9 口径同源防回归锁**（强化，未削弱既有断言）；次要补正：报告 §1「渲染后 DOM 9」实为 **15**（8 主 + 7 帧）、本文件 `prompt-06-atomcode.md` 补全前缀。详见报告 `## 返工轮次 R1`

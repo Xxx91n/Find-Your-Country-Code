@@ -1,10 +1,13 @@
 // 票 06 侦察脚本（非交付物）：对镜像页跑一次真实注入，观测各页的档位/命中元素。
 // 用途：为 tests/corpus-forms.spec.ts 的断言提供**现实基线**（不凭猜）。
+// 口径纪律（R1）：UA / 等待序列 / 扫描函数一律取自 06-probe-common.mjs，
+// 与 06-probe-real.mjs 逐字同源；不得就地重写其中任何一项。
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { installUserscript, userscriptCode } from '../../../../tests/helpers/primitives.mjs';
+import { UA, settle, scanWrappers } from './06-probe-common.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..', '..', '..');
