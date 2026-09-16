@@ -5,7 +5,7 @@
     "updated": "2026-09-14",
     "layer": "真实站点低频冒烟层（第二层）——与密封 E2E（第一层）解耦：本层永不出现在 pull_request 触发面",
     "skipTestsRule": "跳过必须携带非空 reason + ticket（Bitwarden BIT testPages.skipTests / Chromium failing_test_names 同构，带 ticket 可审计）；live-smoke.mjs 硬校验，缺失即失败。跳过不等于删除，恢复是显式动作（enabled 翻转）。",
-    "assertionRule": "弱断言：只断言注入后的 DOM 状态（.cch-wrapper 出现 + 无未捕获异常），不登录、不深交互、不做多步流程（Bitwarden BIT live tests 口径：真实站点测试 inconsistently flaky，因此 typically only testing that the username/email was filled out properly）。",
+    "assertionRule": "弱断言：只断言注入后的 DOM 状态（.cch-wrapper 出现 + 无未捕获异常），不登录、不深交互、不做多步流程（Bitwarden BIT live tests 口径：真实站点测试 inconsistently flaky，因此 typically only testing that the username/email was filled out properly）。票 05（A-029）例外：**自有镜像目标**（kind=mirror，零外网、确定性）可声明 deep，由共享交互原语驱动 open→search→select 并读回宿主字段 value（含 input/change 事件与 toast 反馈），作为「同一份原语在 live runtime 可用」的自证；第三方真实站点目标仍不深交互（全阶梯升级由票 07 承接）。",
     "frameRule": "嵌套帧断言（票 39 新增）：目标可声明 \"frame\"（子串匹配子帧 URL）。声明后，wrappers/selector 断言在匹配到的子帧内求值，而非顶层帧；未声明则仍在顶层帧断言（既有 mirror 目标语义不变）。",
     "launchRule": "运行环境（票 39）：本层浏览器以有头模式启动（headless:false）。实测原因：真实站点普遍前置反爬托管挑战——CodePen 编辑器页被 Cloudflare Turnstile 拦截，headless shell 与默认 HeadlessChrome UA 均被挑战，有头完整 Chrome 可正常渲染（证据矩阵见窗口报告 §3）。CI 上以 xvfb-run 提供虚拟显示；无 DISPLAY 时脚本自动回退 headless 并打印告警（此时受挑战站点会如实报错，不伪造绿）。不采用 UA 伪造与反自动化指纹开关。",
     "challengeRule": "反爬挑战处理：挑战检测仅用于失败文案诊断（本地化标题 / 挑战帧 URL），不作控制流；成败一律由「目标帧内 .cch-wrapper 是否出现」裁定。若站点不可达/改版/被挑战持续拦截，如实登记并降级（expect 改 observe 或 enabled 置 false + reason），不伪造绿。",
@@ -21,7 +21,8 @@
       "selector": "#m-control",
       "expect": "injected",
       "enabled": true,
-      "reason": "本地镜像自证：已知好对照组（label \"Country code\" + +NN 值域），引擎应注入 .cch-wrapper——用于验证本层 harness（浏览器启动 / GM 替身 / 构建产物注入 / 弱断言）端到端可用，零外网",
+      "deep": { "iso": "cn", "query": "china", "expectValue": "+86" },
+      "reason": "本地镜像自证：已知好对照组（label \"Country code\" + +NN 值域），引擎应注入 .cch-wrapper——用于验证本层 harness（浏览器启动 / GM 替身 / 构建产物注入 / 弱断言）端到端可用，零外网；票 05 增补 deep：以共享原语驱动 open→search→select 并读回宿主 value=+86（+input/change 事件 + toast）",
       "ticket": "32"
     },
     {
