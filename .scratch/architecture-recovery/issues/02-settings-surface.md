@@ -21,6 +21,7 @@
 
 **验收证据**：逐项只读验证命令与输出摘要见 `.scratch/architecture-recovery/research/window-reports/02-settings-surface-report.md` §4.2（Delta 检查点见 §5）。
 **提交锚点**：`cch/02-settings-surface` @ `59daa016`（Change-ID `onr`）
+**文档提交**：`dfedcf6a`（Change-ID `lxx`，本报告 + atomcode 调研 + 本文件勾销）
 **基线**：common base `85990d2f`（Cycle-5 归档）；**堆叠于 `cch/48-cycle6-ticketing` @ `6d0563d9` 之上**（本票 issue/handoff/spec 文件均属该分支，WORKFLOW §4.2）
 **报告**：`.scratch/architecture-recovery/research/window-reports/02-settings-surface-report.md`
 **本地自证**：`npm run e2e` → `104 passed`；闸门 02 → `33 PASS, 0 FAIL`；闸门 42 → `42 PASS, 0 FAIL`

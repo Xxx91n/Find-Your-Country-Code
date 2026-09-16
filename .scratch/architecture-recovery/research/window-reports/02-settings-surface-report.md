@@ -59,6 +59,8 @@
 本票提交：`cch/02-settings-surface` @ **`59daa016`**（Change-ID `onr`）。
 **分支拓扑**：本票**堆叠于依赖分支** `cch/48-cycle6-ticketing` @ `6d0563d9` 之上（`git log --oneline -2 cch/02-settings-surface` 可验）。原因：本票的 `issues/02` / `handoffs/02` / `prompts/02` / `spec.md` 均为 `cch/48` 产物，**不在 common base `85990d2f` 上**；不堆叠则「issue 验收项勾销」这一步**无文件可改**（GitButler 实测报错：`lines 12–27 depends on cch/48-cycle6-ticketing`）。依 WORKFLOW §4.2「确有依赖按 `but move <branch> --above <dependency>` 堆叠」执行，与票 01 处理一致。**注**：本票与同波次票 01/03/04 之间**无堆叠**，不违反「同波次不堆叠」。
 
+**文档提交**：`dfedcf6a`（Change-ID `lxx`）—— 本报告 + atomcode 调研 artifact + issue 7 条勾销。本报告自身的锚点回写落在分支 head（提交内容无法自引用自身 sha）。
+
 ### 4.2 逐条
 
 | # | 验收项 | 落在 | 只读验证命令 | 输出摘要 |
@@ -111,8 +113,8 @@
 | O-② | 本提交**带入并行票 03 的同 hunk 在途改动**（约 310 行：`_renderDiag` / `_renderDiagSummary` / diag 常量与 i18n 键） | 票 03 在途代码与票 02 改动落在**同一批 GitButler hunk** 内，且 `but commit --help` 明确粒度只有「文件或 hunk」**无子 hunk 选择**；只提交 22 个纯 hunk 会产出**不可构建的 tip**（`SETTINGS_SECTION_LOCALE` 未定义、`_setLocale`/`_i18n` 缺失）。已**向用户呈报并获明确授权**「带入共享 hunk」。 | **已授权执行**；票 03 提交自身改动时需 rebase / 重新归属 |
 | O-③ | **atomcode 调研时点偏离**：调研 artifact 在实现**完成之后**补做（本会话重跑），而非 handoff 要求的「动手前」 | 原会话已做该调研并据以定型（三条 id + radiogroup + 字典扫描），但**未落盘 artifact**；本会话发现缺件后重跑补齐。产物来源标注完整（21 cited / 13 candidate）、结论与既有实现**一致**，但时点不符合「动手前」原文。 | **如实呈报**，请复核 |
 | O-④ | 修复 `src/i18n.ts` 第 23/38 行**缺失尾逗号** | 并行票 03 在途插入 `diagnostics:` 行时漏尾逗号，造成**解析级语法错误**，阻断全仓构建（`TS1005`）与票 42 闸门。属跨票必要修复，已在提交信息中显式披露。 | 已执行 |
-| O-⑥ | 分支拓扑为**堆叠**（非独立分支） | 本票的 `issues/02` 等 brief 文件是 `cch/48` 产物，不在 common base 上；不堆叠则 issue 无法勾销（GitButler 实测依赖报错）。依 WORKFLOW §4.2 堆叠于依赖分支之上。 | **已执行**（见 §4.1） |
 | O-⑤ | 修复**既有缺陷** `.cch-sec` 的 `[hidden]` 失效 | 验收1 确定性红灯的**根因**（`.cch-sec{display:flex}` 压过 UA `[hidden]{display:none}`，致视图容器与列表视图叠显）。不修则本票验收1 无法通过，故属本票必要范围，非新增需求。已在 CSS 就地注明红灯锚点。 | 已执行 |
+| O-⑥ | 分支拓扑为**堆叠**（非独立分支） | 本票的 `issues/02` 等 brief 文件是 `cch/48` 产物，不在 common base 上；不堆叠则 issue 无法勾销（GitButler 实测依赖报错）。依 WORKFLOW §4.2 堆叠于依赖分支之上。 | **已执行**（见 §4.1） |
 
 ---
 
