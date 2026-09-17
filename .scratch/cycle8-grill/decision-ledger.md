@@ -73,9 +73,38 @@
 
 ---
 
+---
+
+## 议题取证 — B⑦ `.scratch/` 的 CI 依赖面普查（2026-09-18，实物）
+
+> 口径：逐个脚本读源码，区分「**真数据依赖**（删目录即 FAIL）」／「**反向断言**（检查 workflow 不含 `.scratch/`）」／「**纯注释或示例串**」三类。
+
+| 脚本 | 性质 | 真数据依赖的读取面 | CI 挂接点 |
+|---|---|---|---|
+| `verify-ticket-06.mjs` | **真依赖** | `FILES.probeCommon/probeMirrors/probeReal` = `.scratch/…/research/scripts/06-probe-{common,mirrors,real}.mjs`；`existsSync` 失败即 **`process.exit(1)`**（S0 自证） | `verify-tickets.yml` → plan ticket **06** |
+| `verify-ticket-08.mjs` | **真依赖** | `readFileSync(.scratch/…/issues/08-phase-b-failure-fixes.md)` | plan ticket **08** |
+| `verify-ticket-10.mjs` | **真依赖** | `read(.scratch/…/research/scripts/10-probe-srcdoc-origin.mjs)` + `read(.scratch/…/issues/10-srcdoc-origin-fix.md)` | plan ticket **10** |
+| `verify-ticket-12.mjs` | **真依赖** | `read(.scratch/…/issues/12-rules-limit-fidelity.md)` + `read(.scratch/…/research/window-reports/12-rules-limit-fidelity-report.md)` | plan ticket **12** |
+| `issue-checkbox-audit.mjs` | **真依赖** | `readdirSync(.scratch/architecture-recovery/issues/)` + `…/research/window-reports/`；缺目录即 **`process.exit(1)`** | **`engine-gates.yml`**（独立 step） |
+| `verify-ticket-07.mjs` | 反向断言 | — （只断言 workflows 零 `.scratch/` 引用） | plan ticket 07 |
+| `verify-ticket-11.mjs` | 反向断言 | — （同上） | plan ticket 11 |
+| `verify-ticket-05.mjs` | 纯注释 | — （仅迁入历史的注释） | plan ticket 30 |
+| `release-gate.mjs` | **非依赖** | — （`fs` 调用只涉 ACK_PATH 与夹具；:99 的 `.scratch/…` 是**示例 JSON 字符串**） | `release.yml` |
+
+### 结论（对审计口径的实质修正）
+
+- **F-4（审计范围声明偏窄）**：审计 §4.6 将本项叙述为「**T-07 的 CI 门**依赖 `.scratch/`（未披露的架构副作用）」，读起来指向 Cycle-7 T-07 引入。**实测**：真数据依赖为 **5 个 CI 脚本**，其中 **4 个（06/08/10/12）是 Cycle-4/Cycle-5 存量票级门**，仅 1 个（`issue-checkbox-audit.mjs`）属 Cycle-7 T-07。⇒ 该耦合是**存量且更宽**，**非 T-07 引入**。
+- **F-5（方案 (c) 不充分）**：审计选项 (c)「`issue-checkbox-audit` 降为 advisory」只覆盖 **1/5**；另 4 个门仍硬依赖 ⇒ **单独选 (c) 不能闭合本项**。
+- **F-6（`release-gate.mjs` 不是依赖）**：排除后，`.scratch/` 的真实 CI 耦合面是 **5 个脚本 + 7 类被读文件**（issues/08·10·12、research/scripts/06-probe-×3·10-probe-×1、window-reports/12-…），**非整个 3.0 MB / 331 文件**。
+- **F-7（既有先例）**：本仓已有「过程证据**归档出工作树**」的先例（票 41 / A-018：归档至仓库外 `…-evidence-archive\`，历史副本 commit `b7b1f0a2`）⇒ 「迁出」路径在本仓**不是新机制**。
+- **存量量级**：`.scratch/` = **3.0 MB / 331 文件**；`issues/` = **57 文件**；`.scratch/` **已入 Git**（`.gitignore` 未忽略）。
+- **ADR-0006 决策 1 原文**：仅字面约束「`.github/workflows/*.yml` 禁止出现 `.scratch/` 路径引用」——**字面已满足**（workflows 零命中）；其**意图**（`.scratch/` 可抛弃、不再是 CI 单点故障）由上述 5 个脚本**未满足**。
+
+---
+
 ## 覆盖率自评
 
 - 已确认条目：**2**（D-001 · D-002 = current）｜revised：0｜stale：0｜deferred：0｜pending：0
 - 本问覆盖：Cycle-8 输入面 = **已定**（B）＋ 并行在途融合 = **已定且已执行闭环**
-- **审计遗留 9 项进度**：A6 待裁定 · B⑦⑧⑨⑩ 待裁定 · C⑪⑫ 待裁定 · **C⑬ 已闭环（D-002）** · C⑭ 待裁定
-- 待决（frontier）：审计遗留 9 项中剩余 **8 项**；`audit-closeout` §5 的 Q3–Q8（CI 闭环形态 · 交付单位 · T-13 门槛可测化 · GF sync 人工确认）；**新登记 F-1**
+- **审计遗留 9 项进度**：A6 待裁定 · **B⑦ 已取证待拍板（依赖面 = 5 脚本）** · B⑧⑨⑩ 待裁定 · C⑪⑫ 待裁定 · **C⑬ 已闭环（D-002）** · C⑭ 待裁定
+- 待决（frontier）：B⑦ 拍板 → B⑧⑨⑩ / C⑪⑫⑭ / A6；`audit-closeout` §5 的 Q3–Q8；新登记 **F-1…F-7**
