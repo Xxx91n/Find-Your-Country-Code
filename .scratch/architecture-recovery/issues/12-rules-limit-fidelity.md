@@ -51,7 +51,7 @@
 
 ## 未决事项（移交大脑 Agent，2026-09-17）
 
-**事项**：推送 `cch/12-rules-limit-fidelity` 至 `origin`（新建单 ref、2 提交）以取得 CI run 证据。
+**事项**：推送 `cch/12-rules-limit-fidelity` 至 `origin`（**新建单 ref**，不改写任何既有远端 ref；**提交数当场复跑** `but push --dry-run cch/12-rules-limit-fidelity` 为准）以取得 CI run 证据。
 
 **缘由**：WORKFLOW §8.2 第 4 条（授权路径）要求「涉及**远端写**（push / 删除 ref / 改 tag）…一律**逐次取得用户授权**，并在报告中留授权记录」。已向用户呈报；用户裁定「**交给大脑 agent**」⇒ 本窗口**未执行任何远端写**（未 push、未开 PR）。
 

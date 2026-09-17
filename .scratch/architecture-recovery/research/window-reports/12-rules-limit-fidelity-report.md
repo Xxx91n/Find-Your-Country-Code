@@ -229,7 +229,7 @@ CI 侧 E2E（`e2e.yml`）证据**未取得**，状态与原因见 §9。
 |---|---|---|
 | 实施提交 | `fe0a5df3`（`fe0a5df3cf637c6b74557577ee84a2e2bb5d1141`） | 写路径强制点 + 替身保真度 + 票级门 + workflow + ADR-0011 + 调研/实验脚本（8 文件） |
 | 文档提交（本报告 + issue 勾销） | `1e5866d2`（`1e5866d27f3ec08042285903beae84ec3bc49474`） | 本报告落盘 + issue 七条勾销 |
-| 分支 | `cch/12-rules-limit-fidelity` | 锚 `cch/10-srcdoc-origin-fix`；`but status` 确认两提交就位、工作区干净（`git status --short` 无输出） |
+| 分支 | `cch/12-rules-limit-fidelity` | 锚 `cch/10-srcdoc-origin-fix`，与并行票分支互不堆叠。**提交清单以当场输出为准**：`git log --oneline cch/12-rules-limit-fidelity`（本报告定稿时含实施提交 `fe0a5df3` + 文档提交若干，工作区干净） |
 
 ### 9.2 CI 证据：**未取得**（如实登记，不得伪造绿）
 
@@ -257,10 +257,18 @@ CI 侧 E2E（`e2e.yml`）证据**未取得**，状态与原因见 §9。
 
 **待决动作**：`but push cch/12-rules-limit-fidelity`（单一 ref；目标 `origin/cch/12-rules-limit-fidelity`）。
 
-**推送载荷（`but push --dry-run cch/12-rules-limit-fidelity` 实测原文）**：
+**推送载荷**：**以当场复跑为准** —— `but push --dry-run cch/12-rules-limit-fidelity`（目标 `origin/cch/12-rules-limit-fidelity`）。
+
+**不变事实（与提交数无关，可直接用于决策）**：
+
+1. `origin/cch/12-rules-limit-fidelity` **远端不存在** ⇒ 属**新建单 ref**，**不改写任何既有远端 ref**（无 force、无 ref 删除、无 tag 变更）。
+2. 推送为**单 ref**（显式指定分支，非全工作区推送）⇒ **不触及其他票的远端 ref**。
+3. 分支锚 `cch/10-srcdoc-origin-fix`，与并行票分支互不堆叠。
+4. 载荷会随本票后续文档提交而**增长** ⇒ 不得固定引用任何提交数。
+
+**历史快照（仅供理解形状，非执行依据）**：2026-09-17 初测时 `but push --dry-run` 输出为
 
 ```
-Dry run: Showing what would be pushed
 ┌─ Branch: cch/12-rules-limit-fidelity ↑ (on top of cch/10-srcdoc-origin-fix)
 │   → Would push to: origin/cch/12-rules-limit-fidelity
 │   Commits: 2 unpushed commits
@@ -268,6 +276,8 @@ Dry run: Showing what would be pushed
 │     fe0a5df3 fix(cch-12): 规则上限强制点收敛到写路径（A-036）+ BC 替身克隆保真度修复
 Summary: Would push 2 commits across 1 branch
 ```
+
+（当时为 2 提交；其后本票又落了锚点回填与 §11 回写两笔文档提交，故实际载荷已增长 —— 这正是不固定提交数的原因。）
 
 **远端写性质与副作用披露（须一并评估）**：
 
