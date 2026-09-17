@@ -877,6 +877,10 @@ border-radius:8px;cursor:pointer;text-align:center}
       const row = document.createElement('div'); row.className = 'cch-row';
       row.dataset.iso = c.iso;
       const fav = Store.isFav(c.code, c.iso);
+      // 防御性说明（仅注释，不改渲染路径）：本处 innerHTML 的插值全为可信静态常量——
+      // c.flag / c.code / c.country / c.countryEn / c.iso 出自 src/data/countries.ts 内置
+      // 静态数据表，fav 为 Store.isFav 返回的布尔值，t('rmFav') / t('addFav') 出自本地
+      // i18n 词典；均非页面/用户可控输入，不构成 XSS 向量。
       row.innerHTML = `
 <span class="cch-fl">${c.flag}</span>
 <span class="cch-cd">${c.code}</span>

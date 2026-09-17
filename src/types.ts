@@ -3,8 +3,10 @@
 // 领域类型：Tier / FillKind / Country / Signal / ScoreResult / RulesDoc；
 // 模块边界：CchStore / CchRules / CchUI / CchFill / ItiAdapter（工厂函数契约）；
 // 宿主边界：AnyEl（引擎鸭子类型元素——需同时支持真实 DOM 与 node 单测 mock，
-// 已知 DOM 成员与动态成员（value/options/_valueTracker/iti 插件实例等）都经
-// 索引签名放行，探测代码自带运行时守卫 + try/catch）；AnyRoot（扫描穿透根容器）；
+// 已知 DOM 成员 + 探测面实际触及的「跨元素种类」动态成员（value/options/text/
+// selectedIndex/_valueTracker/iti 插件实例等）按可选成员显式声明——不再用索引
+// 签名放行任意属性（索引签名会让任意访问退化为 any、使类型检查失效），
+// 探测代码自带运行时守卫 + try/catch）；AnyRoot（扫描穿透根容器）；
 // iti 插件跨版本探测面 ItiApi / ItiInstance（v16–v29）；userscript 宿主 window
 // 全局经 declare global 声明（GM_* 仍保留在使用模块内局部 declare，不在此收敛）。
 // ════════════════════════════════════════════════════════
@@ -256,8 +258,33 @@ export interface ItiAdapter {
   fill(el: AnyEl, country: Country, dispatch: (value: string) => void): boolean;
 }
 
-// 引擎鸭子类型元素：HTMLElement 成员 + 动态成员索引签名（见文件头注）
-export type AnyEl = HTMLElement & Record<string, any>;
+// React 受控输入 valueTracker 探测面（票 15；方法存在性由运行时裁决后调用）
+export interface ValueTracker {
+  getValue(): unknown;
+  setValue(value: unknown): void;
+}
+
+// 引擎鸭子类型元素：HTMLElement 成员 + 探测/填充面实际触及的「跨元素种类」成员。
+// 这些成员并非任意 HTMLElement 都有（value/readOnly 属 HTMLInputElement、
+// options/selectedIndex 属 HTMLSelectElement、text 属 HTMLOptionElement、
+// form 属可关联元素、host 属 shadow 宿主、_valueTracker 属 React 受控输入、
+// iti 属 intl-tel-input 插件实例），引擎取用前一律带运行时守卫 + try/catch，
+// 故声明为可选成员 —— 取代原先的 Record<string, any> 索引签名（见文件头注）。
+export interface AnyElExtras {
+  value?: string;
+  text?: string;
+  options?: ArrayLike<AnyEl>;
+  selectedIndex?: number;
+  disabled?: boolean;
+  readOnly?: boolean;
+  type?: string;
+  placeholder?: string;
+  form?: AnyEl | null;
+  host?: AnyEl | null;
+  _valueTracker?: ValueTracker;
+  iti?: ItiInstance;
+}
+export type AnyEl = HTMLElement & AnyElExtras;
 
 // 扫描穿透根容器（document / shadowRoot / 元素）
 export type AnyRoot = Document | ShadowRoot | HTMLElement;

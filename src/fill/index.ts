@@ -103,7 +103,7 @@ const Fill = {
   },
 
   fillSelect(el: AnyEl, country: Country): boolean {
-    const opts   = Array.from(el.options) as AnyEl[];
+    const opts   = Array.from(el.options!) as AnyEl[];
     const digits = country.code.replace(/\D/g, '');
     const iso    = country.iso.toLowerCase();
     const enName = (country.countryEn || '').toLowerCase();
@@ -129,14 +129,14 @@ const Fill = {
       (o.getAttribute('data-iso') || '').toLowerCase() === iso
     );
     if (!m) m = opts.find(o =>
-      o.text.includes(country.code) ||
-      o.text.toLowerCase().includes(enName) ||
-      o.text.includes(cnName)
+      o.text!.includes(country.code) ||
+      o.text!.toLowerCase().includes(enName) ||
+      o.text!.includes(cnName)
     );
     if (m) {
       // 消歧目标经 selectedIndex 传递（select 值 setter 只命中首个同值选项）
       const idx = opts.indexOf(m);
-      this._inject(el, m.value, { selectedIndex: idx >= 0 ? idx : undefined });
+      this._inject(el, m.value!, { selectedIndex: idx >= 0 ? idx : undefined });
       return true;
     }
     // 票 03：四条匹配阶梯全空 = 选项未匹配（脚本逻辑层失效的可验证原因）
@@ -249,8 +249,10 @@ const Fill = {
     return true;
   },
 
-  // 键盘选值（select-only 备援）: focus → ArrowDown 展开 → 逐项导航到目标 → Enter。
-  // 导航起点假设为首个 option（高亮复位形态）；起点不确定的库可能偏移，点击路径优先。
+  // 键盘选值（select-only 备援）: focus →（listbox 尚未展开时先发 ArrowDown）展开 →
+  // 连发「目标 option 下标 + 1」次 ArrowDown 下移 → Enter（下移过程中无命中校验）。
+  // 「+1」隐含假设：展开态无 option 预高亮，首次 ArrowDown 落到首个 option（高亮复位形态）；
+  // 起点不确定的库可能偏移，点击路径优先。
   _pseudoFillByKeys(el: AnyEl, country: Country): boolean {
     const fire = (key: string) => {
       try { el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })); } catch {}

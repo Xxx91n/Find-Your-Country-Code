@@ -10,7 +10,7 @@
 // ── L0 语义标准层 [AM 核心结论1/2：autocomplete 除 off 外压过一切本地启发式；IM §④ L0"一票强命中"] ──
 export const L0_TOKEN_SCORE = 100;        // 命中即高置信档（Chromium：autocomplete 覆盖启发式预测）
 export const L0_TEL_TOKENS = ['tel-country-code', 'country', 'country-name'];
-export const L0_TEL_HINT_SCORE = 10;      // autocomplete 含 tel 或 type=tel：主号锚语义，非区号字段 [IM P1 语义标准信号]；10 使「type=tel+label 强短语」在无锚场景仍达低调档（34→36）
+export const L0_TEL_HINT_SCORE = 10;      // autocomplete 含 tel 或 type=tel：主号锚语义，非区号字段 [IM P1 语义标准信号]；10 使「type=tel+label 强短语」在无锚场景仍达低调档
 export const L0_INPUTMODE_TEL_SCORE = 8;  // inputmode=tel [IM §④ L0 结构佐证]
 
 // ── L1 结构文本层 [IM P1 结构文本信号"中"权重、§④ L1"不同组不同权重"；AM 核心结论3 Bitwarden 歧义词表需上下文裁决] ──
