@@ -408,7 +408,13 @@ border-radius:8px;cursor:pointer;text-align:center}
     });
     sw.appendChild(dg);
 
-    // 低置信字段召唤入口 [SP US18]：可见性由 _render 按 _lowFields 维护
+    // 低置信字段召唤入口 [SP US18]（票 14② 语义裁定：**保留「一次性群体召唤」**）。
+    // 语义：点击后对本面板会话内已登记的全部低置信字段补挂图标，随后**移除入口节点**
+    // （一次性；已由 E2E 锁定：tests/fp-regression.spec.ts「召唤后入口消失」）。
+    // 重开面板时本节点由 open() 重建，并由 _render 按 _lowFields.size 决定可见性
+    // —— 即「重开面板可再召唤」。
+    // 注：节点被移除后，_render 的 sm.hidden 分支不再作用于本节点，故**不得**把本行
+    // 读作「会话内可见性由 _render 维护」（旧注释即此误述，已订正）。
     const sm = document.createElement('div');
     sm.id = 'cch-summon';
     sm.setAttribute('role', 'button');
