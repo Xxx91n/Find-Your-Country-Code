@@ -2,13 +2,13 @@
 // ══════════════════════════════════════════════════════════════════════
 // verify-ticket-13.mjs — 票 13（可见性闸门与 L3 内容验证加码）验收门
 // 覆盖 issue 13 全部 6 条验收项的程序化断言面：
-//   验收1/2 可见性闸门（静态检查 + 引擎级 hidden mock + E2E 由 verify-13.yml 承担）
+//   验收1/2 可见性闸门（静态检查 + 引擎级 hidden mock + E2E 由 e2e.yml 承担）
 //   验收3 ISO2 全集成员测试（语料 + 静态检查）
 //   验收4 共享区号消歧（fill 引擎级断言：+1 双国下拉选 Canada 落 CA）
 //   验收5 占位首项剔除（语料 mm2-pos-placeholder-dial + 填充不受伤断言）
 //   验收6 回归红线（语料动态计数 >=41 例，mismatch=0 / FN=0 / FP=0；mm2-neg-itires 转通过）
 // 引擎装载复用 14-lib-engine.mjs（函数束，零构建）；fill 装载同法（i18n/iti-adapter 依赖剥除）。
-// 证据等级：本脚本输出为程序化断言结果；CI-only 政策下最终证据 = verify-13.yml CI run。
+// 证据等级：本脚本输出为程序化断言结果；CI-only 政策下最终证据 = verify-tickets.yml 票 13 矩阵作业的 CI run。
 // ══════════════════════════════════════════════════════════════════════
 import {
   loadManifest, bundleEngine, runCorpus, metrics, buildElement,

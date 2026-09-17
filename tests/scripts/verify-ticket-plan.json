@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "owner": "Cycle-7 D-004 workflow merge (cch/t01-workflow-merge)",
+  "note": "Ticket-level verify gate plan. Single source of truth consumed by .github/workflows/verify-ticket.yml (reusable, on: workflow_call) and verify-tickets.yml (caller matrix). Ticket key -> gate plan; 'scripts' are paths relative to tests/scripts/. install/build/typecheck default to false and mirror exactly what the replaced verify-NN*.yml workflow ran.",
+  "tickets": {
+    "02-settings": { "name": "settings surface (A-026/A-027)", "scripts": ["verify-ticket-02-settings.mjs"] },
+    "03": { "name": "diagnostics surface", "scripts": ["verify-ticket-03.mjs"] },
+    "05-harness": { "name": "harness primitives (A-029)", "scripts": ["verify-ticket-05-harness.mjs"] },
+    "06": { "name": "form corpus", "scripts": ["verify-ticket-06.mjs"] },
+    "07": { "name": "real-site full ladder + release gate", "covers": ["A-029"], "scripts": ["verify-ticket-07.mjs"] },
+    "08": { "name": "phase-B failure-driven fixes", "scripts": ["verify-ticket-08.mjs"] },
+    "10": { "name": "srcdoc frame cross-frame origin", "covers": ["A-034"], "scripts": ["verify-ticket-10.mjs"] },
+    "11": { "name": "ITI L3 observable criterion", "covers": ["A-035"], "scripts": ["verify-ticket-11.mjs"] },
+    "12": { "name": "rules override cap enforcement point + BC stub fidelity", "covers": ["A-036"], "scripts": ["verify-ticket-12.mjs"] },
+    "13": { "name": "visibility L3 hardening (corpus dynamic count + gate statics)", "scripts": ["verify-ticket-13.mjs"] },
+    "15": { "name": "react19 fill probe + injection safety layer", "scripts": ["verify-ticket-15.mjs", "verify-ticket-09.mjs"] },
+    "18": { "name": "pseudo-select e2e", "scripts": ["verify-ticket-18.mjs"] },
+    "27": { "name": "detection-coverage-floor", "scripts": ["verify-ticket-27.mjs"] },
+    "28": { "name": "iso2-dial-evidence", "scripts": ["verify-ticket-28.mjs"] },
+    "29": { "name": "scan-candidates-expansion", "scripts": ["verify-ticket-29.mjs"] },
+    "30": { "name": "rules-tier-scope-fix — runs the SHARED rules-engine unit gate tests/scripts/verify-ticket-05.mjs (that script is the site-rules engine unit gate, not ticket-05's own gate; ticket-05's own gate is verify-ticket-05-harness.mjs). The replaced workflow file verify-30.yml carried no `name:` field, which made this mapping ambiguous — this entry is the explicit renaming (正名).", "scripts": ["verify-ticket-05.mjs"], "install": true, "typecheck": true },
+    "31": { "name": "fill-feedback-loop", "scripts": ["verify-ticket-31.mjs"] },
+    "37": { "name": "entry-point-accessibility", "scripts": ["verify-ticket-37.mjs"] },
+    "38": { "name": "distribution-last-mile (version consistency + GF hard rules)", "scripts": ["38-version-consistency.mjs"], "install": true, "build": true },
+    "39": { "name": "real-site-enablement", "scripts": ["verify-ticket-39.mjs"] },
+    "42": { "name": "locale-switch", "scripts": ["verify-ticket-42.mjs"] }
+  }
+}

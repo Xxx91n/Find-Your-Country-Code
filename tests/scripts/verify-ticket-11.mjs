@@ -57,7 +57,7 @@ const FILES = {
   manifest: 'tests/live/site-manifest.json',
   fixture: 'tests/fixtures/iti-l3-write-surface.html',
   spec: 'tests/iti-l3-criterion.spec.ts',
-  workflow: '.github/workflows/verify-11.yml',
+  workflow: '.github/workflows/verify-tickets.yml',
 };
 
 // ══ S0 自证（已知好样本干跑 [WORKFLOW §5 教训]）══
@@ -76,7 +76,9 @@ const LIVE = read(FILES.live);
 const MANIFEST_SRC = read(FILES.manifest);
 const FIXTURE = read(FILES.fixture);
 const SPEC = read(FILES.spec);
+// Cycle-7 D-004：票级 workflow 合并 —— verify-11.yml 删除，CI 挂接点 = 调用方 + plan 的 '11' 条目
 const WF = read(FILES.workflow);
+const T11 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets || {})['11'] || {};
 
 // ══ G1 共享原语层只增不改 ══
 {
@@ -164,8 +166,8 @@ const WF = read(FILES.workflow);
   check('G7 live 层声明 A-035', LIVE.includes('A-035'));
   check('G7 manifest 声明 A-035', MANIFEST_SRC.includes('A-035'));
   check('G7 spec 声明 A-035', SPEC.includes('A-035'));
-  check('G7 本门与 workflow 声明 A-035', read('tests/scripts/verify-ticket-11.mjs').includes('A-035') && WF.includes('A-035'));
-  check('G7 workflow 触发面合规（ADR-0006 决策 2）', WF.includes('pull_request:') && WF.includes('cch/11-iti-l3-criterion'));
+  check('G7 本门与 workflow 声明 A-035', read('tests/scripts/verify-ticket-11.mjs').includes('A-035') && (T11.covers || []).includes('A-035'));
+  check('G7 workflow 触发面合规（ADR-0006 决策 2；D-004 合并后 = PR + push(main, cch/**)）', WF.includes('pull_request:') && WF.includes("'cch/**'"));
   check('G7 workflow 零 .scratch/ 路径引用（ADR-0006 决策 1）', !WF.includes('.scratch/'));
 }
 

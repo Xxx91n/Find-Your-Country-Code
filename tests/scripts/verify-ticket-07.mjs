@@ -58,7 +58,7 @@ function onBlock(yaml) {
 {
   const FILES = ['tests/live/site-manifest.json', 'tests/live/live-smoke.mjs', 'tests/helpers/primitives.mjs',
     'tests/scripts/release-gate.mjs', '.github/release-gate-ack.json', '.github/workflows/release.yml',
-    '.github/workflows/real-site-smoke.yml', '.github/workflows/verify-07.yml'];
+    '.github/workflows/real-site-smoke.yml', '.github/workflows/verify-tickets.yml'];
   const missing = FILES.filter((f) => !has(f));
   check('S0 全部工件存在', missing.length === 0, missing.join(','));
   check('S0 全部工件可读非空', FILES.every((f) => has(f) && read(f).length > 0));
@@ -71,7 +71,10 @@ const GATE = read('tests/scripts/release-gate.mjs');
 const ACK = JSON.parse(read('.github/release-gate-ack.json'));
 const REL = read('.github/workflows/release.yml');
 const SMOKE = read('.github/workflows/real-site-smoke.yml');
-const V7 = read('.github/workflows/verify-07.yml');
+// Cycle-7 D-004：票级 workflow 合并 —— verify-07.yml 删除，本票 CI 挂接点 = 调用方
+// verify-tickets.yml（PR 门控声明处）+ verify-ticket-plan.json 的 '07' 条目（脚本与覆盖声明）。
+const V7 = read('.github/workflows/verify-tickets.yml');
+const T7 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets || {})['07'] || {};
 
 let manifest = null; let parseErr = null;
 try { manifest = JSON.parse(MANIFEST_SRC); } catch (e) { parseErr = String(e.message); }
@@ -126,7 +129,7 @@ check('G3c 触发面仅 schedule + workflow_dispatch', /schedule:/.test(smokeOn)
 check('G3d 失败只告警不阻断合入（冒烟步 continue-on-error）', /continue-on-error:\s*true/.test(SMOKE));
 check('G3e 失败以 ::warning:: 浮出（不伪造绿、不静默）', /::warning::/.test(SMOKE));
 check('G3f 有头浏览器虚拟显示保留（xvfb-run）', /xvfb-run/.test(SMOKE));
-check('G3g 本票新增的 PR 门只跑静态断言（不把真实站点层拉进 PR 面）', /verify-ticket-07\.mjs/.test(V7) && !/playwright|xvfb-run|node tests\/live/.test(V7));
+check('G3g 本票新增的 PR 门只跑静态断言（不把真实站点层拉进 PR 面）', (T7.scripts || []).includes('verify-ticket-07.mjs') && !/playwright|xvfb-run|node tests\/live/.test(V7));
 check('G3h 票级 PR 门触发面合规（ADR-0006 决策 2：非发版 workflow 声明 pull_request）', /pull_request:/.test(onBlock(V7)));
 
 // ══ G4 发布门 ══
@@ -159,7 +162,7 @@ check('G4r checkTicket 拒绝不可解析的票', checkTicket('NOPE.md').ok === 
 check('G4s MIN_REASON 常量成文（reason 不得为敷衍占位）', MIN_REASON >= 20 && /MIN_REASON/.test(GATE));
 check('G4t 发布门对象 workflow 为真实站点层（不误绑其他 workflow）', WORKFLOW_FILE === 'real-site-smoke.yml' && has('.github/workflows/' + WORKFLOW_FILE));
 check('G4u 发布门属发版系例外路径（release.yml 不声明 pull_request）', relOn.length > 0 && !/pull_request/.test(relOn));
-const wfScratch = ['.github/workflows/release.yml', '.github/workflows/verify-07.yml', '.github/workflows/real-site-smoke.yml']
+const wfScratch = ['.github/workflows/release.yml', '.github/workflows/verify-tickets.yml', '.github/workflows/verify-ticket.yml', '.github/workflows/real-site-smoke.yml']
   .filter((f) => /\.scratch\//.test(read(f)));
 check('G4v workflows 零 .scratch/ 路径引用（ADR-0006 决策 1）', wfScratch.length === 0, wfScratch.join(','));
 
@@ -167,7 +170,7 @@ check('G4v workflows 零 .scratch/ 路径引用（ADR-0006 决策 1）', wfScrat
 check('G5a manifest 声明本票覆盖 A-029', /A-029/.test(MANIFEST_SRC) && manifest._meta?.coveredA === 'A-029');
 check('G5b live 层声明本票覆盖 A-029', /票 07 \[A-029\]/.test(LIVE) && /coveredA: 'A-029'/.test(LIVE));
 check('G5c 发布门脚本声明本票覆盖 A-029', /票 07 \/ A-029/.test(GATE));
-check('G5d 本票结构门与 workflow 声明 A-029', /A-029/.test(read('tests/scripts/verify-ticket-07.mjs')) && /A-029/.test(V7));
+check('G5d 本票结构门与 workflow 声明 A-029', /A-029/.test(read('tests/scripts/verify-ticket-07.mjs')) && (T7.covers || []).includes('A-029'));
 
 // ══ G6 只升不降（本票不得放宽既有断言）══
 check('G6a L1 在既有 wrapper 判据之上加强档位合法性（只升不降）', /injectedOk\(probe, t\.selector\) && tierOk/.test(LIVE) && /档位非法（应为 auto\|lowkey）/.test(LIVE));

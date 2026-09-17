@@ -1,0 +1,55 @@
+# ══════════════════════════════════════════════════════════════════════
+# Cycle-7 · D-004：票级验证门调用方（唯一 PR 门控声明点）
+#
+# 21 个票级 `verify-NN*.yml` 已合并：触发面集中在本文件
+#   （pull_request + push(main, cch/**) + workflow_dispatch），
+#   逐个票号以 matrix 调用 reusable `verify-ticket.yml`。
+# 旧的 `push: branches: cch/NN-<slug>` 死触发已全部清除
+#   （分支生命周期结束后这些分支已不存在，属 D-004「死触发按分支生命周期清理」）。
+#
+# 票号清单必须与 tests/scripts/verify-ticket-plan.json 完全一致
+#   （守卫：node tests/scripts/verify-ticket-runner.mjs --audit 的 A15/A16）。
+# ══════════════════════════════════════════════════════════════════════
+name: Verify Tickets (all ticket-level gates)
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'cch/**'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        ticket:
+          - '02-settings'
+          - '03'
+          - '05-harness'
+          - '06'
+          - '07'
+          - '08'
+          - '10'
+          - '11'
+          - '12'
+          - '13'
+          - '15'
+          - '18'
+          - '27'
+          - '28'
+          - '29'
+          - '30'
+          - '31'
+          - '37'
+          - '38'
+          - '39'
+          - '42'
+    uses: ./.github/workflows/verify-ticket.yml
+    with:
+      ticket: ${{ matrix.ticket }}
