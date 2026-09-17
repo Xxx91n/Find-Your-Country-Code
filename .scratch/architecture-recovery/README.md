@@ -556,24 +556,24 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | **W3** | 06 | 06←05 | 单票 | 形态语料三层架构（A-030） |
 | **W4** | 07 | 07←06 | 单票 | 真实站点层全阶梯 + 发布门（A-029） |
 | **W5** | 08, 10, 11 | 08←07；10←07；11←07 | 三票同波（互不堆叠，可并行） | ✅ **已完成并复核通过**：阶段 B 失效驱动修复（A-031 · A-032） ＋ srcdoc 帧跨帧 origin 修复（A-034，P0） ＋ ITI 形态 L3 判据判定（A-035，P1） |
-| **W6** | 09, 12 | 09←01…08；12←10 | 两票同波（可并行） | Cycle-6 收口（（无；收口层）） ＋ 规则上限强制点裁定 + BC 替身克隆保真度修复（A-036） |
+| **W6** | 09, 12 | 09←01…08；12←10 | 两票同波（可并行） | ✅ **票 09 收口已完成（2026-09-17）**：账本结算（A 10/10 + A-036 未结算 / D 16/16）+ 归档 handoff ＋ ⏳ **票 12 未开工**（A-036；blocked by 10 已闭环 ⇒ 可立即开工） |
 
 ### 票务状态与 frontier（第六周期）
 
 | 票 | 标题 | 覆盖 A-xxx | 状态 | 报告路径 | 波次 |
 |----|------|-----------|------|----------|------|
-| 01 | 验收面与断言阶梯定义 | A-029 · A-030 | **done（复核通过）** — 7/7 声明实物属实；零源码改动；issue 6/6 勾销；**CI 证据待补（P-2）** | `research/window-reports/01-acceptance-surface-and-ladder-report.md` | W1 |
-| 02 | 设置面收口 | A-026 · A-027 | **⚠️ R2 修复已验证但「未落地」** — W1 的「无源码返工」结论**已回溯作废**（基于并集树，未做逐分支构建）：**cch/02 在 CI 上构建失败**（**构建步**；`ui/index.ts` 被扫入票 03 诊断面**整层**，而 config/types/main/`src/diag/` 四者全缺 ⇒ **嵌合体分支**，非「缺一个导出」）· **R2 交付复核通过**（补丁+全文尺寸/SHA 逐字命中 · 施于当前 cch/02 内容无 fuzz 且逐字节等价 · 隔离树实跑 修复前 build exit 1 与 CI 逐字一致 / 修复后 build exit 0 · typecheck 0 错 · 门 02 33/0 · 门 42 42/0 · 全量 E2E **103 passed/1 failed**，唯一红=R-3；详见 `research/cycle6-r2-review.md`）· **落地阻断**：`but commit` 报 `depends on cch/03`（同栈），待裁定机制（建议：卸下栈上 4 支→提交→装回）· 修复版启动器 `prompts/02-settings-surface-fix.md` · 原 W1 描述： — 8/8 声明实物属实；闸门 **33/0**、规格 **8 passed** 实测复现；`_applyLocaleText` 已删；**CI 证据待补（P-2）**；报告行号漂移待补正（P-5） | `research/window-reports/02-settings-surface-report.md` | W1 |
-| 03 | 诊断面 | A-028 | **done（复核通过）** — 7/7 声明实物属实；**单一采集路径代码级证实**；闸门 **58/0**、规格 **6 passed** 实测复现；**CI 证据待补（P-2）**；跨票改动 P-1 待裁定 | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
-| 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **⚠️ 实现属实、完成定义未满足** — 7/7 声明实物属实（ADR-0010 / ADR-0008 零 diff / 28→35 / 零碰撞）；但 **issue 5 项未勾销且无任何提交触碰过该 issue（P-4）** | `research/window-reports/04-domain-modeling-report.md` | W1 |
-| 05 | harness 交互原语 | A-029 | **done（复核通过）** — 8 项声明中 **7 项属实**（claim 6 为口径未标注）；闸门 **59/0**、live runtime 自证 **deep 6/6** 均主 Agent 独立复现；全量 E2E **117 passed** 无回归；未跨票改动；**CI 证据待补（P-2）** | `research/window-reports/05-harness-primitives-report.md` | W2 |
-| 06 | 形态语料三层架构 | A-030 | **⚠️ 实现属实、返工轮次 R1 待开工** — 13 项声明 **12 项属实**（claim 12「同口径双探测」被证伪）；门 **187/0**、spec **18 passed**、全量 E2E **135 passed** 均主 Agent 独立复现；未跨票改动；修复版启动器 `prompts/06-form-corpus-fix.md` | `research/window-reports/06-form-corpus-report.md` | W3 |
-| 07 | 真实站点层全阶梯 + 发布门 | A-029 | **✅ W4 复核通过** — 16 项声明实物全属实（门 **63/0** · 发布门自证 **11/11** · 全量 E2E **135/0** · CI **6 run 全 success @ d5c6f415** · 真实站点层阶梯 CI 日志与报告 §8.2 逐字一致 · d5c6f415 = 8 文件/+831 −109）；账本 **A-029 implemented**（口径做满 L0–L4，超出「L0+最弱 L4」最低要求）；**无源码返工**（d5c6f415 不含 `src/**`，报红属既有缺陷首次暴露）；头条发现（srcdoc 帧 origin 校验误判）**经我独立复现确证** ⇒ 建议立 P0 新票；过程违规未追认：**P-17 强推改写已发布历史 + E-4 声明与实物不符** · P-2 推送未经授权 · P-18 表述口径 | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
-| 08 | 阶段 B：失效驱动修复 | A-031 · A-032 | **✅ W5 复核通过** — 门 **35/0**（我实跑）；回归矩阵 12 道门逐项吻合；三形态入语料（manifest 56 例含 N31×2/P31×2，16/16 指纹自洽）；`src/` 改动无后门（scoped）；**无断言弱化**。**3 处报告表述偏差**（非源码）：§8.2 复现命令与锚 sha 本地不可达、§7「零删零改」字面不成立（N7 3 行据实改写且原文留存）、§1 未声明文件数 ⇒ 已追加「附：首脑补正」 | `research/window-reports/08-phase-b-failure-fixes-report.md` | W5 |
-| 09 | Cycle-6 收口 | （无；收口层） | **ready-for-agent** | `research/window-reports/09-cycle6-closeout-report.md` | W6 |
-| 10 | 修复 `about:srcdoc` 帧跨帧 origin 校验误判 | A-034 | **✅ W5 复核通过（P0 已闭环）** — 实施提交 `16485782` = **9 文件/+516 −9**（逐字命中）；`SELF_ORIGIN` 四处（`config.ts:120` 定义 + `main.ts:122/139` + `store:70/103`）；`location.origin` 仅存注释与**回退分支**（不放宽）；门 **34/0**；跨票改动 `verify-ticket-05.mjs` **仅替身 1 行、断言面零改动**；**真实站点层 `live-codepen-pen-fullpage` CI 上 `L0+ L1+ L2+ L3+ L4+` 全绿**（修复前 `L3! L4!`，run 35154465918）；CI 6 run 全 success @ `62f2292a`；E2E `143 passed` | `research/window-reports/10-srcdoc-origin-fix-report.md` | W5 |
-| 11 | 判定 ITI 形态下 L3 的正确可观测判据 | A-035 | **✅ W5 复核通过（判据变更判为合规）** — 实施提交 `0f195075` = **11 文件/+975 −20**（逐字命中）；门 **62/0**；普通字段判据**逐字保留**（整段移入 field 分支）、ITI 分支 fail-closed；**合规依据**：钉版库全文**仅 1 处 `dispatchEvent`**（`:788`，只发自定义事件）⇒ 旧原生事件断言对 ITI **确定性不可满足**（假红）；**2 处未呈报影响面**（`preAlready` 旁路未登记 · `verify-07` G2e/G2f 对 ITI 无运行时覆盖但门未损坏）+ P-19（§8「无远端写」与实物不符）⇒ 已追加「附：首脑补正」 | `research/window-reports/11-iti-l3-criterion-report.md` | W5 |
-| 12 | 规则上限强制点裁定 + BC 替身克隆保真度修复 | A-036 | **ready-for-agent** — 票 10 §6.1/§6.2 挖出的**源码层面**缺口：BC 替身缺 `origin`（守卫从未被行使）+ 缺结构化克隆（致 `verify-05` 的 S4 绿为**假绿**，A/B 对照补克隆后 `got=513` 复红）；`RULES_MAX_OVERRIDES` 只在读路径截断、写路径不截断 | `research/window-reports/12-rules-limit-fidelity-report.md` | W6 |
+| 01 | 验收面与断言阶梯定义 | A-029 · A-030 | **✅ done（W1 复核通过）** — 7/7 声明实物属实；零源码改动；issue 6/6 勾销；**CI 已补**：tip `ca6403a7`（Typecheck 35125983470 · Engine Gates 35125983700 · Lockfile 35125983551 · E2E 35125983491 全 success） | `research/window-reports/01-acceptance-surface-and-ladder-report.md` | W1 |
+| 02 | 设置面收口 | A-026 · A-027 | **✅ done（R2 去污染后复核通过）** — W1「无源码返工」结论已回溯作废（基于并集树）；R-2 嵌合体分支已去污染落地（`src/ui/index.ts` 862 行）、R-3 面板居中真因查明并修复（三重复合 19+12+动画）；隔离验收 build exit 0 · typecheck 0 错 · 门 02 33/0 · 门 42 42/0；**CI 已补**：tip `a80756ad`（Verify Ticket 02 35125953578 + Typecheck/Engine Gates/Lockfile/E2E 全 success） | `research/window-reports/02-settings-surface-report.md` | W1 |
+| 03 | 诊断面 | A-028 | **✅ done（W1 复核通过）** — 7/7 声明实物属实；单一采集路径代码级证实；闸门 58/0、规格 6 passed；跨票改动 P-1 待裁定；**CI 已补**：tip `29baf181`（Verify Ticket 03 35125966038 + 四门全 success） | `research/window-reports/03-diagnostics-surface-report.md` | W1 |
+| 04 | 域建模：发布门 ADR + CONTEXT 术语 | A-033 | **⚠️ 实现属实（W1 复核 7/7 实物）；issue 未勾销（P-4 未处置）** — ADR-0010 落盘（`docs/adr/0010-release-gate.md`）· ADR-0008 零 diff · CONTEXT.md 28→35（7 术语实物齐）· 零命名碰撞；分支**未推送 ⇒ 无 CI**（纯文档，§8.2 本地硬验收例外登记）；**本收口票未代勾**（跨票工件纪律），建议 land 时由大脑补勾 | `research/window-reports/04-domain-modeling-report.md` | W1 |
+| 05 | harness 交互原语 | A-029 | **✅ done（W2 复核通过）** — 8 项声明 7 项属实（claim 6 口径未标注）；闸门 59/0 · live runtime 自证 deep 6/6；全量 E2E 117 passed；未跨票改动；**CI 已补**：tip `129d78c3`（Verify Ticket 05 35125996879 + 四门全 success） | `research/window-reports/05-harness-primitives-report.md` | W2 |
+| 06 | 形态语料三层架构 | A-030 | **✅ done（R1 复核通过）** — 口径不一致已修（`06-probe-common.mjs` 唯一口径模块，两份探测零就地字面量）；门 209/0；报告追加式零删除（+198 行）；未跨票改动；**CI 已补**：tip `8d787e5d`（Verify Ticket 06 35126009237 + 四门全 success） | `research/window-reports/06-form-corpus-report.md` | W3 |
+| 07 | 真实站点层全阶梯 + 发布门 | A-029 | **✅ done（W4 复核通过）** — 16 项声明实物全属实（门 63/0 · 发布门自证 11/11 · CI 6 run 全 success @ `d5c6f415`）；账本 A-029 implemented（口径做满 L0–L4）；头条发现（srcdoc origin 误判）经独立复现确证 ⇒ 立 P0 票 10；过程违规 P-17 强推未授权（已追加补正）；**CI 已补**：tip `fd02901f`（Verify Ticket 07 35126019730 + 四门全 success） | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
+| 08 | 阶段 B：失效驱动修复 | A-031 · A-032 | **✅ done（W5 复核通过）** — 门 35/0；回归矩阵 12 道门逐项吻合；三形态入语料（manifest 56 例）；`src/` 改动无后门；无断言弱化；3 处报告表述偏差已追加「附：首脑补正」；**CI**：tip `747763fd`（Verify Ticket 08 35127030983 + Typecheck/Engine Gates/Lockfile success；**E2E 35127030916 failure 已归因**：同栈票 10 密封用例的修复前版本，见收口报告 §已知红） | `research/window-reports/08-phase-b-failure-fixes-report.md` | W5 |
+| 09 | Cycle-6 收口 | （无；收口层） | **✅ 本票闭环（2026-09-17）** — 账本结算 A-026…A-035 = 10/10 implemented / A-036 未结算 + D-001…D-016 = 16/16 落定；归档 handoff `handoffs/49-cycle6-closure.md`；issue 4/4 验收项勾销 | `research/window-reports/09-cycle6-closeout-report.md` | W6 |
+| 10 | 修复 `about:srcdoc` 帧跨帧 origin 校验误判 | A-034 | **✅ done（W5 复核通过，P0 闭环）** — 实施提交 `16485782` = 9 文件/+516 −9（逐字命中）；`SELF_ORIGIN` 四处（`config.ts:120` 定义 + `main.ts:122/139` + `store:70/103`）；`location.origin` 仅存注释与回退分支（不放宽）；门 34/0；跨票改动 `verify-ticket-05.mjs` 仅替身 1 行、断言面零改动；**真实站点层 `live-codepen-pen-fullpage` L0–L4 全绿**（修复前 `L3! L4!`）；**CI 已补**：tip `6a95417b`（Verify Ticket 10 35155127276 + Typecheck/Engine Gates/Lockfile/E2E 全 success；Real-site smoke 35154465918 success @ `62f2292a`） | `research/window-reports/10-srcdoc-origin-fix-report.md` | W5 |
+| 11 | 判定 ITI 形态下 L3 的正确可观测判据 | A-035 | **✅ done（W5 复核通过，判据变更判为合规）** — 实施提交 `0f195075` = 11 文件/+975 −20（逐字命中）；门 62/0；普通字段判据**逐字保留**、ITI 分支 fail-closed；合规铁证：钉版库全文仅 1 处 `dispatchEvent` ⇒ 旧断言确定性不可满足；2 处未呈报影响面 + P-19 已追加「附：首脑补正」；**CI 已补**：tip `8a27ad34`（Verify Ticket 11 35126031083 + 四门全 success） | `research/window-reports/11-iti-l3-criterion-report.md` | W5 |
+| 12 | 规则上限强制点裁定 + BC 替身克隆保真度修复 | A-036 | **⏳ ready-for-agent（未开工）** — 唯一在途实施票；blocked by 10（已闭环）⇒ 可立即开工；启动器 `prompts/12-rules-limit-fidelity.md` | `research/window-reports/12-rules-limit-fidelity-report.md` | W6 |
 
 ### 发起窗口的 prompts
 
@@ -594,8 +594,18 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 
 ### 对账闸与自检
 
-- **对账闸（Step 0）**：A-026…A-035 共 **10 条**（A-026 = revised，仅保留「GM 菜单设置项」一条；A-027…A-035 = current），**全部有票去向**；无去向记录 **0 条**。
+- **对账闸（Step 0）**：A-026…A-036 共 **11 条**（A-026 = revised，仅保留「GM 菜单设置项」一条；A-027…A-036 = current），**全部有票去向**；无去向记录 **0 条**。（2026-09-17 收口校正：原记 10 条未含新登记 A-036。）
 - **启动器自检**：原 9 份 **9/9 PASS**（行数 ≤31、违禁词 0、复述 0、handoff 调研要求各 1 次、路径全可解析、A-xxx 均已声明）；**新增 2 份（10 / 11）自检通过**：行数 32 / 31（≤60）、违禁词 0、占位残渣 0、引用路径 19/19 可解析、A-xxx（A-034 / A-035）均已声明。
+
+### W6 收口结论（票 09）（2026-09-17）
+
+> 报告：`research/window-reports/09-cycle6-closeout-report.md` · 归档 handoff：`handoffs/49-cycle6-closure.md`
+
+- **账本结算**：A-026…A-035 = **10/10 implemented**；**A-036 = current（未结算）**——归并行票 12，收口票不承载、不代签。D-001…D-016 = **16/16 落定**。
+- **逐票实物核验**：01–11 的 issue 勾销 / 窗口报告 / 实施提交 sha / 分支 tip CI run 四项齐；**票 04 例外**（纯文档未推送 ⇒ 无 CI，§8.2 例外登记；issue 未勾销，P-4 未处置）。
+- **已知红（§8.1.3 留痕）**：`cch/08` tip E2E failure 归因②（同栈票 10 密封用例的修复前版本），已在 `cch/10` 修复转绿 ⇒ **land 前须把 `cch/08` 重挂到 `cch/10` 终态之上**。
+- **未闭合**：票 12 未开工；全周期未 land、未发版（land 触发 release ⇒ 须用户逐次授权）。
+- **过程违规未追认**：P-2 / P-4 / P-13 / P-17 / P-19 / P-20（详见收口报告与归档 handoff §5.4）。
 
 ### 辩证校正（入档）
 
