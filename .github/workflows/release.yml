@@ -88,7 +88,9 @@ jobs:
         run: |
           {
             echo 'CONTENT<<__EOF__'
-            cat greasyfork/Glog.md
+            # 只取最新一节（首个 `## vX.Y.Z` 到下一节之前）：发行说明不带历史版本，
+            # 与 v1.4.0/v1.5.0/v1.6.0 的既有发行体例一致；Glog 文件本身仍保留全量历史。
+            awk '/^## v[0-9]/{n++} n==1' greasyfork/Glog.md
             echo '__EOF__'
           } >> $GITHUB_OUTPUT
 
@@ -98,7 +100,7 @@ jobs:
         run: |
           {
             echo 'CONTENT<<__EOF__'
-            cat greasyfork/Glog_EN.md
+            awk '/^## v[0-9]/{n++} n==1' greasyfork/Glog_EN.md
             echo '__EOF__'
           } >> $GITHUB_OUTPUT
 
