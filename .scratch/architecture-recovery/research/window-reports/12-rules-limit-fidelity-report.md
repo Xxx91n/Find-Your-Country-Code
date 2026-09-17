@@ -328,3 +328,16 @@ Summary: Would push 2 commits across 1 branch
 **本地自证（2026-09-17，改后树）**：`npm run e2e` → **145 passed / 0 failed**（约 1.5m），exit 0。
 影响面核对：E2E 面**不触达**本票改动的上限路径（无 `upsertOverride` / `overrides.length` 断言，无大批量写入循环）。
 **CI 侧 E2E（`e2e.yml`）**：**未取得** —— 须推送分支；状态与原因见 §9.2 / §9.3。**不得**以本地结果替代行为面 CI 证据。
+
+---
+
+## 附：首脑补正（2026-09-17，**追加式，原文一字未改**）
+
+> 来源：`research/cycle6-wave6-review.md`（W6 首脑复核）。**本票实现经实物验证属实、复核通过**（实施提交 `fe0a5df3` = 8 文件/+487 −22 逐字命中 · 裁定=**写路径**并落地 `store:273` + ADR-0011 成文 · 替身补 `structuredClone` + `DOC_ORIGIN = SELF_ORIGIN` 且**断言区逐字节未变** · A/B 复现 · **S4 不再是假绿**（三条独立证据）· 无远端写 ⇒ 无 CI 如实）。本补正只更正**数字与行号口径**（P-24）。
+
+| # | 原表述 | 实物 | 更正 |
+|---|---|---|---|
+| C-1 | `verify-15` = **36/36** | 我实跑 `node tests/scripts/verify-ticket-15.mjs` → **28/28 pass**（疑与 `verify-09` 的 36/36 混记） | 以 **28/28** 为准 |
+| C-2 | `verify-03` = **58/0** | 本机实跑 → **57 PASS / 1 FAIL**（`G8c 门控关时 trace 100000 次 < 50ms` 实测 **63.71 / 71.03 / 65.88 ms**，空载 ×3 均红）；而 **CI 上 `verify-03.yml` 通过** ⇒ **机器性能差异，非本票引入、非回归** | 本地值标注为「本机红，以 CI 为准」 |
+| C-3 | 行号 `:212` / `:268` | `grep -n RULES_MAX_OVERRIDES src/store/index.ts` → **`:220`**（`_normRulesDoc` 摄取 slice）与 **`:273`**（写路径强制点） | 以 `:220` / `:273` 为准 |
+| C-4 | 「与并行票分支互不堆叠」 | `cch/11-iti-l3-criterion` 实为 `cch/12` 的**祖先**（push 载荷将含本地 rebase 链）；报告已就 `cch/10` 披露 P-20，但漏 `cch/11` | 补注 cch/11 |
