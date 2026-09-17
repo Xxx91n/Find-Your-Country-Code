@@ -609,7 +609,78 @@
       "signalAttribution": [ "L1:kw:strong(+30)", "L3:opts:(+NN)-text(+40)", "L1:attr:phrase:country code:dedup(opts-dial)(0)" ],
       "el": { "tag": "select", "name": "country_code", "className": "country-select", "attrs": { "aria-label": "Country" },
         "options": [ { "value": "CN", "text": "China (+86)" }, { "value": "US", "text": "United States (+1)" }, { "value": "GB", "text": "United Kingdom (+44)" }, { "value": "JP", "text": "Japan (+81)" }, { "value": "DE", "text": "Germany (+49)" }, { "value": "AC", "text": "Ascension Island (+247)" } ] },
-      "labels": [], "ctx": {} }
+      "labels": [], "ctx": {} },
+  {
+    "id": "mm2-neg-optout-1p-ignore",
+    "family": "mm2",
+    "polarity": "negative",
+    "expect": "none",
+    "knownResidual": false,
+    "source": "票 15 [D-016 ②] 元素级退出协议（1Password data-1p-ignore）；形态镜像 mm2-pos-optout-control",
+    "note": "与 mm2-pos-optout-control 同形态（autocomplete=tel-country-code + placeholder=+86 + tel 锚），仅多裸属性 data-1p-ignore ⇒ 站点/用户显式否决压过一切启发式：不评分 / 不注入 / 不登记召唤。判定口径 = 属性存在即命中（任意值，含裸属性空串）。",
+    "el": {
+      "tag": "input",
+      "id": "optout-1p-ignore",
+      "type": "text",
+      "name": "phone_country_code",
+      "placeholder": "+86",
+      "attrs": {
+        "autocomplete": "tel-country-code",
+        "data-1p-ignore": ""
+      }
+    },
+    "labels": [],
+    "ctx": {
+      "anchorHasTel": true
+    }
+  },
+  {
+    "id": "mm2-neg-optout-form-type",
+    "family": "mm2",
+    "polarity": "negative",
+    "expect": "none",
+    "knownResidual": false,
+    "source": "票 15 [D-016 ②] 元素级退出协议（Bitwarden data-form-type=\"other\"）；形态镜像 mm2-pos-optout-control",
+    "note": "与 mm2-pos-optout-control 同形态，仅多 data-form-type=\"other\" ⇒ 与 data-1p-ignore 同族显式否决：不评分 / 不注入 / 不登记召唤。判定口径 = 值精确等于 \"other\"（同属性的其他值如 \"password\" 不构成退出）。",
+    "el": {
+      "tag": "input",
+      "id": "optout-form-type",
+      "type": "text",
+      "name": "phone_country_code",
+      "placeholder": "+86",
+      "attrs": {
+        "autocomplete": "tel-country-code",
+        "data-form-type": "other"
+      }
+    },
+    "labels": [],
+    "ctx": {
+      "anchorHasTel": true
+    }
+  },
+  {
+    "id": "mm2-pos-optout-control",
+    "family": "mm2",
+    "polarity": "positive",
+    "expect": "inject",
+    "knownResidual": false,
+    "source": "票 15 [D-016 ②] 退出协议反例对照（同形态、无退出属性）",
+    "note": "与 mm2-neg-optout-1p-ignore / mm2-neg-optout-form-type 同形态但无退出属性 ⇒ 证明 opt-out 是元素级精确否决、非「整体失效」：强信号（autocomplete=tel-country-code + tel 锚）照常注入 auto。",
+    "el": {
+      "tag": "input",
+      "id": "optout-control",
+      "type": "text",
+      "name": "phone_country_code",
+      "placeholder": "+86",
+      "attrs": {
+        "autocomplete": "tel-country-code"
+      }
+    },
+    "labels": [],
+    "ctx": {
+      "anchorHasTel": true
+    }
+  }
   ],
   "realSiteForms": [
     {

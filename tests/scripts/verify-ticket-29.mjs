@@ -6,6 +6,8 @@
 //   ③ ADR-0005 档位上限（登记 + 手动召唤，tier 强制 none）
 //   ④ 指纹面 = 观测面（tabindex 同步 _fingerprint 与 OBSERVED_ATTRS）
 //   ⑤ 无裸 [contenteditable]（票 12 / D-014）：候选集只收「contenteditable ∧ 可聚焦 tabindex=0 ∧ 强 tel 先验」复合描述符；语料 A-023 已备
+//   ⑥ 元素级退出协议（票 15 [D-016 ②]）：data-1p-ignore / data-form-type="other" 命中即
+//      完全跳过（不评分/不注入/不登记召唤），观测面与指纹面同步；语料 mm2-*-optout-* 已备
 // 用法: node tests/scripts/verify-ticket-29.mjs  （exit 0 = 全绿）
 // 可重复运行: 纯确定性（无时钟/随机/网络依赖）。
 // ══════════════════════════════════════════════════════════════════
@@ -153,6 +155,41 @@ check('9.1 fill 侧 li 回退（无 role=option 时）',
   /querySelectorAll\('li'\)/.test(FILL_SRC));
 check('9.2 fill 侧回退不破坏既有 role=option 路径',
   /querySelectorAll\('\[role="option"\]'\)/.test(FILL_SRC));
+
+// ══ 10. 元素级退出协议（票 15 [D-016 ②]）：data-1p-ignore / data-form-type="other" ══
+// 裁定：退出协议是站点/用户的**显式否决**，压过一切启发式（与 scan() 入口页面豁免同族）——
+// 命中即完全跳过（不评分、不注入、不登记召唤）。裁定与依据：docs/adr/0012-mental-model-adoption.md
+check('10.1 源码含 data-1p-ignore 退出判定（任意值）',
+  DETECT_SRC.includes("getAttribute('data-1p-ignore') !== null"));
+check('10.2 源码含 data-form-type="other" 退出判定',
+  DETECT_SRC.includes("getAttribute('data-form-type') === 'other'"));
+check('10.3 退出属性入观测面 OBSERVED_ATTRS（票 04 契约）',
+  obsRaw.includes("'data-1p-ignore'") && obsRaw.includes("'data-form-type'"));
+check('10.4 退出属性入指纹面 _fingerprint（票 04 契约）',
+  fpRaw.includes("el.getAttribute('data-1p-ignore'), el.getAttribute('data-form-type'),"));
+const MANIFEST = JSON.parse(readFileSync(join(ROOT, 'tests', 'corpus', 'manifest.json'), 'utf8'));
+const caseOf = (id) => (MANIFEST.cases || []).find(c => c.id === id) || null;
+const optNeg1 = caseOf('mm2-neg-optout-1p-ignore');
+const optNeg2 = caseOf('mm2-neg-optout-form-type');
+const optCtl = caseOf('mm2-pos-optout-control');
+check('10.5 语料三例在位（2 负例 + 1 对照）', !!optNeg1 && !!optNeg2 && !!optCtl);
+check('10.6 语料 polarity/expect 正确',
+  !!optNeg1 && optNeg1.polarity === 'negative' && optNeg1.expect === 'none' &&
+  !!optNeg2 && optNeg2.polarity === 'negative' && optNeg2.expect === 'none' &&
+  !!optCtl && optCtl.polarity === 'positive' && optCtl.expect === 'inject');
+// 行为面：退出元素短路为 none/0；对照元素照常评分（证明是元素级精确否决，非「整体失效」）
+const optEl1 = node('input', { type: 'text', autocomplete: 'tel-country-code', 'data-1p-ignore': '' });
+const rOpt1 = Detect.scoreElement(optEl1);
+check('10.7 data-1p-ignore 元素短路 tier=none score=0',
+  rOpt1.tier === 'none' && rOpt1.score === 0, 'tier=' + rOpt1.tier + ' score=' + rOpt1.score);
+const optEl2 = node('input', { type: 'text', autocomplete: 'tel-country-code', 'data-form-type': 'other' });
+const rOpt2 = Detect.scoreElement(optEl2);
+check('10.8 data-form-type=other 元素短路 tier=none score=0',
+  rOpt2.tier === 'none' && rOpt2.score === 0, 'tier=' + rOpt2.tier + ' score=' + rOpt2.score);
+const ctlEl = node('input', { type: 'text', autocomplete: 'tel-country-code' });
+const rCtl = Detect.scoreElement(ctlEl);
+check('10.9 无退出属性的对照元素仍走评分（非整体失效）',
+  rCtl.tier !== 'none' && rCtl.score > 0, 'tier=' + rCtl.tier + ' score=' + rCtl.score);
 
 // ══ 汇总 ══
 console.log('— 票 29 回归门（A-003 扫描候选集扩展）');

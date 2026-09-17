@@ -276,7 +276,10 @@ const OBSERVED_ATTRS = ['name', 'id', 'class', 'type', 'placeholder', 'aria-labe
   'role', 'aria-expanded', 'aria-controls', 'aria-owns',
   // 票 29 [A-003]: tabindex —— 无 ARIA 手写下拉的「可聚焦触发器」门槛属性。
   // 观测面与指纹面必须同步（票 04 契约：指纹读什么，observer 就监听什么）。
-  'tabindex'];
+  'tabindex',
+  // 票 15 [D-016 ②]: 元素级退出协议属性 —— 判定路径读取（isOptOutElement），
+  // 故观测面与指纹面同步登记：站点动态挂/摘退出属性即触发重评（退出与恢复都生效）。
+  'data-1p-ignore', 'data-form-type'];
 const MO_OPTS = { childList: true, subtree: true, attributes: true, attributeFilter: OBSERVED_ATTRS };
 // 候选选择器组（顺序：select → iti 容器 → input 组合；与 v1.3.4 迁移基线一致）
 const SCAN_SELECTORS = [
@@ -303,6 +306,21 @@ const SCAN_SELECTORS = [
 // 票 24 安全加固：候选选择器存在覆盖重叠（.iti input ⊂ input[type="tel"] 组合项），
 // 迭代 Set 去重版避免同一 selector 字符串被重复 querySelectorAll（数组顺序不变，仅收敛唯一集合）
 const SCAN_SELECTOR_SET = new Set(SCAN_SELECTORS);
+
+// ══ 票 15 [D-016 ②]：元素级退出协议（opt-out）══
+// 站点/用户的**显式否决**，压过一切启发式 —— 与 scan() 入口的页面豁免
+// （Rules.isPageExcluded；[AM 结论5] 1Password data-1p-ignore 心智：用户显式干预压过
+// 一切启发式，不评分/不注入/不登记召唤）同族，只是作用面从整页收敛到单元素。
+//   ① data-1p-ignore（任意值，含裸属性空串）—— 1Password 官方退出协议
+//   ② data-form-type="other"（值须精确为 other）—— Bitwarden 官方退出协议
+// 裁定与依据：docs/adr/0012-mental-model-adoption.md（ADR-0003「用户显式干预 > 引擎启发」）。
+// 注：两属性同步进 OBSERVED_ATTRS 与 _fingerprint（票 04 契约：指纹读什么，observer 就监听
+// 什么）—— 站点动态挂/摘退出属性时指纹翻转即触发重评，退出与恢复都生效。
+function isOptOutElement(el: AnyEl): boolean {
+  if (!el || typeof el.getAttribute !== 'function') return false;
+  if (el.getAttribute('data-1p-ignore') !== null) return true;
+  return el.getAttribute('data-form-type') === 'other';
+}
 
 export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag | null) {
   // ══ 票 03 [A-028]：注入/拆除/登记的统一收口 ══
@@ -370,6 +388,12 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
     // ══ 评分核心：纯函数（元素 + 可选锚上下文 → 分数/分档/信号明细；不触碰 UI/存储） ══
     scoreElement(el: AnyEl, ctx?: { anchorHasTel?: boolean } | null): ScoreResult {
       ctx = ctx || {};
+      // 票 15 [D-016 ②]：元素级退出协议短路（评分瀑布之前）—— 显式否决不评分：
+      // 零分 ⇒ 下游 tier=none 不注入（已挂 wrapper 由 _process 的 none 分支拆除）、
+      // 0 < ITI_LOW_REGISTER_SCORE ⇒ 不登记召唤。与页面豁免（scan 入口短路）同族。
+      if (isOptOutElement(el)) {
+        return { score: 0, tier: 'none', signals: [{ layer: 'L0', name: 'gate:optout', pts: 0 }] };
+      }
       const sig: Signal[] = [];
       const add = (layer: string, name: string, pts: number): number => { sig.push({ layer, name, pts }); return pts; };
       const tag = el.tagName;
@@ -823,6 +847,8 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
         el.getAttribute('aria-controls'), el.getAttribute('aria-owns'),
         // 票 29: tabindex 入指纹 —— 可聚焦态翻转（框架 hydration / 条件渲染）触发重评
         el.getAttribute('tabindex'),
+        // 票 15 [D-016 ②]: 退出协议属性入指纹（与 OBSERVED_ATTRS 同步）
+        el.getAttribute('data-1p-ignore'), el.getAttribute('data-form-type'),
         el.disabled ? 'd' : '', el.readOnly ? 'r' : '',
         this._isIti(el) ? 'iti' : '', this._label(el) || '',
       // 票 13：可见性判定入指纹 —— 显隐翻转（路由切换/样式类变更）即触发重评
