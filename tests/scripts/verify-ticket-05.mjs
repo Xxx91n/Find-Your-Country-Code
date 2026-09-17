@@ -12,7 +12,8 @@
 //   module.stripTypeScriptTypes（Node >= 22.13）剥类型再装配，不引依赖不改语义。
 // 位置：票 30（A-004）自 .scratch/architecture-recovery/research/scripts/ 迁入 tests/scripts/
 //   （ADR-0006 工程卫生基线：CI 脚本入 tests/scripts；此前该门仅 .scratch 磁盘态运行，
-//   无 CI 挂接点，违反「证据须 commit sha + CI run ID」铁律。verify-30.yml 为首个挂接。）
+//   无 CI 挂接点，违反「证据须 commit sha + CI run ID」铁律。verify-30.yml 为首个挂接；
+//   Cycle-7 D-004 合并后由 verify-tickets.yml 的 '30' 矩阵作业承接（plan: verify-ticket-plan.json）。）
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

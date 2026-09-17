@@ -2,9 +2,6 @@ name: Release Dry Run
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 'cch/10-release-pipeline'
 
 permissions:
   contents: read

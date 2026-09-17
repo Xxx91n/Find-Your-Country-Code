@@ -54,7 +54,7 @@ const ARTIFACTS = [
   'src/rules/index.ts',
   'tests/scripts/verify-ticket-05.mjs',
   'tests/scripts/verify-ticket-12.mjs',
-  '.github/workflows/verify-12.yml',
+  '.github/workflows/verify-tickets.yml',
   'docs/adr/0011-rule-override-cap-enforcement-point.md',
   '.scratch/architecture-recovery/issues/12-rules-limit-fidelity.md',
   '.scratch/architecture-recovery/research/scripts/12-ab-cap-fidelity.mjs',
@@ -74,7 +74,9 @@ const SELF = read('tests/scripts/verify-ticket-12.mjs');
 const ADR = read('docs/adr/0011-rule-override-cap-enforcement-point.md');
 const ISSUE = read('.scratch/architecture-recovery/issues/12-rules-limit-fidelity.md');
 const REPORT = read('.scratch/architecture-recovery/research/window-reports/12-rules-limit-fidelity-report.md');
-const V12 = read('.github/workflows/verify-12.yml');
+// Cycle-7 D-004：票级 workflow 合并 —— verify-12.yml 删除，CI 挂接点 = 调用方 + plan 的 '12' 条目
+const V12 = read('.github/workflows/verify-tickets.yml');
+const T12 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets || {})['12'] || {};
 
 // ══ G1 裁定落地：上限强制点在写路径 ══
 const CAP = '    if (r.overrides.length >= RULES_MAX_OVERRIDES) return null;';
@@ -139,14 +141,14 @@ check('G6c S4 无失败行输出（替身保真度修正后不得复红）', !ga
 
 // ══ G7 覆盖声明与 workflow 卫生 ══
 check('G7a A-036 在本门声明', SELF.includes('A-036'));
-check('G7b A-036 在 workflow 声明', V12.includes('A-036'));
+check('G7b A-036 在 workflow 声明', (T12.covers || []).includes('A-036'));
 check('G7c A-036 在 issue 声明', ISSUE.includes('A-036'));
 check('G7d A-036 在 ADR 声明', ADR.includes('A-036'));
 check('G7e workflow 零 .scratch/ 路径引用（ADR-0006 决策 1）', countIn(V12, '.scratch/') === 0);
 {
   const on = onBlock(V12);
-  check('G7f workflow 触发面 = pull_request + workflow_dispatch + 本票分支 push',
-    on.includes('pull_request:') && on.includes('workflow_dispatch:') && on.includes('cch/12-rules-limit-fidelity'),
+  check('G7f workflow 触发面 = pull_request + workflow_dispatch + push(main, cch/**)（D-004 合并后口径）',
+    on.includes('pull_request:') && on.includes('workflow_dispatch:') && on.includes("'cch/**'"),
     on.split(NL).filter((l) => l.trim()).join(' / '));
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ══════════════════════════════════════════════════════════════════════
 // verify-ticket-18.mjs — 票 18（伪 select 端到端识别与填充）验收门
-// 覆盖 issue 18 验收项的程序化断言面（E2E 端到端由 verify-18.yml e2e job 承担）:
+// 覆盖 issue 18 验收项的程序化断言面（E2E 端到端由 e2e.yml 统一承担；票级门挂接见 8.8）:
 //   验收1 ARIA 语义层接入评分: 两形态识别 + 内容验证沿用 L3 口径 + 否决组 + 误报防线同等生效
 //         （含既有语料回归 mismatch=0，规模动态计数 >=41 —— 伪层对既有语料零扰动）
 //   验收2 填充策略: 可编辑型隐藏承值 input 原生 setter+事件 / select-only listbox 点击选值
@@ -283,7 +283,10 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
   check('8.5 fill 双形态分发(fillPseudo+keys)', /fillPseudo\(el:\s*\w+,\s*country:\s*Country/.test(fil) && fil.includes('_pseudoFillByKeys'));
   check('8.6 Fill.run 伪 select 分支', fil.includes("kind === 'pseudo'"));
   check('8.7 ui lowkey 迁移 kind=pseudo', ui.includes("combobox') ? 'pseudo'"));
-  check('8.8 verify-18.yml 存在', existsSync(join(ROOT, '.github', 'workflows', 'verify-18.yml')));
+  // Cycle-7 D-004：票级 workflow 合并后，CI 挂接点 = 调用方 verify-tickets.yml 的 matrix + plan 的 '18' 条目
+  const plan18 = JSON.parse(readFileSync(join(ROOT, 'tests', 'scripts', 'verify-ticket-plan.json'), 'utf8'));
+  const caller18 = readFileSync(join(ROOT, '.github', 'workflows', 'verify-tickets.yml'), 'utf8');
+  check('8.8 票 18 已挂接 CI（plan 条目 + 调用方 matrix）', !!plan18.tickets['18'] && caller18.includes("'18'"));
 }
 
 console.log('-----------------------------');

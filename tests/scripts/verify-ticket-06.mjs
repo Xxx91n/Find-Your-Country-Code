@@ -56,7 +56,9 @@ const FILES = {
   manifestGen: 'tests/scripts/06-manifest.mjs',
   server: 'tests/server.mjs',
   spec: 'tests/corpus-forms.spec.ts',
-  workflow: '.github/workflows/verify-06.yml',
+  // Cycle-7 D-004：票级 workflow 已合并 —— verify-06.yml 删除，CI 挂接点 = 调用方
+  // .github/workflows/verify-tickets.yml + tests/scripts/verify-ticket-plan.json 的 '06' 条目。
+  workflow: '.github/workflows/verify-tickets.yml',
   // R1：双探测口径同源（防回归锁）
   probeCommon: '.scratch/architecture-recovery/research/scripts/06-probe-common.mjs',
   probeMirrors: '.scratch/architecture-recovery/research/scripts/06-probe-mirrors.mjs',
@@ -73,6 +75,13 @@ const FILES = {
   check(!!skel.tree && skel.tree.tag === 'div', 'S0 已知好样本命中 iti-v29 骨架根节点');
   const man = JSON.parse(read(FILES.manifest));
   check(Array.isArray(man.entries) && man.entries.length === 8, 'S0 已知好样本命中 8 条清单条目');
+}
+
+// == S0b 票级 CI 挂接点（Cycle-7 D-004 合并后口径）==
+{
+  const PLAN06 = JSON.parse(read('tests/scripts/verify-ticket-plan.json'));
+  const CALLER06 = read('.github/workflows/verify-tickets.yml');
+  check(!!PLAN06.tickets['06'] && CALLER06.includes("'06'"), 'S0b 票 06 已挂接 CI（plan 条目 + 调用方 matrix）');
 }
 
 const MANIFEST = JSON.parse(read(FILES.manifest));

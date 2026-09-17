@@ -1,0 +1,57 @@
+# ══════════════════════════════════════════════════════════════════════
+# Cycle-7 · D-004：票级验证门 reusable（21 个 verify-NN*.yml 合并为 1 个 workflow_call）
+#
+# 本文件只声明 `workflow_call`（自身无触发面）。`pull_request` 由调用方
+#   verify-tickets.yml 声明——ADR-0006 决策 2：非发版 workflow 必须声明 PR 门控；
+#   reusable 以 workflow_call 定义，触发面归调用方。
+#
+# 票号 → 脚本 / 安装 / 构建 / 类型开关的唯一数据源：
+#   tests/scripts/verify-ticket-plan.json
+# 解析与执行器：
+#   tests/scripts/verify-ticket-runner.mjs
+#   （本地可复跑零覆盖丢失守卫：node tests/scripts/verify-ticket-runner.mjs --audit）
+# ══════════════════════════════════════════════════════════════════════
+name: Verify Ticket (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      ticket:
+        description: 'Ticket key from tests/scripts/verify-ticket-plan.json (e.g. 02-settings, 30, 38)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Ticket ${{ inputs.ticket }} gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Resolve ticket plan
+        id: plan
+        run: node tests/scripts/verify-ticket-runner.mjs --plan "${{ inputs.ticket }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        if: steps.plan.outputs.install == 'true'
+        run: npm ci
+
+      - name: Build userscript
+        if: steps.plan.outputs.build == 'true'
+        run: npm run build
+
+      - name: Typecheck (tsc --noEmit)
+        if: steps.plan.outputs.typecheck == 'true'
+        run: npm run typecheck
+
+      - name: Run ticket gates
+        run: node tests/scripts/verify-ticket-runner.mjs --run "${{ inputs.ticket }}"

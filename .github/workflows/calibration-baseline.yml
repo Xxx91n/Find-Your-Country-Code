@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - main
-      - 'cch/14-calibration-corpus'
 
 permissions:
   contents: read

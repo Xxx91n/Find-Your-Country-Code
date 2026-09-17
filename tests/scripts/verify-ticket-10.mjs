@@ -60,7 +60,7 @@ function scan(src, predicate) {
 const ARTIFACTS = [
   'src/config.ts', 'src/main.ts', 'src/store/index.ts',
   'tests/fixtures/srcdoc-frame.html', 'tests/srcdoc-origin.spec.ts',
-  'tests/scripts/verify-ticket-10.mjs', '.github/workflows/verify-10.yml',
+  'tests/scripts/verify-ticket-10.mjs', '.github/workflows/verify-tickets.yml',
   '.scratch/architecture-recovery/research/scripts/10-probe-srcdoc-origin.mjs',
   '.scratch/architecture-recovery/issues/10-srcdoc-origin-fix.md',
 ];
@@ -79,7 +79,9 @@ const FIXTURE = read('tests/fixtures/srcdoc-frame.html');
 const SPEC = read('tests/srcdoc-origin.spec.ts');
 const PROBE = read('.scratch/architecture-recovery/research/scripts/10-probe-srcdoc-origin.mjs');
 const ISSUE = read('.scratch/architecture-recovery/issues/10-srcdoc-origin-fix.md');
-const V10 = read('.github/workflows/verify-10.yml');
+// Cycle-7 D-004：票级 workflow 合并 —— verify-10.yml 删除，CI 挂接点 = 调用方 + plan 的 '10' 条目
+const V10 = read('.github/workflows/verify-tickets.yml');
+const T10 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets || {})['10'] || {};
 
 function srcFiles() {
   const out = [];
@@ -150,7 +152,7 @@ check('G6b release 仍以 needs 硬依赖挂在发布门之后', REL.includes('r
 check('G7a A-034 在 fixture 声明', FIXTURE.includes('A-034'));
 check('G7b A-034 在密封 spec 声明', SPEC.includes('A-034'));
 check('G7c A-034 在探针脚本声明', PROBE.includes('A-034'));
-check('G7d A-034 在本门与 issue 声明', V10.includes('A-034') && ISSUE.includes('A-034'));
+check('G7d A-034 在本门与 issue 声明', (T10.covers || []).includes('A-034') && ISSUE.includes('A-034'));
 const scratchRefs = scan(V10, (l) => l.includes('.scratch/'));
 check('G7e workflow 零 .scratch/ 路径引用（ADR-0006 决策 1）', scratchRefs.length === 0, scratchRefs.join(' | '));
 
