@@ -4,7 +4,7 @@
 //   ① 候选集扩展（形态描述符，禁止裸 ul li / 全 div 扫描）
 //   ② 结构启发式候选仍走 scoreElement 全瀑布 + 内容证据门槛
 //   ③ ADR-0005 档位上限（登记 + 手动召唤，tier 强制 none）
-//   ④ 指纹面 = 观测面（tabindex 同步 _fingerprint 与 OBSERVED_ATTRS）
+//   ④ 指纹面 = 观测面（tabindex / contenteditable 同步 _fingerprint 与 OBSERVED_ATTRS）
 //   ⑤ 无裸 [contenteditable]（票 12 / D-014）：候选集只收「contenteditable ∧ 可聚焦 tabindex=0 ∧ 强 tel 先验」复合描述符；语料 A-023 已备
 //   ⑥ 元素级退出协议（票 15 [D-016 ②]）：data-1p-ignore / data-form-type="other" 命中即
 //      完全跳过（不评分/不注入/不登记召唤），观测面与指纹面同步；语料 mm2-*-optout-* 已备
@@ -78,6 +78,9 @@ const ceHits = ceSelLines.split('[contenteditable]').length - 1;
 const ceComposite = ['inputmode=' + Q + 'tel' + Q, 'autocomplete=' + Q + 'tel' + Q, 'role=' + Q + 'textbox' + Q]
   .filter(a => ceSelLines.includes('[contenteditable][tabindex=' + Q + '0' + Q + '][' + a + ']')).length;
 check('1.6 无裸 [contenteditable]（仅收可聚焦+tel 先验复合描述符）', ceHits === 3 && ceComposite === 3, 'ce=' + ceHits + ' composite=' + ceComposite);
+// 1.7 票 12 [D-014] 缺口 2a：复合描述符必须排除 contenteditable="false"（非可编辑、仅承载属性不入候选）
+const ceNot = ceSelLines.split(':not([contenteditable=' + Q + 'false' + Q + '])').length - 1;
+check('1.7 三条复合描述符均排除 contenteditable="false"', ceNot === 3, 'not=' + ceNot);
 
 // ══ 2. 正例：无 ARIA 自定义下拉（票 32 语料形态）══
 const pos = node('div', { class: 'select-country', tabindex: '0' },
@@ -133,6 +136,9 @@ check('7.1 OBSERVED_ATTRS 含 tabindex', /'tabindex'/.test(obsRaw));
 const fpBlock = /_fingerprint\(el: AnyEl\): string \{([\s\S]*?)\n    \}/.exec(DETECT_SRC);
 const fpRaw = fpBlock ? fpBlock[1] : '';
 check('7.2 _fingerprint 读取 tabindex', /getAttribute\('tabindex'\)/.test(fpRaw));
+// 票 12 [D-014] 缺口 2b：contenteditable 是复合描述符的键属性，必须同时进观测面与指纹面
+check('7.3 OBSERVED_ATTRS 含 contenteditable（票 12 / D-014）', /'contenteditable'/.test(obsRaw));
+check('7.4 _fingerprint 读取 contenteditable（票 12 / D-014）', /getAttribute\('contenteditable'\)/.test(fpRaw));
 
 // ══ 8. _process 档位上限与 kind 分发（ADR-0005：登记 + 手动召唤）══
 const calls = { attach: [], rememberLow: [], detach: [] };
