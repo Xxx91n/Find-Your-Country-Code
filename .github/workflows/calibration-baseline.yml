@@ -32,6 +32,11 @@ jobs:
             --out calibration-out/baseline-report.md \
             --json calibration-out/baseline-summary.json
 
+      # Cycle-7 T-10 / D-003：语料豁免元数据门 —— 携带豁免的条目必带 owner/reviewBy/reason，
+      # reviewBy 过期即红（到期必须重新裁定：摘旗或续期）；不新建 workflow，折叠进本门。
+      - name: Lint corpus exemptions (ticket 10 / D-003)
+        run: node tests/scripts/corpus-exemption-lint.mjs
+
       - name: Run threshold calibration
         run: |
           node tests/scripts/14-threshold-calibration.mjs \

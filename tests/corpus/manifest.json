@@ -252,7 +252,11 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
+      "exemptionStatus": "lifted",
+      "owner": "corpus-maintainers",
+      "reviewBy": "2027-03-31",
+      "reason": "票 27（弱信号属性短语证据面）落地后，引擎实测 score=38 / tier=lowkey 与 expect=inject 一致，结构性偏差已消除；摘旗回归门禁断言集（原豁免登记于票 32 realSiteForms.weak-signal-input）。",
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "postFix": {
@@ -289,7 +293,11 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
+      "exemptionStatus": "lifted",
+      "owner": "corpus-maintainers",
+      "reviewBy": "2027-03-31",
+      "reason": "票 27（弱信号属性短语证据面）落地后，引擎实测 score=38 / tier=lowkey 与 expect=inject 一致，结构性偏差已消除；摘旗回归门禁断言集（原豁免登记于票 32 realSiteForms.weak-signal-input）。",
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "postFix": {
@@ -325,7 +333,11 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
+      "exemptionStatus": "lifted",
+      "owner": "corpus-maintainers",
+      "reviewBy": "2027-03-31",
+      "reason": "票 27（弱信号属性短语证据面）落地后，引擎实测 score=38 / tier=lowkey 与 expect=inject 一致，结构性偏差已消除；摘旗回归门禁断言集（原豁免登记于票 32 realSiteForms.weak-signal-input）。",
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "baseline": {
@@ -356,7 +368,11 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
+      "exemptionStatus": "lifted",
+      "owner": "corpus-maintainers",
+      "reviewBy": "2027-03-31",
+      "reason": "票 27（弱信号属性短语证据面）落地后，引擎实测 score=38 / tier=lowkey 与 expect=inject 一致，结构性偏差已消除；摘旗回归门禁断言集（原豁免登记于票 32 realSiteForms.weak-signal-input）。",
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "baseline": {
@@ -387,7 +403,11 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
+      "exemptionStatus": "lifted",
+      "owner": "corpus-maintainers",
+      "reviewBy": "2027-03-31",
+      "reason": "票 27（弱信号属性短语证据面）落地后，引擎实测 score=38 / tier=lowkey 与 expect=inject 一致，结构性偏差已消除；摘旗回归门禁断言集（原豁免登记于票 32 realSiteForms.weak-signal-input）。",
       "expectedTier": "lowkey",
       "fixingTicket": "27",
       "baseline": {
@@ -418,7 +438,11 @@
       "family": "real-site",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
+      "exemptionStatus": "lifted",
+      "owner": "corpus-maintainers",
+      "reviewBy": "2027-03-31",
+      "reason": "票 28（ISO2 value + 括号区号独立 L3 证据）落地后，引擎实测 score=38 / tier=lowkey 与 expect=inject 一致；摘旗回归门禁断言集（原豁免登记于票 32 realSiteForms.iso2-value-paren-dial-select）。",
       "expectedTier": "lowkey",
       "fixingTicket": "28",
       "signalAttribution": [
@@ -496,7 +520,11 @@
       "family": "ce",
       "polarity": "positive",
       "expect": "inject",
-      "knownResidual": true,
+      "knownResidual": false,
+      "exemptionStatus": "lifted",
+      "owner": "corpus-maintainers",
+      "reviewBy": "2027-03-31",
+      "reason": "Cycle-5 contenteditable 语料（A-023 / 票 44）落地后，引擎实测 score=56 / tier=lowkey 与 expect=inject 一致；按 D-014 档位维持 lowkey 不上调，摘旗回归门禁断言集。",
       "expectedTier": "lowkey",
       "source": "Cycle-5 票 44 A-023（contenteditable 区号形态语料先行）；Cycle-4 票 29 D-29d（无测量地基未扩候选集）",
       "signalAttribution": [
@@ -882,7 +910,7 @@
                   "tier": "lowkey",
                   "injected": true
                 },
-                "verdict": "MISS",
+                "verdict": "FIXED",
                 "preFix": {
                   "observed": {
                     "score": 30,
@@ -936,7 +964,7 @@
           "tier": "lowkey",
           "injected": true
         },
-        "verdict": "MISS"
+        "verdict": "FIXED"
       }
     },
     {

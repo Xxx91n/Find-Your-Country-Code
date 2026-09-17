@@ -10,6 +10,7 @@
 //   4) SCAN_SELECTORS 提取成功且非空
 //   5) 实测候选集覆盖 === 登记的覆盖基线；实测引擎结果 === 登记的复现基线
 //      （27/28/29 修复后必须显式更新 manifest，禁止静默漂移）
+//      （verdict: MISS=修前漏检/豁免中；FIXED=修复落地且 knownResidual 已翻转；COVERED=负例已覆盖）
 // 用法: node 32-real-site-corpus.mjs [--out report.md] [--json summary.json]
 // 可重复运行: 纯确定性（无时钟/随机/网络依赖）。
 // ══════════════════════════════════════════════════════════════════
@@ -189,13 +190,15 @@ for (const form of manifest.realSiteForms || []) {
       violations.push(form.id + '/' + cid + ': 引擎基线漂移 实测 score=' + r.score + ' tier=' + r.tier +
         ' injected=' + r.injected + ' 基线 score=' + b.score + ' tier=' + b.tier + ' injected=' + b.injected);
     }
-    // 用例语义与基线一致性
-    const wantKnownResidual = form.baseline.verdict === 'MISS';
+    // 用例语义与基线一致性（verdict: MISS=修前漏检/豁免中；FIXED=修复落地、knownResidual 已翻转；COVERED=负例已覆盖）
+    const verdict = form.baseline.verdict;
+    const wantKnownResidual = verdict === 'MISS';
     if (!!c.knownResidual !== wantKnownResidual) {
-      violations.push(form.id + '/' + cid + ': knownResidual 与 verdict 不一致（verdict=' + form.baseline.verdict + ' knownResidual=' + !!c.knownResidual + '）');
+      violations.push(form.id + '/' + cid + ': knownResidual 与 verdict 不一致（verdict=' + verdict + ' knownResidual=' + !!c.knownResidual + '）');
     }
-    if (wantKnownResidual && c.expect !== 'inject') violations.push(form.id + '/' + cid + ': verdict=MISS 但 expect 非 inject');
-    if (!wantKnownResidual && c.expect !== 'none') violations.push(form.id + '/' + cid + ': verdict=' + form.baseline.verdict + ' 但 expect 非 none');
+    // 正例（MISS/FIXED）expect 必为 inject；COVERED 等负例 expect 必为 none
+    const wantExpect = verdict === 'COVERED' ? 'none' : 'inject';
+    if (c.expect !== wantExpect) violations.push(form.id + '/' + cid + ': verdict=' + verdict + ' 但 expect 非 ' + wantExpect);
     // 票 29：登记面可达断言 —— 候选集覆盖已达成且期望档位为 none（ADR-0005 登记不注入）
     // 的形态，实测分数必须 >= 登记线，否则「进了候选集却进不了召唤面」等于修复未落地。
     if (covered && form.coveredByCandidateSetTarget && form.expectedTier === 'none' &&
