@@ -183,11 +183,20 @@ if (M) {
     const ms = Number(process.hrtime.bigint() - t0) / 1e6;
     check("G8a counter " + N + " 次 < 100ms（无分配、无时钟读取）", ms < 100, ms.toFixed(2) + "ms");
     check("G8b counter 累加正确", D.snapshot().counters.scans === N, String(D.snapshot().counters.scans));
-    const D3 = M.createDiag();
-    const t1 = process.hrtime.bigint();
-    for (let i = 0; i < N; i++) D3.trace("hot", R.TOOL_RECOGNIZED, () => ({ i }));
-    const ms3 = Number(process.hrtime.bigint() - t1) / 1e6;
-    check("G8c 门控关时 trace " + N + " 次 < 50ms（一次布尔短路即返回）", ms3 < 50, ms3.toFixed(2) + "ms");
+    // G8c 相对比较（D-008）：不用绝对墙钟阈值（受机器/JIT 冷启动影响，本机冷跑 63~71ms 对 50ms 红线）。
+    // 改为同进程内与 counter 热路径比：trace 短路的开销主要在调用点的闭包分配，与机器绝对快慢无关。
+    // 各测 3 次取最小值（min 剔除 GC/负载尖峰，比值稳定）。实测：短路 ≈6x 基线；门控失效（不再短路）≈80x。
+    // 取 20x 为界：仍能抓数量级退化（慢 10 倍 ≈60x），又对机器差异留足余量。诊断保留 ms3/msBase 原值。
+    const Db = M.createDiag(), D3 = M.createDiag();
+    const tBase = () => { const t = process.hrtime.bigint(); for (let i = 0; i < N; i++) Db.counter("scans"); return Number(process.hrtime.bigint() - t) / 1e6; };
+    const tTrace = () => { const t = process.hrtime.bigint(); for (let i = 0; i < N; i++) D3.trace("hot", R.TOOL_RECOGNIZED, () => ({ i })); return Number(process.hrtime.bigint() - t) / 1e6; };
+    for (let w = 0; w < 2; w++) { tBase(); tTrace(); }   // 预热，消除冷 JIT 抖动
+    const min3 = (f) => { let m = Infinity; for (let k = 0; k < 3; k++) m = Math.min(m, f()); return m; };
+    const msBase = min3(tBase);
+    const ms3 = min3(tTrace);
+    const RATIO_BOUND = 20;
+    const ratio3 = msBase > 0 ? ms3 / msBase : Infinity;
+    check("G8c 门控关时 trace " + N + " 次 ≤ 基线 counter 的 " + RATIO_BOUND + "x（相对比较，抗机器差异）", ratio3 <= RATIO_BOUND, ms3.toFixed(2) + "ms / base " + msBase.toFixed(2) + "ms = " + ratio3.toFixed(2) + "x");
     check("G8d 门控关时 trace 不产生记录", D3.snapshot().records.length === 0, String(D3.snapshot().records.length));
   }
 }
