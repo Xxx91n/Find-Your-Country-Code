@@ -131,3 +131,17 @@ node tests/scripts/verify-ticket-02.mjs
 
 git diff --check a93cb3a8...HEAD      # 当前非净（ADR-0006:69 尾空行）
 ```
+
+---
+
+## 9. 收口结果回写（2026-09-17 · 收口窗口）
+
+> **本节取代本文头部三项字段**：①「尚未 push ⇒ 无 CI run」→ 已 push，CI 已 run；②「16 个票级分支均在 applied 态，未 `but land`／`but push`」→ 全部已 land + push；③「基线 `origin/main` = `a93cb3a8`」→ 新基线 `origin/main` = `337461e8`。原文按 D-010 保留，不删改。
+
+- **§3 A 组（6 项，低风险纯文本／元数据）**：第 1–5 项已修复并复跑同一套验收全绿；**第 6 项（t16 提交信息票数口径 13 → 15/15）未执行** —— 该提交已落地，回改须 force-push `main`，属须用户授权的破坏性操作，**登记为残留**（实施报告 §13.1）。
+- **§3 B 组（4 项）与 C 组（4 项）**：**均未处置**，仍待用户裁定。收口窗口未代为决定（B 组涉架构／门禁／ADR 形式；C 组涉授权留痕）。
+- **落地与清理**：19 个 `cch/*` 分支（16 栈）全部 land 至 `origin/main`；本地与远端均无 `cch/*` 引用；`but clean --dry-run` = 无空分支；无残留临时目录／临时文件。
+- **落地一致性**：`origin/main` 树 = 落地前隔离验证树 = `f79f7f20…`，`git diff --stat` 为空 ⇒ 已验收内容与落地内容逐字节一致。
+- **落地后 CI（`337461e8`）**：Typecheck / Engine Gates / Calibration Baseline / Lockfile Regen = success；Verify Tickets 唯一红 = **票 39 基线预存红**（与 §2「不能动」结论一致，仍未修、也不应在旧范围内修）。
+- **并行在途 4 项未提交变更**（`src/detect/index.ts`、`tests/contenteditable-scan.spec.ts`、`tests/fixtures/contenteditable-dial.html`、`tests/scripts/verify-ticket-29.mjs`）：本轮**未提交、未改写、未回退**，原样留在工作区（`git status --short` 可验）。§4 的纪律与 §6.3 第 13 项的要求**继续适用**：其提交前必须走同一套验收（含 `verify-29` 断言变更复核）。
+- **§5 下一个 grill 方向指示（Q1–Q8）不变**，但**起点已更新**：Q1 中「A 组返工由谁执行」现仅余第 6 项残留；Q3「CI 闭环形态」已由本轮取得首个 CI run，可据 `337461e8` 的 run 结果续议；Q7「交付单位」仍待拍板（D-018 为**本轮**裁定）。
