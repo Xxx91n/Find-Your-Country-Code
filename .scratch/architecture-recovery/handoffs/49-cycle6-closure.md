@@ -21,7 +21,7 @@ Cycle-6「可配置 + 可解释 + 可证明」十二票中 **01–11 已实现�
 | 06 | A-030 | done（R1 复核通过） | `4a9b3187` | `8d787e5d` | Verify Ticket 06 35126009237 · Typecheck 35126009215 · Engine Gates 35126009244 · Lockfile 35126009280 · E2E 35126009260 全 success |
 | 07 | A-029 | done（W4 复核通过） | `d5c6f415` | `fd02901f` | Verify Ticket 07 35126019730 · Typecheck 35126019653 · Engine Gates 35126019700 · Lockfile 35126019619 · E2E 35126019528 全 success |
 | 08 | A-031 · A-032 | done（W5 复核通过） | `41ad7dcd` | `747763fd` | Verify Ticket 08 35127030983 · Typecheck 35127030929 · Engine Gates 35127030931 · Lockfile 35127030909 全 success；**E2E 35127030916 failure（已归因，见 §5.3）** |
-| 09 | （无；收口层） | 本票闭环 | 见 §9 | 本票分支 | 纯文档，无行为面门 |
+| 09 | （无；收口层） | 本票闭环 | `5610de77` | `cch/09-cycle6-closeout` | 纯文档，无行为面门 |
 | 10 | A-034（P0） | done（W5 复核通过） | `16485782` | `6a95417b` | Verify Ticket 10 35155127276 · Typecheck 35155127240 · Engine Gates 35155127159 · Lockfile 35155127162 · E2E 35155127289 全 success；Real-site smoke（advisory）35154465918 success @ `62f2292a` |
 | 11 | A-035（P1） | done（W5 复核通过） | `0f195075` | `8a27ad34` | Verify Ticket 11 35126031083 · Typecheck 35126031223 · Engine Gates 35126030960 · Lockfile 35126030899 · E2E 35126031201 全 success |
 | 12 | A-036 | **ready-for-agent（未开工）** | — | 未推送 | — |

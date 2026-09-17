@@ -4,7 +4,7 @@
 
 **Blocked by:** 票 01–08（全部实施票）—— 开工前实物核对：01–08 全部闭环（issue 勾销 + 报告落盘 + 分支 tip CI 绿）；并行票 10 / 11 亦已 W5 复核通过
 
-**Status:** implemented（实施提交 `TBD`；CI 证据见文末）
+**Status:** implemented（实施提交 `5610de77`；分支 `cch/09-cycle6-closeout`；CI 证据见文末）
 
 **覆盖 A-xxx:** （无；收口层）
 
