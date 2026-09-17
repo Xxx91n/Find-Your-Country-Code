@@ -79,8 +79,8 @@ export function createDiag(opts: {
       const st = layers[layer];
       st.verdict = verdict; st.point = pt; st.reason = r; st.ts = rec.ts;
     } catch {
-      // 诊断面自保：写入失败静默降级，不重试、不抛给主流程（调研 Q8：诊断不是业务逻辑）
-      try { console.warn('[cch] diag write failed'); } catch {}
+      // 诊断面自保：写入失败降级为门控告警（traceFlag 开启时才打印），不重试、不抛给主流程（调研 Q8：诊断不是业务逻辑）
+      try { if (traceFlag) console.warn('[cch][diag] write failed'); } catch {}
       return;
     }
     if (level === 'error') counters.errors++;
