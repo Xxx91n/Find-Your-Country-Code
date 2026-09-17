@@ -16,7 +16,7 @@ npm run e2e        # 构建 + Playwright 端到端测试
 一次发版 = 三个文件同步更新，缺一不可：
 
 1. **版本号**：`package.json` 的 `version`（**唯一真源**）——`vite.config.ts` 构建时读取它并写入产物 `// @version`。bump 版本只改 `package.json` 这一处。
-2. **`greasyfork/Glog.md`**：中文更新日志，写清本次版本的用户可感知变化（修复/优化/新特性）。发布时该文件全文会成为 GitHub Release 说明的中文部分，也是 GreasyFork 站内更新说明的素材。
+2. **`greasyfork/Glog.md`**：中文更新日志，写清本次版本的用户可感知变化（修复/优化/新特性）。发布时该文件的**最新一节**（首个 `## vX.Y.Z`）会成为 GitHub Release 说明的中文部分，也是 GreasyFork 站内更新说明的素材；**历史版本仍保留在文件中，但不进发行说明**（由 `release.yml` 的 changelog 步骤提取最新一节）。
 3. **`greasyfork/Glog_EN.md`**：英文更新日志，内容与 Glog.md 逐条对应。
 
 流程：改完代码 → bump 版本（只改 `package.json`）→ 更新 Glog 双语 → 自测（`npm run e2e`）→ 合入 `main`。
