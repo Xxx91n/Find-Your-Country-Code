@@ -20,3 +20,11 @@
     </td>
   </tr>
 </table>
+
+## Single Authoritative Channel
+
+The **single authoritative channel** for this project is the source repository [GitHub: Xxx91n/Find-Your-Country-Code](https://github.com/Xxx91n/Find-Your-Country-Code): the source code, the version source of truth (`package.json`), and the release artifacts ([`releases/latest`](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest)) all live there.
+
+The [GreasyFork listing](https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code) is a **pull-based mirror**: GreasyFork pulls updates from that `releases/latest` artifact through its own "Sync from external URL" feature. This repository does not push to GreasyFork, and there is no such path (GreasyFork exposes no write API).
+
+**Current state (observed 2026-09-17)**: the online GreasyFork `@version` reads `1.7.0`, equal to the source repository's `package.json` (`1.7.0`) and to the GitHub `releases/latest` artifact version. That alignment is an **observation from that date only**, and does not confirm the GreasyFork-side sync state — the sync switch cannot be verified from outside, and future mirror updates still depend on GreasyFork's own pull behaviour. For the latest version, use the source repository channel.
