@@ -1,6 +1,6 @@
 # 0003 — 引入站点规则引擎，把"完美检测"转为"检测 + 用户兜底"
 
-状态：accepted | 日期：2026-09-04 | 来源：架构恢复 C5（report/architecture-review.md）
+状态：accepted（「页面级分档覆盖」语义已由 **ADR-0007 取代**：Superseded by ADR-0007） | 日期：2026-09-04 | 来源：架构恢复 C5（report/architecture-review.md）
 
 ## 决策
 
@@ -15,3 +15,7 @@
 ## 后果
 
 误报有了体验出口：用户拥有最终控制权，而非被启发式绑架。选择器有效性当前不在写入时校验（非法选择器静默不命中），UI 层（票 07）写入前应做 querySelector 预检（票 05 报告风险提示）。
+
+## Notes
+
+- **2026-09-17（D-016，带日期追加）**：重申本 ADR 的「远程规则订阅／云黑名单」**被否决路线仍然有效**。本轮行业对标调研（atomcode；存档 `.scratch/cycle7-grill/research/q4-coverage-expansion-benchmark.md`，12 条来源）把「远程规则地图层」列为最高优先级建议，用户裁定**维持本 ADR 否决（选项 (a)）**。理由强化：本仓 `src/` 当前**零网络面**（`GM_xmlhttpRequest`／`fetch`／`XHR` 零命中），引入远端拉取属**架构级新增面**，并触及 ADR-0008 第一层密封 E2E 的「零外网」供给边界。

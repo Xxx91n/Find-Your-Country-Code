@@ -1,6 +1,6 @@
 # 0004 — 组件库伪-select 识别（C6）降级缓议，不入本周期
 
-状态：deferred（缓议） | 日期：2026-09-04 | 来源：架构恢复 C6（report/architecture-review.md）
+状态：**Superseded by ADR-0005**（原 deferred 缓议状态已终结；本文件保留作历史记录） | 日期：2026-09-04 | 来源：架构恢复 C6（report/architecture-review.md）
 
 ## 决策
 
