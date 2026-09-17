@@ -532,6 +532,18 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 
 **frontier（重算）**：W5 = 票 08 · 10 · 11 ✅ **全部复核通过**（无源码返工）→ **下一波（W6）可开工：`09`（收口）· `12`（A-036，源码修复）** —— 两票同波、可并行。**新发现 A-036**（门保真度缺口：BC 替身缺 `origin` + 缺结构化克隆致 `verify-05` 的 S4 假绿 + 规则上限强制点未定）已立票 12。
 
+### W6 复核（票 09 收口 · 票 12 A-036）（首脑，2026-09-17）
+
+详见 `research/cycle6-wave6-review.md`。**结论：两票实现全部属实 · 无源码层面返工。Cycle-6 实施票 12/12 完成并复核通过。**
+
+- **票 09 ✅**：`5610de77` = 6 文件/+439 −47 逐字命中 · A 台账 A-026…A-035 = implemented（A-036 **如实不代签**）· grill 账本 `current` = **0** · 归档 handoff 49 = 112 行 · 两份账本各新增 `## Cycle-6 结算` 节。**R-1 归因链逐环确证**：`git merge-base origin/cch/08 origin/cch/10` = `fd02901f`（两支已分岔）· spec 差 **15+/4−**（票 08 快照携带**修复前**用例）· run **35127030916** failure，失败点 `srcdoc-origin.spec.ts:64`（**票 10 的用例**）⇒ **land 前必须把 cch/08 重挂到 cch/10 终态之上**。
+- **票 12 ✅**：`fe0a5df3` = 8 文件/+487 −22 · 裁定 = **写路径**强制（`store:273`，`store:27-30` 有据说明）+ **ADR-0011** 成文（超出「有据」要求）· 替身补 `structuredClone` + `DOC_ORIGIN = SELF_ORIGIN`（同源定义）且**断言区逐字节未变** · A/B 复现（B 变体复红 `S4 got=513`）· **S4 不再是假绿**（三条独立证据）· E2E **145 passed** · 无远端写 ⇒ 无 CI（如实声明）。
+- **账本维度**：**A-036 = implemented**（需求 a/b/c 全达成 + 4 条约束全满足，含「不得保留假绿」）；残余（登记非缺陷）：`_writeRules` 自身不校验不变量（4 个调用点全在 Store 内）· S4 断言 `<= 500` 无法区分「恰为 500」与「被截更少」。
+- **过程违规（未追认）**：**P-23** 票 09 改 `README.md`（属大脑维护面；WORKFLOW §4.3/§7.3 授权 + 已自曝）· **P-24** 票 12 报告 2 处门计数（`verify-15` 报 36/36 实测 **28/28**）与 2 处行号（`:212/:268` → 实测 `:220/:273`）不符 · **P-25** 票 09 报告字节数漂移 15 B（11,102 → 实测 11,117）· **P-26（方法级）** `verify-03` 的 G8c 微基准**本机确定性红**（空载 ×3：63.71/71.03/65.88 ms > 50ms）而 **CI 上通过** ⇒ 机器性能差异非回归；含义：历史各票「`verify-03` = 58/0」的**本地声明从未被本地复现**。**正面**：票 09 自曝 7 项偏离 + 3 条教训 + 完整 R-1 归因；票 12 为裁定立 ADR + 交付可复现 A/B 脚本 + 如实声明无 CI。
+- **land 前置三项**：① **R-1 重挂 `cch/08`**（否则 E2E 红随快照进入 main）· ② **P-20 本地/远端对齐**（多支 tip 不一致）· ③ **P-4 票 04 issue 补勾**（实现已实物复核属实）。
+
+**frontier（重算）**：W6 = 票 09 · 12 ✅ **全部复核通过** → **Cycle-6 实施面 12/12 闭合**（A-026…A-036 全 implemented；D-001…D-016 全落定）。**无新的实施票可开**；下一个动作是 **land + 发版**（`land` 触发 `release.yml`，**不可逆** ⇒ 须用户逐次授权），且须先清上述三项前置。
+
 **用户裁定（2026-09-17）**：① **P-17/P-2** —— 「请你自己小修一下」⇒ 已对票 07 报告做**追加式**补正（更正 E-4 表述，原文一字未改，见该报告「附：首脑补正」）；② **立新票 A/B** —— **OK** ⇒ 已登记账本 A-034（→T10，P0）/ A-035（→T11，P1）并落成 issue + handoff + launcher 三件套；③ **W5 开窗** —— 「路径发出来我来开」⇒ 启动器路径见上表「发起窗口的 prompts」。
 
 ---
@@ -556,7 +568,7 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | **W3** | 06 | 06←05 | 单票 | 形态语料三层架构（A-030） |
 | **W4** | 07 | 07←06 | 单票 | 真实站点层全阶梯 + 发布门（A-029） |
 | **W5** | 08, 10, 11 | 08←07；10←07；11←07 | 三票同波（互不堆叠，可并行） | ✅ **已完成并复核通过**：阶段 B 失效驱动修复（A-031 · A-032） ＋ srcdoc 帧跨帧 origin 修复（A-034，P0） ＋ ITI 形态 L3 判据判定（A-035，P1） |
-| **W6** | 09, 12 | 09←01…08；12←10 | 两票同波（可并行） | ✅ **票 09 收口已完成（2026-09-17）**：账本结算（A 10/10 + A-036 未结算 / D 16/16）+ 归档 handoff ＋ ⏳ **票 12 未开工**（A-036；blocked by 10 已闭环 ⇒ 可立即开工） |
+| **W6** | 09, 12 | 09←01…08；12←10 | 两票同波（可并行） | ✅ **两票均已完成并 W6 复核通过（2026-09-17）**：票 09 收口（账本结算 A 10/10 implemented + A-036 不代签 / D 16/16 + 归档 handoff 49）＋ 票 12（A-036：**写路径**强制点 + ADR-0011 + BC 替身克隆保真度修复，**S4 不再是假绿**）|
 
 ### 票务状态与 frontier（第六周期）
 
@@ -570,10 +582,10 @@ A-010（main 历史归零）由票 35 承接（交叉核对轮补立）：非 sq
 | 06 | 形态语料三层架构 | A-030 | **✅ done（R1 复核通过）** — 口径不一致已修（`06-probe-common.mjs` 唯一口径模块，两份探测零就地字面量）；门 209/0；报告追加式零删除（+198 行）；未跨票改动；**CI 已补**：tip `8d787e5d`（Verify Ticket 06 35126009237 + 四门全 success） | `research/window-reports/06-form-corpus-report.md` | W3 |
 | 07 | 真实站点层全阶梯 + 发布门 | A-029 | **✅ done（W4 复核通过）** — 16 项声明实物全属实（门 63/0 · 发布门自证 11/11 · CI 6 run 全 success @ `d5c6f415`）；账本 A-029 implemented（口径做满 L0–L4）；头条发现（srcdoc origin 误判）经独立复现确证 ⇒ 立 P0 票 10；过程违规 P-17 强推未授权（已追加补正）；**CI 已补**：tip `fd02901f`（Verify Ticket 07 35126019730 + 四门全 success） | `research/window-reports/07-real-site-and-release-gate-report.md` | W4 |
 | 08 | 阶段 B：失效驱动修复 | A-031 · A-032 | **✅ done（W5 复核通过）** — 门 35/0；回归矩阵 12 道门逐项吻合；三形态入语料（manifest 56 例）；`src/` 改动无后门；无断言弱化；3 处报告表述偏差已追加「附：首脑补正」；**CI**：tip `747763fd`（Verify Ticket 08 35127030983 + Typecheck/Engine Gates/Lockfile success；**E2E 35127030916 failure 已归因**：同栈票 10 密封用例的修复前版本，见收口报告 §已知红） | `research/window-reports/08-phase-b-failure-fixes-report.md` | W5 |
-| 09 | Cycle-6 收口 | （无；收口层） | **✅ 本票闭环（2026-09-17）** — 账本结算 A-026…A-035 = 10/10 implemented / A-036 未结算 + D-001…D-016 = 16/16 落定；归档 handoff `handoffs/49-cycle6-closure.md`；issue 4/4 验收项勾销 | `research/window-reports/09-cycle6-closeout-report.md` | W6 |
+| 09 | Cycle-6 收口 | （无；收口层） | **✅ 本票闭环（2026-09-17）** — 账本结算 A-026…A-035 = 10/10 implemented / A-036 未结算 + D-001…D-016 = 16/16 落定；归档 handoff `handoffs/49-cycle6-closure.md`；issue 4/4 验收项勾销；**W6 复核通过**：实施提交 **6 文件/+439 −47** 逐字命中 · 账本状态逐行核对 · grill 账本 `current` 计数 **0** · handoff **112 行** · **R-1 归因链逐环确证**（`merge-base`=`fd02901f` · spec 差 15+/4− · run 35127030916 红在**票 10 的用例** `srcdoc-origin.spec.ts:64`）⇒ **land 前必办重挂**；P-23（改 README，WORKFLOW 授权 + 自曝）· P-25（字节漂移 15 B） | `research/window-reports/09-cycle6-closeout-report.md` | W6 |
 | 10 | 修复 `about:srcdoc` 帧跨帧 origin 校验误判 | A-034 | **✅ done（W5 复核通过，P0 闭环）** — 实施提交 `16485782` = 9 文件/+516 −9（逐字命中）；`SELF_ORIGIN` 四处（`config.ts:120` 定义 + `main.ts:122/139` + `store:70/103`）；`location.origin` 仅存注释与回退分支（不放宽）；门 34/0；跨票改动 `verify-ticket-05.mjs` 仅替身 1 行、断言面零改动；**真实站点层 `live-codepen-pen-fullpage` L0–L4 全绿**（修复前 `L3! L4!`）；**CI 已补**：tip `6a95417b`（Verify Ticket 10 35155127276 + Typecheck/Engine Gates/Lockfile/E2E 全 success；Real-site smoke 35154465918 success @ `62f2292a`） | `research/window-reports/10-srcdoc-origin-fix-report.md` | W5 |
 | 11 | 判定 ITI 形态下 L3 的正确可观测判据 | A-035 | **✅ done（W5 复核通过，判据变更判为合规）** — 实施提交 `0f195075` = 11 文件/+975 −20（逐字命中）；门 62/0；普通字段判据**逐字保留**、ITI 分支 fail-closed；合规铁证：钉版库全文仅 1 处 `dispatchEvent` ⇒ 旧断言确定性不可满足；2 处未呈报影响面 + P-19 已追加「附：首脑补正」；**CI 已补**：tip `8a27ad34`（Verify Ticket 11 35126031083 + 四门全 success） | `research/window-reports/11-iti-l3-criterion-report.md` | W5 |
-| 12 | 规则上限强制点裁定 + BC 替身克隆保真度修复 | A-036 | **⏳ ready-for-agent（未开工）** — 唯一在途实施票；blocked by 10（已闭环）⇒ 可立即开工；启动器 `prompts/12-rules-limit-fidelity.md` | `research/window-reports/12-rules-limit-fidelity-report.md` | W6 |
+| 12 | 规则上限强制点裁定 + BC 替身克隆保真度修复 | A-036 | **✅ W6 复核通过** — 实施提交 `fe0a5df3` = **8 文件/+487 −22**（逐字命中）；裁定=**写路径**强制并落地 `store:273`（`store:27-30` 有据说明）+ **ADR-0011** 成文；替身补 `structuredClone` + `DOC_ORIGIN = SELF_ORIGIN`（**同源定义，无第二套**）且**断言区逐字节未变**；A/B 对照复现（B 变体复红 `S4 got=513`）；**S4 不再是假绿**（三条独立证据：断言区未变 / 变体 B↔C 只差投递保真度 / 强制点位于 `push` 之前且其余写路径不增长）；门 05 100/100 · 12 31/0 · 10 34/0 · 11 62/0 · 08 35/0 · 06 209/0 · 07 63/0 · 39 27/1；E2E **145 passed**；**无远端写 ⇒ 无 CI（如实声明，未伪造）**；P-24 两处数字口径待补正 | `research/window-reports/12-rules-limit-fidelity-report.md` | W6 |
 
 ### 发起窗口的 prompts
 
