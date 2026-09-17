@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!-- 票 05 / A-029 · 共享交互原语层的密封层演示页（hermetic，无外部资源）。
+     形态取自 live 层已知好对照组 tests/live/pages/mirror-three-forms.html#f-control
+     （label「Country code」+ select 选项文本含区号）—— 该形态已由真实站点层清单
+     tests/live/site-manifest.json 声明为 expect:"injected"，故密封层可稳定注入。
+     两字段各覆盖一条原语链：
+       #hp-select  open → search → select → fill（select 宿主，写入 +86）
+       #hp-input   同一链路在 input 宿主上的形态（placeholder 数字线索 → 写 digits）
+     每个形态独立 form：引擎锚查找作用域 = el.closest('form') || document。 -->
+<html lang="en">
+<head><meta charset="utf-8"><title>cch ticket-05 harness primitives fixture</title></head>
+<body>
+  <h1>Harness primitives (ticket 05 / A-029)</h1>
+
+  <form id="hp-f-select">
+    <label for="hp-select">Country code</label>
+    <select id="hp-select" name="country_code">
+      <option value="">Select…</option>
+      <option value="+86">+86 China</option>
+      <option value="+1">+1 United States</option>
+      <option value="+44">+44 United Kingdom</option>
+    </select>
+  </form>
+
+  <form id="hp-f-input">
+    <label for="hp-input">Dial Code</label>
+    <input type="text" id="hp-input" name="dial_code" placeholder="86" pattern="[0-9]{1,3}">
+  </form>
+</body>
+</html>

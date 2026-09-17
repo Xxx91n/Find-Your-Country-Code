@@ -1,6 +1,6 @@
 # Find-Your-Country-Code
 
-浏览器油猴脚本，在任意网页识别电话国家区号字段并提供快速选择面板。本词汇表定义检测、注入与用户干预的核心领域词汇，供后续架构工作与 ADR 引用。
+浏览器油猴脚本，在任意网页识别电话国家区号字段并提供快速选择面板。本词汇表定义检测、注入与用户干预的核心领域词汇，供后续架构工作与 ADR 引用；文末"行业心智模型对照"章固化行业调研对标结论与证据出处，新窗口读此对齐，不重复调研。
 
 ## 检测
 
@@ -21,7 +21,7 @@ _Avoid_: 命中率、匹配成功
 _Avoid_: 规则数、优先级
 
 **分级行动**：
-置信度分数到注入行为的三档映射：auto（高置信，自动注入）、lowkey（中置信，低调注入）、none（低置信，不注入，仅登记）。阈值可配置。
+置信度分数到注入行为的三档映射：auto（高置信，自动注入）、lowkey（中置信，低调注入）、none（低置信，不注入，仅登记）。阈值可配置。档位由**证据强度**驱动，证据量（如 L3 命中的区号选项个数）是证据强度的一部分：同证据结构下选项数不同可跨档（6 选项 72/auto vs 5 选项 68/lowkey，SCORE_AUTO=70 恰落两者之间），该边界为**有意设计**并受 CI 锁定（ADR-0009）。
 _Avoid_: 档位注入（口语可，落文档用"分级行动"）
 
 **低调注入**：
@@ -34,6 +34,22 @@ _Avoid_: 强制注入
 **重评**：
 扫描不再以"处理过"为终态：元素以属性指纹快照记录，指纹变化或 DOM 实况与记录不符时重新评分，图标不残留也不漏挂。
 _Avoid_: 去重、跳过
+
+**帧治理**：
+脚本对 iframe 的存在与分工策略：元数据显式声明全帧启用，每帧各自检测与填充，选择面板只在顶层渲染，收藏与站点规则跨帧读同一份 GM 存储。
+_Avoid_: @noframes、iframe 兼容（泛称，无分工语义）
+
+**可见性闸门**：
+只作用于注入档位的几何/样式闸门：display:none、零尺寸、opacity:0、clip-path、content-visibility、被遮挡的字段降为登记 + 手动召唤；隐藏但承载值的原生 select（视觉替换型）不受闸门阻断。
+_Avoid_: 隐藏字段过滤、display 检查（只覆盖单一隐藏形态）
+
+**ARIA 语义层**：
+读取 role=combobox/listbox、aria-expanded/aria-controls/aria-activedescendant、label 语义与 shadow 内列表文本作为检测信号的层，并入既有信号瀑布，是伪 select 取证与识别的语义入口。
+_Avoid_: 无障碍扫描、aria 修补（那是替页面补语义的别家心智）
+
+**校准语料**：
+fixtures 固化的正负例语料体系：manifest 索引 + CI 上的 precision/recall 回归基线 + 阈值标定脚本，评分阈值与权重以它为数据依据，任何改动不得悄悄引入回归。
+_Avoid_: 样本集、测试数据（泛称，无基线与标定语义）
 
 ## 注入与填充
 
@@ -57,6 +73,10 @@ _Avoid_: iti hack、版本分支
 框架安全注入的固定手法：按元素原型上的原生 value setter 写值，随后派发 input→change→blur，保证 React/Vue 等受控组件状态真实同步。
 _Avoid_: 直接赋值、模拟点击（兜底路径除外）
 
+**伪 select（组件库下拉）**：
+MUI/AntD/Element/react-select/Radix 等组件库的下拉控件：值存组件 state，选项渲染为 div 列表或 portal，DOM 无原生 select；识别先取证 + 探测、只登记不注入，端到端实现与否由 ADR 裁决；填充分 select-only 型（开面板后键盘/点击选值）与可编辑型（隐藏输入原生 setter + 事件）两形态。
+_Avoid_: 自定义下拉（泛称，易与视觉替换型混同——那是隐藏原生 select 承载值的另一形态）
+
 ## 用户干预
 
 **站点规则**：
@@ -72,9 +92,54 @@ _Avoid_: 禁用列表
 _Avoid_: 白名单
 
 **分档覆盖**：
-页面级规则，把该页检测结果的注入档位下限抬升/压到声明档；用户显式规则压过启发式。
+显式 `scope:'page'` 规则把该页检测结果的注入档位下限抬升/压到声明档（评分后重映射并留痕）；缺省规则一律为元素级，仅作用于命中 selector 的字段。用户显式规则压过启发式，但不得借补分越过既有档位上限（ADR-0007/0008）。
 _Avoid_: 阈值调整
 
 **负反馈**：
 用户对误报字段声明"这不是区号字段"，脚本把它记为该字段的 none 档规则，下次不再提示。
 _Avoid_: 举报、上报
+
+## 工程门禁与仓库卫生
+
+**CI 门禁（CI gate）**：
+CI 上可阻断合入的自动化检查集合：类型门禁、E2E、校准基线与票级 verify-* 回归。触发面 = pull_request + push(main, cch/**)；证据只认 CI run/artifact，不认本地输出。
+_Avoid_: 持续集成（泛称，无阻断语义）、跑 CI（动作而非门禁实体）
+
+**PR 门控（PR gating）**：
+所有非发版 workflow 必须声明 pull_request 触发的仓库策略，使未经检查的变更无法静默进 main；发版系 workflow（release/release-dry-run）例外，只由发版事件与手动触发。
+_Avoid_: 代码评审（那是人的行为，门控是机器前置）
+
+**密封 E2E（hermetic E2E）**：
+E2E 仅依赖仓库内 fixtures/corpus 与本地 server 供给、不触真实站点与外网的供给边界，保证任意 CI 环境结果可复现。
+_Avoid_: 离线测试（只描述网络状态，无供给边界语义）
+
+**类型门禁（typecheck gate）**：
+tsconfig `strict: true` + `npm run typecheck`（tsc --noEmit）+ CI typecheck workflow 构成的三件套；类型修复必须 types-only，以同提交 E2E 双绿证明无运行时行为变更。
+_Avoid_: 静态检查（泛称，不含 types-only 承诺与阻断语义）
+
+**依赖钉死（dependency pinning）**：
+依赖以显式 semver 范围写入 package.json（禁 `latest` 浮动）、经 package-lock.json + `npm ci` 复现安装的策略；同一项目内互斥的两个大版本（如 React 18/19）分居两个 install root（npm workspaces），使每棵安装树的 peerDependencies 各自自洽，安装面不需要 `--legacy-peer-deps`（票 43 / A-021 起）。
+_Avoid_: 版本锁定（指 lockfile 机制本身；钉死含范围书写纪律）
+
+（决策记录见 `docs/adr/0006-ci-hygiene-policy.md`。）
+## 行业心智模型对照
+
+本节固化 2026-09 心智模型 v2 周期的行业对标结论：每个论断一行，证据出处以仓库相对路径标注，调研全文按路径溯源，不在此复制。
+
+### 检测骨架三支柱（行业三方交集）
+
+- **Chromium 分层预测**：字段语义识别采用"autocomplete token 最高优先 → 启发式加权 → 内容验证（rationalization）"的多层瀑布，本脚本落为 L0–L4 五层信号瀑布与置信度分数。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M1/M2、`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`）
+- **Fathom 连续评分**：识别结果输出"类型 + 置信度分数 + 说明"的连续值而非布尔命中，分数驱动分级行动。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M5、`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`）
+- **密码管理器降级兜底**：识别失败不硬猜，降级到用户手动兜底，本脚本对应低置信登记 + 手动召唤 + 负反馈。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M4）
+
+### 工程支柱三件（本周期采纳）
+
+- **可见性正确性**：隐藏字段误注入是正确性/安全问题而非体验问题，clip-path 与 content-visibility 隐藏字段曾使全部密码管理器中招（CCS-20/ACSAC-24），几何/样式可见性闸门是行业标配。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`、`.scratch/architecture-recovery/research/misdetection-root-causes.md`）
+- **数据驱动校准**：权重与阈值不由人工拍定，以正负例语料的 precision/recall 基线与阈值标定脚本为数据依据，CI 执行。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`）
+- **可解释反馈回路**：每次注入决策输出信号明细，可观测、可归因，低置信走手动召唤，用户负反馈沉淀为站点规则。（证据：`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`、`.scratch/architecture-recovery/research/industry-models.md` §M2）
+
+### 对标结论
+
+- 本模型是上述三支柱的交集，方向正确，已被 Chromium 与密码管理器两套生产实现独立验证；油猴/扩展领域无成熟同类竞品。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`、`.scratch/mental-model-v2/report.md`）
+- autocomplete 属性只是强先验，下拉语义必须由选项内容裁决，共享区号需文本消歧。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`）
+- 伪 select 先取证不仓促注入，实现与否由 ADR 裁决。（证据：`docs/adr/0004-pseudo-select-recognition-deferred.md`）

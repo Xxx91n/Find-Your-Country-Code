@@ -1,4 +1,4 @@
-// E2E 静态 fixture 服务器：test/ 三个手工测试页 + tests/fixtures/ 回归 fixture + 本地 vendored intl-tel-input。
+// E2E 静态 fixture 服务器：tests/manual/ 三个手工测试页 + tests/fixtures/ 回归 fixture + 本地 vendored intl-tel-input。
 // Hermetic：cch-test-page2.html 里的 jsdelivr CDN 引用在响应中改写到 /vendor/ 路径，离线可复现。
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -19,17 +19,91 @@ const MIME = {
 };
 
 const ROUTES = [
-  { prefix: '/test/', dir: path.join(ROOT, 'test') },
+  { prefix: '/test/', dir: path.join(ROOT, 'tests/manual') },
   { prefix: '/fixtures/', dir: path.join(ROOT, 'tests', 'fixtures') },
+  // 票 06（A-030）：形态语料镜像页（owned 指定页 = 断言主力）；hermetic，零外网
+  { prefix: '/corpus/', dir: path.join(ROOT, 'tests', 'corpus') },
   { prefix: '/vendor/intl-tel-input/', dir: path.join(ROOT, 'node_modules', 'intl-tel-input') },
   // 票 09 框架 fixture 本地 vendored（hermetic：E2E 无外部网络依赖）
   { prefix: '/vendor/react/', dir: path.join(ROOT, 'node_modules', 'react') },
   { prefix: '/vendor/react-dom/', dir: path.join(ROOT, 'node_modules', 'react-dom') },
   { prefix: '/vendor/vue/', dir: path.join(ROOT, 'node_modules', 'vue', 'dist') },
+  // 票 15 React 19 本地 vendored（生产构建，hermetic 无外网）；票 43 起改由独立 install root 供给
+
+  { prefix: '/gen/react19/', handler: serveReact19Gen },
+
 ];
 
 const CDN_PREFIX = 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/';
 const CDN_LOCAL = '/vendor/intl-tel-input/build/';
+
+// ── 票 15：React 19 CJS→ESM 现场转译（零依赖，node_modules 生产构建直供）──
+// React 19 npm 包不再发布 UMD/min 构建；按真实 require 图（react → scheduler →
+// react-dom → react-dom-client）现场拼装 ESM。转译只改写 require()/exports. 赋值，
+// 模块体内代码逐字保留（无打包器语义漂移）；页面以命名空间 import 消费。
+// 票 43（A-021）：React 19 生产构建改由独立 npm install root 供给（workspaces: tests/vendor/react19）。
+// 根项目的 react@18 与本 vendor 根的 react@19 分居两棵安装树，peerDependencies 各自自洽，
+// 因此安装面不再需要 --legacy-peer-deps（原 react19/react-dom19 别名包已移除）。
+const REACT19_ROOT = path.join(ROOT, 'tests', 'vendor', 'react19', 'node_modules');
+const REACT19_FILES = {
+  react: 'react/cjs/react.production.js',
+  scheduler: 'scheduler/cjs/scheduler.production.js',
+  'react-dom': 'react-dom/cjs/react-dom.production.js',
+  'react-dom-client': 'react-dom/cjs/react-dom-client.production.js',
+};
+
+const REACT19_CACHE = new Map();
+
+async function react19Esm(name, stack = []) {
+  if (REACT19_CACHE.has(name)) return REACT19_CACHE.get(name);
+  if (stack.includes(name)) throw new Error('react19 dependency cycle: ' + stack.concat(name).join(' -> '));
+  const rel = REACT19_FILES[name];
+  if (!rel) throw new Error('react19 module unknown: ' + name);
+  const src = await readFile(path.join(REACT19_ROOT, rel), 'utf8');
+  const imports = [];
+  const names = [];
+  let body = src
+    .replace(/require\("([\w-]+)"\)/g, (_, dep) => {
+      imports.push(dep);
+      return '__r19_' + dep.replace(/-/g, '_') + '__';
+    })
+    .replace(/^[ \t]*exports\.([A-Za-z_$][\w$]*)\s*=/gm, (_, n) => {
+      names.push(n);
+      return '__r19exports.' + n + ' =';
+    });
+  // sweep:函数体内的 exports.X 读取（非行首赋值）也统一改写为运行时对象前缀
+  body = body.replace(/(?<![.\w$])exports\./g, '__r19exports.');
+  const exportNames = [...new Set(names)]; // cjs 允许重复赋值（后者生效），footer 读运行时对象取终值
+  // guard: real cjs api leftovers rejected (fail loud, never serve broken modules)
+  const leftoverModule = (body.match(/(?<![.\w])module\s*\./g) || []).length;
+  const leftoverExports = (body.match(/(?<![.\w$])exports(?![\w$])/g) || []).length; // __r19exports 前缀之外的一切 exports token 都算残留（含 exports.X 读取）
+  if (leftoverModule || leftoverExports) throw new Error('react19 unrewritten cjs refs: module=' + leftoverModule + ' exports=' + leftoverExports);
+  const uniq = [...new Set(imports)];
+  const header = uniq
+    .map(dep => `import * as __r19_${dep.replace(/-/g, '_')}__ from '/gen/react19/${dep}';`)
+    .join('\n');
+  const footer = exportNames
+    .map((n, i) => `const __r19e${i} = __r19exports.${n};\nexport { __r19e${i} as ${n} };`)
+    .join('\n');
+  const code = `const __r19exports = {};\n${header}\n${body}\n${footer}`;
+  REACT19_CACHE.set(name, code);
+  return code;
+}
+async function serveReact19Gen(pathname, res) {
+  try {
+    const name = pathname.slice('/gen/react19/'.length).replace(/\/+$/, '');
+    if (!(name in REACT19_FILES)) { res.writeHead(404); res.end('not found'); return; }
+    // 先 await 转译再写响应头：转译失败走 500，绝不出现「已写 200 头再抛错」的双写头崩溃
+    const code = await react19Esm(name);
+    res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+    res.end(code);
+  } catch (e) {
+    // headersSent 防御：响应已开始则只收尾，不再 writeHead（防 ERR_HTTP_HEADERS_SENT 杀进程）
+    if (res.headersSent) { res.end(); return; }
+    res.writeHead(500);
+    res.end('react19 gen error: ' + (e && e.message));
+  }
+}
 
 // npm 包不发布 CDN 专供的 intlTelInputWithUtils.js 合并 bundle，现场按官方顺序拼接。
 function withUtilsBundle() {
@@ -45,13 +119,16 @@ function resolveWithin(dir, rel) {
   return target;
 }
 
-const server = http.createServer(async (req, res) => {
+// 票 12:跨域 fixture 需要不同 origin —— 同一 handler 监听 PORT 与 PORT+1(端口不同 = origin 不同)
+const handler = async (req, res) => {
   try {
     const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
     let pathname = decodeURIComponent(url.pathname);
-    if (pathname === '/') pathname = '/test/test-page.html';
+    if (pathname === '/') pathname = '/test/test-page.html'; // served from tests/manual/ after ticket 25 migration
     const route = ROUTES.find(r => pathname.startsWith(r.prefix));
     if (!route) { res.writeHead(404); res.end('not found'); return; }
+    if (route.handler) { await route.handler(pathname, res); return; }
+
     const file = resolveWithin(route.dir, pathname.slice(route.prefix.length));
     if (!file) { res.writeHead(403); res.end('forbidden'); return; }
     let body;
@@ -69,8 +146,14 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(404);
     res.end('not found');
   }
-});
+};
 
+const server = http.createServer(handler);
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`e2e fixture server: http://127.0.0.1:${PORT}`);
+});
+
+const serverAlt = http.createServer(handler);
+serverAlt.listen(PORT + 1, '127.0.0.1', () => {
+  console.log(`e2e fixture server (cross-origin): http://127.0.0.1:${PORT + 1}`);
 });

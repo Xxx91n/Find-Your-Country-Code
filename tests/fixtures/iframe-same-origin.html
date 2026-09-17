@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>iframe 同源 fixture — 票 12</title></head>
+<body>
+<h1>同源 iframe 帧治理（顶层字段 + 同源子帧表单）</h1>
+<form id="top-form">
+  <label>国家区号
+    <select id="top-cc" name="countryCode">
+      <option value="">选择…</option>
+      <option value="+86">+86</option>
+      <option value="+81">+81</option>
+      <option value="+44">+44</option>
+      <option value="+1">+1</option>
+      <option value="+49">+49</option>
+      <option value="+33">+33</option>
+      <option value="+61">+61</option>
+      <option value="+7">+7</option>
+    </select>
+  </label>
+</form>
+<iframe id="f-child" src="/fixtures/iframe-child.html" width="640" height="320"></iframe>
+</body>
+</html>

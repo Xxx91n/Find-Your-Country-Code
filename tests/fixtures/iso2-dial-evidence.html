@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>票 28 fixtures — ISO2-value 下拉区号证据（A-002）</title>
+</head>
+<body>
+<h1>票 28 — ISO2-value 括号区号证据（A-002）</h1>
+
+<!-- 正例对照：证明扫描已运行（与 fp-regression 同口径 —— 先证扫描再断言「无图标」） -->
+<label for="ctrl-dial">Dial code</label>
+<select id="ctrl-dial" name="country_code">
+  <option value="+86">+86</option>
+  <option value="+1">+1</option>
+  <option value="+44">+44</option>
+</select>
+
+<!-- ① A-002 正例：ISO2 作 value + 选项文本括号区号。
+     libphonenumber 推荐形态（国家与区号非单射 → value 用 ISO 3166 alpha-2） -->
+<label for="iso2-paren">Country</label>
+<select id="iso2-paren" name="country">
+  <option value="us">United States (+1)</option>
+  <option value="gb">United Kingdom (+44)</option>
+  <option value="cn">China (+86)</option>
+</select>
+
+<!-- ② 护栏1：纯 ISO2 国家选择器（选项只有国家名，无任何区号证据）
+     → 「国家选择器 ≠ 区号字段」抑制必须保持有效，仍不注入 -->
+<label for="iso2-plain">Country</label>
+<select id="iso2-plain" name="country">
+  <option value="us">United States</option>
+  <option value="gb">United Kingdom</option>
+  <option value="cn">China</option>
+  <option value="jp">Japan</option>
+</select>
+
+<!-- ③ 护栏2：共享区号 +1（US/CA 同值）下拉 → 注入不回退，且消歧落点正确 -->
+<label for="shared-dial">Country code</label>
+<select id="shared-dial" name="country_code">
+  <option value="+1">United States (+1)</option>
+  <option value="+1">Canada (+1)</option>
+  <option value="+44">United Kingdom (+44)</option>
+</select>
+
+</body>
+</html>

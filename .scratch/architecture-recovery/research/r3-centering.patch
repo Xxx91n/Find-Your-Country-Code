@@ -1,0 +1,26 @@
+--- a/src/ui/index.ts
++++ b/src/ui/index.ts
+@@ -48,6 +48,10 @@
+ background:var(--cch-surface);border:1px solid var(--cch-border);border-radius:16px;
+ box-shadow:0 18px 48px rgba(2,8,23,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+ width:320px;max-height:min(78vh,460px);display:flex;flex-direction:column;overflow:hidden;
++/* 面板挂 document.body，宿主页的裸 div 规则（如 entry-access fixture 的 div{margin:12px 0}）
++   会按其盒模型污染面板：margin 把定位后的面板整体推离 _pos 算出的 top，居中/锚定都偏。
++   面板自带 fixed 定位与显式坐标，margin 必须清零以与宿主页样式解耦。 */
++margin:0;
+ animation:cchIn .12s ease;z-index:2147483647}
+ @keyframes cchIn{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+ #cch-sw{padding:12px 12px 10px;border-bottom:1px solid rgba(15,23,42,.08);background:var(--cch-surface-strong)}
+@@ -404,6 +408,12 @@
+     this._bindPopupEvents(pop);
+     this._render('');
+ 
++    // 居中路径（anchor===null）的垂直居中基于 offsetHeight，而上面这次 _pos 发生在
++    // _render 之前——此时列表还是空的，offsetHeight 明显偏小；_render 同步填充行数据后
++    // 面板继续长高，中心随 Δh/2 下移，判定因此对时序/内容敏感（R-3 红灯）。
++    // 在内容定型后按最终高度重算一次；仅作用于居中路径，锚定路径语义不变。
++    if (!anchor) this._pos(pop, anchor);
++
+     const close = (e: MouseEvent) => {
+       if (!pop.contains(e.target as Node) && e.target !== anchor) {
+         this._closePopup();

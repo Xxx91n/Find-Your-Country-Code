@@ -1,0 +1,136 @@
+{
+  "id": "mui-autocomplete",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/mui-autocomplete.html",
+  "source_url": "https://mui.com/material-ui/react-autocomplete/",
+  "root_selector": ".MuiAutocomplete-root",
+  "node_count": 12,
+  "sha256": "31b6981627aa45216bc1ae20bcbdf44e8067c394592cd540626d497a05400dd6",
+  "tree": {
+    "tag": "div",
+    "class": [
+      "MuiAutocomplete-hasPopupIcon",
+      "MuiAutocomplete-root"
+    ],
+    "children": [
+      {
+        "tag": "div",
+        "class": [
+          "MuiFormControl-fullWidth",
+          "MuiFormControl-root",
+          "MuiTextField-root"
+        ],
+        "children": [
+          {
+            "tag": "label",
+            "class": [
+              "MuiFormLabel-colorPrimary",
+              "MuiFormLabel-root",
+              "MuiInputLabel-animated",
+              "MuiInputLabel-animated",
+              "MuiInputLabel-formControl",
+              "MuiInputLabel-formControl",
+              "MuiInputLabel-outlined",
+              "MuiInputLabel-outlined",
+              "MuiInputLabel-root",
+              "MuiInputLabel-root"
+            ],
+            "attrs": {
+              "data-shrink": "aaaaa"
+            },
+            "text": "aaaaa"
+          },
+          {
+            "tag": "div",
+            "class": [
+              "MuiAutocomplete-inputRoot",
+              "MuiInputBase-adornedEnd",
+              "MuiInputBase-colorPrimary",
+              "MuiInputBase-formControl",
+              "MuiInputBase-fullWidth",
+              "MuiInputBase-root",
+              "MuiOutlinedInput-root"
+            ],
+            "children": [
+              {
+                "tag": "input",
+                "class": [
+                  "MuiAutocomplete-input",
+                  "MuiAutocomplete-inputFocused",
+                  "MuiInputBase-input",
+                  "MuiOutlinedInput-input"
+                ],
+                "attrs": {
+                  "aria-autocomplete": "aaaa",
+                  "aria-invalid": "aaaaa",
+                  "autocomplete": "aaa",
+                  "role": "aaaaaaaa",
+                  "type": "aaaa"
+                }
+              },
+              {
+                "tag": "div",
+                "class": [
+                  "MuiAutocomplete-endAdornment"
+                ],
+                "children": [
+                  {
+                    "tag": "button",
+                    "class": [
+                      "MuiAutocomplete-popupIndicator",
+                      "MuiButtonBase-root",
+                      "MuiIconButton-root",
+                      "MuiIconButton-sizeMedium"
+                    ],
+                    "attrs": {
+                      "aria-label": "aaaa",
+                      "type": "aaaaaa"
+                    },
+                    "children": [
+                      {
+                        "tag": "svg",
+                        "class": [
+                          "MuiSvgIcon-fontSizeMedium",
+                          "MuiSvgIcon-root"
+                        ],
+                        "attrs": {
+                          "aria-hidden": "aaaa"
+                        },
+                        "children": [
+                          {
+                            "tag": "path"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "fieldset",
+                "class": [
+                  "MuiOutlinedInput-notchedOutline"
+                ],
+                "attrs": {
+                  "aria-hidden": "aaaa"
+                },
+                "children": [
+                  {
+                    "tag": "legend",
+                    "children": [
+                      {
+                        "tag": "span",
+                        "text": "aaaaa"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

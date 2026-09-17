@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>pseudo select-only fixture (ticket 18)</title>
+<style>
+  #mui-lb { display: none; border: 1px solid #ccc; list-style: none; margin: 4px 0; padding: 0; width: 240px; }
+  #mui-lb.open { display: block; }
+  #mui-lb li { padding: 6px 10px; cursor: pointer; }
+  #mui-lb li:hover { background: #eef; }
+</style>
+</head>
+<body>
+  <h1>伪 select select-only 型（票 18, MUI 结构复刻）</h1>
+
+  <!-- 原生 anchor select：面板可达入口（正样本不回归） -->
+  <label for="anchor-cc">Anchor country code</label>
+  <select id="anchor-cc" name="country_code">
+    <option value="">请选择</option>
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+    <option value="+44">+44</option>
+  </select>
+
+  <!-- MUI 形态 [票 17 observed]: DIV[role=combobox] + aria-labelledby + 同容器隐藏承值 native input -->
+  <div class="mui-form">
+    <label id="cc-label">Country code</label>
+    <div id="cc-mui" class="MuiSelect-select" role="combobox" aria-expanded="false" aria-haspopup="listbox"
+         aria-controls="mui-lb" aria-labelledby="cc-label" tabindex="0">United States (+1)</div>
+    <input id="mui-carrier" class="MuiSelect-nativeInput" name="country" aria-hidden="true" tabindex="-1" value="US">
+  </div>
+
+  <!-- portal 到 body（4/5 库 observed）: 选项枚举必须沿 aria-controls id 解引用 -->
+  <ul id="mui-lb" role="listbox" aria-labelledby="cc-label">
+    <li role="option" data-value="US" aria-selected="true" tabindex="-1">United States (+1)</li>
+    <li role="option" data-value="CA" tabindex="-1">Canada (+1)</li>
+    <li role="option" data-value="GB" tabindex="-1">United Kingdom (+44)</li>
+    <li role="option" data-value="CN" tabindex="-1">China (+86)</li>
+  </ul>
+
+  <script>
+    (function () {
+      var trigger = document.getElementById('cc-mui');
+      var lb = document.getElementById('mui-lb');
+      var carrier = document.getElementById('mui-carrier');
+      trigger.addEventListener('click', function () {
+        var open = trigger.getAttribute('aria-expanded') !== 'true';
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        lb.classList.toggle('open', open);
+      });
+      var opts = document.querySelectorAll('#mui-lb [role="option"]');
+      Array.prototype.forEach.call(opts, function (o) {
+        o.addEventListener('click', function () {
+          // 模拟 MUI: 库自己写承值（observed: US→CA 实变；选值无原生 change/input 事件）
+          carrier.value = o.getAttribute('data-value');
+          trigger.textContent = o.textContent;
+          Array.prototype.forEach.call(opts, function (p) {
+            p.setAttribute('aria-selected', p === o ? 'true' : 'false');
+          });
+          trigger.setAttribute('aria-expanded', 'false');
+          lb.classList.remove('open');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

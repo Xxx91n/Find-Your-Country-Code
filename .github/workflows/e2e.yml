@@ -1,0 +1,46 @@
+name: E2E
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'cch/**'
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Line-ending guard (CRLF in tracked text)
+        run: |
+          bad=$(git ls-files | grep -vE '\.(bat|ps1|cmd|png|ico|icns|jpg|jpeg|gif|webp|exe|dll|node|pdb|msi|so|dylib|bin|zip|gz|tar|7z)$' | xargs -r grep -lU "$(printf '\r')" 2>/dev/null || true)
+          if [ -n "$bad" ]; then echo "::error::CRLF found in tracked text files: $bad"; exit 1; fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 票 43（A-021）：安装面根修——React 18 与 React 19 分居两个 npm install root
+      # （根项目 react@18；tests/vendor/react19 workspace 承载 react@19），两侧 peer 各自自洽，
+      # 故 npm ci 可复现，安装面无需任何 peer 例外开关。
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build userscript
+        run: npm run build
+
+      - name: Run E2E
+        run: npx playwright test

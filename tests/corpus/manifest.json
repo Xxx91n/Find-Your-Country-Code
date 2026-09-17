@@ -1,0 +1,749 @@
+{
+  "_meta": {
+    "name": "find-your-country-code calibration corpus (ticket 14)",
+    "created": "2026-09-05",
+    "cycle": "mental-model-v2",
+    "appendOnlyRule": "新样本只加不删；修正语义用新增字段/状态位表达（如 knownResidual 翻转），禁止删除或重写既有条目。",
+    "injectionRule": "injected = tier in {auto, lowkey}（分级行动口径，与 misdetect-repro-v2.mjs 一致）",
+    "gateRule": "回归门禁 = 全部 knownResidual!=true 的用例 expect 必须与引擎输出一致；knownResidual 用例为已登记的结构性偏差（修复归属见 note），不计入门禁但计入 precision/recall。",
+    "realSiteFormsRule": "票 32 真实站点抽样模式库（Cycle-4 / A-006）：每条形态登记 期望 tier + 信号归因 + 修复归属票 + 候选集覆盖基线 + 引擎复现基线（baseline.observed）。覆盖与基线由 tests/scripts/32-real-site-corpus.mjs 硬校验；修复票（27/28/29）落地后必须在本文件显式翻转 knownResidual / 更新 baseline，禁止静默漂移。",
+    "caseFields": {
+      "id": "稳定用例 id；legacy 25 例沿用 misdetect-repro-v2.mjs 编号保持可追溯",
+      "family": "legacy = 上一周期误报/漏检修复组；mm2 = 心智模型 v2 周期新增样本；real-site = 票 32 真实站点抽样模式库（Cycle-4，A-006）；ce = Cycle-5 票 44 contenteditable 语料先行（A-023）",
+      "polarity": "positive = 应注入（区号字段）；negative = 不应注入（工具口径的真值标签）",
+      "expect": "inject | none（与 polarity 对应的期望注入行为）",
+      "knownResidual": "true = 引擎当前已知会偏离 expect 的结构性残留（ticket 16 修复目标），基线如实计入 FP",
+      "source": "来源文件（fixture 锚点 / harness 用例号 / 调研文件节号）；每例必须标注",
+      "el": "元素声明：tag/name/id/className/type/placeholder/attrs/options/ancestors",
+      "labels": "label 注册表（label[for] 与 aria-labelledby 目标），每用例独立作用域",
+      "ctx": "anchorHasTel=同 form/文档存在另一 input[type=tel] 锚；iti=走 _isIti 判定路径（镜像 _process 分发）"
+    },
+    "thresholdsBaseline": { "SCORE_AUTO": 70, "SCORE_LOWKEY": 35, "source": "src/config.ts（本票不改；重标定走 16 票）" }
+  },
+  "cases": [
+    { "id": "P1", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html 正例对照组；research/scripts/misdetect-repro-v2.mjs#P1",
+      "note": "select name=countrycode + +XX 值（测试页 Case1）",
+      "el": { "tag": "select", "name": "countrycode", "options": ["+86", "+1", "+44", "+81"] },
+      "labels": [], "ctx": {} },
+    { "id": "P2", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html 正例对照组；research/scripts/misdetect-repro-v2.mjs#P2",
+      "note": "select name=dial_code_country + ISO 值 + EN 国家名（测试页 A2；strong kw 压过 country 语义抑制）",
+      "el": { "tag": "select", "name": "dial_code_country",
+        "options": [ { "value": "US", "text": "United States" }, { "value": "GB", "text": "United Kingdom" }, { "value": "CN", "text": "China" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "P3", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html 正例对照组；research/scripts/misdetect-repro-v2.mjs#P3",
+      "note": "input name=country_code type=text（测试页 B1；页面含 tel 主号锚）",
+      "el": { "tag": "input", "name": "country_code", "type": "text" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "P4", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#P4；tests/fixtures/unified-inject.html iti 形态",
+      "note": "input type=tel 在 .iti 容器（iti v18 wrapper；_isIti 短路=auto，阈值无关）",
+      "el": { "tag": "input", "type": "tel", "ancestors": [ { "className": "iti" } ] },
+      "labels": [], "ctx": { "iti": true } },
+    { "id": "N0a", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html；research/scripts/misdetect-repro-v2.mjs#N0a",
+      "note": "select name=province 省份码（测试页 Case9；L4 exclude + 纯数字枚举）",
+      "el": { "tag": "select", "name": "province",
+        "options": [ { "value": "11", "text": "北京" }, { "value": "12", "text": "天津" }, { "value": "31", "text": "上海" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "N0b", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N0b",
+      "note": "select name=months 月份 1-6 无关键词",
+      "el": { "tag": "select", "name": "months",
+        "options": [ { "value": "1", "text": "1月" }, { "value": "2", "text": "2月" }, { "value": "3", "text": "3月" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "N0c", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html；research/scripts/misdetect-repro-v2.mjs#N0c",
+      "note": "select name=countrycode 仅 1 个选项（测试页 Case10；options<2 硬排除门）",
+      "el": { "tag": "select", "name": "countrycode", "options": [ { "value": "+86", "text": "+86 中国" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "F1", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html#fp-prefix；research/misdetection-root-causes.md §2①；research/scripts/misdetect-repro-v2.mjs#F1",
+      "note": "称谓前缀 select name=prefix，值 mr/ms/mrs（prefix 歧义降权组）",
+      "el": { "tag": "select", "name": "prefix",
+        "options": [ { "value": "mr", "text": "Mr." }, { "value": "ms", "text": "Ms." }, { "value": "mrs", "text": "Mrs." } ] },
+      "labels": [], "ctx": {} },
+    { "id": "F1b", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#F1b",
+      "note": "称谓前缀 select name=prefix，值 1/2/3（prefix kw + 纯数字枚举罚分）",
+      "el": { "tag": "select", "name": "prefix",
+        "options": [ { "value": "1", "text": "Mr." }, { "value": "2", "text": "Ms." }, { "value": "3", "text": "Mrs." } ] },
+      "labels": [], "ctx": {} },
+    { "id": "F1c", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#F1c",
+      "note": "称谓 select（无 name），label \"Phone Prefix\"",
+      "el": { "tag": "select", "id": "ttl", "options": [ { "value": "mr", "text": "Mr." }, { "value": "ms", "text": "Ms." } ] },
+      "labels": [ { "for": "ttl", "text": "Phone Prefix" } ], "ctx": {} },
+    { "id": "F2", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html#fp-country；research/misdetection-root-causes.md §2④；research/scripts/misdetect-repro-v2.mjs#F2",
+      "note": "纯国家选择 select name=country（ISO 值；country 语义抑制：ISO 主导无区号证据降 none）",
+      "el": { "tag": "select", "name": "country",
+        "options": [ { "value": "US", "text": "United States" }, { "value": "GB", "text": "United Kingdom" }, { "value": "CN", "text": "China" }, { "value": "JP", "text": "Japan" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "F3", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#F3",
+      "note": "固话本地区号 input，label \"固话区号（不含国家区号）\"（local-fixed 罚分 + L4 local 排除）",
+      "el": { "tag": "input", "id": "la", "name": "area_local", "type": "text" },
+      "labels": [ { "for": "la", "text": "固话区号（不含国家区号）" } ], "ctx": {} },
+    { "id": "F4", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html#fp-area-local；research/misdetection-root-causes.md §2②；research/scripts/misdetect-repro-v2.mjs#F4",
+      "note": "固话本地区号 select，label \"区号\"，值 010/020/0755/021（裸词降权 + 纯数字枚举）",
+      "el": { "tag": "select", "id": "ls", "name": "area", "options": [ "010", "020", "0755", "021" ] },
+      "labels": [ { "for": "ls", "text": "区号" } ], "ctx": {} },
+    { "id": "F5", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html#fp-timezone；research/misdetection-root-causes.md §2③；research/scripts/misdetect-repro-v2.mjs#F5",
+      "note": "时区 select name=timezone，值 +8/+9 形似区号（无任何 kw/内容证据 → 0 分）",
+      "el": { "tag": "select", "name": "timezone", "attrs": { "aria-label": "时区" },
+        "options": [ { "value": "+8", "text": "GMT+8" }, { "value": "+9", "text": "GMT+9" }, { "value": "+5", "text": "GMT+5" }, { "value": "0", "text": "GMT" }, { "value": "-5", "text": "GMT-5" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "F6", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html#fp-qty；research/misdetection-root-causes.md §2⑤；research/scripts/misdetect-repro-v2.mjs#F6",
+      "note": "数量 select name=qty class 含 hidden（hidden→idd 子串撞库教训：短词只做等值匹配）",
+      "el": { "tag": "select", "name": "qty", "className": "form-control hidden", "options": [ "1", "2", "3", "4" ] },
+      "labels": [], "ctx": {} },
+    { "id": "F7", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#F7",
+      "note": "表单主题容器 class=country-form 内的称谓 select（父级容器类名不参与评分）",
+      "el": { "tag": "select", "name": "title", "options": [ { "value": "mr", "text": "Mr." }, { "value": "ms", "text": "Ms." } ], "ancestors": [ { "className": "country-form" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "F8", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#F8",
+      "note": "纯国家选择 select（无 name），label \"国家/地区\"（CJK 短名不满足 ISO 双证据门）",
+      "el": { "tag": "select", "id": "cty",
+        "options": [ { "value": "US", "text": "美国" }, { "value": "GB", "text": "英国" }, { "value": "CN", "text": "中国大陆" } ] },
+      "labels": [ { "for": "cty", "text": "国家/地区" } ], "ctx": {} },
+    { "id": "N1", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "research/misdetection-root-causes.md §5-0① N1；research/scripts/misdetect-repro-v2.mjs#N1",
+      "note": "手机区号 select name=phone_code，label \"国家/地区区号\"（复合短语白名单修复；旧 EXCLUDE 误杀）",
+      "el": { "tag": "select", "id": "pc", "name": "phone_code", "options": [ "+86", "+1", "+44", "+81" ] },
+      "labels": [ { "for": "pc", "text": "国家/地区区号" } ], "ctx": {} },
+    { "id": "N2", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N2",
+      "note": "input type=tel aria-labelledby 多 id（旧实现未 split 空格；修复后逐一解析）",
+      "el": { "tag": "input", "type": "tel", "name": "phone", "attrs": { "aria-labelledby": "lb1 lb2" } },
+      "labels": [ { "id": "lb1", "text": "手机区号" }, { "id": "lb2", "text": "必填" } ], "ctx": {} },
+    { "id": "N2b", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N2b",
+      "note": "同 N2 但 aria-labelledby 单 id（对照）",
+      "el": { "tag": "input", "type": "tel", "name": "phone", "attrs": { "aria-labelledby": "lb1x" } },
+      "labels": [ { "id": "lb1x", "text": "手机区号" } ], "ctx": {} },
+    { "id": "N3", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N3",
+      "note": "input type=number name=country_code（锚上下文=真实页面存在 tel 主号）",
+      "el": { "tag": "input", "name": "country_code", "type": "number" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "N4", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N4",
+      "note": "input id=phonePrefix（锚上下文=真实页面存在 tel 主号）",
+      "el": { "tag": "input", "id": "phonePrefix", "type": "text" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "N5", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N5（语义保留）",
+      "note": "react-phone-input-2 组件 input（组件自带选择器，不叠加图标 → 工具口径不注入）",
+      "el": { "tag": "input", "type": "tel", "name": "phone", "ancestors": [ { "className": "react-tel-input" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "N6", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N6（语义保留）",
+      "note": "MUI/AntD 隐藏承值 input type=hidden name=countryCode（input 类型闸门）",
+      "el": { "tag": "input", "name": "countryCode", "type": "hidden" },
+      "labels": [], "ctx": {} },
+    { "id": "N7", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "research/scripts/misdetect-repro-v2.mjs#N7",
+      "note": "Select2 视觉替换型隐藏承值 select —— 实测机理：aria-hidden=\"true\" + width/height:1px（非零尺寸）+ clip/clip-path。评分层可检测（scoreElement 得 lowkey，未被硬排除）；注入层由可见性闸门降 none 且**保留登记**（票 13 检查点一：闸门只改注入档位、不改检测登记）。子形态 B（display:none）见 N7b。",
+      "supersededAssumption": "原文（机理假设与实测不符，票 08 / A-032 据实修正）：\"Select2：原生 select name=country_code class=select2-hidden-accessible（视觉替换型保持可检测）\" —— 原文未建模 aria-hidden，且 mock 无样式面故该假设从未被行使。",
+      "mechanism": { "subShape": "A", "hiddenBy": [ "aria-hidden", "clip", "clip-path" ], "nonZeroSize": true, "fixture": "tests/fixtures/visual-replacement-hidden-select.html#vrs-a-native" },
+      "hiddenCarrier": { "expectInjectedInBrowser": false, "expectRegistered": true, "registerMinConst": "ITI_LOW_REGISTER_SCORE", "verifiedBy": "tests/visual-replacement.spec.ts" },
+      "el": { "tag": "select", "name": "country_code", "className": "select2-hidden-accessible",
+        "attrs": { "aria-hidden": "true", "tabindex": "-1" },
+        "style": { "clip": "rect(0px, 0px, 0px, 0px)", "clipPath": "inset(50%)" },
+        "rect": { "width": 1, "height": 1 },
+        "options": [ "+86", "+1", "+44" ] },
+      "labels": [], "ctx": {} },
+    { "id": "mm2-pos-fpcontrol", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/fp-regression.html#fp-control（E2E 正例控件转录）",
+      "note": "label \"国家区号\" + name=country_code + +XX 中国文本选项（label:phrase + strong kw + plus-dial 三信号叠加）",
+      "el": { "tag": "select", "id": "fp-control", "name": "country_code",
+        "options": [ { "value": "+86", "text": "+86 中国" }, { "value": "+1", "text": "+1 美国" }, { "value": "+44", "text": "+44 英国" } ] },
+      "labels": [ { "for": "fp-control", "text": "国家区号" } ], "ctx": {} },
+    { "id": "mm2-pos-sdial", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/unified-inject.html#s-dial（票 09 转录）",
+      "note": "select name=countryCode +XX 值，首项 value=\"\" 占位（空值选项被 optStats 剔除不污染计分，spec US7）",
+      "el": { "tag": "select", "id": "s-dial", "name": "countryCode",
+        "options": [ { "value": "", "text": "选择…" }, { "value": "+86", "text": "+86" }, { "value": "+81", "text": "+81" }, { "value": "+44", "text": "+44" } ] },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-pos-idial", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/unified-inject.html#i-dial（票 09 转录）",
+      "note": "input name=dialCode placeholder=+86，同 form 有 tel 主号锚",
+      "el": { "tag": "input", "id": "i-dial", "name": "dialCode", "type": "text", "placeholder": "+86" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-pos-l0tcc", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/autocomplete.html#l0-tcc（票 02 验收 4 转录）",
+      "note": "autocomplete=tel-country-code（L0 一票强信号 → auto）",
+      "el": { "tag": "input", "id": "l0-tcc", "type": "text", "attrs": { "autocomplete": "tel-country-code" }, "placeholder": "+86" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-pos-l0country", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/autocomplete.html#l0-country（fixture 头注：country 属于\"必须注入\"三字段之一）",
+      "note": "select autocomplete=country + ISO 选项（L0 token ∈ L0_TEL_TOKENS 压过 country 语义抑制，设计如此）",
+      "el": { "tag": "select", "id": "l0-country", "attrs": { "autocomplete": "country" },
+        "options": [ { "value": "US", "text": "United States" }, { "value": "GB", "text": "United Kingdom" }, { "value": "CN", "text": "China" }, { "value": "JP", "text": "Japan" } ] },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-pos-l0cname", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/autocomplete.html#l0-country-name（fixture 头注：country-name 属于\"必须注入\"三字段之一）",
+      "note": "input autocomplete=country-name（L0 一票强信号；input 无选项数据，抑制层不适用）",
+      "el": { "tag": "input", "id": "l0-country-name", "type": "text", "attrs": { "autocomplete": "country-name" } },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-pos-l0off", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/autocomplete.html#l0-off（票 02 验收 4 转录）",
+      "note": "autocomplete=off + name=country_code（L0 让位后 L1 strong kw + 锚关联仍达低调档）",
+      "el": { "tag": "input", "id": "l0-off", "type": "text", "attrs": { "autocomplete": "off" }, "name": "country_code", "placeholder": "+86" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-pos-mobilecode", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "src/config.ts L1_STRONG_KW_SCORE 词表（mobilecode）；mm2 语料新增",
+      "note": "input name=mobileCode（KW_STRONG mobilecode 覆盖 + 锚关联）",
+      "el": { "tag": "input", "name": "mobileCode", "type": "text" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-neg-l0tel", "family": "mm2", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/autocomplete.html#l0-tel（票 02 验收 4 转录）",
+      "note": "input type=tel 主号字段（tel 语义=主号锚，非区号字段；仅 L0 tel 提示分不足档）",
+      "el": { "tag": "input", "id": "l0-tel", "type": "tel", "name": "phone", "placeholder": "138 0000 0000" },
+      "labels": [], "ctx": {} },
+    { "id": "mm2-neg-plain", "family": "mm2", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/autocomplete.html#l0-plain（票 02 验收 4 转录）",
+      "note": "input name=remark 备注字段（零信号）",
+      "el": { "tag": "input", "id": "l0-plain", "type": "text", "name": "remark", "placeholder": "备注" },
+      "labels": [], "ctx": {} },
+    { "id": "mm2-neg-tanote", "family": "mm2", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "tests/fixtures/unified-inject.html#t-note（票 09 转录）",
+      "note": "textarea name=dialNote placeholder=+86 备注（占位含 +86 不足以构成区号字段语义）",
+      "el": { "tag": "textarea", "id": "t-note", "name": "dialNote", "placeholder": "+86 备注" },
+      "labels": [], "ctx": { "anchorHasTel": true } },
+    { "id": "mm2-neg-itires", "family": "mm2", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": ".scratch/mental-model-v2/report.md §2.3 残留风险（_isIti 短路）；mm2 语料新增",
+      "note": "iti 容器内非电话输入（如国家下拉搜索框）：_isIti 对任意 .iti 内 input 无条件 score:100 auto——已登记结构性残留，修复归属 16 票（iti 识别并入评分，取消无条件最高分短路）；票 13 落地容器唯一证据佐证防线后经 CI 重测转通过（appendOnly 翻转，证据见 window-reports/13-visibility-l3-hardening-report.md）",
+      "el": { "tag": "input", "name": "qty", "type": "text", "ancestors": [ { "className": "iti" } ] },
+      "labels": [], "ctx": { "iti": true } },
+    { "id": "mm2-neg-npa", "family": "mm2", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "src/config.ts L1_NPA_KW_SCORE（npa/trunk 北美编号计划，无国家语义）；research/misdetection-root-causes.md §4；mm2 语料新增",
+      "note": "input name=npa（npa 低权重 + 无锚 + 无内容证据 → 远离注入档）",
+      "el": { "tag": "input", "name": "npa", "type": "text" },
+      "labels": [], "ctx": {} },
+    { "id": "mm2-neg-monthen", "family": "mm2", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "mm2 语料新增（N0b 英文月份变体，覆盖无 CJK 场景的零证据负例）",
+      "note": "select name=month 英文月份（零 kw、零内容证据）",
+      "el": { "tag": "select", "name": "month",
+        "options": [ { "value": "jan", "text": "January" }, { "value": "feb", "text": "February" }, { "value": "mar", "text": "March" }, { "value": "apr", "text": "April" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "mm2-pos-shared-dial", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "issue 13 验收4（共享区号 +1/+44 多国下拉）；research/atomcode-mental-model-v2.md whatwg#8597",
+      "note": "select name=country_code 共享区号值 +1 重复（US/CA），文本国家名互证；检测侧按值域整体分布计分，消歧在 fill 侧（verify-ticket-13 + E2E 覆盖）",
+      "el": { "tag": "select", "name": "country_code",
+        "options": [ { "value": "+1", "text": "United States (+1)" }, { "value": "+1", "text": "Canada (+1)" }, { "value": "+44", "text": "United Kingdom (+44)" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "mm2-pos-placeholder-dial", "family": "mm2", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "issue 13 验收5（占位首项不参与内容验证计分）；handoffs/13 检查点二",
+      "note": "占位首项 value=0 text=请选择 剔除出计分（不进 total/numeric 分布），区号证据照常计分；剔除仅作用计分，不影响填充匹配",
+      "el": { "tag": "select", "name": "countrycode",
+        "options": [ { "value": "0", "text": "请选择" }, { "value": "+86", "text": "+86" }, { "value": "+1", "text": "+1" }, { "value": "+44", "text": "+44" } ] },
+      "labels": [], "ctx": {} },
+    {
+      "id": "rs-weak-input-name",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "postFix": {
+        "observed": {
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
+        },
+        "attribution": [
+          "L1:kw:strong(+30)",
+          "L1:attr:phrase:country code(+8)",
+          "38 >= SCORE_LOWKEY(35) → lowkey 注入；SCORE_AUTO(70) 常量未动"
+        ],
+        "note": "票 27 改法：属性强短语补分组（L1_ATTR_PHRASE_SCORE=8）与 kw:strong 叠加"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30) 为唯一信号（L1_STRONG_KW_SCORE）",
+        "无 L2 锚分（同 form/文档无另一 input[type=tel]）",
+        "无 L3 内容证据（input 无选项值域）",
+        "30 < SCORE_LOWKEY(35) → 落 none，仅手动召唤"
+      ],
+      "source": "decision-ledger.md A-001（摩擦点原文）；research/cycle4-atomcode-findings.md 第二路「弱信号字段」；票 32 模式库",
+      "note": "真实站点标准命名 <input name=\"countryCode\">（无 label、无 placeholder、无锚）：纯关键字弱信号达不到低置信线。修复归属票 27（让弱信号跨过 35，不改 SCORE_AUTO、不回退既有 precision/recall）",
+      "el": {
+        "tag": "input",
+        "name": "countryCode",
+        "type": "text"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "rs-weak-input-placeholder",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "postFix": {
+        "observed": {
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
+        },
+        "attribution": [
+          "L1:kw:strong(+30)",
+          "L1:attr:phrase:country code(+8)",
+          "38 >= SCORE_LOWKEY(35) → lowkey 注入；SCORE_AUTO(70) 常量未动"
+        ],
+        "note": "票 27 改法：属性强短语补分组（L1_ATTR_PHRASE_SCORE=8）与 kw:strong 叠加"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30)（placeholder 经 matchLatin joined 匹配命中 countrycode）",
+        "无 L2 锚分、无 L3 内容证据",
+        "30 < SCORE_LOWKEY(35) → 落 none"
+      ],
+      "source": "decision-ledger.md A-001（placeholder=\"Country code\" 原文）；票 32 模式库",
+      "note": "placeholder 驱动的纯弱信号 input（无 name）：与 rs-weak-input-name 同根因（L1_STRONG_KW_SCORE=30 < SCORE_LOWKEY=35）。修复归属票 27",
+      "el": {
+        "tag": "input",
+        "type": "text",
+        "placeholder": "Country code"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+{
+      "id": "rs-weak-input-dialcode",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "baseline": {
+        "observed": {
+          "score": 30,
+          "tier": "none",
+          "injected": false
+        },
+        "note": "票 27 改前复现基线：name=dialCode（camelCase 变体，无 label/无锚/无内容证据），30 < SCORE_LOWKEY(35) 落 none（可用 L1_ATTR_PHRASE_SCORE=0 复算）"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30)",
+        "L1:attr:phrase:dial code(+8)",
+        "38 >= SCORE_LOWKEY(35) → lowkey"
+      ],
+      "source": "decision-ledger.md A-001；票 32 模式库；票 27 补强命名变体覆盖",
+      "note": "name=dialCode（camelCase 变体，无 label/无锚/无内容证据）",
+      "el": {
+        "tag": "input",
+        "name": "dialCode",
+        "type": "text"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+{
+      "id": "rs-weak-input-placeholder-dial",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "baseline": {
+        "observed": {
+          "score": 30,
+          "tier": "none",
+          "injected": false
+        },
+        "note": "票 27 改前复现基线：placeholder=Dial code（属性文本强短语，无 name），30 < SCORE_LOWKEY(35) 落 none（可用 L1_ATTR_PHRASE_SCORE=0 复算）"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30)",
+        "L1:attr:phrase:dial code(+8)",
+        "38 >= SCORE_LOWKEY(35) → lowkey"
+      ],
+      "source": "decision-ledger.md A-001；票 32 模式库；票 27 补强命名变体覆盖",
+      "note": "placeholder=Dial code（属性文本强短语，无 name）",
+      "el": {
+        "tag": "input",
+        "type": "text",
+        "placeholder": "Dial code"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+{
+      "id": "rs-weak-input-snake",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "27",
+      "baseline": {
+        "observed": {
+          "score": 30,
+          "tier": "none",
+          "injected": false
+        },
+        "note": "票 27 改前复现基线：name=country_code（snake_case 变体），30 < SCORE_LOWKEY(35) 落 none（可用 L1_ATTR_PHRASE_SCORE=0 复算）"
+      },
+      "signalAttribution": [
+        "L1:kw:strong(+30)",
+        "L1:attr:phrase:country code(+8)",
+        "38 >= SCORE_LOWKEY(35) → lowkey"
+      ],
+      "source": "decision-ledger.md A-001；票 32 模式库；票 27 补强命名变体覆盖",
+      "note": "name=country_code（snake_case 变体）",
+      "el": {
+        "tag": "input",
+        "name": "country_code",
+        "type": "text"
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "rs-iso2-paren-select",
+      "family": "real-site",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "fixingTicket": "28",
+      "signalAttribution": [
+        "L1:kw:country(+14)（L1_COUNTRY_KW_SCORE）",
+        "L3:opts:(+NN)-text +24（3 项 x L3_PLUS_PAREN_SCORE=8）——票 28 修后已独立入账（移出 plusDial > 0 门）",
+        "L3:opts:plus-dial=0（值域是 ISO2，非区号）",
+        "isoName=0：选项文本含括号/加号/数字，不满足 ISO2 与国名互证的字符集",
+        "无 L2 锚分 → 总分 38 >= SCORE_LOWKEY(35) → 落 lowkey"
+      ],
+      "source": "decision-ledger.md A-002；research/cycle4-atomcode-findings.md 第二路（国家与区号非单射 → 表单 value 用 ISO 3166 alpha-2，UX SE #131795）；票 32 模式库",
+      "note": "libphonenumber 推荐的主流真实形态：<option value=\"us\">United States (+1)</option>。文本括号区号证据已被票 28 移出 plusDial 门独立计分。修复归属票 28（parenDial 计分移出 plusDial 门，独立成 L3 证据；保持国家选择器≠区号字段抑制与共享区号消歧）",
+      "el": {
+        "tag": "select",
+        "name": "country",
+        "options": [
+          {
+            "value": "us",
+            "text": "United States (+1)"
+          },
+          {
+            "value": "gb",
+            "text": "United Kingdom (+44)"
+          },
+          {
+            "value": "cn",
+            "text": "China (+86)"
+          }
+        ]
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "rs-noaria-custom-dropdown",
+      "family": "real-site",
+      "polarity": "negative",
+      "expect": "none",
+      "knownResidual": false,
+      "expectedTier": "none",
+      "fixingTicket": "29",
+      "signalAttribution": [
+        "L1:kw:country(+14)（class \"select-country\" 经 matchLatin joined 命中 country）",
+        "L2:custom:dropdown(+20)（票 29：div[tabindex=0] 可聚焦触发器 + 后代 ul>li 选项，选项文本 (+NN)/ISO2 通过内容门槛）",
+        "内容证据仅作门槛不作加分（无 ARIA 语义背书，进 L3 会击穿低调线）",
+        "score 34：>= ITI_LOW_REGISTER_SCORE(25) 进召唤面，< SCORE_LOWKEY(35) 且经 ADR-0005 cap → tier=none"
+      ],
+      "source": "decision-ledger.md A-003；research/cycle4-atomcode-findings.md 第一路「无 ARIA 纯自定义下拉」；ADR-0005（伪 select 登记不注入）；票 29 atomcode 调研（行业候选集一律收敛在语义控件白名单）",
+      "note": "无 ARIA 的手写下拉（触发器 div.select-country[tabindex=0] + ul>li 选项，选项文本含 (+NN)）。expect=none 是 ADR-0005 的工具口径真值（伪 select 档位上限=登记+手动召唤，不自动注入）。票 29 修复后：候选集可见（div[tabindex=\"0\"]）+ 登记面可达（score 34）+ 档位仍 none，三重缺口闭合；残留项为懒渲染面板与站点侧选值交互，见 realSiteForms.baseline.gaps",
+      "el": {
+        "tag": "div",
+        "className": "select-country",
+        "attrs": {
+          "tabindex": "0"
+        },
+        "options": [
+          {
+            "value": "us",
+            "text": "United States (+1)"
+          },
+          {
+            "value": "gb",
+            "text": "United Kingdom (+44)"
+          },
+          {
+            "value": "cn",
+            "text": "China (+86)"
+          }
+        ]
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "ce-dial-positive",
+      "family": "ce",
+      "polarity": "positive",
+      "expect": "inject",
+      "knownResidual": true,
+      "expectedTier": "lowkey",
+      "source": "Cycle-5 票 44 A-023（contenteditable 区号形态语料先行）；Cycle-4 票 29 D-29d（无测量地基未扩候选集）",
+      "signalAttribution": [
+        "L1:kw:strong(+30)（aria-label \"Country code\" 经 matchLatin joined 命中 countrycode）",
+        "L1:attr:phrase:country code(+8)（非 SELECT，无 L3 内容证据 → 不触发 R1 同源去重）",
+        "L2:anchor:tel(+18)（同 form 存在 tel 主号锚）",
+        "56 >= SCORE_LOWKEY(35) → lowkey（评分层）"
+      ],
+      "note": "contenteditable 承载的区号字段（无原生 select/input）。评分层（本 harness 评测面 scoreElement）已满足 expect=inject/lowkey：属性文本证据面与原生控件同口径。残留不在评分层而在候选集/扫描层——SCAN_SELECTORS 未含 contenteditable（D-29d：[contenteditable] 会捞到全站富文本编辑器 → 候选爆炸，行业无先例），端到端注入待扫描扩展票。本票为 A-023 语料先行，只立地基不改检测。",
+      "el": {
+        "tag": "div",
+        "attrs": {
+          "contenteditable": "true",
+          "role": "textbox",
+          "aria-label": "Country code"
+        }
+      },
+      "labels": [],
+      "ctx": {
+        "anchorHasTel": true
+      }
+    },
+    {
+      "id": "ce-neg-richtext",
+      "family": "ce",
+      "polarity": "negative",
+      "expect": "none",
+      "knownResidual": false,
+      "source": "Cycle-5 票 44 A-023（contenteditable 负例：富文本编辑器候选爆炸风险）；Cycle-4 票 29 D-29d",
+      "signalAttribution": [
+        "零 kw（aria-label \"Message\" 不含区号专名/国家词）",
+        "无 L2 锚分、无 L3 内容证据 → 0 分 none"
+      ],
+      "note": "富文本编辑器（contenteditable，无区号语义）：D-29d 所指候选爆炸风险的代表形态——裸 [contenteditable] 选择器会捞到全站富文本编辑器。本负例锁定「contenteditable 结构本身不构成区号证据」。",
+      "el": {
+        "tag": "div",
+        "attrs": {
+          "contenteditable": "true",
+          "role": "textbox",
+          "aria-label": "Message"
+        }
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    {
+      "id": "ce-neg-country",
+      "family": "ce",
+      "polarity": "negative",
+      "expect": "none",
+      "knownResidual": false,
+      "source": "Cycle-5 票 44 A-023（contenteditable 负例：国家选择≠区号字段语义分层）",
+      "signalAttribution": [
+        "L1:kw:country(+14)（aria-label \"Country of residence\" 命中 country 裸词组）",
+        "14 < SCORE_LOWKEY(35) → none（国家选择语义不构成区号证据，同 F2/F8 口径）"
+      ],
+      "note": "contenteditable 承载的国家选择语义（非区号字段）：contenteditable 形态不改变「国家选择≠区号选择」的语义分层（CONTEXT.md 区号字段/国家选择器 词条）。",
+      "el": {
+        "tag": "div",
+        "attrs": {
+          "contenteditable": "true",
+          "role": "textbox",
+          "aria-label": "Country of residence"
+        }
+      },
+      "labels": [],
+      "ctx": {}
+    },
+    { "id": "N7b", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "tests/fixtures/visual-replacement-hidden-select.html#vrs-b-native（票 08 / A-032 子形态 B 转录）",
+      "note": "Chosen 视觉替换型隐藏承值 select —— 实测机理：display:none。评分层可检测；注入层由可见性闸门降 none 且保留登记（票 13 检查点一）。与 N7 构成「同一类形态、两种不同机理」的子形态对。",
+      "mechanism": { "subShape": "B", "hiddenBy": [ "display:none" ], "nonZeroSize": false, "fixture": "tests/fixtures/visual-replacement-hidden-select.html#vrs-b-native" },
+      "hiddenCarrier": { "expectInjectedInBrowser": false, "expectRegistered": true, "registerMinConst": "ITI_LOW_REGISTER_SCORE", "verifiedBy": "tests/visual-replacement.spec.ts" },
+      "el": { "tag": "select", "name": "country_code", "className": "chosen-select",
+        "attrs": { "data-placeholder": "Choose a Country...", "aria-label": "Country" },
+        "style": { "display": "none" },
+        "rect": { "width": 0, "height": 0 },
+        "options": [ "+86", "+1", "+44" ] },
+      "labels": [], "ctx": {} },
+    { "id": "N31-iti-searchbox", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "intl-tel-input.com v29 实测（票 06 镜像页 iti-v29 · A-031 形态①）",
+      "note": "iti v29 容器内的**内部搜索框**：input[type=search][role=combobox][aria-autocomplete=list][aria-controls=…]，就在 .iti 内 —— 真实误报面，**必须不注入**。当前裁决靠两道防线：① INPUT 类型闸门 gate:input-type:search（当场短路）；② 搜索型否决组 search-typeahead（aria-autocomplete=list|both 且选项零区号证据）。mock 无法表达子树 role=listbox/option 结构，故本例由第①道防线裁定；完整结构由 E2E 镜像页 tests/corpus/forms/mirrors/iti-v29.html 覆盖。",
+      "expectedTier": "none",
+      "signalAttribution": [ "L0:gate:input-type:search（类型闸门短路，0 分）", "同页 .iti 内真实 tel 输入仍得 auto（正例不受连累，见 E2E iti-v29 全链路）" ],
+      "el": { "tag": "input", "type": "search", "className": "iti__search-input",
+        "attrs": { "role": "combobox", "aria-expanded": "false", "aria-controls": "iti-0__country-listbox", "aria-autocomplete": "list", "placeholder": "Search" },
+        "options": [ { "value": "", "text": "China +86" }, { "value": "", "text": "United States +1" }, { "value": "", "text": "United Kingdom +44" }, { "value": "", "text": "Japan +81" }, { "value": "", "text": "Germany +49" }, { "value": "", "text": "Ascension Island +247" } ],
+        "ancestors": [ { "className": "iti" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "N31-iso2-lang-select", "family": "legacy", "polarity": "negative", "expect": "none", "knownResidual": false,
+      "source": "真实站点语言下拉实测（#opt_uiTranslations，A-031 形态②）",
+      "note": "**值恰为 ISO2 的语言下拉**（伪区号陷阱）：52 个值均为 ISO2 形值（sq/en/fr…），选项文本为语言名 + 括号代码。当前裁决：L4 KW_EXCLUDE 命中 id 中的 translation → exclude:latin（-70）落 none。另验证了「文本↔国家名互证」不会因为语言名与国家名近似（Albanian/Albania）而误命中（括号拦截了 isoName 的正则前提）。",
+      "expectedTier": "none",
+      "signalAttribution": [ "L4:exclude:latin（-70）（KW_EXCLUDE 语言/翻译组）", "L3 isoName=0（选项文本含括号 → 国家名互证正则不命中）" ],
+      "el": { "tag": "select", "id": "opt_uiTranslations",
+        "options": [ { "value": "en", "text": "English (en)" }, { "value": "zh", "text": "Chinese (zh)" }, { "value": "sq", "text": "Albanian (sq)" }, { "value": "fr", "text": "French (fr)" }, { "value": "de", "text": "German (de)" }, { "value": "it", "text": "Italian (it)" }, { "value": "es", "text": "Spanish (es)" }, { "value": "ja", "text": "Japanese (ja)" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "P31-noparen-dial-select", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "无括号区号文本实测（A-031 形态③）",
+      "note": "**无括号区号文本**：值=ISO2、选项文本含**裸 +NN 令牌**（China +86 / Ascension Island +247）。票 08 前：parenDial 只认括号 ⇒ 无区号内容证据 ⇒ 38/lowkey；票 08 后：新增 L3 opts:+NN-text（白名单命中，与括号形式同权重）⇒ 70/auto，与括号对照例（P31-paren-dial-control）同档位。",
+      "expectedTier": "auto",
+      "signalAttribution": [ "L1:kw:strong(+30)", "L3:opts:+NN-text(+40，6 项×8 封顶 45)", "L1:attr:phrase:country code:dedup(opts-dial)(0)" ],
+      "el": { "tag": "select", "name": "country_code", "className": "country-select", "attrs": { "aria-label": "Country" },
+        "options": [ { "value": "CN", "text": "China +86" }, { "value": "US", "text": "United States +1" }, { "value": "GB", "text": "United Kingdom +44" }, { "value": "JP", "text": "Japan +81" }, { "value": "DE", "text": "Germany +49" }, { "value": "AC", "text": "Ascension Island +247" } ] },
+      "labels": [], "ctx": {} },
+    { "id": "P31-paren-dial-control", "family": "legacy", "polarity": "positive", "expect": "inject", "knownResidual": false,
+      "source": "形态③ 括号对照例（同证据结构，仅排版差异）",
+      "note": "与 P31-noparen-dial-select 同证据结构，仅选项文本从裸 +NN 改为括号 (+NN)。用于锁定「括号只是排版、证据本体是白名单命中的区号」：两者应同档位（同为 auto），且两个计数器互斥不重复计分。",
+      "expectedTier": "auto",
+      "signalAttribution": [ "L1:kw:strong(+30)", "L3:opts:(+NN)-text(+40)", "L1:attr:phrase:country code:dedup(opts-dial)(0)" ],
+      "el": { "tag": "select", "name": "country_code", "className": "country-select", "attrs": { "aria-label": "Country" },
+        "options": [ { "value": "CN", "text": "China (+86)" }, { "value": "US", "text": "United States (+1)" }, { "value": "GB", "text": "United Kingdom (+44)" }, { "value": "JP", "text": "Japan (+81)" }, { "value": "DE", "text": "Germany (+49)" }, { "value": "AC", "text": "Ascension Island (+247)" } ] },
+      "labels": [], "ctx": {} }
+  ],
+  "realSiteForms": [
+    {
+      "id": "weak-signal-input",
+      "coveredA": "A-001",
+      "fixingTicket": "27",
+      "label": "弱信号 input（纯关键字 / placeholder，无 label、无锚、无内容证据）",
+      "expectedTier": "lowkey",
+      "expectedTierRationale": "应跨过低置信线（>= SCORE_LOWKEY=35）被低调注入或至少登记可召唤；不改 SCORE_AUTO",
+      "corpusCases": [
+        "rs-weak-input-name",
+        "rs-weak-input-placeholder",
+        "rs-weak-input-dialcode",
+        "rs-weak-input-placeholder-dial",
+        "rs-weak-input-snake"
+      ],
+      "candidateDescriptor": {
+        "tag": "input",
+        "attrs": {
+          "type": "text",
+          "name": "countryCode"
+        }
+      },
+      "coveredByCandidateSetBaseline": true,
+      "coveredByCandidateSetTarget": true,
+      "baseline": {
+        "matchedSelectors": [
+          "input[type=\"text\"]"
+        ],
+        "observed": {
+                  "score": 38,
+                  "tier": "lowkey",
+                  "injected": true
+                },
+                "verdict": "MISS",
+                "preFix": {
+                  "observed": {
+                    "score": 30,
+                    "tier": "none",
+                    "injected": false
+                  },
+                  "note": "票 27 改前复现基线：attrStr 无属性短语证据面时 L1:kw:strong 单信号 30 分，30 < SCORE_LOWKEY(35) 落 none，仅手动召唤；标定脚本 tests/scripts/27-weak-signal-calibration.mjs 段 [2] 复现、段 [7] 前后对照"
+                },
+                "gaps": [
+                  "closed(attr-phrase)：票 27 新增属性强短语证据面 L1_ATTR_PHRASE_SCORE=8，归一化命中 camelCase / snake_case / kebab / 紧凑 / placeholder 五种命名变体",
+                  "closed(threshold)：38 >= SCORE_LOWKEY(35) 跨过低置信线；SCORE_AUTO(70) 与 L1_STRONG_KW_SCORE(30) 常量未动",
+                  "guard(negative)：全语料 22 例负例（含本地固话区号 / 语言前缀 / area-code）零抬升且分值逐例不变"
+                ]
+      },
+      "postFix": {
+        "observed": {
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
+        },
+        "verdict": "HIT",
+        "attribution": [
+          "L1:kw:strong(+30)",
+          "L1:attr:phrase:country code(+8)",
+          "覆盖 camelCase / snake_case / 紧凑 / placeholder 四种命名变体"
+        ],
+        "note": "票 27 改法：新增属性强短语证据面（L1_ATTR_PHRASE_SCORE=8）；SCORE_AUTO 未动。按 32 探针契约（同票 28 口径）baseline.observed 已同步为修后值，改前复现基线留存于 baseline.preFix"
+      }
+    },
+    {
+      "id": "iso2-value-paren-dial-select",
+      "coveredA": "A-002",
+      "fixingTicket": "28",
+      "label": "ISO2 作 value + 选项文本括号区号的下拉（国家与区号非单射的主流形态）",
+      "expectedTier": "lowkey",
+      "expectedTierRationale": "文本括号区号证据应独立成 L3 证据（+L3_PLUS_PAREN_SCORE=8/项，上限 L3_DIAL_CAP=45）；isoName=0 时国家选择器抑制不适用",
+      "corpusCases": [
+        "rs-iso2-paren-select"
+      ],
+      "candidateDescriptor": {
+        "tag": "select"
+      },
+      "coveredByCandidateSetBaseline": true,
+      "coveredByCandidateSetTarget": true,
+      "baseline": {
+        "matchedSelectors": [
+          "select"
+        ],
+        "observed": {
+          "score": 38,
+          "tier": "lowkey",
+          "injected": true
+        },
+        "verdict": "MISS"
+      }
+    },
+    {
+      "id": "no-aria-custom-dropdown",
+      "coveredA": "A-003",
+      "fixingTicket": "29",
+      "label": "无 ARIA 手写自定义下拉（div+ul，无 role=combobox、无 aria-controls）",
+      "expectedTier": "none",
+      "expectedTierRationale": "ADR-0005 伪 select 档位上限 =「登记 + 手动召唤」，不自动注入、不自动填充；期望档位仍为 none，但必须进入候选集且登记分 >= ITI_LOW_REGISTER_SCORE(25)",
+      "corpusCases": [
+        "rs-noaria-custom-dropdown"
+      ],
+      "candidateDescriptor": {
+        "tag": "div",
+        "classes": [
+          "select-country"
+        ],
+        "attrs": {
+          "tabindex": "0"
+        },
+        "descendants": {
+          "listbox": "ul",
+          "option": "li"
+        }
+      },
+      "coveredByCandidateSetBaseline": true,
+      "coveredByCandidateSetTarget": true,
+      "baseline": {
+        "matchedSelectors": [
+          "div[tabindex=\"0\"]"
+        ],
+        "observed": {
+          "score": 34,
+          "tier": "none",
+          "injected": false
+        },
+        "verdict": "COVERED",
+        "gaps": [
+          "closed(candidate-set)：票 29 新增形态描述符 div[tabindex=\"0\"],span[tabindex=\"0\"] —— 只收可聚焦非表单容器，未放宽为裸 ul li / 全 div 扫描",
+          "closed(kind-dispatch)：结构信号 custom:dropdown 置 pseudo=true → kind=pseudo，rememberLow 登记路径可达",
+          "closed(register-threshold)：score 34（L1 kw:country 14 + 结构 20）>= ITI_LOW_REGISTER_SCORE(25) 进召唤面；< SCORE_LOWKEY(35) 与 ADR-0005 档位上限一致",
+          "residual(懒渲染面板)：选项面板未渲染时无 li 可探测，依赖 childList observer 重扫后登记——面板常驻形态不受影响",
+          "residual(填充可达性)：fill 侧已补无 aria-controls 的 li 回退，但手写下拉的选值交互由站点脚本决定，行业实证存在打不开/选不中的形态"
+        ]
+      }
+    }
+  ]
+}

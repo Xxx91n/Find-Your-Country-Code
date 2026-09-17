@@ -1,0 +1,10 @@
+{
+  "name": "@cch/react19-vendor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "React 19 fixture 构建的独立 npm 安装根（票 43 / A-021）。与根项目的 react@18 分居两个 install root，使两侧 peerDependencies 各自自洽，从而移除 --legacy-peer-deps。版本精确钉死（非 ^）：保持测试用 React 19 版本与旧 lockfile 锁定值一致（19.2.8），避免未呈报的行为漂移。消费方：tests/server.mjs 的 /gen/react19/* 转译供给。",
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  }
+}

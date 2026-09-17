@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>visual-replacement hidden native select fixture (ticket 08 / A-032)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  密封 fixture — 票 08（阶段 B）/ A-032
+  形态：组件库把**承载值的原生 select** 隐藏、由可见替身展示与交互。
+    子形态 A：Select2 实测机理 —— width/height 1px（**非零尺寸**）+ clip + clip-path
+              + aria-hidden="true"（故零尺寸与 display:none 两条判定均不命中）
+    子形态 B：Chosen 实测机理 —— display:none
+  断言归属：tests/visual-replacement.spec.ts（闸门降档不降登记，票 13 检查点一）
+  合规：形态复刻（非原文转载），仅保留公开表单形态，去品牌 / 去追踪，不含 PII。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 32px; }
+  main { max-width: 420px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 14px; margin: 24px 0 6px; color: #52606d; }
+
+  /* 子形态 A：Select2 的 .select2-hidden-accessible 实测声明（width/height 1px = 非零尺寸） */
+  .vrs-select2-hidden-accessible {
+    border: 0 !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    position: absolute !important;
+    width: 1px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 子形态 B：Chosen 的 .chosen-select 实测声明 */
+  .vrs-chosen-select { display: none; }
+
+  .vrs-standin {
+    display: block; min-height: 40px; padding: 9px 10px;
+    border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; cursor: pointer;
+  }
+  .vrs-echo { color: #52606d; font-size: 13px; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>视觉替换型隐藏原生 select（票 08 / A-032）</h1>
+  <p class="vrs-echo">两个子形态各一个：原生 select 恒隐藏，可见替身承载展示。</p>
+
+  <!-- ── 子形态 A：Select2 机理（width:1px + aria-hidden） ── -->
+  <h2>A · width:1px + aria-hidden（Select2 机理）</h2>
+  <select id="vrs-a-native" name="country_code" class="vrs-select2-hidden-accessible"
+          aria-hidden="true" tabindex="-1">
+    <option value=""></option>
+    <option value="CN">China (+86)</option>
+    <option value="US">United States (+1)</option>
+    <option value="GB">United Kingdom (+44)</option>
+  </select>
+  <div class="vrs-standin" id="vrs-a-standin">Choose a country</div>
+  <p class="vrs-echo" id="vrs-a-echo">(none)</p>
+
+  <!-- ── 子形态 B：Chosen 机理（display:none） ── -->
+  <h2>B · display:none（Chosen 机理）</h2>
+  <select id="vrs-b-native" name="country_code" class="vrs-chosen-select"
+          data-placeholder="Choose a Country..." aria-label="Country">
+    <option value=""></option>
+    <option value="CN">China (+86)</option>
+    <option value="US">United States (+1)</option>
+    <option value="GB">United Kingdom (+44)</option>
+  </select>
+  <div class="vrs-standin" id="vrs-b-standin">Choose a country</div>
+  <p class="vrs-echo" id="vrs-b-echo">(none)</p>
+
+  <!-- ── 可见对照组：面板首次入口（召唤入口在面板内） ── -->
+  <h2>C · 可见对照组（面板入口）</h2>
+  <select id="vrs-visible" name="country_code">
+    <option value=""></option>
+    <option value="CN">China (+86)</option>
+    <option value="US">United States (+1)</option>
+    <option value="GB">United Kingdom (+44)</option>
+  </select>
+</main>
+
+<script>
+// 视觉替换型站点交互样例：原生 select 恒隐藏，可见替身承载展示；
+// 页面侧在原生 select 的 change 上同步替身与回声 ——「填充是否真写入」由**页面侧**可观测（D-002）。
+(function () {
+  [['a', 'vrs-a-native'], ['b', 'vrs-b-native']].forEach(function (pair) {
+    var key = pair[0];
+    var sel = document.getElementById(pair[1]);
+    var standin = document.getElementById('vrs-' + key + '-standin');
+    var echo = document.getElementById('vrs-' + key + '-echo');
+    sel.addEventListener('change', function () {
+      var opt = sel.options[sel.selectedIndex];
+      var text = opt ? (opt.text || opt.value || '') : '';
+      standin.textContent = text || 'Choose a country';
+      echo.textContent = sel.value || '(none)';
+    });
+  });
+})();
+</script>
+</body>
+</html>

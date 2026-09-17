@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>iframe 跨域 fixture — 票 12</title></head>
+<body>
+<h1>跨域 iframe 帧治理（顶层字段 + 跨域子帧表单,子帧与顶层不同 origin）</h1>
+<form id="top-form">
+  <label>国家区号
+    <select id="top-cc" name="countryCode">
+      <option value="">选择…</option>
+      <option value="+86">+86</option>
+      <option value="+81">+81</option>
+      <option value="+44">+44</option>
+      <option value="+1">+1</option>
+      <option value="+49">+49</option>
+      <option value="+33">+33</option>
+      <option value="+61">+61</option>
+      <option value="+7">+7</option>
+    </select>
+  </label>
+</form>
+<!-- 跨域前提:@match *://*/* 命中子帧 URL 即注入(TM 语义,元数据无 @noframes)。
+     子帧 origin = 本机 PORT+1(端口不同 = 不同 origin),hermetic 无外网依赖。 -->
+<iframe id="f-child-x" width="640" height="320"></iframe>
+<script>
+(function () {
+  var alt = 'http://127.0.0.1:' + (Number(location.port) + 1);
+  document.getElementById('f-child-x').src = alt + '/fixtures/iframe-child.html';
+})();
+</script>
+</body>
+</html>

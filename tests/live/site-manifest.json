@@ -1,0 +1,167 @@
+{
+  "_meta": {
+    "name": "real-site live smoke targets (ticket 32 / A-006; ticket 39 / A-016 首次启用)",
+    "created": "2026-09-12",
+    "updated": "2026-09-16",
+    "layer": "真实站点低频冒烟层（第二层）——与密封 E2E（第一层）解耦：本层永不出现在 pull_request 触发面",
+    "skipTestsRule": "跳过必须携带非空 reason + ticket（Bitwarden BIT testPages.skipTests / Chromium failing_test_names 同构，带 ticket 可审计）；live-smoke.mjs 硬校验，缺失即失败。跳过不等于删除，恢复是显式动作（enabled 翻转）。 票 07 补：observe 挂账（expect=\"observe\"）同样强制非空 reason + ticket，由 live-smoke.mjs validate() 硬校验，缺失即 FAIL。",
+    "assertionRule": "弱断言：只断言注入后的 DOM 状态（.cch-wrapper 出现 + 无未捕获异常），不登录、不深交互、不做多步流程（Bitwarden BIT live tests 口径：真实站点测试 inconsistently flaky，因此 typically only testing that the username/email was filled out properly）。票 05（A-029）例外：**自有镜像目标**（kind=mirror，零外网、确定性）可声明 deep，由共享交互原语驱动 open→search→select 并读回宿主字段 value（含 input/change 事件与 toast 反馈），作为「同一份原语在 live runtime 可用」的自证；第三方真实站点目标仍不深交互（全阶梯升级由票 07 承接）。",
+    "frameRule": "嵌套帧断言（票 39 新增）：目标可声明 \"frame\"（子串匹配子帧 URL）。声明后，wrappers/selector 断言在匹配到的子帧内求值，而非顶层帧；未声明则仍在顶层帧断言（既有 mirror 目标语义不变）。",
+    "launchRule": "运行环境（票 39）：本层浏览器以有头模式启动（headless:false）。实测原因：真实站点普遍前置反爬托管挑战——CodePen 编辑器页被 Cloudflare Turnstile 拦截，headless shell 与默认 HeadlessChrome UA 均被挑战，有头完整 Chrome 可正常渲染（证据矩阵见窗口报告 §3）。CI 上以 xvfb-run 提供虚拟显示；无 DISPLAY 时脚本自动回退 headless 并打印告警（此时受挑战站点会如实报错，不伪造绿）。不采用 UA 伪造与反自动化指纹开关。",
+    "challengeRule": "反爬挑战处理：挑战检测仅用于失败文案诊断（本地化标题 / 挑战帧 URL），不作控制流；成败一律由「目标帧内 .cch-wrapper 是否出现」裁定。若站点不可达/改版/被挑战持续拦截，如实登记并降级（expect 改 observe 或 enabled 置 false + reason），不伪造绿。",
+    "advisoryRule": "advisory 不阻断 PR 的实现方式 = 触发面设计：本层仅由 schedule（每周低频）+ workflow_dispatch（手动）触发，永不进入 pull_request 触发面；因此失败天然无法阻断任何 PR。运行红 = 告警（对标 Bitwarden BIT「regular reporting and early notifications」）。",
+    "enablementRunbook": "新增/启用外部真实站点：(1) 人工打开目标页确认仍存在目标形态（区号 input / ISO2 下拉 / 无 ARIA 自定义下拉）；(2) 填 selector 与 reason（含核对日期）——嵌套帧目标另填 frame；(3) 把 enabled 置 true 并写明 ticket；(4) 先 workflow_dispatch 单跑一次观察，连续两次绿后再保留。外部站点 A/B 实验、外链变慢、广告、网络抖动、反爬挑战都会引入 flaky，故默认全部关闭；若目标站点不可达/改版/被挑战拦截，如实登记并降级为 observe（或 enabled:false + reason），不伪造绿。",
+    "cdpNote": "CDP Autofill 域（trigger / FilledField / addressFormFilled）只观测浏览器原生 AutofillManager 的填充管线，userscript 注入不可见（native value setter + 合成事件不经过 AutofillManager）——不得用作脚本填充断言；适配度评估见 cdp-autofill-fitness.mjs（opt-in，不进断言面）。",
+    "ticket": 7,
+    "coveredA": "A-029",
+    "ticketCoverage": {
+      "A-029": "票 07（真实站点层全阶梯 L0–L4 + 发布门）",
+      "A-035": "票 11（ITI 形态下 L3 的正确可观测判据；本文件的 ladderRule 不变，只新增 writeSurfaceRule）"
+    },
+    "writeSurfaceRule": "L3 写入口形态分派（票 11 / A-035）：L3 = 写入结果正确，其**可观测面**按写入口形态确定。普通字段（select / input / contenteditable）= 宿主 value 写入所选国家区号 + 派发 input/change（票 07 原判据，逐字不变）；ITI 接管字段 = **选中国家状态**（官方读 API getSelectedCountryData()/getSelectedCountry() → DOM 选中态 data-country-code / .iti__flag 类名 / title），并以 ITI 官方 countrychange 事件作事件面判据。依据：ITI 官方不承诺把区号写进它接管的 input.value（separateDialCode 模式下由独立元素 .iti__selected-dial-code 承载），且从不派发原生 input/change——旧判据在 ITI 形态下**不可满足**（确定性复现：tests/iti-l3-criterion.spec.ts + research/window-reports/11-iti-l3-criterion-report.md）。形态由宿主侧可观测事实自动判定（不靠本文件声明），本字段仅为成文契约。",
+    "ladderRule": "全阶梯契约（票 07 / A-029；依据 tests/ACCEPTANCE-SURFACE.md §4.1/§4.2 + 用户裁决 D-004）：每个目标必须声明 ladder（本目标实际运行的阶梯级别，取值 L0–L4 子集）。expect=\"injected\" 的目标默认必须跑满 L0–L4 —— 真实站点层不得只停留在 L0–L1 弱断言（D-004(c)）；确不可驱动时才允许降级，且必须同时给出非空 degradeReason + ticket（§4.2「不可驱动时降级为 L0 + 最弱写入结果断言并登记非空原因」）。expect=\"observe\" 的条目为长期挂账（只记录不裁定），强制携带非空 reason + ticket（ADR-0010 条款 4）。五级定义：L0 静默健康（pageerror=0，永不单独算生效）/ L1 元素已注入（.cch-wrapper + data-cch-tier）/ L2 交互可驱动（面板可见 + 搜索收窄；跨帧为双端断言）/ L3 写入结果正确（宿主字段 value + input·change 派发）/ L4 用户反馈出现（#cch-toast 可见且文案非空）。阻断语义与 owned 页的差别只在触发面：本层永不进 pull_request，失败只告警；阻断只发生在 release.yml 发布门（ADR-0010）。",
+    "ladderProbe": {
+      "iso": "cn",
+      "query": "china",
+      "note": "未校准目标（未声明 deep）的 L2/L3 驱动参数。期望值不由本文件硬编码，而由面板国家行自带的区号（.cch-fav[data-code]）同源导出——避免引入外部区号表这第二份事实来源。"
+    }
+  },
+  "targets": [
+    {
+      "id": "mirror-control",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-control",
+      "expect": "injected",
+      "enabled": true,
+      "ladder": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "deep": {
+        "iso": "cn",
+        "query": "china",
+        "expectValue": "+86"
+      },
+      "reason": "本地镜像自证：已知好对照组（label \"Country code\" + +NN 值域），引擎应注入 .cch-wrapper——用于验证本层 harness（浏览器启动 / GM 替身 / 构建产物注入 / 弱断言）端到端可用，零外网；票 05 增补 deep：以共享原语驱动 open→search→select 并读回宿主 value=+86（+input/change 事件 + toast）",
+      "ticket": "32"
+    },
+    {
+      "id": "mirror-weak-input",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-weak",
+      "expect": "observe",
+      "enabled": true,
+      "ladder": [
+        "L0",
+        "L1"
+      ],
+      "reason": "A-001 形态观测（弱信号 input，当前预期无 wrapper）；仅记录观测值，不作断言（供票 27 作复现基线）",
+      "ticket": "27"
+    },
+    {
+      "id": "mirror-iso2-paren",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-iso2",
+      "expect": "observe",
+      "enabled": true,
+      "ladder": [
+        "L0",
+        "L1"
+      ],
+      "reason": "A-002 形态观测（ISO2-value + 括号区号下拉，当前预期无 wrapper）；仅记录观测值（供票 28 作复现基线）",
+      "ticket": "28"
+    },
+    {
+      "id": "mirror-noaria-dropdown",
+      "kind": "mirror",
+      "page": "mirror-three-forms.html",
+      "selector": "#m-noaria",
+      "expect": "observe",
+      "enabled": true,
+      "ladder": [
+        "L0",
+        "L1"
+      ],
+      "reason": "A-003 形态观测（无 ARIA 自定义下拉，当前预期无 wrapper）；仅记录观测值（供票 29 作复现基线）",
+      "ticket": "29"
+    },
+    {
+      "id": "live-codepen-pen-fullpage",
+      "kind": "live",
+      "url": "https://cdpn.io/webdevpuneet/fullpage/ExzVrPY",
+      "frame": "srcdoc",
+      "selector": null,
+      "expect": "injected",
+      "enabled": true,
+      "ladder": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "probe": {
+        "iso": "cn",
+        "query": "china"
+      },
+      "reason": "用户上报的 CodePen 回归复现 Pen（ExzVrPY，作者 webdevpuneet，intl-tel-input 形态）的 CodePen 渲染域 fullpage 视图。人工核对日期 2026-09-14：可达（~5s，无挑战）；嵌套帧 = about:srcdoc；引擎在该帧内对 iti 包裹的区号字段注入 .cch-wrapper（tier=auto，score=90）。断言 = 嵌套帧内 .cch-wrapper 出现 + 无未捕获异常（存在性弱断言）。",
+      "ticket": "39"
+    },
+    {
+      "id": "live-codepen-editor",
+      "kind": "live",
+      "url": "https://codepen.io/pen/ExzVrPY",
+      "frame": "cdpn.io",
+      "selector": "#mobile_code",
+      "expect": "injected",
+      "enabled": true,
+      "ladder": [
+        "L0",
+        "L1",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "probe": {
+        "iso": "cn",
+        "query": "china"
+      },
+      "reason": "CodePen 编辑器页（含嵌套 preview iframe = https://cdpn.io/webdevpuneet/fullpage/ExzVrPY，跨域）。人工核对日期 2026-09-14：可达但前置 Cloudflare Turnstile 托管挑战，化解具 IP 信誉敏感性（首轮可过，反复自动访问后升级为持续拦截）——有头浏览器可缓解，headless shell 必被拦。断言 = 嵌套 preview iframe 内 #mobile_code 挂上 .cch-wrapper + 无未捕获异常。若 CI 持续被拦，按 challengeRule 如实降级为 observe（不伪造绿）。",
+      "ticket": "39"
+    },
+    {
+      "id": "live-github-signup",
+      "kind": "live",
+      "url": "https://github.com/signup",
+      "selector": null,
+      "expect": "observe",
+      "enabled": false,
+      "ladder": [
+        "L0",
+        "L1"
+      ],
+      "reason": "外部真实站点候选（公开注册页），本轮未启用：2026-09-14 实测该页导航在 45s 内未完成（goto timeout），且注册页无区号/国家字段；需按 enablementRunbook 人工核对并补 selector 后才能启用；未校准前不写入任何形态断言",
+      "ticket": "32"
+    },
+    {
+      "id": "live-twilio-signup",
+      "kind": "live",
+      "url": "https://www.twilio.com/try-twilio",
+      "selector": null,
+      "expect": "observe",
+      "enabled": false,
+      "ladder": [
+        "L0",
+        "L1"
+      ],
+      "reason": "外部真实站点候选（公开试用注册页），本轮未启用：2026-09-14 实测页面可达但顶层无 select/input[tel]/combobox（历史 intl-tel-input 控件未在首屏渲染，疑似改为多步表单或延迟加载）；需按 enablementRunbook 人工核对并补 selector/frame 后才能启用",
+      "ticket": "32"
+    }
+  ]
+}

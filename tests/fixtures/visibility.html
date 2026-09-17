@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>visibility fixture (ticket 13)</title>
+<style>
+  .vis-display-none { display: none; }
+  .vis-zero-size { width: 0; height: 0; padding: 0; border: 0; overflow: hidden; }
+  .vis-opacity0 { opacity: 0; }
+  .vis-clipped {
+    position: absolute; width: 1px; height: 1px;
+    clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+  }
+  .vis-cv { content-visibility: hidden; }
+</style>
+</head>
+<body>
+  <h1>可见性闸门样本集（票 13）</h1>
+
+  <!-- ① display:none select：闸门降 none → 不注入（登记召唤保留） -->
+  <select id="vis-dn" name="country_code" class="vis-display-none">
+    <option value="">请选择</option>
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+    <option value="+44">+44</option>
+  </select>
+
+  <!-- ② 零尺寸 select：闸门降 none -->
+  <select id="vis-zero" name="country_code" class="vis-zero-size">
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+  </select>
+
+  <!-- ③ opacity:0 select：闸门降 none -->
+  <select id="vis-op0" name="country_code" class="vis-opacity0">
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+  </select>
+
+  <!-- ④ clip-path 全裁剪 input（+86 placeholder）：闸门降 none -->
+  <input id="vis-clip" name="phone_code" type="text" placeholder="+86" class="vis-clipped">
+
+  <!-- ⑤ content-visibility:hidden select：闸门降 none -->
+  <select id="vis-cv" name="country_code" class="vis-cv">
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+  </select>
+
+  <!-- ⑥ 隐藏承值原生 select（视觉替换型自定义下拉）：正样本 —— 填充走面板召唤，
+       不被闸门误杀；初始隐藏，召唤后 wrapper 可达（UI 强制 inline-block） -->
+  <select id="vis-hidden-carrier" name="country_code" class="vis-display-none">
+    <option value="US">United States (+1)</option>
+    <option value="CA">Canada (+1)</option>
+    <option value="GB">United Kingdom (+44)</option>
+  </select>
+  <button id="vis-carrier-open" type="button">打开自定义下拉</button>
+
+  <script>
+    // 视觉替换型站点交互样例：按钮只切换列表展示，select 本体恒隐藏
+    document.getElementById('vis-carrier-open').addEventListener('click', function () {
+      var s = document.getElementById('vis-hidden-carrier');
+      var opts = Array.prototype.slice.call(s.options).map(function (o) { return o.text; });
+      var pick = window.prompt('自定义下拉(样例): ' + opts.join(' / '), opts[0]);
+      if (pick) s.value = pick.split(' ')[0];
+    });
+  </script>
+
+  <!-- ⑦ 可见对照组：正常注入（正样本不回归） -->
+  <select id="vis-visible" name="country_code">
+    <option value="">请选择</option>
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+    <option value="+44">+44</option>
+  </select>
+</body>
+</html>

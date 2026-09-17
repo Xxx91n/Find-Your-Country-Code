@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>iframe mid — 票 40 中间帧</title></head>
+<body>
+<h2>中间帧（嵌套第 2 层，与顶层同源）</h2>
+<!-- 第 3 层孙帧：跨域（端口+1）。顶层同源 document 递归无法穿透跨域中间帧之前的旧实现
+     只扫顶层直接 iframe；现由浏览上下文树枚举（window.length/indexed，跨域合法）覆盖。 -->
+<iframe id="f-grand" width="560" height="260"></iframe>
+<script>
+(function () {
+  var alt = 'http://127.0.0.1:' + (Number(location.port) + 1);
+  document.getElementById('f-grand').src = alt + '/fixtures/iframe-child.html';
+})();
+</script>
+</body>
+</html>

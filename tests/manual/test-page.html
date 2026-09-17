@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Country Code Helper Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        select, input {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        h1 {
+            color: #4A90D9;
+        }
+        h2 {
+            margin-top: 40px;
+            border-bottom: 2px solid #4A90D9;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌐 Country Code Helper Test Page</h1>
+
+    <h2>Test Case 1: Country Code Select</h2>
+    <div class="form-group">
+        <label for="country-code">国家/区号 (Country Code):</label>
+        <select name="country-code" id="country-code">
+            <option value="">请选择</option>
+            <option value="+86">+86 中国</option>
+            <option value="+1">+1 美国</option>
+            <option value="+44">+44 英国</option>
+            <option value="+81">+81 日本</option>
+            <option value="+82">+82 韩国</option>
+            <option value="86">86 中国（无+号）</option>
+            <option value="1">1 美国（无+号）</option>
+        </select>
+    </div>
+
+    <h2>Test Case 2: Phone Number Input</h2>
+    <div class="form-group">
+        <label for="phone">手机号 (Phone Number):</label>
+        <select name="country-code-phone" id="country-code-phone">
+            <option value="+86">🇨🇳 +86</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+        </select>
+        <input type="tel" name="phone" id="phone" placeholder="请输入手机号">
+    </div>
+
+    <h2>Test Case 3: Area Code</h2>
+    <div class="form-group">
+        <label for="area-code">区号 (Area Code):</label>
+        <select name="area-code" id="area-code">
+            <option value="86">86</option>
+            <option value="1">1</option>
+            <option value="44">44</option>
+        </select>
+    </div>
+
+    <h2>Instructions</h2>
+    <ol>
+        <li>Install the script in Tampermonkey</li>
+        <li>Refresh this page</li>
+        <li>You should see 🌐 icons next to the select elements</li>
+        <li>Click the icon to open the country selector</li>
+        <li>Select a country to auto-fill the select element</li>
+    </ol>
+</body>
+</html>

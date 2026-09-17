@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>无 ARIA 手写自定义下拉 fixture（票 29 / A-003）</title>
+<style>
+  .dd-trigger { border: 1px solid #999; padding: 6px 10px; display: inline-block; min-width: 240px; cursor: pointer; }
+  .dd-list { display: none; border: 1px solid #ccc; list-style: none; margin: 4px 0; padding: 0; width: 260px; }
+  .dd-list.open { display: block; }
+  .dd-list li { padding: 6px 10px; cursor: pointer; }
+  .dd-list li:hover { background: #eef; }
+</style>
+</head>
+<body>
+  <h1>无 ARIA 手写自定义下拉（票 29，A-003）</h1>
+
+  <!-- 原生 anchor select：面板可达入口 + 正样本不回归对照 -->
+  <label for="anchor-cc">Anchor country code</label>
+  <select id="anchor-cc" name="country_code">
+    <option value="">请选择</option>
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+    <option value="+44">+44</option>
+  </select>
+
+  <!-- 正例：无 ARIA 手写下拉 —— div 触发器（无 role=combobox）+ ul>li 选项面板（无 aria-controls） -->
+  <h2>自定义区号下拉（无 ARIA）</h2>
+  <!-- 面板为触发器后代（票 32 语料 candidateDescriptor.descendants = ul/li 口径） -->
+  <div id="cc-custom" class="select-country dd-trigger" tabindex="0"><span id="cc-custom-text">United States (+1)</span>
+    <ul id="cc-custom-list" class="dd-list open">
+      <li data-value="us">United States (+1)</li>
+      <li data-value="ca">Canada (+1)</li>
+      <li data-value="gb">United Kingdom (+44)</li>
+      <li data-value="cn">China (+86)</li>
+    </ul>
+  </div>
+  <input id="custom-carrier" type="hidden" name="country" value="US">
+  <div id="cc-custom-echo"></div>
+
+  <!-- 负例1：可聚焦导航菜单（有 ul>li 但无国家/区号证据）→ 内容门槛拦截，不登记 -->
+  <h2>导航菜单（负例）</h2>
+  <div id="site-nav" class="main-nav dd-trigger" tabindex="0"><span>Menu</span>
+    <ul id="site-nav-list" class="dd-list open">
+      <li data-value="home">Home</li>
+      <li data-value="about">About us</li>
+      <li data-value="price">Pricing</li>
+    </ul>
+  </div>
+
+  <!-- 负例2：不可聚焦容器（无 tabindex）→ 不在候选面内 -->
+  <h2>不可聚焦容器（负例）</h2>
+  <div id="static-list" class="select-country">
+    <ul>
+      <li data-value="us">United States (+1)</li>
+      <li data-value="cn">China (+86)</li>
+    </ul>
+  </div>
+
+  <h2>性能注入</h2>
+  <button id="bulk-add" type="button">注入 1000 节点（含 50 个可聚焦 div 容器）</button>
+  <div id="bulk"></div>
+
+  <script>
+    // scan 计时探针（与票 04 perf-1000.html 同口径；未设置时引擎零开销）
+    window.__cchPerf = { scans: 0, totalMs: 0, maxMs: 0, samples: [] };
+    window.__cchPerfHook = function (ms) {
+      var p = window.__cchPerf;
+      p.scans++; p.totalMs += ms; p.maxMs = Math.max(p.maxMs, ms); p.samples.push(ms);
+    };
+
+    (function () {
+      var trigger = document.getElementById('cc-custom');
+      var list = document.getElementById('cc-custom-list');
+      var carrier = document.getElementById('custom-carrier');
+      var echo = document.getElementById('cc-custom-echo');
+      trigger.addEventListener('click', function () { list.classList.toggle('open'); });
+      Array.prototype.forEach.call(list.querySelectorAll('li'), function (o) {
+        o.addEventListener('click', function (e) {
+          e.stopPropagation(); // 面板为触发器后代：阻止冒泡到 trigger 的 toggle
+          carrier.value = (o.getAttribute('data-value') || '').toUpperCase();
+          echo.textContent = carrier.value;
+          list.classList.remove('open');
+        });
+      });
+
+      // 负例1：导航菜单点击仅展开，不承载任何区号语义
+      var nav = document.getElementById('site-nav');
+      var navList = document.getElementById('site-nav-list');
+      nav.addEventListener('click', function () { navList.classList.toggle('open'); });
+
+      // 性能：1000 节点，其中每 20 个含一个「可聚焦 div + ul>li」容器（共 50 个候选）
+      document.getElementById('bulk-add').addEventListener('click', function () {
+        var frag = document.createDocumentFragment();
+        for (var i = 0; i < 1000; i++) {
+          var d = document.createElement('div');
+          if (i % 20 === 0) {
+            d.setAttribute('tabindex', '0');
+            d.className = 'bulk-dd';
+            var u = document.createElement('ul');
+            for (var j = 0; j < 3; j++) {
+              var l = document.createElement('li');
+              l.setAttribute('data-value', 'k' + j);
+              l.textContent = 'Bulk item ' + j;
+              u.appendChild(l);
+            }
+            d.appendChild(u);
+          } else {
+            d.textContent = 'node ' + i;
+          }
+          frag.appendChild(d);
+        }
+        document.getElementById('bulk').appendChild(frag);
+      });
+    })();
+  </script>
+</body>
+</html>

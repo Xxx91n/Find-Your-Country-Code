@@ -1,0 +1,45 @@
+# Cycle-6 整轮收口 · 遗留事项 backlog（审计 Agent，2026-09-17）
+
+> 来源：整轮收口审计（硬验收重跑 + 报告↔README 交叉核对 + 三层文档一致性 + 报告声明实物抽查 41 条）。
+> 用途：**由用户决定是否立票**；本清单不自动立票。
+> 关联：账本 A-026…A-036 = 11/11 implemented（deferred 0 / stale 0）；决策摘要见 `docs/architecture-recovery-cycle6-decisions.md`。
+
+## A. 需你裁定的合并/发布类（阻塞项）
+
+| # | 事项 | 证据 | 建议 |
+|---|------|------|------|
+| **B-1** | **合并入 main 存在冲突** | `git merge-tree --write-tree main cch/08-phase-b-failure-fixes` → exit 1，**8 个冲突文件**：`.gitignore` · `.scratch/architecture-recovery/README.md` · `.scratch/architecture-recovery/WORKFLOW.md` · `CONTEXT.md` · `CONTRIBUTING.md` · `CONTRIBUTING_EN.md` · `greasyfork/Glog.md` · `greasyfork/Glog_EN.md`（main 自身也有触及这些文档的提交） | 需你定冲突解收口径（逐文件：取栈侧 / 取 main 侧 / 手工合并） |
+| **B-2** | **`but land` 会一并推送** | `but land --help`：远端目标时 "the result is pushed to the remote"；当前 target = `origin/main` | 若要「本地合并 + 暂不推送」，需改用本地 target 或另行授权 land+push |
+| **B-3** | 多支本地 tip ≠ 远端 tip | 本地 14 支 vs 远端 11 支普遍不一致（`cch/04`/`cch/09`/`cch/12` 远端不存在） | 推送前对齐（P-13/P-20 的正式收口） |
+| **B-4** | `cch/08` 快照携带票 10 的**修复前**密封用例 | `merge-base(origin/cch/08, origin/cch/10)` = `fd02901f`；spec 差 15+/4−；run 35127030916 红在 `srcdoc-origin.spec.ts:64` | 合并后**必须复验全量 E2E 绿**（栈序上 cch/10 先于 cch/08，理论上不回归） |
+
+## B. 真实脱节（文档 ↔ 代码，建议立小票）
+
+| # | 事项 | 证据 | 影响 |
+|---|------|------|------|
+| **B-5** | `tests/ACCEPTANCE-SURFACE.md` 仍引用**已删除**的 `#cch-locale-tg` | 该选择器已由票 02 删除（`src/` 计数 0），但权威测试约定 `:55`（第 12 项）与可观测面清单 `:172` 仍引用 | 权威约定与代码脱节，读者会按已不存在的选择器验收 |
+| **B-6** | `gf-alignment-check.yml` 未声明 `pull_request` | 触发面仅 `workflow_dispatch` + `schedule`；ADR-0006 条款 2 要求非发版 workflow 必须声明 `pull_request`，例外仅 `release.yml`/`release-dry-run.yml`，且**未登记**本文件为例外 | 门禁政策与实物不一致（要么补触发面，要么在 ADR 登记例外） |
+| **B-7** | `src/diag/index.ts:83` 存在 `console.warn` | 票 03 报告声称「`src/` 内 `console.` 计数 = 0」，实物为 **1**（本票自引入的兜底告警） | userscript 向宿主页面控制台输出属噪声；且与报告声明矛盾 |
+
+## C. 方法与门保真度（建议登记纪律，非立票）
+
+| # | 事项 | 证据 | 建议 |
+|---|------|------|------|
+| **B-8** | `verify-03` 的 G8c 微基准**机器性能敏感** | 「门控关时 trace 100000 次 < 50ms」：本机空载 ×3 = 63.71 / 71.03 / 65.88 ms（红），而另一时点实跑 **58/0**（绿），CI 上通过 | **不得放宽断言**；建议登记「本地跑该门一律标注以 CI 为准」 |
+| **B-9** | 报告数字的**过期基线**普遍存在 | 抽查发现 `userscript.ts` 47→58 行、`primitives.mjs` 309→521 行 / 43→56 导出、`live-smoke.mjs` 344→560 行等（后续票增长所致，报告已标时点） | 跨票审计一律**以分支/时点为准**，不直接引用历史报告的行数 |
+| **B-10** | `wc -l` 末行无换行导致**系统性 −1** | 抽查中 5 处「报告 N 行 / 实测 N−1」 | 行数口径统一为「末行无换行则 wc 少计 1」，或在报告里标注口径 |
+
+## D. 产品残余（登记，非缺陷）
+
+| # | 事项 | 证据 | 建议 |
+|---|------|------|------|
+| **B-11** | `_writeRules` 自身不校验不变量 | 当前 4 个调用点全在 Store 内；将来若新增直接调用方可绕过上限 | 观察项（A-036 已登记残余） |
+| **B-12** | S4 断言粒度 | 断言为 `<= 500`（禁改），无法区分「恰为 500」与「被截更少」 | 观察项 |
+| **B-13** | 真实站点层 `live-codepen-editor` flaky | CI 上出现帧发现阶段失败（第三方页面漂移），advisory 只告警不阻断 | 观察项；发版按 ADR-0010 条款 2 走 ack |
+
+## E. 流程债
+
+| # | 事项 | 证据 | 建议 |
+|---|------|------|------|
+| **B-14** | 票 04 的 issue 未勾销（P-4） | `issues/04` = 0 `[x]` / 5 `[ ]`，而票 04 报告 §9 自述「5/5 勾销 ✅」**与实物相反** | 合并时由大脑补勾 + 在报告追加补正 |
+| **B-15** | `cycle6-audit-report.md` 仍按 8 条 A（A-026…A-033）与旧波次 | 立 A-034/035/036 前的陈旧结论，未随账本更新 | 收口时标注为「历史时点结论」 |

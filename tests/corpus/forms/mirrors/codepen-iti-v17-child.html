@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · iti v17 child frame (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（子帧）— id: codepen-iti-v17 / role: child-frame
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://cdpn.io/webdevpuneet/fullpage/ExzVrPY
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : codepen-iti-v17（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载；去品牌 / 去追踪 / 内容替换；不含真实 PII。
+  family       : iti-nested-frame (child)
+  shape_notes  : iti **v17 系**形态：`.iti > .iti__flag-container > .selected-flag` +
+                 `li.country[data-country-code][data-dial-code]`（v16 系类名/属性名，
+                 与 v29 的 `.iti__selected-country` / `data-iso2` 区分）。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 20px; }
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  .iti { position: relative; display: flex; border: 1px solid #d0d5dd; border-radius: 6px; }
+  .iti__flag-container { position: relative; }
+  .selected-flag { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 8px; background: #f5f7fa; border: 0; border-right: 1px solid #d0d5dd; cursor: pointer; font: inherit; }
+  .iti-flag { width: 20px; height: 14px; background: #cbd2d9; border-radius: 2px; }
+  .iti__country-list { position: absolute; top: 100%; left: 0; z-index: 10; list-style: none; margin: 4px 0 0; padding: 4px; width: 260px; max-height: 200px; overflow-y: auto; background: #fff; border: 1px solid #d0d5dd; border-radius: 6px; box-shadow: 0 8px 24px rgba(16,24,40,.12); }
+  .iti__country-list.hide { display: none; }
+  .country { display: flex; gap: 8px; padding: 6px 8px; cursor: pointer; border-radius: 4px; }
+  .country:hover { background: #f0f4f8; }
+  .dial-code { color: #52606d; margin-left: auto; }
+  .tel-input { flex: 1; border: 0; padding: 10px 12px; font: inherit; outline: none; }
+</style>
+</head>
+<body>
+  <h2>Phone number</h2>
+  <div class="iti">
+    <div class="iti__flag-container">
+      <button type="button" class="selected-flag" aria-label="Selected country">
+        <div class="iti-flag" style="background:#de2910"></div>
+        <span class="selected-dial-code">+86</span>
+      </button>
+      <ul class="iti__country-list hide" role="listbox">
+        <li class="country" role="option" data-country-code="cn" data-dial-code="86"><div class="iti-flag" style="background:#de2910"></div><span class="country-name">China</span><span class="dial-code">+86</span></li>
+        <li class="country" role="option" data-country-code="us" data-dial-code="1"><div class="iti-flag" style="background:#3c3b6e"></div><span class="country-name">United States</span><span class="dial-code">+1</span></li>
+        <li class="country" role="option" data-country-code="gb" data-dial-code="44"><div class="iti-flag" style="background:#012169"></div><span class="country-name">United Kingdom</span><span class="dial-code">+44</span></li>
+        <li class="country" role="option" data-country-code="jp" data-dial-code="81"><div class="iti-flag" style="background:#bc002d"></div><span class="country-name">Japan</span><span class="dial-code">+81</span></li>
+      </ul>
+    </div>
+    <input type="tel" class="tel-input" placeholder="Enter phone number" aria-label="Phone number">
+  </div>
+
+<script>
+(function () {
+  var root = document.querySelector('.iti');
+  var btn = root.querySelector('.selected-flag');
+  var list = root.querySelector('.iti__country-list');
+  var tel = root.querySelector('.tel-input');
+  var dial = root.querySelector('.selected-dial-code');
+  btn.addEventListener('click', function () { list.classList.toggle('hide'); });
+  list.addEventListener('click', function (e) {
+    var li = e.target.closest('.country');
+    if (!li) return;
+    var code = li.getAttribute('data-dial-code');
+    tel.value = '+' + code;
+    tel.dispatchEvent(new Event('input', { bubbles: true }));
+    tel.dispatchEvent(new Event('change', { bubbles: true }));
+    dial.textContent = '+' + code;
+    list.classList.add('hide');
+  });
+})();
+</script>
+</body>
+</html>

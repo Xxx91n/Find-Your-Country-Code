@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · MUI Autocomplete (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（mirror page）— id: mui-autocomplete
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://mui.com/material-ui/react-autocomplete/
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : mui-autocomplete（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载。保留公开形态（.MuiAutocomplete-root /
+                 input[role=combobox][aria-autocomplete=list][aria-controls] /
+                 role=listbox 浮层 / 隐藏承值 input），去品牌 / 去追踪 / 内容替换；
+                 不含真实 PII。
+  family       : pseudo-select（**可编辑型**：非 readonly INPUT 触发器）
+  shape_notes  : 触发器 `input.MuiAutocomplete-input[role=combobox]` 非 readonly
+                 → 填充引擎走「隐藏承值 input 原生 setter」路径（ADR-0005 可编辑型）。
+                 承值 input 为 `type=hidden name=country`（`_carrier` 探测要求
+                 aria-hidden/type=hidden 且现值空或 2 字母）。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 32px; }
+  main { max-width: 420px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #52606d; font-size: 13px; margin: 0 0 20px; }
+  .MuiAutocomplete-root { position: relative; }
+  .MuiFormControl-root { display: block; }
+  .MuiInputLabel-root { display: block; font-size: 12px; color: #52606d; margin-bottom: 4px; }
+  .MuiInputBase-root { display: flex; align-items: center; border: 1px solid #d0d5dd; border-radius: 6px; padding: 0 8px; }
+  .MuiAutocomplete-input { flex: 1; border: 0; padding: 10px 0; font: inherit; outline: none; }
+  .MuiAutocomplete-endAdornment button { border: 0; background: none; cursor: pointer; font-size: 12px; color: #52606d; }
+  .MuiAutocomplete-popper { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; margin-top: 4px; background: #fff; border: 1px solid #d0d5dd; border-radius: 6px; box-shadow: 0 8px 24px rgba(16,24,40,.12); }
+  .MuiAutocomplete-popper.hidden { display: none; }
+  .MuiAutocomplete-listbox { list-style: none; margin: 0; padding: 4px; max-height: 200px; overflow-y: auto; }
+  .MuiAutocomplete-option { padding: 8px; cursor: pointer; border-radius: 4px; }
+  .MuiAutocomplete-option:hover { background: #f0f4f8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Country</h1>
+  <p class="hint">De-branded mirror of a public form shape (family: pseudo-select).</p>
+
+  <div class="MuiAutocomplete-root" id="mui-demo">
+    <div class="MuiFormControl-root">
+      <label class="MuiInputLabel-root" id="mui-label" for="mui-input">Country</label>
+      <div class="MuiInputBase-root">
+        <input id="mui-input" class="MuiAutocomplete-input" type="text" role="combobox"
+               aria-autocomplete="list" aria-expanded="false" aria-labelledby="mui-label"
+               aria-controls="mui-listbox" autocomplete="off" spellcheck="false" value="">
+        <div class="MuiAutocomplete-endAdornment">
+          <button type="button" aria-label="Open">v</button>
+        </div>
+      </div>
+    </div>
+    <div class="MuiAutocomplete-popper hidden">
+      <ul id="mui-listbox" class="MuiAutocomplete-listbox" role="listbox">
+        <li class="MuiAutocomplete-option" role="option" data-value="CN" aria-selected="false">China (+86)</li>
+        <li class="MuiAutocomplete-option" role="option" data-value="US" aria-selected="false">United States (+1)</li>
+        <li class="MuiAutocomplete-option" role="option" data-value="CA" aria-selected="false">Canada (+1)</li>
+        <li class="MuiAutocomplete-option" role="option" data-value="GB" aria-selected="false">United Kingdom (+44)</li>
+        <li class="MuiAutocomplete-option" role="option" data-value="JP" aria-selected="false">Japan (+81)</li>
+      </ul>
+    </div>
+    <!-- 隐藏承值 input（react-hook-form 形态）；填充引擎 _carrier 探测目标 -->
+    <input type="hidden" name="country" value="">
+  </div>
+
+  <p id="mui-selected" class="hint" style="margin-top:16px">Selected: (none)</p>
+</main>
+
+<script>
+(function () {
+  var root = document.getElementById('mui-demo');
+  var input = root.querySelector('#mui-input');
+  var pop = root.querySelector('.MuiAutocomplete-popper');
+  var list = root.querySelector('#mui-listbox');
+  var carrier = root.querySelector('input[name=country]');
+  var out = document.getElementById('mui-selected');
+
+  function open() { pop.classList.remove('hidden'); input.setAttribute('aria-expanded', 'true'); }
+  function close() { pop.classList.add('hidden'); input.setAttribute('aria-expanded', 'false'); }
+  function label(li) { return li ? li.textContent.trim() : ''; }
+  function commit(li) {
+    Array.prototype.forEach.call(list.querySelectorAll('[role=option]'), function (o) {
+      o.setAttribute('aria-selected', o === li ? 'true' : 'false');
+    });
+    if (li) { input.value = label(li); out.textContent = 'Selected: ' + label(li); }
+  }
+
+  input.addEventListener('focus', open);
+  input.addEventListener('click', open);
+  list.addEventListener('click', function (e) {
+    var li = e.target.closest('[role=option]');
+    if (!li) return;
+    commit(li); close();
+  });
+  // 隐藏承值 input 被外部写入（填充引擎可编辑型路径）→ 同步可见面（页面侧可观测 L3 判据）
+  carrier.addEventListener('input', sync);
+  carrier.addEventListener('change', sync);
+  function sync() {
+    var v = carrier.value;
+    var li = list.querySelector('[role=option][data-value="' + v + '"]');
+    if (li) commit(li);
+  }
+})();
+</script>
+</body>
+</html>

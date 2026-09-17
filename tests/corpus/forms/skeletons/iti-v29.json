@@ -1,0 +1,339 @@
+{
+  "id": "iti-v29",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/iti-v29.html",
+  "source_url": "https://intl-tel-input.com/",
+  "root_selector": ".iti",
+  "node_count": 36,
+  "sha256": "cd60be1976af08f63712548afbc9aa9347e8c5e11a26c0f2c059b9791aaabc84",
+  "tree": {
+    "tag": "div",
+    "class": [
+      "iti",
+      "iti--has-country-selector",
+      "iti--inline-country-selector",
+      "iti--input-container",
+      "iti--show-flags"
+    ],
+    "children": [
+      {
+        "tag": "div",
+        "class": [
+          "iti__country-container"
+        ],
+        "children": [
+          {
+            "tag": "button",
+            "class": [
+              "iti__selected-country"
+            ],
+            "attrs": {
+              "aria-controls": "ref",
+              "aria-haspopup": "aaaaaa",
+              "aria-label": "aaaaaa aaaaaaa aaa aaaaa aaaaaa· aaaaaaa",
+              "type": "aaaaaa"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "class": [
+                  "iti__selected-country-primary"
+                ],
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__flag",
+                      "iti__jp"
+                    ]
+                  },
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti__arrow"
+                    ],
+                    "attrs": {
+                      "aria-hidden": "aaaa"
+                    }
+                  }
+                ]
+              },
+              {
+                "tag": "div",
+                "class": [
+                  "iti__selected-dial-code"
+                ],
+                "text": "+##"
+              }
+            ]
+          },
+          {
+            "tag": "div",
+            "class": [
+              "iti__country-selector",
+              "iti__hide"
+            ],
+            "attrs": {
+              "aria-modal": "aaaa",
+              "role": "aaaaaa"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "class": [
+                  "iti__search-input-wrapper"
+                ],
+                "children": [
+                  {
+                    "tag": "span",
+                    "class": [
+                      "iti__search-icon"
+                    ],
+                    "attrs": {
+                      "aria-hidden": "aaaa"
+                    },
+                    "children": [
+                      {
+                        "tag": "svg",
+                        "class": [
+                          "iti__search-icon-svg"
+                        ],
+                        "attrs": {
+                          "aria-hidden": "aaaa"
+                        },
+                        "children": [
+                          {
+                            "tag": "circle"
+                          },
+                          {
+                            "tag": "line"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "input",
+                    "class": [
+                      "form-control",
+                      "iti__search-input"
+                    ],
+                    "attrs": {
+                      "aria-autocomplete": "aaaa",
+                      "aria-controls": "ref",
+                      "aria-label": "aaaaaa",
+                      "autocomplete": "aaa",
+                      "placeholder": "aaaaaa",
+                      "role": "aaaaaaaa",
+                      "type": "aaaaaa"
+                    }
+                  },
+                  {
+                    "tag": "button",
+                    "class": [
+                      "iti__hide",
+                      "iti__search-clear"
+                    ],
+                    "attrs": {
+                      "aria-label": "aaaaa aaaaaa",
+                      "type": "aaaaaa"
+                    },
+                    "children": [
+                      {
+                        "tag": "svg",
+                        "class": [
+                          "iti__search-clear-svg"
+                        ],
+                        "attrs": {
+                          "aria-hidden": "aaaa"
+                        },
+                        "children": [
+                          {
+                            "tag": "mask",
+                            "children": [
+                              {
+                                "tag": "rect"
+                              },
+                              {
+                                "tag": "path",
+                                "class": [
+                                  "iti__search-clear-x"
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "tag": "circle",
+                            "class": [
+                              "iti__search-clear-bg"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "span",
+                "class": [
+                  "iti__a11y-text"
+                ],
+                "text": "### aaaaaaa aaaaa"
+              },
+              {
+                "tag": "div",
+                "class": [
+                  "iti__hide",
+                  "iti__no-results"
+                ],
+                "attrs": {
+                  "aria-hidden": "aaaa"
+                },
+                "text": "aa aaaaaaa aaaaa"
+              },
+              {
+                "tag": "ul",
+                "class": [
+                  "iti__country-list"
+                ],
+                "attrs": {
+                  "aria-label": "aaaa aa aaaaaaaaa",
+                  "role": "aaaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "li",
+                    "class": [
+                      "iti__country"
+                    ],
+                    "attrs": {
+                      "data-dial-code": "##",
+                      "data-iso2": "aa",
+                      "role": "aaaaaa"
+                    },
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__af",
+                          "iti__flag"
+                        ]
+                      },
+                      {
+                        "tag": "span",
+                        "class": [
+                          "iti__country-name"
+                        ],
+                        "text": "aaaaaaaaaaa",
+                        "children": [
+                          {
+                            "tag": "span",
+                            "class": [
+                              "iti__dial-code"
+                            ],
+                            "text": "(+##)"
+                          }
+                        ]
+                      }
+                    ],
+                    "repeat": 51
+                  },
+                  {
+                    "tag": "li",
+                    "class": [
+                      "iti__country"
+                    ],
+                    "attrs": {
+                      "data-dial-code": "###",
+                      "data-iso2": "aa",
+                      "role": "aaaaaa"
+                    },
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__ax",
+                          "iti__flag"
+                        ]
+                      },
+                      {
+                        "tag": "span",
+                        "class": [
+                          "iti__country-name"
+                        ],
+                        "text": "·aaaa aaaaaaa",
+                        "children": [
+                          {
+                            "tag": "span",
+                            "class": [
+                              "iti__dial-code"
+                            ],
+                            "text": "(+###)"
+                          }
+                        ]
+                      }
+                    ],
+                    "repeat": 166
+                  },
+                  {
+                    "tag": "li",
+                    "class": [
+                      "iti__country"
+                    ],
+                    "attrs": {
+                      "data-dial-code": "#",
+                      "data-iso2": "aa",
+                      "role": "aaaaaa"
+                    },
+                    "children": [
+                      {
+                        "tag": "div",
+                        "class": [
+                          "iti__as",
+                          "iti__flag"
+                        ]
+                      },
+                      {
+                        "tag": "span",
+                        "class": [
+                          "iti__country-name"
+                        ],
+                        "text": "aaaaaaaa aaaaa",
+                        "children": [
+                          {
+                            "tag": "span",
+                            "class": [
+                              "iti__dial-code"
+                            ],
+                            "text": "(+#)"
+                          }
+                        ]
+                      }
+                    ],
+                    "repeat": 27
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "input",
+        "class": [
+          "form-control",
+          "iti__tel-input"
+        ],
+        "attrs": {
+          "autocomplete": "aaa",
+          "data-intl-tel-input-id": "#",
+          "inputmode": "aaa",
+          "placeholder": "##-####-####",
+          "type": "aaa"
+        }
+      }
+    ]
+  }
+}

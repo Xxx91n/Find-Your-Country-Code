@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cycle-5 架构大脑调查 · Find-Your-Country-Code</title>
+<style>
+:root{
+  --bg:#0e1015; --panel:#171a21; --panel2:#1b1f28;
+  --bd:#262b36; --bd2:#323847;
+  --tx:#e6e9ef; --tx2:#aab3c2; --tx3:#7c8698;
+  --ac:#4ea1ff; --ac2:#22d3ee; --ok:#34d399; --wn:#fbbf24; --dg:#f87171; --pp:#a78bfa;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:44px 26px 90px}
+header{border-bottom:1px solid var(--bd);padding-bottom:26px;margin-bottom:34px}
+.kicker{font:600 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ac2);margin-bottom:14px}
+h1{margin:0 0 12px;font-size:31px;line-height:1.25;letter-spacing:-.01em}
+.sub{color:var(--tx2);font-size:14.5px;margin:0}
+.meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 11.5px/1 var(--mono);padding:6px 10px;border:1px solid var(--bd2);border-radius:999px;color:var(--tx2);background:var(--panel)}
+h2{font-size:20px;margin:52px 0 8px;letter-spacing:-.005em;display:flex;align-items:center;gap:11px}
+h2 .n{font:700 12px/1 var(--mono);color:var(--ac);border:1px solid var(--bd2);border-radius:7px;padding:5px 8px;background:var(--panel)}
+h3{font-size:16px;margin:26px 0 8px}
+p{margin:9px 0;color:var(--tx2)}
+.lead{color:var(--tx);font-size:16px}
+strong{color:var(--tx);font-weight:650}
+code{font:12.5px/1.5 var(--mono);background:#0a0c10;border:1px solid var(--bd);border-radius:5px;padding:1.5px 5px;color:#c9d3e3}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:13px;padding:20px 22px;margin:16px 0}
+.card.p2{background:var(--panel2)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:860px){.g2,.g3{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{font:600 11.5px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);background:#141821}
+td code{font-size:12px}
+tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font:700 10.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:5px 9px;border-radius:6px;white-space:nowrap}
+.b-ok{background:rgba(52,211,153,.13);color:var(--ok);border:1px solid rgba(52,211,153,.35)}
+.b-dg{background:rgba(248,113,113,.13);color:var(--dg);border:1px solid rgba(248,113,113,.35)}
+.b-wn{background:rgba(251,191,36,.13);color:var(--wn);border:1px solid rgba(251,191,36,.35)}
+.b-pp{background:rgba(167,139,250,.13);color:var(--pp);border:1px solid rgba(167,139,250,.35)}
+.b-gy{background:rgba(124,134,152,.14);color:var(--tx2);border:1px solid var(--bd2)}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;font-size:13.5px}
+.kv dt{color:var(--tx3);font:600 11.5px/1.9 var(--mono);text-transform:uppercase;letter-spacing:.05em}
+.kv dd{margin:0;color:var(--tx2)}
+.kv dd code{font-size:12px}
+.note{border-left:3px solid var(--ac);background:rgba(78,161,255,.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:13.5px;color:var(--tx2)}
+.note.warn{border-left-color:var(--wn);background:rgba(251,191,36,.06)}
+.note.good{border-left-color:var(--ok);background:rgba(52,211,153,.06)}
+svg{display:block;max-width:100%;height:auto}
+.diagram{background:#0a0c10;border:1px solid var(--bd);border-radius:11px;padding:16px;margin:14px 0}
+.cap{font:500 11.5px/1.5 var(--mono);color:var(--tx3);margin-top:9px;text-align:center}
+.tpl{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px}
+.tpl .id{font:700 11px/1 var(--mono);color:var(--ac2);letter-spacing:.08em}
+.tpl .nm{font-weight:650;font-size:14px;margin:7px 0 5px;color:var(--tx)}
+.tpl .ds{font-size:12.5px;color:var(--tx2);line-height:1.6}
+.tpl .src{font:500 10.5px/1.5 var(--mono);color:var(--tx3);margin-top:8px}
+.step{display:flex;gap:14px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--bd)}
+.step:last-child{border-bottom:none}
+.step .sid{font:700 12px/1 var(--mono);color:var(--bg);background:var(--ac);border-radius:7px;padding:7px 9px;flex:none;min-width:34px;text-align:center}
+.step .sc{flex:1}
+.step .st{font-weight:650;font-size:14px}
+.step .sd{font-size:13px;color:var(--tx2);margin-top:3px}
+.step .sev{font:600 10.5px/1 var(--mono);padding:4px 7px;border-radius:5px;flex:none}
+footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--bd);font-size:12.5px;color:var(--tx3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">架构大脑调查 · Cycle-5 · 宏观层</div>
+  <h1>从“代码正确”到“用户可见”</h1>
+  <p class="sub">Find-Your-Country-Code（油猴脚本）架构优化调查。本报告为<b>只读调查产物</b>：不修改任何代码，只交付证据基线、深化机会与行业心智模型模板库。</p>
+  <div class="meta">
+    <span class="chip">codegraph 1.6.0 · 119 files / 1,693 nodes / 4,469 edges</span>
+    <span class="chip">atomcode 5.0.9 · 4 次深度调研</span>
+    <span class="chip">4 个子代理并行调查</span>
+    <span class="chip">基线：origin/main = e2a10d8e · v1.5.0</span>
+  </div>
+</header>
+
+<h2><span class="n">00</span>目标（/goal · 不设预算）</h2>
+<p class="lead">本轮目标不是“再修一个引擎 bug”，而是把系统从<b>“在代码正确性上反复加杠杆”</b>切换到<b>“让修复真正送达并被用户看见”</b>。</p>
+<div class="grid g3">
+  <div class="card">
+    <span class="badge b-dg">G1 · 送达</span>
+    <h3>最后一公里</h3>
+    <p>v1.5.0 的安全修复、弱线索识别、三条用户上报 bug 修复全部堵在分发链路上。目标：让任何渠道安装的用户都能收到更新。</p>
+    <p style="font-size:12.5px;color:var(--tx3)">判据：Greasyfork 上线版本 = tag = 产物 @version。</p>
+  </div>
+  <div class="card">
+    <span class="badge b-dg">G2 · 可见</span>
+    <h3>入口可达</h3>
+    <p>低置信字段页面无图标→无面板→无召唤入口，脚本在用户眼中等于“没注入”。目标：与字段分数无关的全局入口存在且可见。</p>
+    <p style="font-size:12.5px;color:var(--tx3)">判据：score&lt;35 的页面仍能打开面板。</p>
+  </div>
+  <div class="card">
+    <span class="badge b-dg">G3 · 真实</span>
+    <h3>绿 = 真实成立</h3>
+    <p>“十门全绿”是幸存者名单；真实站点层启用数为 0。目标：CI 绿重新等价于“真实世界成立”，而非“未修的那几扇门被排除出计数”。</p>
+    <p style="font-size:12.5px;color:var(--tx3)">判据：10/10 门可执行；真实站点层至少 1 个 live 目标启用。</p>
+  </div>
+</div>
+<div class="note">
+  <b>推进方式</b>：以 message 步骤（§06）为单位推进，每步一个可验收闭环；不设时间/成本预算。
+  <br><b>硬边界</b>：本大脑代理不直接修改代码——调查→立票→实施分离；实施走 $to-spec / $to-tickets / $implement，版本控制走 $but 独立分支。
+</div>
+
+<h2><span class="n">01</span>执行摘要</h2>
+<p class="lead">引擎已经足够聪明，瓶颈不在识别算法，而在<b>送达</b>与<b>可见</b>。四项硬证据：</p>
+<div class="grid g2">
+  <div class="card p2"><span class="badge b-dg">实证 1</span><h3 style="margin-top:10px">分发布冻死</h3><p>产物 <code>@updateURL</code> 全部指向 Greasyfork（<code>vite.config.ts:8</code>），而 Greasyfork 线上仍服务 <code>@version 1.3.4</code>。所有从 GF 安装的用户，更新检查永远看到 1.3.4。</p></div>
+  <div class="card p2"><span class="badge b-dg">实证 2</span><h3 style="margin-top:10px">入口自锁</h3><p><code>#cch-summon</code> 只在 <code>open()</code> 内创建（<code>ui/index.ts:317,326</code>）；<code>open()</code> 仅两个调用点，都以“已存在的图标”为前提；图标需置信度 ≥35。→ 低置信页面<b>无任何</b>全局入口。</p></div>
+  <div class="card p2"><span class="badge b-dg">实证 3</span><h3 style="margin-top:10px">门禁幸存者名单</h3><p>10 个票级门中 4 个当场崩（09/13/15/18，<code>SyntaxError</code>）；6 个绿门恰好全部已迁移 <code>stripTypeScriptTypes</code> 装载器。3 个红门仍挂 <code>pull_request</code>——下个 PR 迎面拦截。</p></div>
+  <div class="card p2"><span class="badge b-dg">实证 4</span><h3 style="margin-top:10px">塔尖为空</h3><p>74 个密封 E2E 确实在真 Chromium 里跑出厂产物，但页面<b>全部</b>来自本地手写 fixture。真实站点层 2 个 live 目标 <code>enabled:false</code>、<code>selector:null</code>——实际启用数 = <b>0</b>。</p></div>
+</div>
+<div class="note warn">
+  <b>辩证校正（重要）</b>：锐评 Round 3 中最戏剧化的一条——“git 历史第三次归零 / tag 非 main 祖先”——<b>实证不成立</b>。当前 <code>origin/main = e2a10d8e</code>，<b>有父提交</b>（<code>e3dda808</code>），163 个提交，单一 root <code>76cf9896</code>，且 <code>v1.3.4 / v1.4.0 / v1.5.0</code> 三个 tag <b>全部是 origin/main 的祖先</b>；<code>git ls-remote origin main</code> 与本地一致。该条按“不可复现”处理，<b>不立票</b>。
+</div>
+
+<h2><span class="n">02</span>辩证核验：锐评 Round 3 逐条裁定</h2>
+<p>按“辩证性看待”的要求，每条均以命令 + 实测输出为准，不以锐评文本为准。</p>
+<table>
+<thead><tr><th style="width:34%">锐评主张</th><th style="width:15%">裁定</th><th>实测证据</th></tr></thead>
+<tbody>
+<tr><td>09/13/15/18 四门崩溃</td><td><span class="badge b-ok">CONFIRMED</span></td><td>4/4 实测 <code>SyntaxError: Unexpected token ':'</code>（<code>new Function</code> 吃到 TS 类型标注）；exit=1。崩溃行：09:119 / 13:46 / 15:113 / 18:39</td></tr>
+<tr><td>“十门全绿”是幸存者名单</td><td><span class="badge b-ok">CONFIRMED</span></td><td>6 绿（02/05/27/28/29/31）全部已用 <code>stripTypeScriptTypes</code>；4 红恰好是未迁移集。绿 = 已修复集</td></tr>
+<tr><td>Greasyfork 冻死在 v1.3.4</td><td><span class="badge b-ok">CONFIRMED</span></td><td>实时抓取 <code>update.greasyfork.org/.../Find-Your-Country-Code.meta.js</code> → <code>@version 1.3.4</code>；产物为 1.5.0</td></tr>
+<tr><td>README 安装链接停在 v1.4.0</td><td><span class="badge b-ok">CONFIRMED</span></td><td><code>README.md:47</code> 与 <code>README_EN.md:50</code> 硬编码 <code>releases/download/v1.4.0/</code>；GH Release 已到 v1.5.0</td></tr>
+<tr><td>release.yml 无 Greasyfork 同步步骤</td><td><span class="badge b-ok">CONFIRMED</span></td><td>17 个 workflow 搜 <code>greasyfork</code> 仅命中 <code>release.yml:63,73</code>（读 Glog 当 release body），零上传步骤</td></tr>
+<tr><td>入口自锁（entry-point trap）</td><td><span class="badge b-ok">CONFIRMED</span></td><td><code>ui/index.ts:317,326</code> 创建 <code>#cch-summon</code>；<code>open()</code> 仅 <code>ui/index.ts:159</code> + <code>main.ts:68</code> 两调用点；<code>main.ts:88-90</code> 菜单只有“已恢复本站检测”</td></tr>
+<tr><td>lowkey 图标近乎不可见</td><td><span class="badge b-ok">CONFIRMED</span></td><td><code>ui/index.ts:82</code> <code>.cch-btn-lowkey{opacity:.38;transform:scale(.78);filter:saturate(.4)}</code> 逐字一致</td></tr>
+<tr><td>“语言切换功能消失”</td><td><span class="badge b-wn">CONFIRMED（功能真空）</span></td><td>i18n 自始只有 <code>navigator.language</code> 自动判定；非回归，是从未存在</td></tr>
+<tr><td>.scratch 涨到 339 文件 / 2.3MB</td><td><span class="badge b-ok">CONFIRMED</span></td><td><code>find .scratch -type f | wc -l</code> = 339；<code>du -sh</code> = 2.3M；<b>且 339 个全部被 git 跟踪</b>（<code>git ls-files .scratch</code> = 339）</td></tr>
+<tr><td><b>git 历史第三次归零 / tag 非 main 祖先</b></td><td><span class="badge b-dg">REFUTED</span></td><td><code>origin/main=e2a10d8e</code> <b>parents:e3dda808</b>；<code>git log | wc -l</code>=163；<code>merge-base --is-ancestor</code> 对 v1.3.4/v1.4.0/v1.5.0 均为 YES；<code>ls-remote</code> 与本地同 sha</td></tr>
+<tr><td>“在 release.yml 加 Greasyfork 发布步骤即可修复”</td><td><span class="badge b-pp">SUPERSEDED</span></td><td>深度调研（GF 官方 API 文档 + issue #1288/#1499）证：GF <b>无写入 API</b>，CI 无法主动触发；正确解是 GF 侧开启 <b>Sync from external URL</b>（拉取模型）。子代理的“加发布步骤”建议会被 406 拒绝</td></tr>
+</tbody>
+</table>
+
+<h2><span class="n">03</span>架构现状地图</h2>
+<p>codegraph 实测：119 文件 / 1,693 节点 / 4,469 边。<code>src/</code> 共 11 个模块 3,168 行。</p>
+<table>
+<thead><tr><th>module</th><th>行数</th><th>职责（CONTEXT.md 词汇）</th><th>seam / 依赖</th></tr></thead>
+<tbody>
+<tr><td><code>detect/index.ts</code></td><td>868</td><td>置信度评分五层信号瀑布、可见性闸门、重评</td><td>最深的 module；消费 rules，产出 tier</td></tr>
+<tr><td><code>ui/index.ts</code></td><td>713</td><td>图标注入、面板、手动召唤、负反馈、toast、定位</td><td>接口面最宽（CchUI 成员众多）</td></tr>
+<tr><td><code>fill/index.ts</code></td><td>345</td><td>原生事件序列、三态填充结果</td><td>依赖 iti-adapter</td></tr>
+<tr><td><code>store/index.ts</code></td><td>286</td><td>GM 存储、订阅、站点规则文档权威契约</td><td>所有模块的共享底座</td></tr>
+<tr><td><code>data/countries.ts</code></td><td>231</td><td>223 条国家数据</td><td>纯数据</td></tr>
+<tr><td><code>types.ts</code></td><td>183</td><td>共享类型层（types-only，零运行时）</td><td>编译期 seam</td></tr>
+<tr><td><code>iti-adapter/index.ts</code></td><td>173</td><td>intl-tel-input v16–v29 能力探测</td><td>adapter（唯一实现）</td></tr>
+<tr><td><code>rules/index.ts</code></td><td>137</td><td>站点规则匹配、分档覆盖（scope 语义）</td><td>检测入口前生效</td></tr>
+<tr><td><code>config.ts</code></td><td>112</td><td>阈值/常量</td><td>无逻辑（shallow）</td></tr>
+<tr><td><code>main.ts</code></td><td>92</td><td>装配 + 帧治理 + GM 菜单</td><td>唯一组装点</td></tr>
+<tr><td><code>i18n.ts</code></td><td>28</td><td><code>t()</code> + <code>LANG</code> 自动判定</td><td><code>LANG</code> 为死导出（无 import）</td></tr>
+</tbody>
+</table>
+<div class="note good">
+  <b>删除测试（deletion test）结果</b>：真正“删除即集中复杂度”的深 module 是 <code>detect</code>（评分瀑布）与 <code>store</code>（规则契约）；<code>config.ts</code> / <code>types.ts</code> / <code>i18n.ts</code> 属结构性浅 module（删除只会移动复杂度，不集中）——<b>不应为它们造抽象</b>。
+</div>
+<p><b>关键 seam</b>：<code>detect → ui</code>（tier 驱动注入）与 <code>ui → fill</code>（选中国家驱动写入）。本轮全部 6 个深化机会，<b>无一位于这两个 seam 内部</b>——它们在 seam 的两侧（入口可达性与真实世界验证）。</p>
+
+<h2><span class="n">04</span>深化机会</h2>
+<p>每项含 Files / Problem / Solution / Benefits（以 locality 与 leverage 表述）/ Before-After 图 / 推荐强度。</p>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C1 · 分发最后一公里：从“推”改“拉”</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>.github/workflows/release.yml</code> · <code>vite.config.ts:8</code> · <code>README.md:47</code> · <code>greasyfork/</code></dd>
+    <dt>Problem</dt><dd>产物 <code>@updateURL</code>/<code>@downloadURL</code> 全部指向 Greasyfork；GF 侧冻结在 1.3.4，而 CI 里<b>没有任何</b>GF 步骤。用户更新检查永远看到 1.3.4——v1.5.0 全部努力送达人数约为零。</dd>
+    <dt>Solution</dt><dd>GF 侧一次性开启 <b>Sync from external URL</b> → 指向 GitHub raw 产物；此后 GitHub push/webhook 触发 GF 自动拉取。CI 职责收敛为<b>版本一致性闸门</b>（tag = package.json = 产物 @version），并加一个只读的“GF 上线版本对齐”校验。README 改指 <code>releases/latest</code>。</dd>
+    <dt>Benefits</dt><dd><b>leverage 极高</b>：单点改动恢复<b>全部</b>渠道用户的更新通路；<b>locality 好</b>：版本一致性从三处分散（vite.config / package.json / README）收敛为 CI 单一闸门。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 210" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#f87171" font-size="11" font-weight="700">BEFORE — 半条链路</text>
+      <g font-size="10.5">
+        <rect x="14" y="30" width="92" height="34" rx="7" fill="#1b1f28" stroke="#323847"/><text x="60" y="51" fill="#aab3c2" text-anchor="middle">commit</text>
+        <rect x="128" y="30" width="92" height="34" rx="7" fill="#1b1f28" stroke="#323847"/><text x="174" y="51" fill="#aab3c2" text-anchor="middle">build</text>
+        <rect x="242" y="30" width="104" height="34" rx="7" fill="#1b1f28" stroke="#34d399"/><text x="294" y="51" fill="#34d399" text-anchor="middle">GH Release OK</text>
+        <rect x="368" y="30" width="120" height="34" rx="7" fill="#2a1418" stroke="#f87171" stroke-dasharray="4 3"/><text x="428" y="51" fill="#f87171" text-anchor="middle">GF 无步骤</text>
+        <rect x="510" y="30" width="156" height="34" rx="7" fill="#2a1418" stroke="#f87171"/><text x="588" y="51" fill="#f87171" text-anchor="middle">用户 updateURL 断</text>
+        <path d="M106 47 H128 M220 47 H242 M346 47 H368 M488 47 H510" stroke="#4b5563" stroke-width="1.4" fill="none"/>
+      </g>
+      <text x="14" y="118" fill="#34d399" font-size="11" font-weight="700">AFTER — 拉取模型 + 一致性闸门</text>
+      <g font-size="10.5">
+        <rect x="14" y="130" width="92" height="34" rx="7" fill="#1b1f28" stroke="#323847"/><text x="60" y="151" fill="#aab3c2" text-anchor="middle">commit</text>
+        <rect x="128" y="130" width="112" height="34" rx="7" fill="#16241f" stroke="#34d399"/><text x="184" y="151" fill="#34d399" text-anchor="middle">tag=version OK</text>
+        <rect x="262" y="130" width="112" height="34" rx="7" fill="#1b1f28" stroke="#34d399"/><text x="318" y="151" fill="#34d399" text-anchor="middle">GH Release OK</text>
+        <rect x="396" y="130" width="126" height="34" rx="7" fill="#16241f" stroke="#34d399"/><text x="459" y="151" fill="#34d399" text-anchor="middle">GF 自动拉取 OK</text>
+        <rect x="544" y="130" width="122" height="34" rx="7" fill="#16241f" stroke="#34d399"/><text x="605" y="151" fill="#34d399" text-anchor="middle">用户更新 OK</text>
+        <path d="M106 147 H128 M240 147 H262 M374 147 H396 M522 147 H544" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <text x="459" y="186" fill="#7c8698" text-anchor="middle">raw.githubusercontent.com → GF Sync from external URL</text>
+      </g>
+    </svg>
+    <div class="cap">分发链路：BEFORE 断在“无 GF 步骤”；AFTER 由 GF 反向拉取补齐</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C2 · 入口自锁：让面板可达</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>src/main.ts:87-90</code> · <code>src/ui/index.ts:265,317,326,82</code> · <code>src/detect/index.ts:542-544,848</code></dd>
+    <dt>Problem</dt><dd>面板只能从 🌐 图标打开；图标仅在置信度 ≥35（lowkey/auto）时注入。score&lt;35 → tier=none → 无图标 → <code>open()</code> 无调用者 → <code>#cch-summon</code>（在面板内）永不可达。score≥25 的字段虽被 <code>rememberLow</code> 登记进 <code>_lowFields</code>，但唯一召唤 UI 在面板里——<b>死路</b>。GM 菜单只有“已恢复本站检测”，无“打开面板”。</dd>
+    <dt>Solution</dt><dd>注册第二条 GM 菜单命令直达 <code>UI.open(null,null,null)</code>（<code>_pos</code> 对 anchor=null 已有居中路径，<code>ui/index.ts:627-635</code>；<code>#cch-summon</code> 按 <code>_lowFields</code> 自动显隐，<code>ui/index.ts:695</code>）。同时按行业模板重做 lowkey 图标的可见性（见 §05 U2/U3）。</dd>
+    <dt>Benefits</dt><dd><b>locality 极佳</b>：一处注册即破除陷阱，零改动评分引擎与注入逻辑；<b>leverage 高</b>：把“脚本看起来没注入”从默认状态改为可恢复状态，直接对应业主投诉“大多数网站没生效”。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#f87171" font-size="11" font-weight="700">BEFORE — 闭环缺失</text>
+      <g font-size="10.5">
+        <rect x="14" y="32" width="120" height="34" rx="7" fill="#1b1f28" stroke="#323847"/><text x="74" y="53" fill="#aab3c2" text-anchor="middle">score &gt;= 35 ?</text>
+        <rect x="166" y="32" width="126" height="34" rx="7" fill="#1b1f28" stroke="#323847"/><text x="229" y="53" fill="#aab3c2" text-anchor="middle">注入图标</text>
+        <rect x="324" y="32" width="120" height="34" rx="7" fill="#1b1f28" stroke="#323847"/><text x="384" y="53" fill="#aab3c2" text-anchor="middle">点击 open()</text>
+        <rect x="476" y="32" width="190" height="34" rx="7" fill="#16241f" stroke="#34d399"/><text x="571" y="53" fill="#34d399" text-anchor="middle">#cch-summon（面板内）</text>
+        <path d="M134 49 H166 M292 49 H324 M444 49 H476" stroke="#4b5563" stroke-width="1.4" fill="none"/>
+        <rect x="14" y="92" width="120" height="34" rx="7" fill="#2a1418" stroke="#f87171"/><text x="74" y="113" fill="#f87171" text-anchor="middle">score &lt; 35</text>
+        <rect x="166" y="92" width="200" height="34" rx="7" fill="#2a1418" stroke="#f87171" stroke-dasharray="4 3"/><text x="266" y="113" fill="#f87171" text-anchor="middle">无图标 无面板 无召唤</text>
+        <text x="380" y="113" fill="#f87171" font-size="11">用户看到“脚本没注入”</text>
+        <path d="M134 109 H166" stroke="#f87171" stroke-width="1.4" fill="none"/>
+      </g>
+      <text x="14" y="160" fill="#34d399" font-size="11" font-weight="700">AFTER — 与分数无关的全局入口</text>
+      <g font-size="10.5">
+        <rect x="14" y="170" width="176" height="24" rx="6" fill="#16241f" stroke="#34d399"/><text x="102" y="186" fill="#34d399" text-anchor="middle">GM 菜单 打开面板</text>
+        <path d="M190 182 H238" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="238" y="170" width="150" height="24" rx="6" fill="#16241f" stroke="#34d399"/><text x="313" y="186" fill="#34d399" text-anchor="middle">UI.open(null) 居中</text>
+        <path d="M388 182 H436" stroke="#34d399" stroke-width="1.4" fill="none"/>
+        <rect x="436" y="170" width="230" height="24" rx="6" fill="#16241f" stroke="#34d399"/><text x="551" y="186" fill="#34d399" text-anchor="middle">召唤 _lowFields 补挂图标</text>
+      </g>
+    </svg>
+    <div class="cap">入口自锁：BEFORE 低置信页面成死路；AFTER 增加与分数无关的全局入口</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C3 · 门禁完整性：四扇塌掉的门</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>tests/scripts/verify-ticket-09|13|15|18.mjs</code> · <code>.github/workflows/verify-13|15|18.yml</code> · 范式：<code>tests/scripts/14-lib-engine.mjs:11</code></dd>
+    <dt>Problem</dt><dd>票 23 把 <code>src</code> 全面 TS 严格化时，四个用裸 <code>new Function(源码)</code> 装载的门没同步加 <code>stripTypeScriptTypes</code>，直接崩。且 <code>verify-13/15/18.yml</code> 还钉 <code>node-version: 20</code>（strip 需 ≥22.13）。三门仍挂 <code>on: pull_request</code>——下一个 PR 会被迎面拦截。</dd>
+    <dt>Solution</dt><dd>把四个门统一改为 import 现成装载器（<code>14-lib-engine.mjs</code> 已有范式），workflow node 升 22；并给 <code>verify-13.mjs</code> 的硬编码语料规模断言（41）改为动态读取（corpus 已增至 48）。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：装载逻辑从 16 份各自实现收敛为单一 adapter（现在 12 个已用装载器、4 个裸用——正是这 4 个红的）；<b>leverage 高</b>：恢复 10/10 门可执行，CI 绿重新可信。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 170" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#aab3c2" font-size="11" font-weight="700">16 个 tests/scripts 装载方式分布</text>
+      <g font-size="10.5">
+        <rect x="14" y="34" width="470" height="26" rx="6" fill="#16241f" stroke="#34d399"/><text x="24" y="51" fill="#34d399">12 个已用 stripTypeScriptTypes / import 装载器（全绿）</text>
+        <rect x="492" y="34" width="174" height="26" rx="6" fill="#2a1418" stroke="#f87171"/><text x="579" y="51" fill="#f87171" text-anchor="middle">4 个裸 new Function（全崩）</text>
+      </g>
+      <text x="14" y="92" fill="#aab3c2" font-size="11" font-weight="700">票级门终态</text>
+      <g font-size="10.5">
+        <rect x="14" y="104" width="72" height="30" rx="6" fill="#16241f" stroke="#34d399"/><text x="50" y="123" fill="#34d399" text-anchor="middle">02 OK</text>
+        <rect x="94" y="104" width="72" height="30" rx="6" fill="#16241f" stroke="#34d399"/><text x="130" y="123" fill="#34d399" text-anchor="middle">05 OK</text>
+        <rect x="174" y="104" width="72" height="30" rx="6" fill="#2a1418" stroke="#f87171"/><text x="210" y="123" fill="#f87171" text-anchor="middle">09 X</text>
+        <rect x="254" y="104" width="72" height="30" rx="6" fill="#2a1418" stroke="#f87171"/><text x="290" y="123" fill="#f87171" text-anchor="middle">13 X</text>
+        <rect x="334" y="104" width="72" height="30" rx="6" fill="#2a1418" stroke="#f87171"/><text x="370" y="123" fill="#f87171" text-anchor="middle">15 X</text>
+        <rect x="414" y="104" width="72" height="30" rx="6" fill="#2a1418" stroke="#f87171"/><text x="450" y="123" fill="#f87171" text-anchor="middle">18 X</text>
+        <rect x="494" y="104" width="72" height="30" rx="6" fill="#16241f" stroke="#34d399"/><text x="530" y="123" fill="#34d399" text-anchor="middle">27 OK</text>
+        <rect x="574" y="104" width="92" height="30" rx="6" fill="#16241f" stroke="#34d399"/><text x="620" y="123" fill="#34d399" text-anchor="middle">28/29/31 OK</text>
+      </g>
+    </svg>
+    <div class="cap">绿门 = 已迁移装载器的集合；红门 = 未迁移集合。这不是巧合，是幸存者名单</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C4 · 测试塔塔尖为空：真实站点层启用数为 0</h3>
+    <span class="badge b-dg">Strong</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>tests/live/site-manifest.json</code> · <code>.github/workflows/real-site-smoke.yml</code> · <code>tests/*.spec.ts</code>(13) · <code>tests/fixtures|manual</code>(26)</dd>
+    <dt>Problem</dt><dd>74 个密封 E2E 确实加载出厂产物、跑真 Chromium——<b>但页面全部是本地手写 fixture</b>（最大 117 行），13 个 spec 无一引用外网 URL。真实站点层设计正确（Bitwarden BIT 口径：advisory、低频、弱断言）但<b>内容为空</b>：4 个 mirror 目标全是本地镜像，2 个 live 目标 <code>enabled:false</code> + <code>selector:null</code>。<code>corpus/manifest.json</code> 里 7 条 real-site 语料<b>无一条含 URL</b>，是手写描述符经 mock DOM harness 复算——幽灵覆盖。</dd>
+    <dt>Solution</dt><dd>按 manifest 自带的 <code>enablementRunbook</code> 启用至少 1 个 live 目标（推荐把 CodePen 编辑器页收编为 live 目标，含嵌套 preview iframe 断言——正对应用户上报的 codepen 回归）；冒烟只断言<b>存在性</b>（<code>.cch-wrapper</code> 出现 + 无未捕获异常），内容正确性留给 fixture 塔。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：runner 与断言口径已就绪，只需填清单条目；<b>leverage 高</b>：真实站点用例数成为“真实覆盖面”的可度量指标，把“绿”从“未测”中解耦。</dd>
+  </dl>
+  <div class="diagram">
+    <svg viewBox="0 0 680 190" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace,monospace">
+      <text x="14" y="18" fill="#aab3c2" font-size="11" font-weight="700">测试塔（行业心智模型 A）</text>
+      <g font-size="10.5">
+        <polygon points="340,32 246,72 434,72" fill="#2a1418" stroke="#f87171"/><text x="340" y="58" fill="#f87171" text-anchor="middle">塔尖：真实站点冒烟</text>
+        <text x="446" y="58" fill="#f87171" font-size="11">启用数 = 0</text>
+        <polygon points="246,72 214,112 466,112 434,72" fill="#16241f" stroke="#34d399"/><text x="340" y="98" fill="#34d399" text-anchor="middle">塔身：fixture E2E（74 用例 · 真产物 · 真 Chromium）</text>
+        <polygon points="214,112 182,152 498,152 466,112" fill="#16241f" stroke="#34d399"/><text x="340" y="138" fill="#34d399" text-anchor="middle">塔基：引擎 harness / 校准语料（mock DOM）</text>
+        <text x="510" y="170" fill="#7c8698" font-size="10.5">塔外：cron 合成监控（每周一，advisory）</text>
+      </g>
+    </svg>
+    <div class="cap">塔基/塔身是业界范式正确实现；塔尖存在但启用数为零——绿无法代表真实世界</div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C5 · 帧治理：嵌套帧静默失败</h3>
+    <span class="badge b-wn">Worth exploring</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>src/main.ts:44-53</code>(<code>isEmbeddedFrame</code>) · <code>:55-58</code>(<code>isTopFrameSameOrigin</code>) · <code>src/config.ts:105</code></dd>
+    <dt>Problem</dt><dd><code>isEmbeddedFrame()</code> 只扫顶层 <code>document.querySelectorAll('iframe, frame')</code>——<b>不穿 shadowRoot、不递归孙帧</b>。多层嵌套（codepen embed 再被嵌、动态 iframe、shadow 包裹）下，子帧点击图标的消息在 <code>main.ts:67</code> 被<b>静默 return</b>：无面板、无 toast、无降级提示。</dd>
+    <dt>Solution</dt><dd>帧枚举改为递归 + shadowRoot 穿透；校验失败时降级为可见 toast（而非静默）。<b>注意</b>：深度调研（§05 F1-F3）确认本仓库“全帧自治 + 顶层中心化面板 + origin/source 双校验”的架构<b>与业界共识一致</b>——这是<b>覆盖缺口</b>，不是架构错误，因此只做局部加深，不重构。</dd>
+    <dt>Benefits</dt><dd><b>locality 好</b>：改动局限在一个校验函数；<b>leverage 中高</b>：直接消除 codepen 类“点了没反应”的静默失败。</dd>
+  </dl>
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <h3 style="margin:0">C6 · 过程证据被 git 跟踪（339 文件 / 2.3MB）</h3>
+    <span class="badge b-wn">Worth exploring</span>
+  </div>
+  <dl class="kv" style="margin-top:14px">
+    <dt>Files</dt><dd><code>.scratch/**</code>（339 文件全部被跟踪）· <code>.codegraph/.gitignore</code></dd>
+    <dt>Problem</dt><dd><code>.scratch</code> 是过程证据区，但 339 个文件<b>全部在 git 索引里</b>——它膨胀了每次 diff/检出的表面积，且与“冻结目录禁改”的约定相互矛盾。</dd>
+    <dt>Solution</dt><dd>把冻结的过程证据归档到仓库外或独立分支；工作区只保留现役流程文件。这是<b>纯删除型</b>改动（符合 ponytail 阶梯第 1 级：需要存在吗）。</dd>
+    <dt>Benefits</dt><dd><b>leverage 中</b>：减小 diff 噪声，让真正的代码改动可见；<b>locality 好</b>：无源码依赖。</dd>
+  </dl>
+</div>
+
+<h2><span class="n">05</span>行业心智模型模板库（可直接复用的轮子）</h2>
+<p>本节的每一条都来自 atomcode 深度调研（Exa + Tavily + AnySearch 三引擎、官方文档优先、多源交叉）。<b>原则：复用成熟轮子，不重复开发。</b></p>
+
+<h3>测试塔（4 个模板）</h3>
+<div class="grid g2">
+  <div class="tpl"><div class="id">T1</div><div class="nm">测试塔 / 金字塔</div><div class="ds">塔基单测（mock GM_*/chrome.*）→ 塔身 fixture E2E（确定性 100%）→ 塔尖真实站点冒烟（宽断言）→ 塔外合成监控（cron）。规则：每层用例递减、成本递增、真实性递增；<b>真实站点用例只升不降</b>——发现塔身未覆盖的形态，先沉淀为 fixture 再修脚本。</div><div class="src">Playwright 官方 · Checkly 官方 · Katalon · bugbug.io</div></div>
+  <div class="tpl"><div class="id">T2</div><div class="nm">注入语义三分法</div><div class="ds">测“页面上发生了什么”→ <code>addScriptTag</code>（主世界）；测“扩展发布形态”→ MV3 包装 + <code>--load-extension</code>；测“GM_* 权限语义”→ 只能手动 + 单测层 stub GM API。注意：MV3 content script 跑 isolated world，<b>拿不到页面全局</b>，与 TM 沙箱语义不同。</div><div class="src">Playwright 官方 · Cypress Discussion #28107</div></div>
+  <div class="tpl"><div class="id">T3</div><div class="nm">反爬阶梯与 2×2 实验</div><div class="ds">被拦？先做 2×2 受控实验（headless/headed × direct/proxy）定位拦截变量；指纹问题 → Xvfb headful（Docker 内勿用 xvfb-run 当 PID 1）；自有服务 → 官方测试密钥。铁律：<b>不凭论坛直觉买代理，先做受控实验</b>。</div><div class="src">Cloudflare Turnstile 官方 · dev.to 实战复盘</div></div>
+  <div class="tpl"><div class="id">T4</div><div class="nm">站点清单驱动 + 存在性冒烟</div><div class="ds">真实站点用例不写死在代码里，收敛为声明式清单（URL + 期望锚点）。单站失效只改清单一行；<b>清单大小本身就是“真实覆盖面”的可度量指标</b>。断言强度 = 注入后 DOM 出现 + 无未捕获异常；内容正确性全部留给 fixture 塔。</div><div class="src">Bitwarden BIT live tests · 本仓库 site-manifest 同构</div></div>
+</div>
+
+<h3>分发管线（3 个模板）</h3>
+<div class="grid g3">
+  <div class="tpl"><div class="id">D1</div><div class="nm">GitHub 主仓 + GF 反向同步</div><div class="ds">GF <b>无写入 API</b>，自动化模型是“拉”不是“推”。正确姿势：GF 侧开启 Sync from external URL 指向 GitHub raw → push/webhook 触发 GF 拉取。CI 只负责版本一致性闸门。</div><div class="src">GF 官方 API 文档 · greasyfork#1288 / #1499</div></div>
+  <div class="tpl"><div class="id">D2</div><div class="nm">版本同步三档</div><div class="ds">① 手动 bump + tag 校验闸门（package.json 为真源，CI 校验 tag=版本）② 构建期注入（vite-plugin-monkey 从真源生成 @version）③ semantic-release 全自动。<b>起点 = ①+②</b>。</div><div class="src">vite-plugin-monkey · webpack-userscript-template</div></div>
+  <div class="tpl"><div class="id">D3</div><div class="nm">GF 三条硬规则</div><div class="ds">不得混淆/压缩（须输出非 minified）；单文件 ≤2MB；更新检查 ≤1 次/天，且主功能代码必须托管在 GF 上、不得引导用户改用替代下载源。</div><div class="src">GF code rules / external-scripts 官方</div></div>
+</div>
+
+<h3>注入 UI 可发现性（5 个模板）</h3>
+<div class="grid g2">
+  <div class="tpl"><div class="id">U1</div><div class="nm">Reduce the Gap</div><div class="ds">入口离任务越近越容易被发现。信息气味理论：用户只扫描与当前目标相关的元素；藏在工具栏弹窗里的功能，对从未点过图标的用户等于不存在。</div><div class="src">Plasmo 官方 · NN/g information scent</div></div>
+  <div class="tpl"><div class="id">U2</div><div class="nm">横幅盲区反转（反直觉）</div><div class="ds">用户会习得性忽略“位置像广告、视觉处理像广告”的元素——这是扫描阶段自动过滤，不是看过再决定。右下角“漂浮球 + 高饱和 + 阴影卡片”命中全部广告特征。推论：<b>更安静、更原生的注入物反而被阅读率更高</b>；杠杆在位置与相关性，不在视觉重量。</div><div class="src">NN/g 1997/2007/2018 眼动研究</div></div>
+  <div class="tpl"><div class="id">U3</div><div class="nm">渐进式披露（2 层上限）</div><div class="ds">切分要正确（高频需求在首层）；通往二层的路必须显而易见；<b>超过 2 层用户会迷路</b>。注入 UI 模板：小图标/角标（L0）→ 展开面板（L1）→ 高级设置（L2 封顶）。</div><div class="src">NN/g Progressive Disclosure</div></div>
+  <div class="tpl"><div class="id">U4</div><div class="nm">油猴三层入口模板</div><div class="ds">userscript 无法加工具栏图标/右键菜单，唯一标准全局入口是 <code>GM_registerMenuCommand</code>（可在检查页面后动态注册）。模板 = 菜单命令（全局入口）+ 页内情境触发 + 快捷键。代价：入口本身藏在脚本管理器里。</div><div class="src">Tampermonkey 官方文档 · HN 社区共识</div></div>
+  <div class="tpl"><div class="id">U5</div><div class="nm">Grammarly 锚定模式</div><div class="ds">浮动组件<b>锚定在被作用的文本框旁</b>（非页面角落）+ 可拖拽锚点 + 按站记忆位置 + 状态外显（“发现 N 个问题”）+ 最小足迹模式（只留下划线）。解决“浮动球挡住页面功能”的头号抱怨。</div><div class="src">Grammarly 官方用户手册</div></div>
+</div>
+
+<h3>跨帧架构（3 个模板）</h3>
+<div class="grid g3">
+  <div class="tpl"><div class="id">F1</div><div class="nm">全帧自治 + 顶层中心化</div><div class="ds">每帧独立检测与填充，<b>只有顶层帧</b>承担面板宿主与 UI。1Password / Bitwarden / 本仓库票 12 不约而同收敛于此。第一决策变量：<b>哪个帧拥有这个表单</b>。</div><div class="src">Chrome 官方 content scripts · MDN</div></div>
+  <div class="tpl"><div class="id">F2</div><div class="nm">消息黄金三件套</div><div class="ds">targetOrigin 尽量收紧 + <code>event.origin</code> 严格相等 + <code>event.source</code> 引用比对 + 信封 schema（type 命名空间 / eventId 去重 / version）。跨域锚定不可得时退化为 source 引用比对。</div><div class="src">Chrome 官方模板 · ceaksan · spaceraccoon</div></div>
+  <div class="tpl"><div class="id">F3</div><div class="nm">Shadow DOM 默认 / iframe 特例</div><div class="ds">页面内 UI 默认 Shadow DOM（继承属性会穿透，需显式 reset；<code>adoptedStyleSheets</code> 去重）。iframe 仅在对抗页面全局样式轰炸时启用。注意：closed shadow root <b>不是安全边界</b>。</div><div class="src">wxt 三形态 API · rabbitholes 实测</div></div>
+</div>
+
+<h2><span class="n">06</span>顶层建议与 message 步骤</h2>
+<div class="note good">
+  <b>顶层建议（先做哪一项）</b>：<b>C2 入口自锁 + C1 分发最后一公里</b>。理由：这两项是<b>唯一直接对应业主两条投诉</b>（“大多数网站没生效”与“修了没人收到”）的改动，且 locality 极佳（一处注册 / 一次 GF 设置），投入产出比最高。C3/C4 是“让绿重新可信”的地基，紧随其后。C5/C6 属局部加深与卫生，可并行。<b>先做能被人看见的，再做能被人信任的。</b>
+</div>
+<div class="card">
+  <div class="step"><div class="sid">M1</div><div class="sc"><div class="st">修四扇门 + node 升 22</div><div class="sd">四个门改用现成装载器；verify-13 语料规模断言改动态。验收：10/10 门本地全绿，且三门不再挂 pull_request 拦截。</div></div><span class="sev b-dg">C3</span></div>
+  <div class="step"><div class="sid">M2</div><div class="sc"><div class="st">打开面板的全局入口</div><div class="sd">GM 菜单加第二条命令直达 <code>UI.open(null,null,null)</code>。验收：构造 score&lt;35 页面，仍能打开面板并召唤。</div></div><span class="sev b-dg">C2</span></div>
+  <div class="step"><div class="sid">M3</div><div class="sc"><div class="st">lowkey 图标可见性重设计</div><div class="sd">按 U2/U3 模板：降低“广告特征”（去高饱和/阴影），提高信息气味；图标移出 wrapper 盒外以规避 <code>overflow</code> 裁剪。</div></div><span class="sev b-dg">C2</span></div>
+  <div class="step"><div class="sid">M4</div><div class="sc"><div class="st">分发链路：GF 反向同步 + 版本闸门</div><div class="sd">GF 侧开启 Sync from external URL；release.yml 加 tag=@version 一致性闸门；README 改指 releases/latest。验收：GF 上线版本 = tag = 产物 @version。</div></div><span class="sev b-dg">C1</span></div>
+  <div class="step"><div class="sid">M5</div><div class="sc"><div class="st">启用真实站点层（含 CodePen）</div><div class="sd">按 <code>enablementRunbook</code> 填 selector + reason，enabled 置 true；优先收编 CodePen 编辑器页（含嵌套 preview iframe 断言）。验收：至少 1 个 live 目标连续两次绿。</div></div><span class="sev b-dg">C4</span></div>
+  <div class="step"><div class="sid">M6</div><div class="sc"><div class="st">帧校验递归 + 失败降级 toast</div><div class="sd">帧枚举穿 shadowRoot、递归孙帧；校验失败改为可见 toast。验收：三层嵌套 fixture 下点图标有面板或明确提示。</div></div><span class="sev b-wn">C5</span></div>
+  <div class="step"><div class="sid">M7</div><div class="sc"><div class="st">过程证据出仓 + 升塔纪律入 WORKFLOW</div><div class="sd">归档 .scratch 冻结证据；把“先沉淀 fixture 再修脚本”写成流程条款。验收：<code>git ls-files .scratch</code> 数量归零或仅剩现役流程。</div></div><span class="sev b-wn">C6</span></div>
+  <div class="step"><div class="sid">M8</div><div class="sc"><div class="st">（可选）语言切换 + i18n 死导出清理</div><div class="sd">若确需手动语言切换：面板可选 + GM 持久化，顺带解除 <code>LANG</code> 死导出。否则删死导出。</div></div><span class="sev b-gy">backlog</span></div>
+</div>
+
+<h2><span class="n">07</span>证据索引</h2>
+<div class="card p2">
+<dl class="kv">
+  <dt>本机命令</dt><dd><code>node tests/scripts/verify-ticket-{02,09,13,15,18}.mjs</code> · <code>git rev-parse origin/main</code> · <code>git merge-base --is-ancestor v1.5.0 origin/main</code> · <code>git ls-remote origin main</code> · <code>gh release list</code> · <code>find .scratch -type f | wc -l</code></dd>
+  <dt>联网实证</dt><dd><code>update.greasyfork.org/scripts/573755/Find-Your-Country-Code.meta.js</code> → <code>@version 1.3.4</code></dd>
+  <dt>代码证据</dt><dd><code>src/ui/index.ts:82,265,317,326,627-635,695</code> · <code>src/main.ts:44-58,59-86,87-90</code> · <code>src/detect/index.ts:542-544,568-592,848</code> · <code>src/config.ts:53-54,97,105</code> · <code>vite.config.ts:8</code> · <code>README.md:47</code> · <code>release.yml:63,73</code> · <code>tests/scripts/14-lib-engine.mjs:11</code></dd>
+  <dt>深度调研</dt><dd>4 次 atomcode 全景调研（测试塔 / 分发管线 / 可发现性 / 跨帧架构），三引擎交叉，官方文档优先</dd>
+  <dt>子代理</dt><dd>4 个并行只读审计：覆盖审计 · 分发链审计 · 门禁完整性审计 · UI 入口审计</dd>
+  <dt>工具</dt><dd>codegraph 1.6.0（119 files / 1,693 nodes / 4,469 edges）· atomcode 5.0.9 · but 0.22.3</dd>
+</dl>
+</div>
+
+<footer>
+  <p><b>本报告为只读调查产物</b>——未修改任何源码、未推送任何提交。所有结论均以命令实测输出为准；锐评中被证伪的条目已显式标注为 REFUTED 并<b>不立票</b>。</p>
+  <p>生成：Cycle-5 架构大脑调查 · 基线 origin/main = e2a10d8e（v1.5.0）</p>
+</footer>
+
+</div>
+</body>
+</html>

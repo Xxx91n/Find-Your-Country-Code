@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>pseudo negative fixture (ticket 18)</title>
+<style>
+  #search-lb, #gen-lb { display: none; border: 1px solid #ccc; width: 240px; list-style: none; margin: 4px 0; padding: 0; }
+  #search-lb.open, #gen-lb.open { display: block; }
+</style>
+</head>
+<body>
+  <h1>伪 select 否决组负例（票 18）</h1>
+
+  <label for="anchor-cc">Anchor country code</label>
+  <select id="anchor-cc" name="country_code">
+    <option value="">请选择</option>
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+    <option value="+44">+44</option>
+  </select>
+
+  <!-- ① 搜索型 typeahead [17 票策略 §2 否决组]: aria-autocomplete=list 且选项零国家语义 -->
+  <label for="site-search">Site search</label>
+  <input id="site-search" type="text" role="combobox" aria-expanded="false"
+         aria-controls="search-lb" aria-autocomplete="list" autocomplete="off">
+  <ul id="search-lb" role="listbox">
+    <li role="option">apple pie</li>
+    <li role="option">banana split</li>
+    <li role="option">cherry tart</li>
+    <li role="option">durian shake</li>
+  </ul>
+
+  <!-- ② 通用 combobox: 结构信号 20 &lt; 登记线 25（无国家语义上下文） -->
+  <span id="generic-label">Filter</span>
+  <div id="generic-combo" role="combobox" aria-expanded="false" aria-controls="gen-lb"
+       aria-labelledby="generic-label" tabindex="0">Option 1</div>
+  <ul id="gen-lb" role="listbox">
+    <li role="option">Option 1</li>
+    <li role="option">Option 2</li>
+    <li role="option">Option 3</li>
+    <li role="option">Option 4</li>
+  </ul>
+
+  <script>
+    (function () {
+      var pairs = [['site-search', 'search-lb'], ['generic-combo', 'gen-lb']];
+      pairs.forEach(function (p) {
+        var t = document.getElementById(p[0]);
+        var lb = document.getElementById(p[1]);
+        t.addEventListener('mousedown', function () {
+          var open = t.getAttribute('aria-expanded') !== 'true';
+          t.setAttribute('aria-expanded', open ? 'true' : 'false');
+          lb.classList.toggle('open', open);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
