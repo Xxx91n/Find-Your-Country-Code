@@ -4,9 +4,9 @@
 > 生成：2026-09-17｜基线：origin/main = a93cb3a8（v1.7.0）｜分支：cch/16-cycle7-grill
 > 上游：`.scratch/architecture-recovery/handoffs/50-cycle6-round-closeout.md`（交接）＋ `test-results/锐.txt`（Round-4 锐评，已逐条实物核验）
 > 机制：ID 自 D-001 起递增（与 `.scratch/cycle6-grill/decision-ledger.md` 的 D-001…D-016 隔离）；每条含【原问题／用户原回答原文／规范化需求／显式约束与负向需求／状态】。
-> 状态取值：`current`（已确认生效）／`revised`（被后续回答修订）／`stale`（被证伪或废弃）／`deferred`（登记在案，本周期不做）。
+> 状态取值：`current`（已确认生效）／`revised`（被后续回答修订）／`stale`（被证伪或废弃）／`deferred`（登记在案，本周期不做）／`pending`（调研已出、待拍板）。
 > 硬规则：**结论不许只活在对话里**；触发任何压缩／compact／handoff 动作前，先确认本台账已落盘到最新。
-> 调研存档：`.scratch/cycle7-grill/research/q2-industry-benchmark.md`（atomcode，10 条来源）
+> 调研存档：`research/q2-industry-benchmark.md`（10 条来源）· `research/q3-process-doc-debt-benchmark.md`（17 条来源）
 
 ---
 
@@ -19,48 +19,45 @@
 | **D-003** | Q2② — 锐评「摘 7 面 `knownResidual` 旗」如何处置？ | `采纳` | ① 摘 7 面旗（`rs-weak-input-name` / `-placeholder` / `-dialcode` / `-placeholder-dial` / `-snake`、`rs-iso2-paren-select`、`ce-dial-positive`）；② 为每条豁免补 `owner` / `reviewBy` / `reason` 三字段元数据；③ 新增 **CI lint 门**校验豁免必带三字段（缺则 CI 红）；④ 到期**必须重新裁定**：摘旗（翻转 `knownResidual`）或续期（更新 `reviewBy`）。 | **禁止物理删除语料条目**（ADR-0008 决策 4 append-only ＋ manifest `appendOnlyRule`）——到期以**状态位翻转替代删除**；不得重写既有条目语义；不得借摘旗降低断言强度；摘旗后须以 calibration 复验 precision/recall 基线不回退、ADR-0009 冻结档位不变；三字段属**机制**，不入 CONTEXT.md 术语表（D-009／D-013 纪律）。 | current |
 | **D-004** | Q2④ — 锐评「workflow 合并同类项（30 → 个位数）＋ 删死触发分支」如何处置？ | `采纳` | ① **删除数量 KPI**（不设「个位数」目标）；② 21 个票级 verify workflow 合并为 **1 个 `workflow_call` reusable**（票号作 input）；③ 死触发按**分支生命周期**清理（现确认 ≥2：`verify-13.yml:10` → `cch/13-visibility-l3-hardening`；`verify-05-harness.yml:11` → `cch/05-harness-primitives`）；④ `verify-30.yml` **正名**（现跑 `verify-ticket-05.mjs`）；⑤ 非票级 workflow 按「独立触发／独立 owner／独立门控语义」保留。 | 不得丢失任何票级回归覆盖（**A-008／A-015**）；合并后须**逐门复跑绿**；ADR-0006 条款 1（脚本入 `tests/scripts/`、workflow 禁引 `.scratch/`）与条款 2（非发版 workflow 必声明 `pull_request`）不得被削弱——reusable workflow 本身以 `workflow_call` 定义、`pull_request` 由**调用方**声明。 | current |
 | **D-005** | Q2⑤ — 锐评「化石清单一次扫清（8 项）」如何处置？ | `采纳` | **甲级（零行为变更，本轮可做）**：`config.ts:13` 算术快照注释→**删除而非更新**；`fill:253` 注释；`i18n.ts` 去掉 Unicode 反斜杠转义书写（32 处）；`types.ts` `AnyEl` 交叉逃逸→类型守卫收窄；`ui:880` HTML 拼接→**加防御性注释**（不重构）。**乙级（行为／安全变更，须另立票并语料先行）**：`ui:417-421` 群体召唤语义；`detect:823` `getComputedStyle` 入指纹的性能；`countries.ts` 补 Kosovo（XK／+383）与 Vatican（VA／+379）——属 **data gap**，补断言防再犯。 | **HTML 拼接不按安全债处理**（OWASP 判据＝数据可信度；纯静态常量属 not untrusted data，不构成 XSS）；类型修复须 **types-only**（ADR-0006 条款 3）；甲级不得改变运行时行为；乙级**不得混入甲级票**；语料先行（无地基不立检测票）。 | current |
+| **D-006** | Q3 之 B-5 — `ACCEPTANCE-SURFACE.md` 与代码脱节如何处置？（经 atomcode 行业对标调研） | `采纳` | 立票（甲级·文档）：① 修正 `#cch-locale-tg`（`:55`／`:172`）→ 实际选择器 `#cch-locale-row` / `.cch-locale-seg` / `.cch-locale-opt[data-locale]`；② 修正 `:174`「菜单命令注册（顶层 2 条）」→ **4 条**；③ **新增 doc-facts lint 脚本**（`tests/scripts/`），校验文档中出现的 `#cch-*` / `.cch-*` 选择器均存在于 `src/`、且菜单命令计数与 `main.ts` 一致；④ 该 job **折叠进既有门禁 workflow**。 | 不得新增 workflow 文件（**D-004** 删数量 KPI、合并 workflow）；不得夹带业务行为变更（**D-001③**）；不得为改文档而弱化既有断言；lint 脚本须以自身位置上溯锚定仓库根（ADR-0006 条款 1）。 | current |
+| **D-007** | Q3 之 B-6 — `gf-alignment-check.yml` 未声明 `pull_request` 如何处置？ | `采纳` | **不补触发面**；在 ADR-0006 条款 2 增加「**monitor 类例外**」条款并登记 `gf-alignment-check.yml`，附 **gate / monitor 四判据**（结果是否随 PR 内容变化 / 信号源是否确定 / 失败是否作者可行动 / 消费方式）；与 **D-002 联动**（若自查后停用该 workflow，本条随之关闭）。 | 不得以「补一个 `pull_request` 触发」了事（会把与 PR 无关的红灯注入信任面）；monitor 类例外**必须附判据表**，不得成为「任意 workflow 免门控」的后门；不得削弱 ADR-0006 条款 2 对 **gate 类** workflow 的约束，其**意图（防 main 裸奔）不得被削弱**。 | current |
+| **D-008** | Q3 之 B-8 — `verify-03` G8c（100000 次 < 50ms）性能敏感门如何处置？ | `采纳` | **立票改门**（**修正编排 Agent 原「不立票 + 不得放宽断言」的推荐**）：G8c 由裸绝对阈值改为**相对比较**（同 CI 环境内与基线操作对比）或**移出阻塞门为独立性能作业**；若保留阈值则用**宽松烟雾级**（如 < 500ms）+ CI 专用基线。 | **范围限定 G8c**——**A-003／A-023** 的「1000 节点 scan < 350ms 红线」是否同改**另案**，本票不扩面；不得以「改门」消除真实回归覆盖（改门后仍须能抓住数量级退化）；不得删除该门的诊断输出。 | current |
+| **D-009** | Q3 之 B-7 — `src/diag/index.ts:83` 的 `console.warn` 如何处置？ | `采纳` | 立票：改为**可门控 + 脚本名前缀**（接既有 `GM_registerMenuCommand` 诊断开关），**而非直接删除**；并附**报告补正**（票 03 声明「`src/` console=0」与实物 1 处不符，原文保留 + 补正）。 | 不得向宿主页面控制台输出**未门控**的 warn/info 级日志；不得删除 diag 自身的失败可观测性（应入内部环形缓冲／诊断面）；不得改变诊断面既有契约（cycle6 D-012 的单采集源双 serializer）。 | current |
+| **D-010** | Q3 之 B-14 — 票 04 勾销状态（0/5）与报告自述（5/5）相反如何处置？ | `采纳` | 立票（甲级·诚信面）：① 补勾 `issues/04`（0/5 → 5/5）；② 报告追加补正（原文保留）；③ **新增校验脚本**：解析票据勾销标记 → 与报告自述数字比对 → 不一致即 CI 失败（挂既有 CI 门）。 | 不得改写报告原文（只追加补正）；**unknown 不得静默合并为 pass**（缺数据不得推导出「已完成」）；校验脚本不得只覆盖本票，应可复用于后续周期。 | current |
+| **D-011** | Q3 之 B-15 ＋ 新发现 B-16 — 陈旧审计报告与 ADR 取代指针如何处置？ | `采纳` | **B-15 不立票**：为 `cycle6-audit-report.md` 加**时点横幅**（本报告反映截至 YYYY-MM-DD 的状态，最新结论见台账）+ `superseded-by` 指针；**B-16 随同票处理**：为 `ADR-0003` 补 `superseded by ADR-0007`、`ADR-0004` 补 `superseded by ADR-0005` 的**结构化状态指针**（MADR 词汇：`Superseded`）。 | **不得删除历史文档**（删除＝销毁审计线索）；不得改写 ADR 的 Context／Decision 正文，变更只经 Status 字段 + 带日期 Notes；不得为可逆／无取舍小事新立 ADR（域建模纪律）。 | current |
+| **D-012** | Q3 之 B-9 / B-10 / B-11 / B-12 / B-13 如何处置？ | `采纳` | **不立票**。B-9（跨票审计以分支 tip／时点为准，不直接引用历史报告行数）· B-10（行数口径统一为「末行无换行则 wc 少计 1」或在报告标注口径）登记为**纪律**；B-11（`_writeRules` 不校验不变量）· B-12（S4 断言粒度 `<= 500`）· B-13（`live-codepen-editor` flaky）维持**观察项**。 | 观察项不得被静默遗忘——每轮收口须复查；B-12 的 `<= 500` 断言**不得放宽**（禁改）；B-13 的发版处置须走 ADR-0010 条款 2 的 ack + 立票。 | current |
 
 ---
 
-## 一致性对撞明细（D-001 逐条 · 2026-09-17 Q2 调研）
+## 一致性对撞明细
+
+### Q2 调研（D-001 逐条）
 
 | D-001 约束 | 对撞结果 |
 |---|---|
 | ① 排除 (C) 架构恢复 | 无涉；研究未引入宏观调查需求 |
 | ② grill 期间不动源码／不设其他目标 | 一致；本轮仅落账本与调研存档，未动 `src/` |
-| ③ A 侧不夹带业务行为变更 | 一致；研究要求的 CI lint 门／文档声明属仓库层；静态数据补全已归入乙级另立票 |
-| ④ B 侧不越既有纪律（语料先行／无地基不立检测票／ADR-0005 档位／D-013 七术语上限） | 一致；研究⑤ 的五项心智模型均为**机制**（lint 门、折旧表、backlog 共享），按 D-009／D-013 纪律**不入 CONTEXT.md 术语表**，故不触 7 条上限 |
+| ③ A 侧不夹带业务行为变更 | 一致；研究要求的 CI lint 门／文档声明属仓库层 |
+| ④ B 侧不越既有纪律（语料先行／无地基不立检测票／ADR-0005 档位／D-013 七术语上限） | 一致；Q2／Q3 研究的机制项（lint 门、折旧表、backlog 共享）均**不入 CONTEXT.md 术语表**，不触 7 条上限 |
 
-**结论：与 `current` 记录无冲突 ⇒ 未触发 `revised` 机制，本轮无 D-xxx 被标记为 revised。**
+### Q3 调研（对 D-001…D-005）
 
-### 与已 accepted ADR／既有纪律的实质张力（已登记，未静默采纳）
+- 与 `current` 记录 **D-001…D-005 无冲突** ⇒ **未触发 `revised` 机制**。
+- D-006 与 **D-003**（CI lint 门）同向，与 **D-004**（不新增 workflow）协调后落地。
+- D-007 与 **D-002** 联动（D-002 自查结果决定本条存废）。
+- D-009 的门控方案接 cycle6 诊断面契约（**D-012 cycle6**），不破契约。
 
-- **张力①**：调研的「到期自动删除」↔ **ADR-0008 决策 4**（语料 append-only、漂移即 CI 红）＋ manifest `appendOnlyRule` ＋ **ADR-0009** 冻结档位断言。→ 由 D-003 以「**状态位翻转替代删除**」合成解决。
-- **张力②**：锐评「30 → 个位数」↔ **A-008／A-015**（不得丢失票级回归覆盖）＋ **ADR-0006 条款 1/2**。→ 由 D-004 **删除数量 KPI** 解决。
+### 与已 accepted ADR／既有纪律的实质张力（已登记，均未静默采纳）
 
----
-
-## 待拍板（pending · Q3 调研结论已出、未生效）
-
-> 本区条目**不进入**上方台账（台账只收用户已确认的结论）；用户拍板后转入台账并置 `current`。
-> 对撞结果：本批调研与 `current` 记录 **D-001…D-005 无冲突**；与 **ADR-0006 条款 2** 存在 1 处实质张力（见 D-007）。
-> 调研存档：`.scratch/cycle7-grill/research/q3-process-doc-debt-benchmark.md`（17 条来源）。
-
-| ID | 议题 | 调研口径（工业界） | 与既有记录的张力 | 我的合成建议 | 状态 |
-|----|------|-------------------|------------------|-------------|------|
-| **D-006** | 验收文档与代码脱节（B-5） | 机器可校验的**单一事实源**；**选择器契约**（`data-testid`）＋ **CI lint** 校验文档中的事实断言（选择器存在性、计数）。分歧：手写文档派 vs 生成派，小项目折中＝手写文档 + 事实断言 CI 校验 | 无 current 冲突；与 **D-003**（CI lint 门）同向；须与 **D-004**（删数量 KPI、合并 workflow）协调——新门应**折叠进既有 workflow**，不新增文件 | 立票（甲级·文档）：① 修正 `#cch-locale-tg`（`:55`／`:172`）→ `#cch-locale-row` / `.cch-locale-seg` / `.cch-locale-opt[data-locale]`；② 修正 `:174`「菜单 2 条」→ **4 条**；③ **新增 doc-facts lint 脚本**（`tests/scripts/`）校验文档中出现的 `#cch-*` / `.cch-*` 选择器均存在于 `src/`、菜单命令计数与 `main.ts` 一致；④ 该 job 折叠进既有门禁 workflow | pending |
-| **D-007** | CI 门控范围（B-6） | **gate / monitor 四判据**：结果是否随 PR 内容变化 / 信号源是否确定 / 失败是否作者可行动 / 消费方式（阻塞 vs 报警）；第三方实时状态 monitor **应移出 `pull_request`**，scheduled + allowed-to-fail。**无实质分歧** | **张力③**：**ADR-0006 条款 2** 字面要求「所有非发版 workflow 必声明 `pull_request:`」，例外仅 `release.yml`／`release-dry-run.yml` | **不补触发面**，改为在 ADR-0006 条款 2 增加「**monitor 类例外**」并登记 `gf-alignment-check.yml`，附四判据表；**与 D-002 联动**（若 D-002 自查后停用该 workflow，本条随之关闭） | pending |
-| **D-008** | 墙钟绝对阈值门（B-8） | 禁止**裸绝对阈值**进 gate；改**相对比较**（同 CI 环境基线 ± 统计边界）或移入非阻塞性能作业；保留则用宽松烟雾阈值（如 < 500ms）+ CI 专用基线。**研究明确定性本仓 50ms 门为「标定失败」**（实测裕度仅约 30%，低于噪音波动）。分歧：绝对阈值是否可作烟雾底线 | **张力④**：本仓墙钟门不止一处——`verify-03` G8c（100000 次 < 50ms）与 **A-003／A-023** 的「1000 节点 scan < 350ms 红线」 | **修正我 Q3 的原推荐**（原「不立票 + 不得放宽断言」不足以覆盖「门本身设计有误」）：立票，G8c 改为**相对比较**或移出阻塞门为性能作业；**范围限定 G8c**，350ms 红线是否同改**另案**（不扩面） | pending |
-| **D-009** | 宿主控制台输出（B-7） | **默认静默**；保留输出则**可门控**（开关）+ **脚本名前缀**；正式诊断通道用 `GM_log`。分歧：`error` 级是否可直接写 | 无 current 冲突 | 立票：改为**门控 + 前缀**（接既有 `GM_registerMenuCommand` 诊断开关），**而非直接删除**；并附**报告补正**（票 03 声明「`src/` console=0」与实物不符） | pending |
-| **D-010** | 过程证据一致性（B-14） | **消除人工誊抄层**——报告中的勾销数字由票据**机器生成/校验**并纳入 CI（样板：foxBMS `trace-gen.py --check`）；铁律「**unknown 不得静默合并为 pass**」。**无分歧** | 无 current 冲突 | 立票（甲级·诚信面）：① 补勾 `issues/04`（0/5 → 5/5）；② 报告追加补正（原文保留）；③ **新增校验脚本**：票据勾销数与报告自述数字比对，挂既有 CI 门 | pending |
-| **D-011** | 陈旧文档与 ADR 指针（B-15 ＋ **新发现 B-16**） | 审计报告／postmortem 属**时点快照** → **加时点横幅 + status 标注（`superseded-by` 双向指针）**，**保留原文不删除**（删除等于销毁审计线索）；MADR 状态词汇：`Deprecated` / `Superseded` | 无 current 冲突；**新发现 B-16**：`ADR-0003`／`ADR-0004` 的「被取代」只存在于正文散文，**缺 MADR 式结构化 `Superseded-by` 指针** | B-15 不立票：加时点横幅 + `superseded-by` 指向台账；**B-16 随同票处理**（补 `ADR-0003` → `superseded by ADR-0007`、`ADR-0004` → `superseded by ADR-0005` 的结构化指针） | pending |
-| **D-012** | 登记纪律与观察项（B-9 / B-10 / B-11 / B-12 / B-13） | 研究未涉；沿用本仓既有登记惯例 | 无 | **不立票**：B-9（跨票审计以分支 tip／时点为准）· B-10（行数口径）登记为纪律；B-11（`_writeRules` 不校验不变量）· B-12（S4 断言粒度）· B-13（`live-codepen-editor` flaky）维持观察项 | pending |
+- **张力①**（Q2）：调研的「到期自动删除」↔ **ADR-0008 决策 4**（语料 append-only、漂移即 CI 红）＋ manifest `appendOnlyRule` ＋ **ADR-0009** 冻结档位断言。→ 由 **D-003** 以「状态位翻转替代删除」合成解决。
+- **张力②**（Q2）：锐评「30 → 个位数」↔ **A-008／A-015**（不得丢失票级回归覆盖）＋ **ADR-0006 条款 1/2**。→ 由 **D-004** 删除数量 KPI 解决。
+- **张力③**（Q3）：**ADR-0006 条款 2**「非发版 workflow 必声明 `pull_request:`」↔ 调研的「第三方实时状态 monitor 应移出门控」。→ 由 **D-007** 以「新增 monitor 类例外 + 判据表」解决。
+- **张力④**（Q3）：本仓墙钟门不止一处（G8c 50ms 与 A-003／A-023 的 350ms 红线）↔ 调研的「禁裸绝对阈值进 gate」。→ 由 **D-008** 限定范围为 G8c 解决，350ms 另案。
 
 ---
 
 ## 覆盖率自评
 
-- 已确认条目：**5**（D-001…D-005 = current）｜revised：0｜stale：0｜deferred：0
-- 待拍板：**7**（D-006…D-012 = pending，Q3 调研结论）
-- 本问覆盖：Cycle-7 目标函数 = **已定**（A+B）；Q2（锐评 5 工单）= **已定稿**；Q3（backlog `B-5…B-15` ＋ 新发现 B-16）= **调研已出，待拍板**
-- 待决（frontier）：Q3 拍板 → **B 侧能力集边界**；A/B 排序与耦合；本轮交付单位与验收面
+- 已确认条目：**12**（D-001…D-012 = current）｜revised：0｜stale：0｜deferred：0｜待拍板：**0**
+- 本问覆盖：Cycle-7 目标函数 = **已定**（A+B）；Q2（锐评 5 工单）= **已定稿**；Q3（backlog `B-5…B-15` ＋ 新发现 B-16）= **已定稿**
+- 待决（frontier）：**B 侧能力集边界**；A/B 排序与耦合；本轮交付单位与验收面
