@@ -1,3 +1,14 @@
+## v1.7.0 Changelog
+
+- New: the panel's Settings entry is now in the userscript menu — even on pages where no field is recognized, you can open the panel from the menu and jump straight to Settings. Language and other settings are no longer buried deep inside the panel.
+- Improved: the panel language switcher is now an explicit three-way control (Auto / Chinese / English) with the current choice clearly highlighted; switching refreshes all panel text, icon tooltips, favorite-row tooltips and empty-state copy at once, with no stale-language leftovers.
+- New: a diagnostics view — see *why* a field was or was not recognized, which tier it was injected at, and what value was written, laid out across four layers (tool / inject / logic / write), exportable as text. Errors and warnings are always recorded; full-chain tracing can be enabled when you need detail.
+- Fixed: “selecting a country does nothing” inside nested forms (iframes / embedded srcdoc pages) — the origin check on embedded frames used to misjudge and silently drop the fill command. Nested-form filling now genuinely works end to end.
+- Improved: intl-tel-input fields are now judged by the *selected country state* rather than the host input's value, which ITI's own semantics never guarantee to set — a much more faithful result check.
+- Improved: the site-rule count cap is now enforced on the write path (over-cap writes are rejected outright), so no over-cap rule document can exist in memory.
+- Testing: the real-site layer was upgraded from “is the icon injected?” to a five-level ladder (presence → injection → interaction → write-and-read-back → user feedback), backed by owned mirror pages and structural skeletons that gate releases automatically.
+- New: a release gate — a release is blocked when the real-site layer's latest run is not green, unless explicitly acknowledged with a tracking ticket, so known issues cannot ship silently.
+
 ## v1.6.0 Changelog
 
 - New: A global panel entry — open the country-code panel straight from the userscript menu, without depending on a 🌐 icon appearing on the page. The old dead end (no field confident enough → no icon → panel unreachable) is gone, and low-confidence fields can be summoned from the panel.
