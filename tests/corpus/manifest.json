@@ -680,6 +680,173 @@
     "ctx": {
       "anchorHasTel": true
     }
+  },
+  {
+    "id": "mm2-pseudo-paren-dial",
+    "family": "mm2",
+    "polarity": "negative",
+    "expect": "none",
+    "expectedTier": "none",
+    "dialEvidence": true,
+    "upgradeCandidate": true,
+    "expectBasis": "polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "knownResidual": false,
+    "source": "Cycle-7 T-13（D-013 / D-015 伪 select 二次裁决）语料先行；形态来源：rs-noaria-custom-dropdown（票 29 / A-003 无 ARIA 手写下拉）+ P31-paren-dial-control 的选项内容证据面（(+NN) 括号区号）",
+    "note": "伪 select 形态①（**升级候选**：选项内容携带区号证据）：无 ARIA 手写下拉（div[tabindex=0] + 后代 ul>li），选项以「国名 (+NN)」承载区号证据（CJK 文本 + ISO2 值）。引擎实测：L1 kw:country(+14) + L2 custom:dropdown(+20) = 34 —— 稳过登记线 25（进召唤面）、< SCORE_LOWKEY(35)（不注入），再经 ADR-0005 cap 落 tier=none（src/detect/index.ts:958-961）。 本例是「若升级为自动注入」的候选集成员。polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "signalAttribution": [
+      "L1:kw:country(+14)（class \"select-country\" 经 matchLatin joined 命中 country）",
+      "L2:custom:dropdown(+20)（可聚焦 DIV 触发器 + 后代 li 选项；内容门槛通过：parenDial>0）",
+      "L3 内容证据仅作门槛不作加分（custom 分支不加 L3 分，见 src/detect/index.ts:587-599）",
+      "34 >= ITI_LOW_REGISTER_SCORE(25) → 进召唤面；< SCORE_LOWKEY(35) → 评分层即 tier=none"
+    ],
+    "el": {
+      "tag": "div",
+      "className": "select-country",
+      "attrs": {
+        "tabindex": "0"
+      },
+      "options": [
+        {
+          "value": "cn",
+          "text": "中国 (+86)"
+        },
+        {
+          "value": "us",
+          "text": "美国 (+1)"
+        },
+        {
+          "value": "gb",
+          "text": "英国 (+44)"
+        }
+      ]
+    },
+    "labels": [],
+    "ctx": {}
+  },
+  {
+    "id": "mm2-pseudo-dial-value",
+    "family": "mm2",
+    "polarity": "negative",
+    "expect": "none",
+    "expectedTier": "none",
+    "dialEvidence": true,
+    "upgradeCandidate": true,
+    "expectBasis": "polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "knownResidual": false,
+    "source": "Cycle-7 T-13（D-013 / D-015）语料先行；形态来源：rs-noaria-custom-dropdown（票 29）与 P31-noparen-dial-select 的「值即区号」证据面",
+    "note": "伪 select 形态②（**升级候选**：选项内容携带区号证据）：无 ARIA 手写下拉，区号证据落在**选项值**（data-value=\"+NN\"，命中 DIAL_SET）而非文本；选项文本为国名（无括号、无 +NN）。引擎实测：L1 kw:country(+14) + L2 custom:dropdown(+20) = 34 —— 稳过登记线 25（进召唤面）、< SCORE_LOWKEY(35)（不注入），再经 ADR-0005 cap 落 tier=none（src/detect/index.ts:958-961）。 与形态①同档位 ⇒ plusDial / parenDial 两条内容证据在伪 select 侧同口径可判，且均只作门槛（不加分）。polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "signalAttribution": [
+      "L1:kw:country(+14)（class \"select-country\"）",
+      "L2:custom:dropdown(+20)（内容门槛通过：plusDial>0，值域 +NN 命中白名单区号表）",
+      "34 >= ITI_LOW_REGISTER_SCORE(25) → 进召唤面；< SCORE_LOWKEY(35) → 评分层即 tier=none"
+    ],
+    "el": {
+      "tag": "div",
+      "className": "select-country",
+      "attrs": {
+        "tabindex": "0"
+      },
+      "options": [
+        {
+          "value": "+1",
+          "text": "United States"
+        },
+        {
+          "value": "+44",
+          "text": "United Kingdom"
+        },
+        {
+          "value": "+86",
+          "text": "China"
+        }
+      ]
+    },
+    "labels": [],
+    "ctx": {}
+  },
+  {
+    "id": "mm2-pseudo-nav-menu",
+    "family": "mm2",
+    "polarity": "negative",
+    "expect": "none",
+    "expectedTier": "none",
+    "dialEvidence": false,
+    "upgradeCandidate": false,
+    "knownResidual": false,
+    "source": "Cycle-7 T-13 语料先行；形态来源：票 29 内容门槛的反例面（custom:gate:no-dial-evidence）",
+    "note": "伪 select 负例①（导航菜单 / 静态列表，**无**区号证据）：可聚焦 div[tabindex=0] 已进候选集（SCAN_SELECTORS 的 div[tabindex=\"0\"]），但后代 li 选项零区号、零国家证据 ⇒ 内容门槛 custom:gate:no-dial-evidence 命中，pseudo=false、score=0、不进召唤面。锁定「容器结构（可聚焦容器 + li 列表）本身不构成伪 select 证据」—— 与门槛③同向。",
+    "signalAttribution": [
+      "L2:custom:gate:no-dial-evidence(0)（plusDial+parenDial+isoName === 0 → 内容门槛否决，src/detect/index.ts:592-594）",
+      "score 0 < ITI_LOW_REGISTER_SCORE(25) → 不进召唤面"
+    ],
+    "el": {
+      "tag": "div",
+      "className": "site-nav",
+      "attrs": {
+        "tabindex": "0"
+      },
+      "options": [
+        {
+          "value": "home",
+          "text": "Home"
+        },
+        {
+          "value": "products",
+          "text": "Products"
+        },
+        {
+          "value": "pricing",
+          "text": "Pricing"
+        },
+        {
+          "value": "contact",
+          "text": "Contact"
+        }
+      ]
+    },
+    "labels": [],
+    "ctx": {}
+  },
+  {
+    "id": "mm2-pseudo-country-only",
+    "family": "mm2",
+    "polarity": "negative",
+    "expect": "none",
+    "expectedTier": "none",
+    "dialEvidence": false,
+    "upgradeCandidate": false,
+    "knownResidual": false,
+    "source": "Cycle-7 T-13 语料先行；形态来源：CONTEXT.md「国家选择器≠区号字段」语义分层（F2 / F8 / ce-neg-country 同族）",
+    "note": "伪 select 负例②（经典误报族：纯国家选择器，**无**区号证据）：选项值 ISO2 + 文本国名，无 (+NN)、无 +NN、值非区号 ⇒ 仅 isoName>0 就通过内容门槛，pseudo=true、score=34、进召唤面（登记）。这是升级为自动注入时最危险的误报族：注入口径下仍为 none（TN），但它是**召唤面（升级目标集）内的非候选** → 门槛① 的判别率与门槛② 的 FP 均由本例贡献（见 ADR-0005 Notes）。根因残留：country-semantic:suppress 仅作用于原生 select 的 st（src/detect/index.ts:497-499 / 632），custom 与 ARIA 伪 select 分支无对应抑制。",
+    "signalAttribution": [
+      "L1:kw:country(+14)（class \"select-country\"）",
+      "L2:custom:dropdown(+20)（isoName>0：ISO2 值 ↔ 国名文本互证，内容门槛通过）",
+      "无 country-semantic:suppress（该闸门只读原生 select 的 st，custom 分支无对照）",
+      "34 >= ITI_LOW_REGISTER_SCORE(25) → 进召唤面；< SCORE_LOWKEY(35) → 评分层即 tier=none"
+    ],
+    "el": {
+      "tag": "div",
+      "className": "select-country",
+      "attrs": {
+        "tabindex": "0"
+      },
+      "options": [
+        {
+          "value": "us",
+          "text": "United States"
+        },
+        {
+          "value": "gb",
+          "text": "United Kingdom"
+        },
+        {
+          "value": "cn",
+          "text": "China"
+        }
+      ]
+    },
+    "labels": [],
+    "ctx": {}
   }
   ],
   "realSiteForms": [
