@@ -116,3 +116,24 @@ SHA256 / 指纹 / 退化回路 / WARC / SingleFile / 回放自检 / bump  → �
 - 报告落 `research/window-reports/04-domain-modeling-report.md`：**✅ 本文件**。
 - 版本控制遵循 WORKFLOW §4.2：**✅ 见 §7**。
 - 本票覆盖 A-xxx：**A-033**（已声明）。
+
+---
+
+## 补正（Cycle-7 · 2026-09-17）— issue 勾销状态对账（D-010）
+
+> 本块为**追加补正**；上文（§1–§9）**原文一字未改**，仅在本文件末尾追加。
+
+- **缺陷**：本报告 §3 / §9 自述「issue 全部 5 项验收项勾销」，但对应票据
+  `.scratch/architecture-recovery/issues/04-domain-modeling.md` 的 5 条验收复选框**实际停在 0/5 未勾选**——
+  报告自述（5/5）与票据实物（0/5）相反，属过程证据不一致（§9 完成定义自查与实物不符）。
+- **复核依据（不改写实现结论）**：Cycle-6 收口报告 `09-cycle6-closeout-report.md` §5.1
+  「票 04 交付物独立实物复核（本窗亲跑）」已把本票实现**实物复核为真**；其 P-4 记载「票 04 的 issue 未勾销——
+  实现经实物复核属实」。本补正据此**仅补记票据勾销**，不触碰任何实现结论。
+- **处置**：`.scratch/architecture-recovery/issues/04-domain-modeling.md` 的 5 条验收项由 `- [ ]` 改为 `- [x]`，
+  即 **0/5 → 5/5**；验收项**文字未改**。
+- **防复发（新增校验门）**：`tests/scripts/issue-checkbox-audit.mjs` 解析票据勾销标记并与报告完成自述数字比对，
+  不一致即失败；`unknown`（自述数字缺失或不可解析）记 **UNKNOWN 并退出非零**，**绝不静默合并为 pass**。
+  该门已挂入既有 workflow `.github/workflows/engine-gates.yml`（**未新增 workflow 文件**）。
+- **机器可读完成自述**：<!-- issue-checkbox-audit: ticked=5 total=5 -->
+
+> 时点：本补正落于 2026-09-17（Cycle-7 W1 / T-07）；自本补正起，报告自述的 5/5 与票据实物一致。
