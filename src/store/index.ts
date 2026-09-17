@@ -22,6 +22,14 @@
 //     global: null | { thresholds: { auto?: number, lowkey?: number } }  // 置信度分档覆盖（可选，
 //                                  // 本期无面板 CRUD，格式预留；缺省回退 config.ts 全局阈值）
 //   }
+//
+// ── 上限强制点（票 12 [A-036] 裁定）──
+//   RULES_MAX_OVERRIDES（config.ts，500）是文档级不变量，强制点在写路径：
+//     · 生产者 upsertOverride 在新增规则前 fail-closed 拒绝（返回 null，不落盘、不广播）；
+//     · 既有 id 的更新（改）与删除不受上限影响。
+//   _normRulesDoc 的 slice(0, RULES_MAX_OVERRIDES) 保留，但其定位是外来输入的摄取修复
+//   （BC 接收 / GM 远端监听 / 首次从存储载入），不承担本上限的保证（第二层，非强制点）。
+//   裁定依据：ADR-0011（工业界语义 + 本仓既有语义；被否决路线：读路径强制）。
 // ════════════════════════════════════════════════════════
 import { RULES_KEY, RULES_BROADCAST, RULE_TIERS, RULES_MAX_OVERRIDES, SELF_ORIGIN } from '../config';
 import type { CchStore, Country, OverrideRule, OverrideRuleInput, RuleScope, RulesDoc } from '../types';
@@ -259,6 +267,10 @@ const Store = {
         return o.id;
       }
     }
+    // 票 12 [A-036]：上限强制点在写路径（裁定与依据见文件头注「上限强制点」/ ADR-0011）——
+    //   新增规则前 fail-closed 拒绝，保证内存缓存 / GM 持久化 / 跨标签页广播三面同源不超限。
+    //   读路径 _normRulesDoc 的截断仅作外来输入的摄取修复，不承担本上限的保证。
+    if (r.overrides.length >= RULES_MAX_OVERRIDES) return null;
     const o = {
       id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       host, selector: sel, scope, action: { tier }, note,

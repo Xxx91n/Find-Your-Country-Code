@@ -44,26 +44,6 @@ const LISTENERS = [];
 globalThis.GM_getValue = (k, d) => (k in BUCKET ? BUCKET[k] : d);
 globalThis.GM_setValue = (k, v) => { BUCKET[k] = v; };
 globalThis.GM_addValueChangeListener = (k, fn) => { LISTENERS.push({ k, fn }); return LISTENERS.length; };
-// ── BroadcastChannel mock：进程内多实例互投（跨标签页语义） ──
-// 保真度（票 10 [A-034] 修正 origin 面）：真实 BroadcastChannel 的 message 事件恒携带 origin
-//   （发送方 origin 的序列化；通道按 origin 隔离 ⇒ 对同源接收方恒等于接收方文档 origin）。
-//   旧版 fn({ data: msg }) 缺 origin ⇒ 被测的 origin 守卫在门内退化为 `undefined !== undefined`
-//   恒放行 —— 守卫从未被真实行使。票 10 的修复使其显形（Node 无 window/location ⇒ 本帧文档
-//   origin 为回退值 'null'，而 undefined !== 'null' 判真 ⇒ 误拦同源广播）。
-//   此处按平台语义补齐同一文档 origin；断言面零改动（不放宽、不删除）。
-const DOC_ORIGIN = (() => {
-  try { return window.origin; } catch {}
-  try { return location.origin; } catch { return 'null'; }
-})();
-class BC {
-  constructor(name) { this.name = name; BC.all.push(this); this._handlers = []; }
-  addEventListener(_t, fn) { this._handlers.push(fn); }
-  postMessage(msg) { for (const inst of BC.all) { if (inst !== this) for (const fn of inst._handlers) fn({ data: msg, origin: DOC_ORIGIN }); } }
-  close() {}
-}
-BC.all = [];
-globalThis.BroadcastChannel = BC;
-
 const bundle = [
   toModuleBody(join(ROOT, 'src', 'config.ts')),
   toModuleBody(join(ROOT, 'src', 'data', 'countries.ts')),
@@ -72,9 +52,36 @@ const bundle = [
   toModuleBody(join(ROOT, 'src', 'detect', 'index.ts')),
 ].join('\n');
 // 先剥类型再拼返回语句（stripTypes 按模块语法解析，顶层 return 不合法 [14-lib-engine 同规]）
-const { createStore, createRules, createDetect } = new Function(
-  stripTypes(bundle) + '\n;return { createStore, createRules, createDetect, COUNTRIES, ISO2_MAP };',
+// 票 12 [A-036]：额外导出 SELF_ORIGIN —— BC 替身的投递 origin 直接消费该唯一常量，
+//   门内不再自建第二套 origin 取值（票 10 已在 src/config.ts 立「本帧文档 origin」唯一定义）。
+const { createStore, createRules, createDetect, SELF_ORIGIN } = new Function(
+  stripTypes(bundle) + '\n;return { createStore, createRules, createDetect, COUNTRIES, ISO2_MAP, SELF_ORIGIN };',
 )();
+
+// ── BroadcastChannel mock：进程内多实例互投（跨标签页语义） ──
+// 保真度（票 10 [A-034] 补 origin；票 12 [A-036] 补结构化克隆投递）：真实 BroadcastChannel 的
+//   message 事件恒携带 origin（发送方 origin 的序列化；通道按 origin 隔离 ⇒ 对同源接收方恒等于
+//   接收方文档 origin），且消息按结构化克隆投递（按值语义，非按引用）。
+//   · 缺 origin ⇒ 被测 origin 守卫在门内退化为 undefined !== undefined 恒放行（守卫从未被行使）；
+//   · 按引用投递 ⇒ 接收方 _normRulesDoc(msg.rules) 的就地改写会污染发送方 _rulesCache，
+//     使 S4「上限生效」的绿成为替身别名旁路效应而非实现保证（票 12 A/B 对照坐实：仅补克隆即 got=513 复红）。
+//   origin 取值不另立一套：直接消费 src/config.ts 的 SELF_ORIGIN（全仓唯一定义）。
+const DOC_ORIGIN = SELF_ORIGIN;
+class BC {
+  constructor(name) { this.name = name; BC.all.push(this); this._handlers = []; }
+  addEventListener(_t, fn) { this._handlers.push(fn); }
+  postMessage(msg) {
+    // 平台语义：发送方自身不接收；每个接收方各得一份独立的结构化克隆（按值投递，非共享引用）。
+    for (const inst of BC.all) {
+      if (inst === this) continue;
+      const data = structuredClone(msg);
+      for (const fn of inst._handlers) fn({ data, origin: DOC_ORIGIN });
+    }
+  }
+  close() {}
+}
+BC.all = [];
+globalThis.BroadcastChannel = BC;
 
 // ── 测试脚手架 ──
 let pass = 0; const fails = [];
