@@ -9,7 +9,7 @@
 ## 决策
 
 1. **CI 脚本位置约定**：一切被 CI 引用的验证/校准脚本置于 `tests/scripts/`（脚本以自身位置上溯 2 级锚定仓库根）；`.github/workflows/*.yml` 禁止出现 `.scratch/` 路径引用。`.scratch/architecture-recovery/research/scripts/` 降级为可抛弃调研现场，不再是 CI 单点故障。（票 20：9 脚本迁移、workflows `.scratch/` 引用清零；calibration run 34569015933 + E2E run 34568992880 绿）
-2. **PR 门控策略**：所有非发版 workflow 必须声明 `pull_request:` 触发，main 合入以 CI 门禁为前置（typecheck + E2E + calibration baseline + verify-* 票级回归）；发版系 `release.yml` / `release-dry-run.yml` 例外，只由发版事件与手动触发。（票 21：六 workflow 补齐 + 票 23 typecheck.yml 原生自带，PR#2 实证六 run 并行触发；verify-15 预存红见后果 1）
+2. **PR 门控策略**：所有非发版 workflow 必须声明 `pull_request:` 触发，main 合入以 CI 门禁为前置（typecheck + E2E + calibration baseline + verify-* 票级回归）；发版系 `release.yml` / `release-dry-run.yml` 例外，只由发版事件与手动触发。（票 21：六 workflow 补齐 + 票 23 typecheck.yml 原生自带，PR#2 实证六 run 并行触发；verify-15 预存红见后果 1）**2026-09-17 追加（D-007）：本条款新增「monitor 类 workflow」例外，判据与登记清单见下节。**
 3. **类型门禁**：`tsconfig.json` 保持 `"strict": true`；`npm run typecheck`（tsc --noEmit）由 typecheck.yml 在 pull_request / push(main, cch/**) / workflow_dispatch 三事件执行。类型修复必须 types-only——以同提交 E2E 绿为无运行时行为变更的实证；共享类型层集中 `src/types.ts`，禁 `as any` 逃逸。（票 23：240→0 错误四轮收敛，Typecheck run 34590080334 + E2E run 34590080352 同提交 7b98132 双绿）
 4. **依赖版本钉死策略**：package.json 依赖一律显式 semver 范围、禁 `latest` 浮动（typescript `^5.7` / vite `^6.0` / vite-plugin-monkey `^5.0`）；CI 安装以 package-lock.json + `npm ci` 复现。`--legacy-peer-deps` 属登记在案待清偿的例外而非策略；**该例外已由票 43（A-021）根修清偿**——同一项目内互斥的两个大版本（React 18 与 React 19）分居两个 install root（npm workspaces：根项目 + `tests/vendor/react19`），使每棵安装树的 peerDependencies 各自自洽。（票 25：devDependencies `latest` 清零、七 workflow 移除该 flag；typecheck.yml 残留 1 处见后果 2）
 5. **目录结构约定**：仓库只有一个 `tests/` 根：`manual/` 手工验证页、`scripts/` CI 验证脚本、`fixtures/`+`corpus/` 语料、`*.spec.ts` E2E；`test/` 废止（3 个手工验证页迁至 `tests/manual/`）。冻结基准不入库：v1.3.4 遗留单文件已删除，历史对照走 `git show v1.3.4`（CONTRIBUTING 双语已改）；死导出删除以 rg 零调用者为前提，存活调用者（store 侧 subscribe）保留。（票 22/25：E2E run 34569162088 场景 A–E 绿证行为不变）
@@ -40,3 +40,21 @@
 - V5 过程教训：票 23 在「本周期消除该 flag」背景下新建 workflow 反向引入 flag——新 workflow 一律以基线最新口径起稿（建议写回 WORKFLOW §5）。
 - CONTEXT.md 新增「工程门禁与仓库卫生」术语节（CI 门禁 / PR 门控 / 密封 E2E / 类型门禁 / 依赖钉死），后续周期以词表为准引用。
 - 票 20-26 分支合入 main 属人工收口动作（forge 配置见票 21 D-21c；合入前先修 F-1、合入门控上线前先跑 main 全门基线——票 21 教训），本 ADR 不记录合并事件本身。
+
+## monitor 类例外（2026-09-17 追加，D-007）
+
+判据（**四项全中**才属 monitor；不得用于免除 gate 类 workflow 的门控）：
+
+| 判据 | Gate（门禁） | Monitor（监控） |
+|---|---|---|
+| 结果是否随 PR 内容变化 | 是 | **否** |
+| 信号源是否确定 | 确定性（编译／单测／lint） | **非确定（第三方站点／实时状态／时间）** |
+| 失败的可行动性 | 作者可在 PR 内修复 | **作者无能为力** |
+| 消费方式 | 阻塞合并 | **报警／趋势／开 issue** |
+
+登记清单：
+
+- `gf-alignment-check.yml` —— 只读版本对齐监控（仅 `workflow_dispatch` + `schedule`）；其结论取决于 GreasyFork 站点的**实时状态**，与 PR 内容无关 ⇒ **不补 `pull_request` 触发面**（补触发会把与变更无关的红灯注入信任面，正是 ADR-0010 反对的门禁失效模式）。
+- **联动**：若决定停用该 workflow（见 `.scratch/cycle7-grill/decision-ledger.md` D-002），本条登记随之关闭。
+
+约束：本例外**必须附判据表**，不得成为「任意 workflow 免门控」的后门；条款 2 对 **gate 类** workflow 的约束与其意图（防 main 裸奔）**不得被削弱**。
