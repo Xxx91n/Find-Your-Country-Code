@@ -35,6 +35,8 @@
 
 ## 2. 验收项逐条勾销
 
+**锚点**：本节七条验收项的全部交付物锚定**实施提交** `fe0a5df3`；其中验收项 4 的证据文本（本报告）锚定**文档提交** `1e5866d2`。CI 证据状态见 §9（**未取得**，事项已移交大脑 Agent）。
+
 ### 验收项 1 —— 裁定「上限强制点」：写路径（`upsertOverride` → `_writeRules`）还是读路径（`_normRulesDoc`）；裁定须给出依据
 
 **裁定：写路径**（生产者 fail-closed 拒绝）。
@@ -128,11 +130,25 @@
 
 ### 4.2 全量 E2E
 
-命令：`npm run e2e`（= `vite build` + `playwright test`）。结果见下方「E2E 结果」小节。
+命令：`npm run e2e`（= `vite build` + `playwright test`）。
+结果：**145 passed / 0 failed**（约 1.5m），exit 0（**本地自证**）。
+影响面核对：E2E 面**不触达**本票改动的上限路径 —— 无 `upsertOverride` / `overrides.length` 断言，无大批量写入循环。
+CI 侧 E2E（`e2e.yml`）证据**未取得**，状态与原因见 §9。
 
 ### 4.3 类型检查
 
 `npx tsc --noEmit` → exit 0（无输出）。
+
+### 4.4 提交后复核（在**已提交的树**上重跑）
+
+| 门 | 退出码 | 结果 |
+|---|---|---|
+| `verify-ticket-12.mjs` | 0 | 31 PASS / 0 FAIL |
+| `verify-ticket-05.mjs` | 0 | `100/100 pass`（ALL GREEN） |
+| `verify-ticket-05-harness.mjs` | 0 | 59 PASS / 0 FAIL |
+| `npx tsc --noEmit` | 0 | 无输出 |
+
+**过程注记（如实登记）**：首次复跑误在 ctx 沙箱的 **Bun** 运行时下执行，`verify-ticket-05.mjs` 报 `SyntaxError: Export named 'stripTypeScriptTypes' not found in module 'node:module'`。该报错是**运行时错配**（`module.stripTypeScriptTypes` 需 Node ≥ 22.13），**非本票缺陷**；换用受管 Node **v22.22.2** 后三门全绿。CI 侧由 `actions/setup-node` 钉 `node-version: 22` 复现同一条件。
 
 ---
 
@@ -187,7 +203,7 @@
 | E-4 | 未另起第二道调研 | 本票核心待决问题（强制点）**已**经 atomcode 深度调研（串行护栏照守：全程至多 1 个在途，未杀进程）；未另起并行调研 |
 | E-5 | 真实站点层影响面 | 本票改动面为 `src/store/index.ts` 写路径 + 测试门；`upsertOverride` 为面板/负反馈写入入口，其 `null` 返回已被既有契约（`string | null`）与消费方（`Rules.rememberNone` 传播 null）容忍 ⇒ **无新增未捕获异常面**；真实站点层为 advisory，本票不修改其断言，也不以其结果充当证据 |
 | E-6 | 未新增 CONTEXT.md 术语 | delta 仅要求「若裁定读路径」才需文档层显式说明；裁定为写路径 ⇒ 不触发。且 A-033 已定 CONTEXT.md 术语 7 条为上限，本票不扩 |
-| E-7 | 推送需授权 | 按 WORKFLOW §8.2.4「涉及远端写一律逐次取得用户授权」，本票**不自行推送**；授权记录见 §9 |
+| E-7 | 推送需授权 → **移交大脑 Agent** | 按 WORKFLOW §8.2 **第 4 条（授权路径）**「涉及**远端写**（push / 删除 ref / 改 tag）…一律**逐次取得用户授权**，并在报告中留授权记录」，本票**不自行推送**。已向用户呈报；用户于 2026-09-17 裁定「**交给大脑 agent**」⇒ 推送与 CI 取证事项**移交大脑 Agent**，本窗口不代决。移交所需全部事实见 §9 |
 
 ---
 
@@ -203,11 +219,75 @@
 
 ---
 
-## 9. CI 证据（§8.1 证据边界：行为面只认 CI run / artifact）
+## 9. CI 证据与「移交大脑 Agent」的事项
 
-**实施提交 sha**：`（待回填）`
-**CI run**：`（待回填）`
-**推送授权（§8.2.4）**：`（待登记）`
+> 依 WORKFLOW §8.1「行为面证据只认 CI run / artifact」：本节 CI 字段**未取得**时，**不得**被读作验收通过。
+
+### 9.1 提交锚点（本地事实，已确证）
+
+| 项 | sha | 说明 |
+|---|---|---|
+| 实施提交 | `fe0a5df3`（`fe0a5df3cf637c6b74557577ee84a2e2bb5d1141`） | 写路径强制点 + 替身保真度 + 票级门 + workflow + ADR-0011 + 调研/实验脚本（8 文件） |
+| 文档提交（本报告 + issue 勾销） | `1e5866d2`（`1e5866d27f3ec08042285903beae84ec3bc49474`） | 本报告落盘 + issue 七条勾销 |
+| 分支 | `cch/12-rules-limit-fidelity` | 锚 `cch/10-srcdoc-origin-fix`；`but status` 确认两提交就位、工作区干净（`git status --short` 无输出） |
+
+### 9.2 CI 证据：**未取得**（如实登记，不得伪造绿）
+
+| 面 | workflow | 状态 |
+|---|---|---|
+| 票级门（31 断言） | `verify-12.yml` | **未取得** |
+| 全量 E2E | `e2e.yml` | **未取得** |
+| 引擎门 | `engine-gates.yml` | **未取得** |
+| 类型检查 | `typecheck.yml` | **未取得** |
+| lockfile | `lockfile-regen.yml` | **未取得** |
+
+原因：取得 CI 证据须**远端写**（推送分支），而本窗口**未获**推送授权（见 9.3）。§4 的本地自证**不替代**行为面 CI 证据（WORKFLOW §8.2 第 2 条禁止面）。
+
+### 9.3 授权记录（WORKFLOW §8.2 第 4 条：谁 / 何时 / 授权范围）
+
+| 项 | 内容 |
+|---|---|
+| 呈报时间 | 2026-09-17 |
+| 呈报内容 | 是否授权推送 `cch/12-rules-limit-fidelity` 至 `origin`（新建单 ref、2 提交）以取得 CI run 证据 |
+| 用户裁定 | 「**交给大脑 agent**」 |
+| 授权范围 | **未授权本窗口执行任何远端写**；推送与 CI 取证事项**移交大脑 Agent** |
+| 本窗口动作 | **未执行** `but push`；**未创建** PR；零远端写 |
+
+### 9.4 移交大脑 Agent 的事项（可独立执行，无需回读本窗口对话）
+
+**待决动作**：`but push cch/12-rules-limit-fidelity`（单一 ref；目标 `origin/cch/12-rules-limit-fidelity`）。
+
+**推送载荷（`but push --dry-run cch/12-rules-limit-fidelity` 实测原文）**：
+
+```
+Dry run: Showing what would be pushed
+┌─ Branch: cch/12-rules-limit-fidelity ↑ (on top of cch/10-srcdoc-origin-fix)
+│   → Would push to: origin/cch/12-rules-limit-fidelity
+│   Commits: 2 unpushed commits
+│     1e5866d2 docs(cch-12): 窗口报告落盘 + issue 七条勾销
+│     fe0a5df3 fix(cch-12): 规则上限强制点收敛到写路径（A-036）+ BC 替身克隆保真度修复
+Summary: Would push 2 commits across 1 branch
+```
+
+**远端写性质与副作用披露（须一并评估）**：
+
+1. `origin/cch/12-rules-limit-fidelity` **远端不存在** ⇒ 属**新建单 ref**，**不改写任何既有远端 ref**（无 force、无 ref 删除、无 tag 变更）。
+2. **祖先链分歧（P-20 类）**：本地 `cch/10-srcdoc-origin-fix` 尖端 `33f0c872` **不在** `origin/cch/10-srcdoc-origin-fix`（`6a95417b`）上 —— `git merge-base --is-ancestor origin/cch/10-srcdoc-origin-fix cch/12-rules-limit-fidelity` 返回**非祖先**。故新远端 ref 的祖先链为本地 rebase 后的 cch/10 链，与 `origin/cch/10-srcdoc-origin-fix` **sha 不同、内容等价**；与 W5 复核已登记的 **P-20「本地≠远端」**（cch/08 `d0430821` vs `747763fd`、cch/11 `f9d60760` vs `8a27ad34`）同源。**未修改任何既有远端 ref**，但该事实须随推送一并登记，不得隐去。
+3. **将触发的 CI**（workflow 触发器实测）：`verify-12.yml`（本票分支 push）、`e2e.yml`（`cch/**`）、`engine-gates.yml`（`cch/**`）、`typecheck.yml`（`cch/**`）、`lockfile-regen.yml`（`cch/**`）。
+
+**推送后回填清单（供大脑或后续窗口执行）**：
+
+- §9.2 表逐项填 run ID + 结论；
+- §11 变更记录追加「CI 证据回填」行；
+- 附录「E2E 结果」补 CI E2E 结论；
+- `issues/12-rules-limit-fidelity.md` 的 `CI run` 字段与「未决事项」节状态；
+- 若 CI 出现红：**不得**改断言消红；按 §8.1.1 归因（本票面 / 非本票面）后如实登记。
+
+### 9.5 提请大脑注意
+
+- 本票验收项 6 的**行为面部分（CI）在证据到位前不成立**；本窗口**不宣称**该条已闭环。
+- `verify-ticket-12.mjs` G6 为**门内行为锁**（实跑 `verify-ticket-05.mjs`），其证据同样以 CI 为准。
+- 波次表勾销属大脑收口职责（WORKFLOW §3 S8 / §4.3）；本窗口**未改** `README.md`。
 
 ---
 
@@ -215,9 +295,10 @@
 
 | 项 | 状态 |
 |---|---|
-| issue 全部验收项勾销并各附 commit sha | 见 issue（sha 待回填） |
+| issue 全部验收项勾销并各附 commit sha | ✅（`fe0a5df3`；见 issue） |
 | 报告落 `research/window-reports/12-rules-limit-fidelity-report.md` | ✅ |
 | 版本控制遵循 WORKFLOW §4.2 | ✅（`but commit -b cch/12-rules-limit-fidelity`，见 §11） |
+| 行为面 CI 证据（§8.1） | ⏳ **未取得** —— 推送授权事项已移交大脑 Agent（§9.3 / §9.4） |
 
 ---
 
@@ -225,10 +306,14 @@
 
 | 阶段 | 提交 | 说明 |
 |---|---|---|
-| 实施 | `（待回填）` | 写路径强制点 + 替身保真度 + 门 + workflow + ADR + 调研/实验脚本 |
+| 实施 | `fe0a5df3` | 写路径强制点 + 替身保真度 + 门 + workflow + ADR-0011 + 调研/实验脚本（8 文件） |
+| 文档 | `1e5866d2` | 本报告落盘 + issue 七条勾销（2 文件） |
+| CI 证据回填 | （待大脑授权推送后追加） | 回填清单见 §9.4 |
 
 ---
 
 ## 附：E2E 结果
 
-`（待回填）`
+**本地自证（2026-09-17，改后树）**：`npm run e2e` → **145 passed / 0 failed**（约 1.5m），exit 0。
+影响面核对：E2E 面**不触达**本票改动的上限路径（无 `upsertOverride` / `overrides.length` 断言，无大批量写入循环）。
+**CI 侧 E2E（`e2e.yml`）**：**未取得** —— 须推送分支；状态与原因见 §9.2 / §9.3。**不得**以本地结果替代行为面 CI 证据。
