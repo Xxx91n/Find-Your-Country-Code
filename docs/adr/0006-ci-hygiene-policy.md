@@ -58,3 +58,11 @@
 - **联动**：若决定停用该 workflow（见 `.scratch/cycle7-grill/decision-ledger.md` D-002），本条登记随之关闭。
 
 约束：本例外**必须附判据表**，不得成为「任意 workflow 免门控」的后门；条款 2 对 **gate 类** workflow 的约束与其意图（防 main 裸奔）**不得被削弱**。
+
+**联动裁定（2026-09-17，T-02 自查结论落地）**：`D-002` ① 的 GF 侧自查已执行（`node tests/scripts/38-gf-alignment-check.mjs`，全程只读 GET，advisory 模式）。
+
+- 观测（observed）：GF 线上 `@version` = **1.7.0** = `package.json`（唯一真源）= GitHub `releases/latest` 产物版本；GF 脚本页显示「版本 1.7.0 / 更新于 2026-09-17 / 总安装量 1」。同日更早一次抓取（2026-09-17 10:47）为 **1.5.0**，即当日由 1.5.0 推进到 1.7.0。
+- 不可证成项（candidate）：GF 公开面（`update.greasyfork.org` 的 `.meta.js` 与脚本页）**未暴露站内 `Sync from external URL` 开关状态**，也无 `@updateURL`/`@downloadURL` 同步来源标注。因此「是否已配置 sync」**不可由外部只读探测证成**——当日推进既可能是 sync 拉取，也可能是人工上传。
+- 裁定：**保留 `gf-alignment-check.yml`，本条 monitor 登记继续生效（不关闭）**。理由：其结论取决于 GF 站点实时状态、与 PR 内容无关、作者在 PR 内无能为力、消费方式为报警——四判据全中，仍属 monitor 类。
+- 维持项：`--strict` 维持关闭（D-002：不切红灯）；**不补 `pull_request` 触发面**（保持 `workflow_dispatch` + 每日 `schedule`）。
+- 残留：站内 sync 开关状态须由维护者登入 GF 脚本页人工确认；**确认前不得声称 D-002 送达链已闭合**（D-018：本轮无发版）。
