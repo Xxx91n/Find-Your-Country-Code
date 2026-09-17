@@ -16,7 +16,7 @@ Source lives in `src/` (TypeScript modules). The userscript metadata header is m
 One release = three files updated together:
 
 1. **Version**: `version` in `package.json` (**single source of truth**) — `vite.config.ts` reads it at build time and bakes it into the artifact `// @version`. Bump only `package.json`.
-2. **`greasyfork/Glog.md`**: Chinese changelog describing user-visible changes (fixes / improvements / features). Its full text becomes the Chinese half of the GitHub Release notes and the material for the GreasyFork update note.
+2. **`greasyfork/Glog.md`**: Chinese changelog describing user-visible changes (fixes / improvements / features). At release time the file's **newest section only** (the first `## vX.Y.Z` heading) becomes the Chinese half of the GitHub Release notes and the material for the GreasyFork update note; **older versions stay in the file but are not included in release notes** (extracted by the changelog step in `release.yml`).
 3. **`greasyfork/Glog_EN.md`**: English changelog, mirroring Glog.md item by item.
 
 Flow: code change → bump version (`package.json` only) → update both Glog files → self-test (`npm run e2e`) → merge to `main`.
