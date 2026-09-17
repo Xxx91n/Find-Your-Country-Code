@@ -5,7 +5,7 @@
 //   ② 结构启发式候选仍走 scoreElement 全瀑布 + 内容证据门槛
 //   ③ ADR-0005 档位上限（登记 + 手动召唤，tier 强制 none）
 //   ④ 指纹面 = 观测面（tabindex 同步 _fingerprint 与 OBSERVED_ATTRS）
-//   ⑤ contenteditable 不进候选集（登记为偏离点，无语料支撑不扩）
+//   ⑤ 无裸 [contenteditable]（票 12 / D-014）：候选集只收「contenteditable ∧ 可聚焦 tabindex=0 ∧ 强 tel 先验」复合描述符；语料 A-023 已备
 // 用法: node tests/scripts/verify-ticket-29.mjs  （exit 0 = 全绿）
 // 可重复运行: 纯确定性（无时钟/随机/网络依赖）。
 // ══════════════════════════════════════════════════════════════════
@@ -69,7 +69,13 @@ check('1.2 候选集含 span[tabindex="0"]', /span\[tabindex="0"\]/.test(selRaw)
 check('1.3 无裸 ul li 宽选择器', !/'ul li'|'ul>li'|',\s*'ul'/.test(selRaw));
 check('1.4 未退化为全 div 扫描', !/'div'\s*,|,\s*'div'/.test(selRaw));
 check('1.5 既有 [role=combobox] 未被移除', /'\[role="combobox"\]'/.test(selRaw));
-check('1.6 contenteditable 未进候选集（偏离点）', !/contenteditable/i.test(selRaw));
+// 1.6 票 12 [D-014]：候选集不得放裸 [contenteditable]（候选爆炸，D-29d）；只收复合形态描述符
+const Q = String.fromCharCode(34); // 双引号字面量（避免转义）
+const ceSelLines = selRaw.split(String.fromCharCode(10)).filter(l => !l.trim().startsWith('//')).join(String.fromCharCode(10));
+const ceHits = ceSelLines.split('[contenteditable]').length - 1;
+const ceComposite = ['inputmode=' + Q + 'tel' + Q, 'autocomplete=' + Q + 'tel' + Q, 'role=' + Q + 'textbox' + Q]
+  .filter(a => ceSelLines.includes('[contenteditable][tabindex=' + Q + '0' + Q + '][' + a + ']')).length;
+check('1.6 无裸 [contenteditable]（仅收可聚焦+tel 先验复合描述符）', ceHits === 3 && ceComposite === 3, 'ce=' + ceHits + ' composite=' + ceComposite);
 
 // ══ 2. 正例：无 ARIA 自定义下拉（票 32 语料形态）══
 const pos = node('div', { class: 'select-country', tabindex: '0' },
