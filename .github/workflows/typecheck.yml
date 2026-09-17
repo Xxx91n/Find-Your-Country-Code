@@ -37,3 +37,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Doc facts (ACCEPTANCE-SURFACE vs src)
+        run: node tests/scripts/doc-facts.mjs

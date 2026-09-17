@@ -52,7 +52,7 @@
 | 9 | 站点豁免开关 | 点击 `#cch-exempt-tg` 后页面内 `.cch-wrapper` 数量**归零**且 `#cch-toast` 出现豁免提示；再次点击关闭后经重扫 `.cch-wrapper` 重新出现 | **是** | L3 |
 | 10 | 规则 / 覆盖列表 + ⚙ 入口 | 点击 `#cch-rules-tg` 后 `#cch-rules-view` 可见且列表分区隐藏；`.cch-rule-row` 逐行呈现 host / selector / tier；点击 `.cch-rule-del` 后该行消失且页面侧注入按新规则重评（重扫后 `.cch-wrapper` 变化） | **是** | L3 |
 | 11 | 低调样式开关 | 点击 `#cch-lowkey-tg` 后 `dim ⇄ hidden` 迁移**即时**发生：`hidden` 时已挂 lowkey 字段的 `.cch-btn-lowkey` 消失并回到召唤面；`dim` 时按低调样式补挂；`auto` 档图标不受影响 | **是** | L3 |
-| 12 | 语言切换 | 切换 `#cch-locale-tg` 后，面板内**全部**可见文案（`#cch-si` placeholder、分区标题、`#cch-summon` / `#cch-fb` 文本、规则视图标题）切换为目标语言，**无残留旧语言文案** | **是** | L3 |
+| 12 | 语言切换 | 切换 `#cch-locale-row` 内的 `.cch-locale-opt[data-locale]` 后，面板内**全部**可见文案（`#cch-si` placeholder、分区标题、`#cch-summon` / `#cch-fb` 文本、规则视图标题）切换为目标语言，**无残留旧语言文案** | **是** | L3 |
 | 13 | GM 菜单命令 | GM 替身记录 `{title, fn}` 且 `fn` **可调用**；调用「打开面板」后 `#cch-pop` 可见；调用「恢复本站检测」后 `.cch-wrapper` 数量归零（判据只锚定「记录 + 调用后页面侧效果」，不锚定条数 / 文案） | 否 | L2 |
 | 14 | **跨隔离上下文链路**（独立验收项） | 见 §3.3——**必须断言链路两端的写入结果** | 否 | L3 |
 | 15 | 变更重扫 | 动态插入符合区号形态的字段后（350ms 防抖窗口 + 观察窗内）该字段出现 `.cch-wrapper`；移除该字段后其 `.cch-wrapper` 一并消失（**不残留孤儿 wrapper**） | 否 | L2 |
@@ -169,9 +169,9 @@
 
 **项目内（observed / reproduced）**
 
-- `src/ui/index.ts` 可观测面：`#cch-pop` · `#cch-si` · `#cch-rules-tg` · `#cch-summon` · `#cch-fb` · `#cch-toast` · `#cch-rules-view` · `#cch-exempt-tg` · `#cch-lowkey-tg` · `#cch-locale-tg`；`.cch-wrapper` · `.cch-btn` · `.cch-btn-lowkey` · `.cch-fav` · `.cch-row` · `.cch-rule-row`；`data-cch-tier` · `data-cch-score` · `data-cch-summon`
+- `src/ui/index.ts` 可观测面：`#cch-pop` · `#cch-si` · `#cch-rules-tg` · `#cch-summon` · `#cch-fb` · `#cch-toast` · `#cch-rules-view` · `#cch-exempt-tg` · `#cch-lowkey-tg` · `#cch-locale-row` · `.cch-locale-seg` · `.cch-locale-opt`；`.cch-wrapper` · `.cch-btn` · `.cch-btn-lowkey` · `.cch-fav` · `.cch-row` · `.cch-rule-row`；`data-cch-tier` · `data-cch-score` · `data-cch-summon`
 - `src/config.ts`：`WRAPPER_CLASS` · `OWN_ROOT_ID` · `UI_PREFS_KEY='cch_ui_prefs_v1'` · `RULES_KEY='cch_site_rules_v1'` · `FRAME_TAG='cch-frame-v1'` · `FRAME_OPEN_MSG` / `FRAME_FILL_MSG` / `FRAME_FEEDBACK_MSG` · `LOWKEY_MODES` · `RULE_TIERS`
-- `src/main.ts`：菜单命令注册（顶层 2 条）· 入站 origin 校验与降级 toast · 双相递归 `isEmbeddedFrame`
+- `src/main.ts`：菜单命令注册（顶层 4 条）· 入站 origin 校验与降级 toast · 双相递归 `isEmbeddedFrame`
 - `src/store/index.ts`：收藏键 `cch_v33`；`src/types.ts`：`FillResult.status ∈ {filled, copied, failed}`
 - `tests/helpers/userscript.ts`：GM 替身（localStorage 承载）+ 菜单命令记录 `{title, fn}`（48 行 / 4 导出——票 05 的起点）
 - `docs/adr/0005`（伪 select 档位约束）· `docs/adr/0006`（单一 `tests/` 根 / PR 门控 / 证据只认 CI）· `docs/adr/0008`（三层测试塔 / CDP Autofill NOT-ADOPTED）· `docs/adr/0009`（证据量档位边界）
