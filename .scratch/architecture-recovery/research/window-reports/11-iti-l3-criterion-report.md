@@ -256,3 +256,16 @@ $ node tests/live/live-smoke.mjs --target live-codepen-editor
 | 报告落 `research/window-reports/11-iti-l3-criterion-report.md` | ✅ 本文件 |
 | 版本控制遵循 WORKFLOW §4.2（`but` 为唯一 git 写界面） | ✅ 全程 `but commit`，未使用 `git add/commit/push/checkout/merge/rebase/stash` |
 | 证据边界（§8.1） | ⚠️ 行为面 CI 证据待推送后回填（§8） |
+
+---
+
+## 附：首脑补正（2026-09-17，**追加式，原文一字未改**）
+
+> 来源：`research/cycle6-wave5-review.md`（W5 首脑复核）。**判据变更经复核判为合规**（有据 / 未放宽 / 非消红）：依据为钉版库 `node_modules/intl-tel-input/build/js/intlTelInput.js` **全文仅 1 处 `dispatchEvent`**（`:788`，只发自定义事件）⇒ 旧「原生 input/change 各 ≥1」对 ITI 目标**确定性不可满足**（假红）。本补正只补**披露缺口**。
+
+| # | 事项 | 实物 | 更正 |
+|---|---|---|---|
+| C-1 | §8 声明「本票**不产生远端写** / CI 待补」 | **与实物不符**：远端存在 `cch/11-iti-l3-criterion`（`8a27ad34`），该 sha 上 **5 个 workflow 全 success**（含 Verify-11 `35126031083`） | 改为「本票产生了远端写（`8a27ad34`）；CI 证据见 run `35126031083` 等 5 门」 |
+| C-2 | `iti-country-event` 的 `\|\| preAlready` 旁路未在披露表登记 | `tests/live/live-smoke.mjs:291/297/307/309`；代码内有注释（「写入前已为目标国家，库按官方语义不广播（状态判定为主判据）」） | 在披露表补登该旁路的**触发条件**与**不可伪造性论证**（状态未变则不应期待事件） |
+| C-3 | 影响面清单缺一项 | 判据分支化后，`verify-ticket-07.mjs` 的 G2e/G2f 对 **ITI 目标**不再有运行时覆盖（两条为**文本存在性断言**，仍匹配仍通过 ⇒ **门未损坏**） | 在影响面清单补登「ITI 目标的 L3 运行时判据由本票新判据承载」 |
+| C-4 | 本地/远端未同步 | 本地 `f9d60760` ≠ 远端 `8a27ad34`；远端 `2c6e0af0` 的 fixture 仍带 `cdpn.io`（G4e 会多 1 命中） | 补注同步状态；推送同步待用户授权 |
