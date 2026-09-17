@@ -277,6 +277,10 @@ const OBSERVED_ATTRS = ['name', 'id', 'class', 'type', 'placeholder', 'aria-labe
   // 票 29 [A-003]: tabindex —— 无 ARIA 手写下拉的「可聚焦触发器」门槛属性。
   // 观测面与指纹面必须同步（票 04 契约：指纹读什么，observer 就监听什么）。
   'tabindex',
+  // 票 12 [D-014]: contenteditable —— 复合描述符的键属性。站点翻转编辑态（框架 hydration /
+  // 条件渲染 / 富文本编辑器进出编辑模式）即改变候选归属，必须触发重扫；观测面与指纹面同步
+  // （票 04 契约：指纹读什么，observer 就监听什么）。缺口 2b 修正（本票）。
+  'contenteditable',
   // 票 15 [D-016 ②]: 元素级退出协议属性 —— 判定路径读取（isOptOutElement），
   // 故观测面与指纹面同步登记：站点动态挂/摘退出属性即触发重评（退出与恢复都生效）。
   'data-1p-ignore', 'data-form-type'];
@@ -301,7 +305,11 @@ const SCAN_SELECTORS = [
   // 两者同时成立才入候选集 —— 只放行区号形态的 contenteditable；富文本编辑器（无 tel 先验）不入选，
   // 杜绝 D-29d 记录的候选爆炸（行业实证：无主流实现做全 DOM contenteditable 扫描）。
   // 评分层沿用既有 L0–L4 瀑布，不新增信号层、不改权重（D-014 明文）。
-  '[contenteditable][tabindex="0"][inputmode="tel"],[contenteditable][tabindex="0"][autocomplete="tel"],[contenteditable][tabindex="0"][role="textbox"]',
+  // 缺口 2a 修正（本票）：`[contenteditable]` 按「属性存在」匹配，`contenteditable="false"`
+  // （非可编辑、仅承载属性）同样命中 —— 逐条加 `:not([contenteditable="false"])` 排除。
+  // `:not` 只收窄匹配面、不新增任何匹配：三重口径（可编辑 + 可聚焦 + tel 先验）不外扩，
+  // 候选爆炸防线不放松；仍不放裸 `[contenteditable]`。
+  '[contenteditable][tabindex="0"][inputmode="tel"]:not([contenteditable="false"]),[contenteditable][tabindex="0"][autocomplete="tel"]:not([contenteditable="false"]),[contenteditable][tabindex="0"][role="textbox"]:not([contenteditable="false"])',
 ];
 // 票 24 安全加固：候选选择器存在覆盖重叠（.iti input ⊂ input[type="tel"] 组合项），
 // 迭代 Set 去重版避免同一 selector 字符串被重复 querySelectorAll（数组顺序不变，仅收敛唯一集合）
@@ -847,6 +855,9 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
         el.getAttribute('aria-controls'), el.getAttribute('aria-owns'),
         // 票 29: tabindex 入指纹 —— 可聚焦态翻转（框架 hydration / 条件渲染）触发重评
         el.getAttribute('tabindex'),
+        // 票 12 [D-014]: contenteditable 入指纹（与 OBSERVED_ATTRS 同步）—— 复合描述符的键
+        // 属性，编辑态翻转即重评（同票 29 tabindex 的理由：框架 hydration / 条件渲染）
+        el.getAttribute('contenteditable'),
         // 票 15 [D-016 ②]: 退出协议属性入指纹（与 OBSERVED_ATTRS 同步）
         el.getAttribute('data-1p-ignore'), el.getAttribute('data-form-type'),
         el.disabled ? 'd' : '', el.readOnly ? 'r' : '',

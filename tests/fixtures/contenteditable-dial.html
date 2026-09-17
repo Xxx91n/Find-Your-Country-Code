@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>contenteditable 区号字段扫描层 fixture（票 12 / D-014 缺口 2a·2b）</title>
+<style>
+  .ce-box { border: 1px solid #999; padding: 4px 8px; margin: 4px 0; min-width: 220px; display: block; }
+  .rt { min-height: 72px; color: #333; }
+</style>
+</head>
+<body>
+  <h1>contenteditable 区号字段（扫描层端到端 fixture）</h1>
+
+  <!-- 原生 anchor select：注入路径活性对照 + 面板可达入口（票 29 fixture 同口径） -->
+  <label for="anchor-cc">Anchor country code</label>
+  <select id="anchor-cc" name="country_code">
+    <option value="">请选择</option>
+    <option value="+86">+86</option>
+    <option value="+1">+1</option>
+    <option value="+44">+44</option>
+  </select>
+
+  <h2>正例：contenteditable 复合描述符（可编辑 ∧ 可聚焦 tabindex=0 ∧ 强 tel 先验）</h2>
+  <!-- 用 P 而非 DIV：div[tabindex="0"] 已单独覆盖 div/span 容器。若用 div，则无法区分
+       「被 contenteditable 复合描述符收进候选集」与「被无 ARIA 下拉描述符收进候选集」，
+       差分断言会失去因果性（无法证伪 T-12 复合描述符本身）。 -->
+  <p id="ce-dial" class="ce-box" contenteditable="true" tabindex="0" inputmode="tel" aria-label="Country code">+86</p>
+  <p id="ce-autocomplete" class="ce-box" contenteditable="true" tabindex="0" autocomplete="tel" aria-label="Country code">+86</p>
+
+  <h2>反例：候选爆炸防线与缺口 2a</h2>
+  <!-- 富文本编辑器（无任何 tel 先验）：复合描述符三条均不命中 → 不入候选集。
+       内容为长散文，模拟真实富文本编辑器（D-29d 候选爆炸风险的代表形态）。 -->
+  <p id="ce-richtext" class="ce-box rt" contenteditable="true" tabindex="0" aria-label="Message">The quick brown fox jumps over the lazy dog. This editor holds a long paragraph of prose, similar to the body field of a support ticket, and carries no telephone prior of any kind whatsoever.</p>
+  <!-- role=textbox 形态（镜像语料 ce-neg-richtext）：命中第三条文案 → 入候选集，但评分层 0 分 → 不注入。
+       本条锁定 D-014 的分工：候选集只负责「形态」，语义裁决仍在 scoreElement。 -->
+  <p id="ce-richtext-textbox" class="ce-box rt" contenteditable="true" tabindex="0" role="textbox" aria-label="Message">Another long prose body, again with no dial evidence, but this one advertises role=textbox so the third composite alternative admits it as a candidate.</p>
+  <!-- 不可聚焦：contenteditable + inputmode=tel 但无 tabindex → 不满足可聚焦闸门，不入候选集 -->
+  <p id="ce-no-tabindex" class="ce-box" contenteditable="true" inputmode="tel" aria-label="Country code">+86</p>
+  <!-- 缺口 2a：contenteditable="false"（非可编辑、仅承载属性）→ 被 :not 排除，不入候选集 -->
+  <p id="ce-false" class="ce-box" contenteditable="false" tabindex="0" inputmode="tel" aria-label="Country code">+86</p>
+
+  <h2>缺口 2b：编辑态动态翻转</h2>
+  <!-- 初始为普通可聚焦容器（无 contenteditable）→ 翻转后应触发重扫与重评 -->
+  <div id="ce-dyn" class="ce-box" tabindex="0" inputmode="tel" aria-label="Country code">+86</div>
+  <button id="ce-toggle" type="button">翻转 #ce-dyn 的 contenteditable</button>
+
+  <script>
+    (function () {
+      var dyn = document.getElementById("ce-dyn");
+      document.getElementById("ce-toggle").addEventListener("click", function () {
+        // 镜像框架 hydration / 富文本编辑器进出编辑模式：只翻转 contenteditable 一个属性
+        dyn.setAttribute("contenteditable", "true");
+      });
+    })();
+  </script>
+</body>
+</html>
