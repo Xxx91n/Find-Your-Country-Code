@@ -1,11 +1,12 @@
 # Decision Ledger — Cycle-7 Grill（逐题台账）
 
 > 用途：grill 过程中**每一条被用户确认的实质性结论**当场落盘，不依赖对话记忆。
-> 生成：2026-09-17 ｜ 基线：origin/main = a93cb3a8（v1.7.0）｜ 分支：cch/16-cycle7-grill
+> 生成：2026-09-17｜基线：origin/main = a93cb3a8（v1.7.0）｜分支：cch/16-cycle7-grill
 > 上游：`.scratch/architecture-recovery/handoffs/50-cycle6-round-closeout.md`（交接）＋ `test-results/锐.txt`（Round-4 锐评，已逐条实物核验）
 > 机制：ID 自 D-001 起递增（与 `.scratch/cycle6-grill/decision-ledger.md` 的 D-001…D-016 隔离）；每条含【原问题／用户原回答原文／规范化需求／显式约束与负向需求／状态】。
-> 状态取值：`current`（已确认生效）／ `revised`（被后续回答修订）／ `stale`（被证伪或废弃）／ `deferred`（登记在案，本周期不做）。
+> 状态取值：`current`（已确认生效）／`revised`（被后续回答修订）／`stale`（被证伪或废弃）／`deferred`（登记在案，本周期不做）。
 > 硬规则：**结论不许只活在对话里**；触发任何压缩／compact／handoff 动作前，先确认本台账已落盘到最新。
+> 调研存档：`.scratch/cycle7-grill/research/q2-industry-benchmark.md`（atomcode，10 条来源）
 
 ---
 
