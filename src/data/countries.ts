@@ -222,6 +222,9 @@ const COUNTRIES = [
 ['+1340','VI','🇻🇮','美属维尔京群岛','U.S. Virgin Islands'],
 ['+1284','VG','🇻🇬','英属维尔京群岛','British Virgin Islands'],
 ['+246','IO','🇮🇴','英属印度洋领地','British Indian Ocean Territory'],
+  // T-14①（2026-09-17 · D-005 乙级 / D-019①）：data gap 补齐 —— Kosovo（XK/+383）、Vatican（VA/+379）
+  ['+383','XK','🇽🇰','科索沃','Kosovo'],
+  ['+379','VA','🇻🇦','梵蒂冈','Vatican'],
 ].map(([code, iso, flag, zh, en]) => ({ code, iso, flag, country: zh, countryEn: en }));
 
 const ISO2_MAP = Object.fromEntries(COUNTRIES.map(c => [c.iso.toLowerCase(), c]));

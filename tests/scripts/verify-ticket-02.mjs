@@ -210,5 +210,19 @@ for (const [name, ok] of G10) {
   if (ok) { pass++; g10Pass++; } else { fail++; failures.push('G10:' + name); }
   console.log(`[${ok ? 'PASS' : 'FAIL'}] G10 ${name}`);
 }
-console.log(`\n用例门 ${casePass}/${CASES.length} pass | G10 边界锁 ${g10Pass}/${G10.length} pass（A-022 证据量档位边界，ADR-0009）${fail ? ` | FAILURES: ${failures.join(', ')}` : ''}`);
+// ── G11：国家数据完整性（T-14① · 2026-09-17 · D-005 乙级 / D-019①） ──
+// 背景：COUNTRIES 原缺 Kosovo（XK/+383）与 Vatican（VA/+379）—— 属 data gap。
+// 本组把「两个 ISO2 必須在表内且区号正确」锁进 CI，防再犯（只补数据不补断言 = 下次仍会漏）。
+const G11 = [
+  ['Kosovo（XK / +383）在表内且区号正确', !!ISO2_MAP['xk'] && ISO2_MAP['xk'].code === '+383'],
+  ['Vatican（VA / +379）在表内且区号正确', !!ISO2_MAP['va'] && ISO2_MAP['va'].code === '+379'],
+  ['区号唯一性：+383 与 +379 各恰 1 条', COUNTRIES.filter((c) => c.code === '+383').length === 1 && COUNTRIES.filter((c) => c.code === '+379').length === 1],
+  ['ISO2_MAP 覆盖 COUNTRIES 全量（无键丢失）', Object.keys(ISO2_MAP).length === COUNTRIES.length],
+];
+let g11Pass = 0;
+for (const [name, ok] of G11) {
+  if (ok) { pass++; g11Pass++; } else { fail++; failures.push('G11:' + name); }
+  console.log(`[${ok ? 'PASS' : 'FAIL'}] G11 ${name}`);
+}
+console.log(`\n用例门 ${casePass}/${CASES.length} pass | G10 边界锁 ${g10Pass}/${G10.length} pass（A-022 证据量档位边界，ADR-0009） | G11 国家数据完整 ${g11Pass}/${G11.length} pass${fail ? ` | FAILURES: ${failures.join(', ')}` : ''}`);
 process.exit(fail ? 1 : 0);
