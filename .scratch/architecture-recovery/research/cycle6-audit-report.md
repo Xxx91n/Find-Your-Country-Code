@@ -3,6 +3,18 @@
 > 生成：大脑 Agent，2026-09-16 | 方法：**程序化逐字段比对，不接受自述一致**
 > 对象：27 份工件（issues/01-09、handoffs/01-09、prompts/01-09）↔ 依据（spec.md / decision-ledger.md / WORKFLOW.md / .scratch/cycle6-grill/decision-ledger.md）
 
+---
+
+> ## ⚠️ 时点横幅 — 本报告已被取代（superseded）
+>
+> - **时点**：本报告是 **2026-09-16**（Cycle-6 收口时）的**时点快照**，结论仅对该时点成立。
+> - **最新权威结论**：`.scratch/cycle7-grill/decision-ledger.md`（D-001…D-019，**19/19 current**）与 `.scratch/cycle7-grill/spec.md`；两者优先于本报告，冲突时以它们为准。
+> - **superseded-by**：`.scratch/cycle7-grill/decision-ledger.md` · `.scratch/cycle7-grill/spec.md`
+> - **superseded-on**：2026-09-17
+> - **status**：`superseded`（历史留痕）
+> - **保留声明**：本文件为审计留痕，**不得删除、不得改写正文**；以下 §1 起全部内容保持 2026-09-16 原样。
+> - **ADR 指针**：已在整理环节落文，本报告不重复维护。
+
 ## §1 逐字段比对（5 字段）
 
 | 字段 | 检查内容 | 结果 |
