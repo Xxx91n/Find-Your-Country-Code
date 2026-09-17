@@ -63,7 +63,7 @@
 | A-034 | 跨帧填充指令在 `about:srcdoc` 帧被**静默丢弃**（真实缺陷；票 07 首次暴露）：`src/main.ts:134` 的 `if (isTopFrameSameOrigin() && e.origin !== location.origin) return;` —— srcdoc 帧内 `isTopFrameSameOrigin()` 为 true（顶层同源、`window.top.location.href` 可读），而 `location.origin` 被 Chrome 序列化为字符串 `"null"`（真实 origin 仍为继承值，可由 `window.origin` 读出）⇒ 判据判真且不等 ⇒ 直接 `return`，顶层 `FRAME_FILL_MSG` 被丢弃；子帧 `UI._target` 已正确登记但处理器提前返回，`Fill.run` 从未执行 ⇒ 无写入 / 无 input·change 事件 / 无 toast / **且无异常**（故 L0 `errs=0` 仍为绿，缺陷被弱断言掩盖）。同缺陷面：`src/store/index.ts:67` 与 `:97` 亦以 `location.origin` 作 BroadcastChannel 同源校验 | origin 比对改用 `window.origin`（srcdoc 帧下为继承的真实 origin），或对 `location.origin === "null"` 回退到 `window.origin`；覆盖面含 `src/main.ts:134`、`src/main.ts:120`、`src/store/index.ts:67` 与 `:97` | **不得放宽跨帧来源校验**（票 24 语义不变）；**不得**以删除校验替代修复；跨域顶层场景（票 12 fixture）既有拒绝语义不得回归；密封 E2E 135 例不得回归；证据只认 CI run | implemented（票 10；P0 闭环，真实站点层 L0-L4 转绿；CI 6a95417b · E2E success） |
 | A-035 | ITI 接管字段的 L3 判据口径未判定：票 07 的 L3 判据（写后读回宿主 `input.value` == 区号）对 `select`/普通 `input` 成立（`mirror-control` 绿），但 ITI 形态下 `Fill` 走 `createItiAdapter().fill()` 的 `setNumber`/`setSelectedCountry` 官方 API（`src/iti-adapter/index.ts:76-102`），该路径按 ITI 语义切换国家/号码，**不承诺**把区号写进宿主 `input.value` ⇒ `live-codepen-editor` 的 L3 报红，而同帧 L4 toast 为「已填入: 🇨🇳 +86」（`Fill.run` 自认成功）——**L3 与 L4 结论相悖**，需先判定正确可观测判据 | 判定 ITI 形态下 L3 的正确可观测判据（候选：ITI 选中态 `iti__selected-country` / `data-country-code` / 号码输入框值 / 官方 `getNumber()` 回读），据实收敛断言并给出依据与影响面 | **判定前不得以「改判据」方式消除红项**；不得放宽 L3 的「写后读回」语义；不得删除既有断言；判据需有 ITI 官方语义或工业界依据（调研留痕） | implemented（票 11；L3 判据按写入口形态分派，普通字段判据逐字保留；CI 8a27ad34） |
 
-| A-036 | 门保真度缺口（票 10 §6.1/§6.2 发现，**源码层面**）：(1) `tests/scripts/verify-ticket-05.mjs` 的 BroadcastChannel 替身旧形态 `fn({ data: msg })` **不含 `origin`**，而真实 BC 的 message 事件**恒携带 `origin`** ⇒ 被测的 origin 守卫在门内退化为 `undefined !== undefined` **恒放行**，守卫从未被真实行使（票 10 修复使其显形）；(2) 该替身同时**未做结构化克隆**，而接收方 `_normRulesDoc` 会**就地改写** `msg.rules.overrides`（`slice(0, RULES_MAX_OVERRIDES)`）⇒ 替身按**引用**投递，被截断的是**发送方**的 `_rulesCache` ⇒ S4「上限生效」断言当前的绿是**别名旁路截断**的产物，而非实现保证（票 10 的决定性 A/B 对照：补克隆后 S4 `got=513` 复红）；(3) 实现事实：`RULES_MAX_OVERRIDES` **只在 `_normRulesDoc`（外来输入路径）内截断**，本地写路径（`upsertOverride` → `_writeRules`）**不截断**，内存文档可超 500（下次载入时才被截断） | (a) 裁定「上限强制点」属**写路径**还是**读路径**并据此实现；(b) 补齐 `verify-ticket-05.mjs` 的替身**克隆保真度**，使 S4 断言反映真实保证；(c) 若裁定为「读路径强制」，须在 CONTEXT/文档层显式说明 | **不得以「保留假绿」方式回避**（不得靠替身别名旁路维持 S4 绿）；不得放宽或删除任何既有断言；裁定需有据（工业界语义或本仓既有语义）；证据只认 CI run | current（未结算）— 归并行票 12（W6），本收口票不承载、不代签 |
+| A-036 | 门保真度缺口（票 10 §6.1/§6.2 发现，**源码层面**）：(1) `tests/scripts/verify-ticket-05.mjs` 的 BroadcastChannel 替身旧形态 `fn({ data: msg })` **不含 `origin`**，而真实 BC 的 message 事件**恒携带 `origin`** ⇒ 被测的 origin 守卫在门内退化为 `undefined !== undefined` **恒放行**，守卫从未被真实行使（票 10 修复使其显形）；(2) 该替身同时**未做结构化克隆**，而接收方 `_normRulesDoc` 会**就地改写** `msg.rules.overrides`（`slice(0, RULES_MAX_OVERRIDES)`）⇒ 替身按**引用**投递，被截断的是**发送方**的 `_rulesCache` ⇒ S4「上限生效」断言当前的绿是**别名旁路截断**的产物，而非实现保证（票 10 的决定性 A/B 对照：补克隆后 S4 `got=513` 复红）；(3) 实现事实：`RULES_MAX_OVERRIDES` **只在 `_normRulesDoc`（外来输入路径）内截断**，本地写路径（`upsertOverride` → `_writeRules`）**不截断**，内存文档可超 500（下次载入时才被截断） | (a) 裁定「上限强制点」属**写路径**还是**读路径**并据此实现；(b) 补齐 `verify-ticket-05.mjs` 的替身**克隆保真度**，使 S4 断言反映真实保证；(c) 若裁定为「读路径强制」，须在 CONTEXT/文档层显式说明 | **不得以「保留假绿」方式回避**（不得靠替身别名旁路维持 S4 绿）；不得放宽或删除任何既有断言；裁定需有据（工业界语义或本仓既有语义）；证据只认 CI run | implemented（票 12；**写路径**强制点 `store:273` + ADR-0011 成文 + BC 替身克隆保真度修复；**S4 不再是假绿**（三条独立证据）；E2E 145 passed；无远端写 ⇒ 无 CI，如实） |
 
 ## 去向登记（spec 覆盖核对）
 
@@ -105,9 +105,9 @@
 | A-035 | T11 | 判定 ITI 形态 L3 的正确可观测判据（**P1**；判定前不得以改判据方式消红） |
 | A-036 | T12 | 规则上限强制点裁定 + BC 替身克隆保真度修复（**源码层面**；`verify-05` 的 S4 现为**假绿**） |
 
-**Cycle-6 覆盖核对**：A-026…A-036 共 **11 条**（A-026 = revised，仅保留「GM 菜单设置项」一条；A-027…A-036 = current），**全部有票去向**；无去向记录 **0 条**。
+**Cycle-6 覆盖核对**：A-026…A-036 共 **11 条**（A-026 = revised，仅保留「GM 菜单设置项」一条；A-027…A-036 = **implemented**），**全部有票去向**；无去向记录 **0 条**。
 
-**D-xxx 决策账本**（grill 产物）：`.scratch/cycle6-grill/decision-ledger.md`（D-001…D-016；13 current / 3 revised）。
+**D-xxx 决策账本**（grill 产物）：`.scratch/cycle6-grill/decision-ledger.md`（D-001…D-016；**16/16 implemented**，2026-09-17 收口结算；`| current |` 计数 = 0）。
 ### Cycle-4（历史，2026-09-12，审计链保留）
 
 - A-001 → 票 27（检测覆盖率下限补强）
@@ -125,7 +125,8 @@
 ## Cycle-6 结算（2026-09-17，收口票 09）
 
 > 结算依据：逐票实物核验（issue 勾销状态 + 窗口报告存在性 + 实施提交 sha + 远端分支 CI run）；行为面证据只认 CI run（WORKFLOW §8.1），本地只读复核限 §8.2 闭集。
-> 结算结果：A-026…A-035 = **10/10 implemented**（A-026 按 D-010 修订后口径）；**A-036 = current（未结算）**——归并行票 12（W6），本收口票不承载、不代签。
+> 结算结果（票 09 收口 + **审计 Agent 整轮结算 2026-09-17**）：**A-026…A-036 = 11/11 implemented**（A-026 按 D-010 修订后口径）。A-036 由票 12 闭环（**写路径**强制点 `store:273` + ADR-0011 + BC 替身克隆保真度，**S4 不再是假绿**）。**deferred = 0 · stale = 0。**
+> **整轮审计结论（审计 Agent，2026-09-17）**：硬验收重跑 —— typecheck `exit 0` · build `exit 0`（167.96 kB / 11 modules）· 版本一致性门 **15 passed / 0 failed** · 全量 E2E **145 passed**；三层文档一致性 —— CONTEXT.md 7 条新术语实体**全部真实存在**，ADR-0008/0010/0011 与代码**逐条吻合**；**遗留 2 处真实脱节**（`tests/ACCEPTANCE-SURFACE.md` 仍引用已删的 `#cch-locale-tg`；`gf-alignment-check.yml` 未声明 `pull_request`，违反 ADR-0006 条款 2 且未登记例外）⇒ 入 backlog。
 > 对账闸：A-026…A-036 共 **11 条**，去向登记见 §去向登记 · Cycle-6；无去向记录 **0 条**。
 > 终端 CI 锚点（各票分支 tip）：01 ca6403a7 · 02 a80756ad · 03 29baf181 · 05 129d78c3 · 06 8d787e5d · 07 fd02901f · 08 747763fd · 10 6a95417b · 11 8a27ad34；**04 未推送 ⇒ 无 CI**（纯文档，§8.2 本地硬验收例外登记）。
 > 已知红与归因（§8.1.3 三选一留痕）：**cch/08 tip E2E = failure**，归因②（非本票改动）——同栈票 10 的密封用例 tests/srcdoc-origin.spec.ts 在票 08 快照中为修复前版本（读侧竞态），已在 cch/10 修复并转绿（run 35155127289 @ 6a95417b）；**land 前须把 cch/08 重挂到 cch/10 终态之上**，否则该红随快照带走。
