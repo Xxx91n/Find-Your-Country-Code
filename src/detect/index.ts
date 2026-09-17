@@ -293,6 +293,12 @@ const SCAN_SELECTORS = [
   //   ① 不做全 DOM div 扫描、不放裸 `ul li`（候选爆炸）——只收「可聚焦（tabindex=0）的非表单容器」；
   //   ② 结构/选项内容证据全部在 scoreElement 内裁决（customDropdownStats），不在此处放宽。
   'div[tabindex="0"],span[tabindex="0"]',
+  // 票 12 [D-013/D-014]: contenteditable 区号字段 —— 复用 A-003 复合形态描述符，不放裸 [contenteditable]。
+  // D-014 口径：可聚焦（tabindex="0"）＋ 强 tel 先验（inputmode=tel / autocomplete=tel / role=textbox）
+  // 两者同时成立才入候选集 —— 只放行区号形态的 contenteditable；富文本编辑器（无 tel 先验）不入选，
+  // 杜绝 D-29d 记录的候选爆炸（行业实证：无主流实现做全 DOM contenteditable 扫描）。
+  // 评分层沿用既有 L0–L4 瀑布，不新增信号层、不改权重（D-014 明文）。
+  '[contenteditable][tabindex="0"][inputmode="tel"],[contenteditable][tabindex="0"][autocomplete="tel"],[contenteditable][tabindex="0"][role="textbox"]',
 ];
 // 票 24 安全加固：候选选择器存在覆盖重叠（.iti input ⊂ input[type="tel"] 组合项），
 // 迭代 Set 去重版避免同一 selector 字符串被重复 querySelectorAll（数组顺序不变，仅收敛唯一集合）
