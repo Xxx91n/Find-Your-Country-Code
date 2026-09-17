@@ -4,14 +4,18 @@
 > 用途：**由用户决定是否立票**；本清单不自动立票。
 > 关联：账本 A-026…A-036 = 11/11 implemented（deferred 0 / stale 0）；决策摘要见 `docs/architecture-recovery-cycle6-decisions.md`。
 
-## A. 需你裁定的合并/发布类（阻塞项）
+## A. 合并/发布类 —— ✅ **已于 2026-09-17 全部解决**（用户授权后执行）
 
-| # | 事项 | 证据 | 建议 |
-|---|------|------|------|
-| **B-1** | **合并入 main 存在冲突** | `git merge-tree --write-tree main cch/08-phase-b-failure-fixes` → exit 1，**8 个冲突文件**：`.gitignore` · `.scratch/architecture-recovery/README.md` · `.scratch/architecture-recovery/WORKFLOW.md` · `CONTEXT.md` · `CONTRIBUTING.md` · `CONTRIBUTING_EN.md` · `greasyfork/Glog.md` · `greasyfork/Glog_EN.md`（main 自身也有触及这些文档的提交） | 需你定冲突解收口径（逐文件：取栈侧 / 取 main 侧 / 手工合并） |
-| **B-2** | **`but land` 会一并推送** | `but land --help`：远端目标时 "the result is pushed to the remote"；当前 target = `origin/main` | 若要「本地合并 + 暂不推送」，需改用本地 target 或另行授权 land+push |
-| **B-3** | 多支本地 tip ≠ 远端 tip | 本地 14 支 vs 远端 11 支普遍不一致（`cch/04`/`cch/09`/`cch/12` 远端不存在） | 推送前对齐（P-13/P-20 的正式收口） |
-| **B-4** | `cch/08` 快照携带票 10 的**修复前**密封用例 | `merge-base(origin/cch/08, origin/cch/10)` = `fd02901f`；spec 差 15+/4−；run 35127030916 红在 `srcdoc-origin.spec.ts:64` | 合并后**必须复验全量 E2E 绿**（栈序上 cch/10 先于 cch/08，理论上不回归） |
+| # | 事项 | 结果 |
+|---|------|------|
+| **B-1** | 合并入 main 有冲突（8 文件） | ✅ **已解决**：实际冲突 10 文件（含 package.json / vite.config.ts），**均取栈侧**（新且为超集）；合并提交 `9aee35f1`（Cycle-6 栈）+ `717f7105`（cch/04 独立栈） |
+| **B-2** | `but land` 会一并推送 | ✅ **已绕过**：改在**仓外临时工作树**做本地合并（`git merge`）+ 直接推送 main（快进：85990d2f→6c80c650），GitButler 工作区未被扰动 |
+| **B-3** | 多支本地 tip ≠ 远端 tip | ✅ **已收口**：合并推送后**本地与远端 cch/* 分支均为 0**（已全部安全删除）；main 本地=远端=6c80c650 |
+| **B-4** | `cch/08` 快照携带票 10 修复前用例 | ✅ **已复验**：合并结果全量 E2E **145 passed / 0 failed**（cch/10 的修复随栈先合入，无回归） |
+| **发布** | 发版 | ✅ **v1.7.0 已发布**（GitHub Release = Latest，非 draft/prerelease，资产 `find-your-country-code.user.js` 已附；双语变更日志入发行说明；tag 由 release.yml 自动创建） |
+
+**合并结果验收（仓外工作树实跑）**：typecheck exit 0 · build exit 0（167.96 kB / 11 modules）· 版本一致性门 15 passed / 0 failed · 全量 E2E **145 passed / 0 failed** · 无冲突标记残留。
+**推送后 CI（main）**：Engine Gates · E2E · Typecheck · Calibration Baseline · Lockfile Regen · Auto Release = **全 success**。
 
 ## B. 真实脱节（文档 ↔ 代码，建议立小票）
 

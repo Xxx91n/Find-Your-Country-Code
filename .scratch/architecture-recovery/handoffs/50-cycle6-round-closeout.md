@@ -5,7 +5,7 @@
 
 ## 1. 本轮终态（一句话）
 
-Cycle-6 **实施面 12/12 闭合**：账本 **A-026…A-036 = 11/11 implemented**（deferred 0 / stale 0）、grill 账本 **D-001…D-016 = 16/16 implemented**；硬验收全绿；**未合并入 main、未推送**。
+Cycle-6 **实施面 12/12 闭合**：账本 **A-026…A-036 = 11/11 implemented**（deferred 0 / stale 0）、grill 账本 **D-001…D-016 = 16/16 implemented**；硬验收全绿；**已合并入 main 并推送（main = 6c80c650）、已发布 v1.7.0、已合并分支已全部删除**。
 
 ## 2. 权威文件索引（按需读，不在此复述）
 
@@ -28,7 +28,7 @@ Cycle-6 **实施面 12/12 闭合**：账本 **A-026…A-036 = 11/11 implemented*
 - 全量 E2E → **145 passed**（W6 复核时实跑）
 - 三层文档一致性：CONTEXT.md 7 条新术语实体**全部真实存在**；ADR-0008/0010/0011 与代码**逐条吻合**
 
-## 4. 下一步动作与授权边界
+## 4. 下一步动作与授权边界（✅ 已于 2026-09-17 执行完毕）
 
 1. **合并入 main（未执行）**：`but pull` 已执行（"No new upstream commits found"）。**合并存在冲突** —— `git merge-tree --write-tree main cch/08-phase-b-failure-fixes` → 8 个冲突文件（`.gitignore` · `.scratch/.../README.md` · `WORKFLOW.md` · `CONTEXT.md` · `CONTRIBUTING.md` · `CONTRIBUTING_EN.md` · `greasyfork/Glog.md` · `Glog_EN.md`）。**且 `but land` 对远端目标会一并推送**（当前 target = `origin/main`）。
    ⇒ **需用户裁定**：① 冲突解收口径；② 本地合并 vs 授权 land+push。
@@ -37,7 +37,7 @@ Cycle-6 **实施面 12/12 闭合**：账本 **A-026…A-036 = 11/11 implemented*
 
 ## 5. 未完成 / 未决
 
-- **合并未执行**（冲突 8 文件 + 推送耦合，待裁定）
+- ~~合并未执行~~ → ✅ **已合并**（`9aee35f1` + `717f7105`，10 冲突均取栈侧）+ 已推送 + **v1.7.0 已发布** + **已合并分支已全部删除**（本地/远端 cch/* 均为 0）
 - **票 04 的 issue 未勾销**（P-4；其实现在 W1 已实物复核属实，但 issue 0/5 勾销）
 - **多支本地 tip ≠ 远端 tip**（本地 14 支 / 远端 11 支；`cch/04`/`cch/09`/`cch/12` 远端不存在）
 - **R-1**：`cch/08` 快照携带票 10 的**修复前**密封用例 ⇒ 合并后必须复验全量 E2E 绿
