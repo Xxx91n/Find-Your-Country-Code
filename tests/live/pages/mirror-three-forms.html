@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>real-site form mirror — ticket 32</title>
+</head>
+<body>
+<h1>Real-site form mirror (ticket 32 / A-006)</h1>
+<p>本地镜像页：把三类真实形态与一个已知好对照组落成可确定复现的 HTML，供真实站点冒烟层做 harness 自证与形态观测。</p>
+
+<!-- 每个形态独立 form：引擎的锚查找作用域 = el.closest('form') || document，
+     不隔离会让任一个 input[type=tel] 给其他形态补上 L2 锚分（+18），破坏与 corpus 用例的可比性 -->
+
+<form id="f-control">
+  <label for="m-control">Country code</label>
+  <select id="m-control" name="country_code">
+    <option value="+86">+86 China</option>
+    <option value="+1">+1 United States</option>
+    <option value="+44">+44 United Kingdom</option>
+  </select>
+</form>
+
+<form id="f-weak">
+  <!-- A-001 弱信号 input：无 label、无 placeholder、无锚 -->
+  <input id="m-weak" name="countryCode" type="text">
+</form>
+
+<form id="f-iso2">
+  <!-- A-002 ISO2 作 value + 选项文本括号区号 -->
+  <select id="m-iso2" name="country">
+    <option value="us">United States (+1)</option>
+    <option value="gb">United Kingdom (+44)</option>
+    <option value="cn">China (+86)</option>
+  </select>
+</form>
+
+<form id="f-noaria">
+  <!-- A-003 无 ARIA 手写自定义下拉：无 role、无 aria-controls -->
+  <div id="m-noaria" class="select-country" tabindex="0">
+    <span id="m-noaria-label">United States (+1)</span>
+    <ul class="dropdown">
+      <li data-value="us">United States (+1)</li>
+      <li data-value="gb">United Kingdom (+44)</li>
+      <li data-value="cn">China (+86)</li>
+    </ul>
+  </div>
+</form>
+
+</body>
+</html>

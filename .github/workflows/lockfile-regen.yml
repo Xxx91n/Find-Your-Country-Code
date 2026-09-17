@@ -1,0 +1,52 @@
+name: Lockfile Regen
+
+# lockfile 再生与同步断言：以 package.json（钉死版）为真相源再生 package-lock.json，
+# 并以 npm ci --dry-run 断言与 package.json 同步（失同步即红）。
+# 以 artifact 交付（lockfile-regen-<run>）。本 workflow 不自动 push（避免自动提交越权）；
+# artifact 内容由维护者确认后入库。
+# 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)（见 CONTEXT.md）。
+# 票 43（A-021）：安装面根修后不再需要 peer 例外开关（React 18/19 分居两个 install root）。
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'cch/**'
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile-regen:
+    name: Regen lockfile from pinned package.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Line-ending guard (CRLF in tracked text)
+        run: |
+          bad=$(git ls-files | grep -vE '\.(bat|ps1|cmd|png|ico|icns|jpg|jpeg|gif|webp|exe|dll|node|pdb|msi|so|dylib|bin|zip|gz|tar|7z)$' | xargs -r grep -lU "$(printf '\r')" 2>/dev/null || true)
+          if [ -n "$bad" ]; then echo "::error::CRLF found in tracked text files: $bad"; exit 1; fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Regen lockfile
+        run: npm install
+
+      - name: Assert lockfile regenerated and in sync
+        run: |
+          if [ ! -f package-lock.json ]; then echo "::error::package-lock.json missing"; exit 1; fi
+          npm ci --dry-run
+
+      - name: Upload lockfile artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lockfile-regen-${{ github.run_id }}
+          path: package-lock.json

@@ -1,0 +1,30 @@
+name: Verify Ticket 10 (srcdoc frame cross-frame origin)
+
+# 票 10（Cycle-6 · A-034）结构门：srcdoc 帧跨帧 origin 校验误判的修复面 / 校验未放宽 / 只升不降。
+# 触发：pull_request（ADR-0006 决策 2 非发版 workflow PR 门控）+ 本票分支 push + 手动 dispatch。
+# 纯静态断言：node 钉 22、无 npm 依赖、无浏览器、零外网。
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/10-srcdoc-origin-fix'
+
+permissions:
+  contents: read
+
+jobs:
+  ticket-10-gate:
+    name: Ticket-10 gate (srcdoc frame origin comparison A-034)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ticket-10 acceptance gate
+        run: node tests/scripts/verify-ticket-10.mjs

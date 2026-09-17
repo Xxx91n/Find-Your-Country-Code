@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>srcdoc 帧 origin 误判 fixture — 票 10 / A-034</title></head>
+<body>
+<h1>about:srcdoc 帧治理（顶层字段 + srcdoc 子帧表单）</h1>
+<form id="top-form">
+  <label>国家区号
+    <select id="top-cc" name="countryCode">
+      <option value="">选择…</option>
+      <option value="+86">+86</option>
+      <option value="+81">+81</option>
+      <option value="+44">+44</option>
+      <option value="+1">+1</option>
+      <option value="+49">+49</option>
+      <option value="+33">+33</option>
+      <option value="+61">+61</option>
+      <option value="+7">+7</option>
+    </select>
+  </label>
+</form>
+<!-- 票 10 [A-034]：srcdoc 帧内 location.origin 被序列化为字符串 "null"（帧文档真实 origin 继承自顶层，
+     只能由 window.origin 读出）。子帧文档经 srcdoc 属性内联（帧 URL = about:srcdoc），属性值用单引号
+     以避开子文档内的双引号；子帧内不内联任何脚本：事件序列由测试侧 recordFieldEvents 原语安装。 -->
+<iframe id="f-srcdoc" width="640" height="320" srcdoc='<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>srcdoc child — 票 10 / A-034 子帧表单</title></head>
+<body>
+<h2>srcdoc 子帧表单（票 10 / A-034 fixture 子页）</h2>
+<form id="srcdoc-form">
+  <label>国家区号
+    <select id="srcc-cc" name="countryCode">
+      <option value="">选择…</option>
+      <option value="+86">+86</option>
+      <option value="+81">+81</option>
+      <option value="+44">+44</option>
+      <option value="+1">+1</option>
+      <option value="+49">+49</option>
+      <option value="+33">+33</option>
+      <option value="+61">+61</option>
+      <option value="+7">+7</option>
+    </select>
+  </label>
+  <label>国家区号（输入）
+    <input id="srcc-dial" name="dialCode" type="text" placeholder="+86">
+  </label>
+  <input type="tel" name="phone" placeholder="手机号">
+</form>
+</body>
+</html>'></iframe>
+</body>
+</html>

@@ -13,7 +13,9 @@
 // dispatch 回调签名（票 09）：dispatch(value) —— 接收兜底值并由注入层统一赋值+派发事件
 // ════════════════════════════════════════════════════════
 
-export function createItiAdapter() {
+import type { AnyEl, Country, ItiAdapter, ItiInstance } from '../types';
+
+export function createItiAdapter(): ItiAdapter {
   const Adapter = {
     _global() {
       // v18 exposes the factory function on window.intlTelInput and the static
@@ -26,12 +28,12 @@ export function createItiAdapter() {
       return null;
     },
 
-    _isFn(obj, name) {
-      return !!obj && typeof obj[name] === 'function';
+    _isFn(obj: unknown, name: string): boolean {
+      return !!obj && typeof (obj as Record<string, unknown>)[name] === 'function';
     },
 
     // ── 实例获取链（能力探测）──────────────────────────────
-    _instance(el) {
+    _instance(el: AnyEl): ItiInstance | null {
       // ① getInstance 稳锚（v16.1.0 起一直存在）
       try {
         const g = this._global();
@@ -71,7 +73,7 @@ export function createItiAdapter() {
     },
 
     // ── 层1：setNumber 优先（官方推荐路径，号码自带区号自动同步国家）──
-    _fillByNumber(inst, el, country) {
+    _fillByNumber(inst: ItiInstance, el: AnyEl, country: Country): boolean {
       if (!this._isFn(inst, 'setNumber')) return false;
       try {
         const rest = (el.value || '').trim().replace(/^(?:\+|00)\d{1,4}\s*/, '').trim();
@@ -83,7 +85,7 @@ export function createItiAdapter() {
     },
 
     // ── 层2：方法名双名探测（先新名 setSelectedCountry，未命中再旧名 setCountry）──
-    _fillByCountry(inst, iso) {
+    _fillByCountry(inst: ItiInstance, iso: string): boolean {
       if (this._isFn(inst, 'setSelectedCountry')) {
         try {
           inst.setSelectedCountry(iso);
@@ -100,7 +102,7 @@ export function createItiAdapter() {
     },
 
     // ── 层3：DOM 点击双代类名兜底 ────────────────────────────
-    _fillByDom(el, country, dispatch) {
+    _fillByDom(el: AnyEl, country: Country, dispatch: (value: string) => void): boolean {
       const iso = country.iso.toLowerCase();
       const wrapper = el.closest('.iti') || el.closest('.intl-tel-input');
       if (!wrapper) return false;
@@ -108,7 +110,7 @@ export function createItiAdapter() {
       const btn = wrapper.querySelector(
         '.iti__selected-country, .iti__selected-flag, .selected-flag, .iti__flag-container'
       );
-      if (btn) btn.click();
+      if (btn) (btn as HTMLElement).click();
 
       const clickItem = () => {
         const item = wrapper.querySelector(
@@ -117,7 +119,7 @@ export function createItiAdapter() {
           'li[data-country-code="' + iso + '"], .iti__country[data-country-code="' + iso + '"], .country[data-country-code="' + iso + '"]'
         );
         if (item) {
-          item.click();
+          (item as HTMLElement).click();
           return true;
         }
         return false;
@@ -130,7 +132,7 @@ export function createItiAdapter() {
       return true;
     },
 
-    fill(el, country, dispatch) {
+    fill(el: AnyEl, country: Country, dispatch: (value: string) => void): boolean {
       const iso = country.iso.toLowerCase();
       const inst = this._instance(el);
 

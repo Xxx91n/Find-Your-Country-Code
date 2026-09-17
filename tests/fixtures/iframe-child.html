@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>iframe child — 票 12 子帧字段</title></head>
+<body>
+<h2>子帧表单（票 12 iframe fixture 共用子页）</h2>
+<form id="child-form">
+  <label>国家区号
+    <select id="child-cc" name="cc">
+      <option value="">选择…</option>
+      <option value="+86">+86</option>
+      <option value="+81">+81</option>
+      <option value="+44">+44</option>
+      <option value="+1">+1</option>
+      <option value="+49">+49</option>
+      <option value="+33">+33</option>
+      <option value="+61">+61</option>
+      <option value="+7">+7</option>
+    </select>
+  </label>
+  <label>国家区号（输入）
+    <input id="child-dial" name="dialCode" type="text" placeholder="+86">
+  </label>
+  <input type="tel" name="phone" placeholder="手机号">
+</form>
+<script>
+// 事件序列记录器（E2E 断言子帧填充的 input→change→blur）
+(function () {
+  window.__seq = [];
+  ['input', 'change', 'blur'].forEach(function (t) {
+    document.getElementById('child-cc').addEventListener(t, function () { window.__seq.push(t); });
+  });
+})();
+</script>
+</body>
+</html>

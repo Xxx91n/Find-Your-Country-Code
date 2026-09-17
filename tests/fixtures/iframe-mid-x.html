@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>iframe mid-x — 票 40 跨域中间帧</title></head>
+<body>
+<h2>中间帧 X（本页经跨域嵌入时使用：孙帧与本页同源 = 与顶层跨域）</h2>
+<iframe id="f-grand" width="560" height="240"></iframe>
+<script>
+(function () {
+  document.getElementById('f-grand').src = location.origin + '/fixtures/iframe-child.html';
+})();
+</script>
+</body>
+</html>

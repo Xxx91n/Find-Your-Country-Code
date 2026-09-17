@@ -1,0 +1,75 @@
+name: Calibration Baseline
+
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'cch/14-calibration-corpus'
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # 票 32 前置修复：14-lib-engine 的函数束装载器需 module.stripTypeScriptTypes（Node >= 22.13）。
+          # 此前 node 20 下裸 new Function 无法解析 cch-23 引入的 TS 类型标注，本 workflow 自 cch-23 起持续红。
+          node-version: 22
+
+      # harness 为零依赖 node 脚本（函数束装载引擎，零构建），无需 npm ci
+      - name: Run precision/recall harness
+        run: |
+          node tests/scripts/14-calibration-harness.mjs \
+            --out calibration-out/baseline-report.md \
+            --json calibration-out/baseline-summary.json
+
+      - name: Run threshold calibration
+        run: |
+          node tests/scripts/14-threshold-calibration.mjs \
+            --out calibration-out/calibration-report.md
+
+      # 票 32：真实站点抽样语料 —— 契约校验 + 候选集覆盖探针 + 三形态复现基线硬锁（零依赖）
+      - name: Run real-site corpus probe (ticket 32)
+        run: |
+          node tests/scripts/32-real-site-corpus.mjs \
+            --out calibration-out/real-site-corpus-report.md \
+            --json calibration-out/real-site-corpus-summary.json
+
+      - name: Assert baseline produced numbers
+        run: |
+          node -e "const s=require('./calibration-out/baseline-summary.json'); if(!(s.cases>0 && typeof s.precision==='number' && typeof s.recall==='number' && s.gate==='pass')){console.error(JSON.stringify(s));process.exit(1)};console.log('precision='+s.precision,'recall='+s.recall,'f1='+s.f1,'gate='+s.gate)"
+
+      - name: Upload baseline artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: calibration-baseline
+          path: calibration-out/
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## Calibration baseline (ticket 14)'
+            if [ -f calibration-out/baseline-summary.json ]; then
+              node -e "const s=require('./calibration-out/baseline-summary.json');console.log('- corpus cases: '+s.cases);console.log('- precision: '+s.precision+' (TP='+s.TP+', FP='+s.FP+')');console.log('- recall: '+s.recall+' (FN='+s.FN+')');console.log('- f1: '+s.f1);console.log('- regression gate: '+s.gate);console.log('- knownResidual: '+(s.knownResidual.join(', ')||'none'))"
+            else
+              echo '- harness did not complete; see job log'
+            fi
+            echo ''
+            echo '## Real-site corpus probe (ticket 32 / A-006)'
+            if [ -f calibration-out/real-site-corpus-summary.json ]; then
+              node -e "const j=require('./calibration-out/real-site-corpus-summary.json');console.log('- forms: '+j.forms.length+' (scanSelectors '+j.scanSelectors.length+')');console.log('- probe self-test: '+j.selfTest);console.log('- gate: '+j.gate);for(const f of j.forms){const o=(f.observed||[])[0]||{};console.log('- '+f.id+': covered='+f.coveredByCandidateSet+' expectedTier='+f.expectedTier+' got='+o.tier+' score='+o.score+' verdict='+f.verdict+' fix='+f.fixingTicket)}"
+            else
+              echo '- real-site corpus probe did not complete; see job log'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

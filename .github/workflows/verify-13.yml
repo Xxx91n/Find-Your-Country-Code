@@ -1,0 +1,29 @@
+# 票 13 验证 workflow：本票验收门（verify-ticket-13.mjs，语料动态计数 + 闸门静态检查）。
+# 引擎门（verify-ticket-02 + misdetect-repro-v2）在 engine-gates.yml 统一跑（票 34 门禁减肥）；
+# 全量 E2E 由统一 e2e.yml 承担（票 36 门禁碎片收口，单次全量运行覆盖本票断言）。
+# 触发：pull_request（ADR-0006 PR 门控）+ 本票验证分支 push + 手动 workflow_dispatch。
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'cch/13-visibility-l3-hardening'
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance-gate:
+    name: Ticket-13 gate (corpus + visibility statics)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          # 票 36（A-014）：装载器需 module.stripTypeScriptTypes（Node >= 22.13），
+          # 与 engine-gates/verify-27..31 同钉 22；node 20 下裸 new Function 遇 TS 标注必崩。
+          node-version: 22
+      - name: Ticket-13 acceptance gate
+        run: node tests/scripts/verify-ticket-13.mjs

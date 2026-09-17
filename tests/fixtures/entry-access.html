@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>票 37 [A-012] 入口可达性 fixture —— 无图标低置信页</title>
+  <!--
+    A-012 形态：整页无注入图标（best score <35），脚本对用户不可见。
+    #ea-low：label 强短语「国际区号」+26 → none 档（< SCORE_LOWKEY=35）且
+      ≥ ITI_LOW_REGISTER_SCORE(25) → 进 _lowFields 召唤登记。
+    #ea-plain：无关字段 0 分。
+    页面刻意不放 input[type=tel]：L2 锚分(+18)会把 26 抬过 35，污染档位语义。
+  -->
+  <style>body{font-family:sans-serif;padding:24px}h1{font-size:16px}div{margin:12px 0}input{padding:6px;width:260px}</style>
+</head>
+<body>
+  <h1>低置信页（best score &lt;35）：无图标，仅可召唤登记</h1>
+  <div>
+    <label for="ea-low">国际区号</label><br>
+    <input id="ea-low" type="text" name="wechat">
+  </div>
+  <div>
+    <label for="ea-plain">昵称</label><br>
+    <input id="ea-plain" type="text" name="nickname">
+  </div>
+</body>
+</html>

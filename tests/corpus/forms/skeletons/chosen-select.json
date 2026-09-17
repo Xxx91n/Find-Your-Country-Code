@@ -1,0 +1,32 @@
+{
+  "id": "chosen-select",
+  "skeleton_version": 1,
+  "source": "archive",
+  "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/chosen-select.html",
+  "source_url": "https://harvesthq.github.io/chosen/",
+  "root_selector": "select.chosen-select",
+  "node_count": 4,
+  "sha256": "c09002b6a4acb1cb7918ee60f861b3ce72408459b37853aa77e711651f8c607e",
+  "tree": {
+    "tag": "select",
+    "class": [
+      "chosen-select"
+    ],
+    "attrs": {
+      "data-placeholder": "aaaaaa a aaaaaaa..."
+    },
+    "children": [
+      {
+        "tag": "option"
+      },
+      {
+        "tag": "option",
+        "repeat": 226
+      },
+      {
+        "tag": "option",
+        "repeat": 25
+      }
+    ]
+  }
+}

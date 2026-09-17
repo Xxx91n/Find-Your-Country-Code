@@ -20,6 +20,16 @@ export const L1_PREFIX_KW_SCORE = 7;      // prefix 歧义降权组 [MD §2① p
 export const L1_NPA_KW_SCORE = 4;         // 北美编号计划词（npa/trunk，无国家语义）[MD §4 撞库类新发现]
 export const L1_LABEL_PHRASE_SCORE = 26;  // label 强短语（国家区号/国际区号/电话区号/呼叫代码/country code/…）
 export const L1_BARE_QU_SCORE = 8;        // label 裸词「区号」单独降权 [MD §2② 固话本地区号误报]
+// 属性强短语组（票 27 [A-001]）：placeholder/aria-label/name/id/class/data-name/title 等属性
+// 文本归一后命中强短语词表 —— 与 label 强短语同词表、权重低一档（属性文本是弱一等的 label
+// 证据：无 <label> 关联、可被 JS 动态改写、常为提示性文案）。
+// 标定（tests/scripts/27-weak-signal-calibration.mjs，全语料 45 例）:
+//   L1_STRONG_KW_SCORE(30) + 8 = 38 >= SCORE_LOWKEY(35) —— name=countryCode /
+//   placeholder="Country code" 类无锚弱信号字段由复现基线 30/none 跨过低置信线；
+//   全语料负例（含「本地固话区号 / 语言前缀」类）零抬升，precision 1.0 保持。
+//   不取更大值：8 已覆盖 camelCase/snake_case/紧凑三种命名变体，再高只会扩大
+//   66-68 分既有正例越过 SCORE_AUTO 的范围（SCORE_AUTO 常量本身不动）。
+export const L1_ATTR_PHRASE_SCORE = 8;
 export const L1_LOCAL_FIXED_PENALTY = -30;  // label 含 固话/本地/local → 本地区号语义负分 [MD §2②]
 export const L1_COMPOUND_SCORE = 40;      // 复合短语「国家/地区区号」「手机区号」白名单，优先级高于 L4 子串排除 [MD §5-0① N1 误杀修复]
 
@@ -35,7 +45,6 @@ export const L3_DIAL_CAP = 45;            // 内容验证分量上限（Chromium
 export const L3_ISO_BONUS = 30;           // ISO2 值 + EN 国家名文本双占比 ≥50% → 国家选择器语义 [SP US7]
 export const L3_NUMERIC_MIN_RATE = 0.6;   // 纯数字枚举占比 ≥60% 且无区号命中 → 排除 [MD §2③ "1-3个月内有效"]
 export const L3_NUMERIC_PENALTY = -40;
-export const L3_PLUS_LIKE_MIN_RATE = 0.5; // +NN 形似值占比门槛（旧 0.4 被 GMT+8 时区击穿 [MD F5]；现仅作旁证不单独定案）
 
 // ── L4 排除层负分制 [IM §④ L4；MD §5-0① 词边界匹配 + 复合短语白名单优先] ─
 export const L4_EXCLUDE_PENALTY = -70;    // 拉丁词按词边界整词匹配、CJK 按短语包含（hidden→idd 子串撞库教训 [MD F6]）
@@ -43,6 +52,22 @@ export const L4_EXCLUDE_PENALTY = -70;    // 拉丁词按词边界整词匹配�
 // ── 分级行动阈值 [SP 分级行动；IM P2 阈值分级] ──
 export const SCORE_AUTO = 70;             // ≥ 高置信：自动注入
 export const SCORE_LOWKEY = 35;           // ≥ 中置信：低调注入；< 不注入（面板可召唤）
+
+// ── iti 容器信号（票 16：iti 识别并入评分，取消评分外无条件最高分短路）[SP「评分一致性」/ US10] ──
+// iti 容器证据计入评分而非直接定档：容器内无关字段仍受 L1/L4 词表与既有误报防线拦截。
+// 取值标定（语料依据见 research/window-reports/16-scoring-consistency-report.md）：
+//   60 + type=tel(10) + L2 锚(18) = 88 稳达 auto（E2E cch-test-page2 场景 C 实际形态）；
+//   无锚时 60+10=70 恰达 auto；L4 排除(-70)可完全压过 → 防线对 iti 同等生效。
+export const ITI_CONTAINER_SCORE = 60;    // .iti/.intl-tel-input 容器内 input 的结构强信号
+export const ITI_LOW_REGISTER_SCORE = 25; // none 档登记「面板召唤」最低分 [SP US18]（票 16 自 detect/index.ts:487 收编魔法数 25，值不变）
+
+// ── ARIA combobox 语义层（票 18，ADR-0005「登记 + 手动召唤」档）──
+// 结构组合信号: role=combobox + aria-expanded 属性存在（EP closed 态空串容忍）+
+// aria-controls/owns 可解 [role=listbox]。取值标定: 单独 20 < 登记线 25（无国家语义上下文
+// 的结构信号不进召唤面，站内搜索框不登记）; +L1 country kw(14)=34、+label phrase(26)=46
+// 稳过登记线; 档位经 _process cap 强制 none（ADR-0005: 不自动注入图标、不自动填充），
+// 分数仅服务登记与信号审计。内容验证分值全部复用 L3 既有常量（口径单一来源）。
+export const ARIA_COMBO_STRUCT_SCORE = 20;
 
 // ════════════════════════════════════════════════════════
 
@@ -70,3 +95,96 @@ export const RULES_MAX_OVERRIDES = 500;              // 文档内覆盖规则上
 // ── 面板 UI 常量（票 07）[SP US17「低调样式可配置」/ US18「低置信手动召唤」] ──
 export const UI_PREFS_KEY = 'cch_ui_prefs_v1';          // UI 偏好 GM 键（独立键，与收藏/规则解耦）
 export const LOWKEY_MODES = ['dim', 'hidden'];           // 中置信注入样式：dim=低调可见；hidden=不注入仅面板召唤
+// ── 设置面深链（票 02 / A-026 · A-027）──
+// 深链目标一律用稳定标识符（语义 slug / 视图标记），不得绑内部实现名或易变排序位置（D-011）。
+// 视图标记挂在既有规则视图节点上（D-010 ③：不新建独立设置视图、不重排设置顺序）。
+export const SETTINGS_VIEW = 'settings';                 // 设置所在视图标记（data-cch-view 值）
+export const SETTINGS_SECTION_LOCALE = 'locale';         // 语言控件所在行 slug（data-cch-section 值）
+// ════════════════════════════════════════════════════════
+// 帧治理常量（票 12）[SP Implementation Decisions「帧治理」]
+// userscript 元数据无正向 all-frames 键;@match 命中 + 不设 @noframes = 全帧注入。
+// 顶层/子帧分工:每帧各自检测与填充(行为同源);面板宿主仅顶层渲染;
+// 子帧图标点击经 postMessage 请求顶层代开面板,选中国家后回传子帧执行 Fill.run。
+// 跨帧存储一致性复用既有 GM 存储 + BroadcastChannel + GM_addValueChangeListener(不新造第二套)。
+// ════════════════════════════════════════════════════════
+export const IS_TOP_FRAME = (() => {
+  try { return window.self === window.top; } catch { return false; }
+})();
+// 票 10 [A-034]：本帧「文档 origin」（全仓唯一定义；跨帧消息与跨帧存储的 origin 比对统一取此值）。
+// 缺陷：about:srcdoc / about:blank 帧的 location.origin 被序列化为字符串 "null"（URL 序列化），
+//   而帧文档的真实 origin 继承自父级 —— 只能由 window.origin 读出（实测 srcdoc 帧
+//   location.origin="null" / window.origin=父级 origin；且顶层可读 ⇒ isTopFrameSameOrigin() 判真）。
+//   ⇒ 以 location.origin 为操作数的同源判据在 srcdoc 帧必然误判，并丢弃合法跨帧指令。
+// 取径不放宽任何来源校验：普通文档下 window.origin 与 location.origin 恒等（票 24 语义不变）；
+// 回退分支仅在宿主不支持 window.origin 时启用，退回既有语义（不引入新行为、不放宽）。
+export const SELF_ORIGIN = (() => {
+  try {
+    const o = window.origin;
+    if (typeof o === 'string' && o) return o;
+  } catch {}
+  try { return location.origin; } catch { return 'null'; }
+})();
+export const FRAME_TAG = 'cch-frame-v1';
+export const FRAME_OPEN_MSG = 'open';
+export const FRAME_FILL_MSG = 'fill';
+export const FRAME_FEEDBACK_MSG = 'feedback';
+
+// ════════════════════════════════════════════════════════
+// 诊断面常量（票 03 / A-028）
+// [AM] research/cycle6-investigation.md O2/O3/O4：Greasespot 排障树逐层点亮（第一处熄灭即答案）/
+//      Flagr evalDebugLog 决策链作单一事实来源（UI 面板与 CI JSON 从同一份 trace 渲染）/
+//      uBlock Logger 未打开零开销 + 静默失败三招（前移·捕获·归因）
+// [SP] spec.md S-02：结构化诊断事件流唯一事实来源 + 分级门控 + 环形缓冲容量上限
+// [DL] .scratch/cycle6-grill/decision-ledger.md D-012：恒开 = error/warn + 计数器；
+//      门控 = info/trace 全链路（惰性构造）；D-013：术语「诊断面」「判定记录」
+// 纪律：reason 取自 DIAG_REASON 闭集（禁止自由合成）；layer 由 reason 前缀推导，不手传。
+// ════════════════════════════════════════════════════════
+
+export const DIAG_VERSION = 1;              // 机器可读输出 schema 版本（CI 断言可钉）
+export const DIAG_CAPACITY = 200;           // 环形缓冲固定容量（每页上限；溢出丢最旧并计数）
+export const DIAG_TRACE_PREF = 'diagTrace'; // UI_PREFS_KEY 内的全链路 trace 门控键（默认 false）
+
+// 四层判定（issue 验收2）：工具失效 / 注入失效 / 脚本逻辑失效 / 写入结果。
+// 层不手传——由 reason 前缀推导（层与原因不可能漂移）。
+export const DIAG_LAYERS = ['tool', 'inject', 'logic', 'write'];
+
+// reason 闭集。前缀即层：tool-* / inject-* / logic-* / write-*。
+// 「已验证因果」的工程含义：每条 reason 只在一个已核实的判定点产生，且携带该点 id（point）。
+export const DIAG_REASON = {
+  UNKNOWN: 'unknown-open-debug',
+  TOOL_RECOGNIZED: 'tool-field-recognized',
+  TOOL_EXCLUDED_PAGE: 'tool-page-excluded',
+  TOOL_GATE_INPUT_TYPE: 'tool-gate-input-type',
+  TOOL_GATE_ARIA_HIDDEN: 'tool-gate-aria-hidden',
+  TOOL_GATE_DISABLED: 'tool-gate-disabled',
+  TOOL_GATE_OPTIONS_FEW: 'tool-gate-options-under-2',
+  TOOL_GATE_PSEUDO_VETO: 'tool-gate-pseudo-veto',
+  TOOL_GATE_CUSTOM_NO_DIAL: 'tool-gate-custom-no-dial-evidence',
+  TOOL_GATE_COUNTRY_SEMANTIC: 'tool-gate-country-semantic-suppress',
+  TOOL_SCORE_BELOW_LOWKEY: 'tool-score-below-lowkey',
+  INJECT_ATTACHED: 'inject-icon-attached',
+  INJECT_GATE_VISIBILITY: 'inject-gate-visibility-hidden',
+  INJECT_GATE_REGISTER_ONLY: 'inject-gate-register-only',
+  INJECT_GATE_RULE_NONE: 'inject-gate-rule-none',
+  INJECT_NO_KIND: 'inject-no-kind-resolved',
+  INJECT_SUMMONED: 'inject-icon-summoned',
+  LOGIC_RESOLVED: 'logic-fill-target-resolved',
+  LOGIC_NO_TARGET: 'logic-no-target-field',
+  LOGIC_OPTION_UNMATCHED: 'logic-select-option-unmatched',
+  LOGIC_PSEUDO_UNMATCHED: 'logic-pseudo-option-unmatched',
+  LOGIC_ITI_DECLINED: 'logic-iti-adapter-declined',
+  WRITE_ASSERTED: 'write-post-assert-passed',
+  WRITE_MISMATCH: 'write-post-assert-mismatch',
+  WRITE_COPIED: 'write-fell-back-to-clipboard',
+  WRITE_CLIPBOARD_FAILED: 'write-clipboard-unavailable',
+};
+
+// 判定点 id 前缀（point 命名空间；供面板过滤器与 CI 断言稳定匹配）
+export const DIAG_POINT_PREFIX = {
+  SCAN: 'scan:',
+  GATE: 'gate:',
+  INJECT: 'inject:',
+  LOGIC: 'logic:',
+  WRITE: 'write:',
+  RULE: 'rule:',
+};

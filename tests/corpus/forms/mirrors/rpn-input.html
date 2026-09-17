@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Form Corpus · react-phone-number-input (de-branded mirror)</title>
+<!--
+  ══════════════════════════════════════════════════════════════════
+  形态语料 · 镜像页（mirror page）— id: rpn-input
+  ══════════════════════════════════════════════════════════════════
+  source_url   : https://catamphetamine.gitlab.io/react-phone-number-input/
+  captured_at  : 2026-09-16T10:19:55.086Z
+  mirror_of    : rpn-input（原始快照存仓库外 archive，见 manifest.json）
+  license_note : 形态复刻，非原文转载。保留公开表单形态（.PhoneInput /
+                 select.PhoneInputCountrySelect（ISO2 值域）/ input[type=tel]），
+                 已去品牌 / 去追踪 / 内容替换；不含真实 PII。
+  family       : phone-input-select
+  shape_notes  : 国家下拉 value 恰为 **ISO2**（`AF`/`CN`/…），文本为国家名；
+                 与 A-002 的「ISO2-value + 括号区号」同族但**文本不带区号**
+                 （纯 ISO2 + 国名形态），是「国家选择器 ≠ 区号字段」语义抑制的
+                 邻近负例/正例边界。
+  ══════════════════════════════════════════════════════════════════
+-->
+<style>
+  :root { --line:#d0d5dd; }
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, sans-serif; color: #1f2933; background: #fff; margin: 0; padding: 32px; }
+  main { max-width: 480px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p.hint { color: #52606d; font-size: 13px; margin: 0 0 20px; }
+  .PhoneInput { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .PhoneInputCountry { position: relative; display: flex; align-items: center; gap: 6px; padding: 0 8px; background: #f5f7fa; border-right: 1px solid var(--line); }
+  .PhoneInputCountryIcon { width: 22px; height: 15px; border-radius: 2px; background: #de2910; }
+  .PhoneInputCountrySelect { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .PhoneInputCountrySelectArrow { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #52606d; }
+  .PhoneInputInput { flex: 1; border: 0; padding: 10px 12px; font: inherit; outline: none; }
+  .field-row { margin-top: 18px; }
+  label { display: block; font-size: 13px; color: #52606d; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Phone number</h1>
+  <p class="hint">De-branded mirror of a public form shape (family: phone-input-select).</p>
+
+  <div class="PhoneInput" id="rpn-demo">
+    <div class="PhoneInputCountry">
+      <select class="PhoneInputCountrySelect" aria-label="Country">
+        <option value="ZZ">International</option>
+        <option value="AF">Afghanistan</option>
+        <option value="AL">Albania</option>
+        <option value="DZ">Algeria</option>
+        <option value="CA">Canada</option>
+        <option value="CN">China</option>
+        <option value="DE">Germany</option>
+        <option value="JP">Japan</option>
+        <option value="GB">United Kingdom</option>
+        <option value="US">United States</option>
+        <option value="SH">Ascension Island</option>
+      </select>
+      <span class="PhoneInputCountryIcon" aria-hidden="true"></span>
+      <span class="PhoneInputCountrySelectArrow" aria-hidden="true"></span>
+    </div>
+    <input type="tel" class="PhoneInputInput" placeholder="Enter phone number" autocomplete="tel" aria-label="Phone number">
+  </div>
+
+  <div class="field-row">
+    <label for="email">Email</label>
+    <input type="email" id="email" style="width:100%;padding:10px 12px;border:1px solid #d0d5dd;border-radius:6px;font:inherit">
+  </div>
+</main>
+
+<script>
+// 镜像页最小交互：同步国旗色（真实组件在 select change 时更新图标）
+(function () {
+  var sel = document.querySelector('#rpn-demo .PhoneInputCountrySelect');
+  var icon = document.querySelector('#rpn-demo .PhoneInputCountryIcon');
+  var COLORS = { CN:'#de2910', US:'#3c3b6e', GB:'#012169', JP:'#bc002d', DE:'#dd0000', CA:'#d80621', SH:'#012169', ZZ:'#cbd2d9' };
+  function sync() { icon.style.background = COLORS[sel.value] || '#cbd2d9'; }
+  sel.addEventListener('change', sync);
+  sync();
+})();
+</script>
+</body>
+</html>
