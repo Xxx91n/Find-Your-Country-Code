@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>network canary — 密封层网络封锁自证（票 39 delta / D-012）</title>
+<!--
+  本页仅用于自证「密封层运行时网络封锁」生效：不是形态语料、不属任何 live 目标。
+  唯一的外部引用指向保留域名 external.invalid（RFC 6761，永不解析）：
+    · 它不在 live 目标的 host 集合内，故不触发 G4e（引用位断言只针对 liveHosts）；
+    · 它的存在使封锁可被**正向验证**：封锁未装则该请求会被真正发出，
+      封锁已装则被 abort 且记入 blockedRequests(page)。
+  即使封锁被移除，external.invalid 也永远解析不了 —— 本页不可能造成真实外网流量。
+-->
+</head>
+<body>
+<h1>network canary</h1>
+<input id="canary-field" name="phone" type="tel" autocomplete="tel">
+<script src="http://external.invalid/canary.js"></script>
+</body>
+</html>

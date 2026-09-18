@@ -9,7 +9,8 @@
 //   G3 harness 能力：live-smoke.mjs 具备嵌套帧求值 + pageerror 计数断言 + 有头启动
 //      （含无 DISPLAY 回退告警）（issue 验收项 3）
 //   G4 隔离（delta）：真实站点层不得污染密封 E2E——on: 块无 pull_request；live 目标 host
-//      不得出现在任何密封 spec/fixture/corpus/helper/config 中
+//      不得出现在密封面的**可发起引用位置**（G4e 引用位断言；溯源元数据位允许——D-012）
+//      + G4h 禁止以删源换绿 + G4i 密封层门面须装运行时网络封锁（D-012 正向补偿）
 //   G5 advisory 保留：smoke 步 continue-on-error + 触发面仅 schedule/workflow_dispatch
 //   G6 CI 有头渲染：workflow 用 xvfb-run 提供虚拟显示
 // 用法：node tests/scripts/verify-ticket-39.mjs
@@ -131,12 +132,40 @@ for (const f of readdirSync(join(ROOT, 'tests'))) {
   if (/\.spec\.ts$/.test(f) || f === 'server.mjs') sealedFiles.push(join(ROOT, 'tests', f));
 }
 sealedFiles.push(join(ROOT, 'playwright.config.ts'));
-const hostHits = [];
+// 引用位口径（与 verify-ticket-06 S3 同轴）：只有「可发起真实请求的位置」才算污染。
+// 溯源元数据（source_url / mirror_of / license_note / captured_at 与采集源登记 url）是
+// 票 06 合规口径**要求**留痕的内容，不属引用位。
+// 依据：CONTEXT.md「密封 E2E」= 供给边界（不触真实站点与外网），非「字符串不得出现」；
+// D-012（2026-09-18 用户拍板「完整采纳」）：精化到引用位断言 + 运行时封锁正向补偿。
+const stripComments = (s, isHtml) => {
+  let out = isHtml ? s.replace(/<!--[\s\S]*?-->/g, '') : s;
+  out = out.replace(/\/\*[\s\S]*?\*\//g, '');
+  return out.split('\n').filter((l) => !/^\s*(\/\/|\*)/.test(l)).join('\n');
+};
+// 单一捕获组：引用位前缀 + URL
+const REF_URL = /(?:(?:src|href)\s*=\s*["']?|url\(\s*["']?|\b(?:fetch|import|goto|route)\s*\(\s*["'`]|new\s+URL\s*\(\s*["'`])(https?:\/\/[^\s"'`)<]+)/gi;
+const rawHits = [];
+const refHits = [];
 for (const f of sealedFiles) {
   let c = ''; try { c = readFileSync(f, 'utf8'); } catch { continue; }
-  for (const h of liveHosts) { if (c.includes(h)) hostHits.push(relative(ROOT, f) + ' ~ ' + h); }
+  const rel = relative(ROOT, f);
+  for (const h of liveHosts) { if (c.includes(h)) rawHits.push(rel + ' ~ ' + h); }
+  const code = stripComments(c, /\.html?$/i.test(f));
+  REF_URL.lastIndex = 0;
+  let m;
+  while ((m = REF_URL.exec(code)) !== null) {
+    const url = m[1];
+    for (const h of liveHosts) { if (url.includes(h)) refHits.push(rel + ' ~ ' + h + ' @ ' + url.slice(0, 60)); }
+  }
 }
-check('G4e live 目标 host 不出现在密封 spec/fixture/corpus/helper/config', hostHits.length === 0, hostHits.slice(0, 5).join(' | '));
+check('G4e live 目标 host 不出现在密封面的可发起引用位置（src=/href=/url()/fetch/import/goto/route/new URL）',
+  refHits.length === 0, refHits.slice(0, 5).join(' | '));
+check('G4h 语料溯源元数据位保留 live host 来源登记（禁止以删源换绿；见 D-004 / 票 06 S3）',
+  rawHits.length >= 1, 'raw=' + rawHits.length);
+const helperSrc = readFileSync(join(ROOT, 'tests', 'helpers', 'userscript.ts'), 'utf8');
+check('G4i 密封层门面安装运行时网络封锁（非本地 origin 一律 abort + 记录）',
+  /page\.route\(/.test(helperSrc) && /route\.abort\(\)/.test(helperSrc) &&
+  /blockedRequests/.test(helperSrc) && /LOCAL_HOSTS/.test(helperSrc), '');
 check('G4f 密封 E2E 供给面仍为本地（playwright.config baseURL 指向 127.0.0.1）',
   /127\.0\.0\.1/.test(readFileSync(join(ROOT, 'playwright.config.ts'), 'utf8')), '');
 
