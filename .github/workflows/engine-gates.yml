@@ -40,3 +40,11 @@ jobs:
       # （硬白名单 + 越权穿越拒绝 + dry-run 纯度 + 区界文档保护）。
       - name: Draft cleanup whitelist self-test (scratch-draft-clean.mjs --self-test)
         run: node tests/scripts/scratch-draft-clean.mjs --self-test
+
+      # Cycle-8 D-009 / ADR-0015：站点级门槛可测化机器自检（纯计算，零依赖，无外网）。
+      - name: Site threshold plan self-test (50-site-threshold-plan.mjs --self-test)
+        run: node tests/scripts/50-site-threshold-plan.mjs --self-test
+
+      # Cycle-8 D-011 / ADR-0016：发版就绪度机器自检（advisory 类；此处只跑自检，不判 release）。
+      - name: Release readiness self-test (51-release-readiness.mjs --self-test)
+        run: node tests/scripts/51-release-readiness.mjs --self-test
