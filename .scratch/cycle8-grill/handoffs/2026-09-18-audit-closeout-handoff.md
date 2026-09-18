@@ -275,3 +275,72 @@ F-5 / F-6 / F-7 已登记为 **FR-12 / FR-13 / FR-14**（open，到期 2027-03-3
 - **修复后重跑同一套验收全绿**（见 ①）。
 - **未决**：事故成因不可回溯（外部进程）⇒ 建议下窗口留意是否复发。
 
+---
+
+## 12. 执行记录（续）—— 票 39 修复 · land · 分支清理（2026-09-18 · 用户授权窗口）
+
+> 本节为**追加**；§11.3 的 ④（未 land 的理由）为当时判断，**已被本节取代**（原因：用户裁定「先修票 39 再 land」，其列举的前置已解除）。
+
+### 12.1 用户裁定（本窗口前置）
+
+- **D-012 修法** = **完整采纳**（G4e 精化为引用位断言 + 密封供给面运行时网络封锁正向补偿 + 票 39 任务书带日期注记）。
+- **「无 current 决策被推翻 ⇒ 不触发 `revised`」** = **确认**（D-001…D-011 状态列未动）。
+- 顺序 = **先修票 39 再 land**（**未选**「先配 FR-08」）。
+
+### 12.2 票 39 修复（D-012 采纳落地）
+
+| 载体 | 变更 | 验证 |
+|---|---|---|
+| `tests/scripts/verify-ticket-39.mjs` | G4e 由裸子串扫描改为 `stripComments` 后的**引用位断言**（`src=`/`href=`/`url(`/`fetch(`/`import(`/`goto(`/`route(`/`new URL(`）；新增 **G4h**（禁止以删源换绿）· **G4i**（门面须装运行时封锁） | 基线 **30 PASS / 0 FAIL**（原 27/1） |
+| `tests/helpers/userscript.ts` | 覆写 `installUserscript`（显式导出优先于星号再导出）⇒ **25/25 密封 spec 零改动**；`page.route('**')` 非本地 origin 一律 `abort` + 记入 `blockedRequests(page)` | 门面约束全过：`export *` 保留 · `addInitScript(` = 0 · 裸 `expect(` = 0 |
+| `tests/fixtures/network-canary.html` · `tests/hermetic-network.spec.ts` | canary（`external.invalid`，RFC 6761 永不解析）+ 自证 spec（正向 abort 记录 / 负向本地放行） | E2E **151-0**（149 + 2） |
+| `.scratch/architecture-recovery/issues/39-real-site-enablement.md` | 「delta 落实」行**原文保留**、加**带日期注记** | 原文行未改 |
+
+**反向探针（证明精化后的 G4e 非空门）**：HTML `src="https://cdpn.io/..."` → 红；spec `goto('https://codepen.io/...')` → 红（**2/2**）。**PROBE 4**：把 5 处 `cdpn.io` 改为 `cdpn.example` → G4e 绿但 **G4h 红**（`raw=0`）⇒「删源换绿」永久封死。探针后 5 文件按 sha256 **逐字节恢复**。
+
+### 12.3 push + 分支 run（ADR-0014 决策 1：分支 run = 增量确认）
+
+- `cch/17-cycle8-grill` → `a9b61468`；`cch/17-cycle8-audit` → `a011e47c`（含修复提交：代码+测试 / 文档）。
+- 5 个 required checks 全绿；**`Verify Tickets` 由 ✗ 转 ✓**（含 **`verify (39) / Ticket 39 gate` ✓**）。
+
+### 12.4 land（整栈）
+
+- `but land cch/17-cycle8-audit --whole-stack --yes` → **29 提交**落地到 `origin/main`；两个 `cch/17-cycle8-*` 分支由 GitButler 标记 landed 并删除。
+- 追加一次**格式归一**提交（分支 `cch/17-cycle8-statuscell`）：账本 D-012 行状态单元去掉行内代码标记，与 D-001…D-011 的 11 行既有写法对齐；**动因：该不一致已实际造成机器解析失败**（按既有口径的状态计数漏掉 D-012）。随后 `but land --yes` 落地。
+
+### 12.5 main 权威锚点 run（ADR-0014 决策 2/3）
+
+| 锚点 | run 结论 |
+|---|---|
+| `a011e47c`（整栈落地） | **6 run 全 success**（含 `Calibration Baseline`、`Verify Tickets`、`Auto Release on Script Update`） |
+| **`7aa75b29`（最终）** | **6 run 全 success**：`Verify Tickets`（**21/21 票门 ✓，含 `verify (39)`**）· `E2E` · `Typecheck` · `Lockfile Regen` · `Engine Gates` · `Calibration Baseline` |
+
+- **发版副作用核查**：`Auto Release on Script Update` ✓，但「Create GitHub Release」因 `v1.7.0` tag 已存在（`EXISTS=true`）被条件跳过 ⇒ **未发版**；最新 Release 仍 `v1.7.0`，`package.json` 仍 1.7.0 ⇒ 符合 ADR-0016 批量节奏。
+
+### 12.6 「删除所有已合并分支」= 已完成（空集）
+
+- 远端 `git ls-remote --heads origin` → **仅 `refs/heads/main`**；GitHub API 分支清单 → 仅 `main`。
+- 本地仅 `main` · `gitbutler/target` · `gitbutler/workspace`（**GitButler 内部/基线，不可删**）。
+- 全部 `cch/17-cycle8-*` 已在 land 时由 GitButler 清除 ⇒ **无残留已合并分支**。
+
+### 12.7 ⚠️ 触发 ADR-0014 反证条件 2（登记，待裁定）
+
+- 反证条件 2：「若 `main` 上的 run **无法回溯到具体 PR / 验收面**（例如 `main` 被直接 push）→ **重评决策 2**」。
+- 事实：`but land` 即**直接推 `main`**、**无 PR** ⇒ 决策 2 证据链的「**PR #N 承载**」要素在本仓**结构性不可达**。
+- 缓释事实：落地 sha（`a011e47c` / `7aa75b29`）与**分支上已全绿的同一 sha**一致 ⇒ **SHA 级验收面可回溯**；缺的是 PR 层。
+- ⇒ 已登记 **FR-15**（待用户裁定：是否重评决策 2 / 是否加 ADR-0014 带日期注记）。**未擅自改 ADR。**
+
+### 12.8 未执行项
+
+| # | 事项 | 状态 | 原因 |
+|---|---|---|---|
+| 1 | **main 分支保护（FR-08）** | 已授权、**未执行** | GitHub 后台配置项；用户上一轮**未选**「先配 FR-08」；本轮呈报待裁定 |
+| 2 | 备份 ref 清理（FR-03） | 已授权、**未执行** | **破坏性**；`refs/backup/main-pre-rewrite` → `b1fcf96d` 仍在，须明确确认 |
+| 3 | 建站点级语料（FR-11） | 已授权、**未开工** | 独立票 |
+| 4 | FR-01…FR-16 签核 | ⏳ | 到期 2027-03-31 |
+
+### 12.9 环境事故（本窗口第二例，已修复）
+
+- **现象**：ctx shell 包装的 Node 预加载垫片 `%TEMP%\cm-fs-preload-<PID>.js` 缺失 ⇒ 任何 ctx shell 中的 `node` 报 `Cannot find module`（**退出码仍为 0，失败静默**）。
+- **修复**：由同目录 `cm-fs-preload-12208.js` 复制为 `-<本会话 PID>.js`（内容与 PID 无关），`NODE_OPTIONS` 验证通过。
+- **未决**：与 §11.3 ⑥（`node_modules` 被清空 + tracked 文件被删）**同源**（外部清理 `%TEMP%` / 工作区），成因不可回溯。
