@@ -1,3 +1,11 @@
+## v1.8.0 Changelog
+
+- New: editable dial-code fields (`contenteditable` — custom editable regions with no `input` element) are now detected at the low-confidence tier (low-key hint only); they are never filled automatically and can be summoned from the panel when needed.
+- Improved: the editable dial-code candidate set is tightened — containers explicitly marked `contenteditable="false"` are excluded, cutting false positives.
+- New: site opt-out markers are respected — fields carrying `data-1p-ignore` or `data-form-type="other"` no longer get an icon. This is the password-manager ecosystem's common opt-out convention (the official 1Password / Bitwarden protocols), used to declare "this field should not be touched by autofill tooling".
+- New: country data completed — Kosovo (+383) and Vatican (+379) added, raising recognizable country/dial-code entries from 223 to 225.
+- Improved: diagnostic output is now gated (silent by default, printed only when tracing is enabled) and uniformly prefixed with `[cch][diag]`, keeping the console clean and easy to filter.
+
 ## v1.7.0 Changelog
 
 - New: the panel's Settings entry is now in the userscript menu — even on pages where no field is recognized, you can open the panel from the menu and jump straight to Settings. Language and other settings are no longer buried deep inside the panel.
