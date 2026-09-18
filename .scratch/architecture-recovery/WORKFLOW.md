@@ -61,6 +61,13 @@
 - 提交信息约定：`fix(cch-NN): <行为级描述>` / `refactor(cch-NN): …`；提交前跑本票验收清单；`but commit` 不需要额外验证 status/diff。
 - 回滚：`but undo`（最近操作）或 `but discard <id>`；票级放弃 = `but uncommit <branch>` + `but discard`。
 
+#### §4.2 修订注记（2026-09-18 · Cycle-8 窗口）
+
+> 依据：Cycle-8 grill **D-006**（A6 项）；**用户显式拍板**。原文保留、不删改。
+
+- **原文（保留）**：§4.2 第 1 条「一切 git 写操作用 `but` …… **禁止 `git add/commit/push/checkout/merge/rebase/stash/cherry-pick`**」。
+- **例外（一次性）**：用户于 **2026-09-18** 显式授权，对本仓 `main` 的**已落地提交 `e63e8253` 的提交信息**做一次修正。因 GitButler 的变更命令**拒绝已 land 的提交**（`reword` 等对 landed commits 不可用），该修正**无 `but` 路径**，故破例使用裸 `git`：`git commit-tree` + `git update-ref` + `git push --force-with-lease`。
+- **约束**：① 例外**仅此一次、仅此一个提交信息**；② 重写后**逐提交校验 tree 不变**（只改 message）；③ 重写前**建备份 ref**；④ **不得**以本条为先例把裸 `git` 写操作常规化——后续一律仍走 `but`。
 ### §4.3 波次推进规则
 
 - 波次**只从 issue 的 `Blocked by` 字段推导**，不新造顺序：Blockers 全空的票 = Wave 1；被 Wave N 票阻塞的票 = Wave N+1。波次表落 `README.md`。
