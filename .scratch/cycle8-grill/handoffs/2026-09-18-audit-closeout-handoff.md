@@ -223,4 +223,55 @@ F-5 / F-6 / F-7 已登记为 **FR-12 / FR-13 / FR-14**（open，到期 2027-03-3
 
 ### 11.3 执行记录
 
-（待回填 —— 本段在发布动作完成后写入）
+### 11.3 执行记录（2026-09-18 · 用户授权窗口）
+
+**① F-3 闭合落账 + 提交**
+
+- 账本追加「追认 — T-1/T-2/T-3」段（+1671 B）· 审计报告追加 §11（+1024 B）· 本文件追加 §11（+1184 B）；**仅 3 文件 / 纯追加 / 零代码**。
+- 提交 `xkx`（分支 `cch/17-cycle8-audit`）。
+- 重跑同一套验收（§6 清单）全绿：typecheck **0** · build **171172 B / sha256 `c324c47a481e2e788d803ec305033289e119015885d4abc143eba5e697d863a1`** · E2E **149-0** · `--audit` **19-0** · 4 自检 **0** · `git diff --check` **CLEAN** · workflow 零 `.scratch/` 字面量 · `src/` 区间 **+12 −1**。
+
+**② push 完成**
+
+- `cch/17-cycle8-grill` → `origin/cch/17-cycle8-grill`（new branch → `a9b61468`）
+- `cch/17-cycle8-audit` → `origin/cch/17-cycle8-audit`（new branch → `b15c3070`）
+- 注：`but push --dry-run` 的 fetch 因 SSH 22 端口超时失败；实际 push 成功。
+
+**③ 首个 CI run（分支 run = 增量确认，ADR-0014 决策 1）**
+
+| job | `cch/17-cycle8-audit` | `cch/17-cycle8-grill` | `main`（`d075f01a`，基线） |
+|---|---|---|---|
+| Typecheck | ✓ 20s | ✓ 18s | ✓ 20s |
+| Lockfile Regen | ✓ 21s | ✓ 27s | ✓ 16s |
+| Engine Gates | ✓ 15s | ✓ 12s | ✓ 12s |
+| E2E | ✓ 2m0s | ✓ 1m42s | ✓ 1m33s |
+| Calibration Baseline | — | — | ✓ 14s |
+| **Verify Tickets** | **✗ 30s** | **✗ 22s** | **✗ 23s** |
+
+- run ID：audit `35325243283`（Verify Tickets）· `35325242966`（E2E）· grill `35325233706` · main `35306022272`。
+- **唯一红 = `verify (39) / Ticket 39 gate`**（其余 18 个票门全 ✓）；**`main` 自身同一 job 亦红** ⇒ **独立佐证票 39 为基线预存**，非本轮引入。
+
+**④ 未 land 的理由（审计窗口判断，非拒办）**
+
+1. **ADR-0014 决策 1**：「落地事件 = **required checks 绿后**的合入」；分支 run 为**红** ⇒ 前置未满足。
+2. **ADR-0014 反证条件 2**：「若 `main` 被直接 push（无法回溯 PR/验收面）⇒ 重评决策 2」；`but land` 正是**直接推 main** ⇒ 会**触发该反证条件**。
+3. **ADR-0014 决策 4**：main 分支保护（FR-08）为**待办**；未配置前 land 即**绕过**预期门禁。
+4. **账本 frontier Q8**（push/land 授权的边界与首个 run 的取证口径）**未拍板**；land 会**抢先**其结论。
+5. `but land` 官方文档自述：「更新目标**直接且不易回退**」。
+
+⇒ **已呈报用户裁定**（直接 land / 先修票 39 / 先配 FR-08）。
+
+**⑤ 「已合并分支」实测集合 = 空**
+
+- `git branch --merged main` → 仅 `gitbutler/target`、`main`（**GitButler 内部 / 基线分支，不可删除**）。
+- 本轮两个 `cch/17-cycle8-*` 分支**尚未合并** ⇒ **无「已合并分支」可删**。
+- Cycle-7 的 19 个 `cch/*` 分支已于上一周期 land 并清除，本地无残留。
+
+**⑥ ⚠️ 环境事故（非本轮内容变更，已修复）**
+
+- **现象**：执行前发现 `node_modules/` 被**清空**（0 项、无 `.bin`、非 junction），且 **tracked 文件 `tests/vendor/react19/package.json` 被删除**（`git status` 显示 ` D`）。
+- **排查**：仓库内**无任何 `npm ci` / `npm install` 调用**（`tests/`、`.github/` 全库 grep 零命中）；`tests/scripts` 仅两处删除逻辑（`scratch-draft-clean.mjs` 只删 `.scratch/draft/`；`verify-ticket-06.mjs` 只删自建临时目录），**均不触及**这两处 ⇒ 判定为**外部环境重置**。
+- **修复**：① 由 `git show HEAD:` **逐字节恢复**该 tracked 文件（575 B / 无 BOM / 纯 LF；恢复后 `git status` 不再显示该删除，证明与 HEAD 一致）；② `npm ci` 重建依赖（**74 包 / 9s**，离线缓存命中）。
+- **修复后重跑同一套验收全绿**（见 ①）。
+- **未决**：事故成因不可回溯（外部进程）⇒ 建议下窗口留意是否复发。
+
