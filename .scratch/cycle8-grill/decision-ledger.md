@@ -191,9 +191,31 @@
 
 ---
 
+---
+
+## 执行证据 — D-006 / A6 force-push 重写（2026-09-18 · 本会话）
+
+| 项 | 结果 |
+|---|---|
+| 规则修订（**前置**） | `A-010` 追加带日期修订注记；`WORKFLOW §4.2` 追加「**一次性例外**」注记（原文保留、不删改）—— commit `kot` |
+| 备份 ref | `refs/backup/main-pre-rewrite` → `b1fcf96d27cd762dc2edf2ed4e2b34e3b5116a71` |
+| 旧 sha（3 个） | `e63e8253`（t16）· `337461e8`（t17）· `b1fcf96d`（t18） |
+| 新 sha（3 个） | `6fbca4c7`（t16）· `d856d75f`（t17）· `d075f01a`（t18） |
+| 重写方式 | `git commit-tree`（保留 author/committer 身份与日期）+ `git update-ref`（**未 checkout、未动工作区**） |
+| 校验（逐提交） | tree **逐一相同**（`361075d9…` / `f79f7f20…` / `a4c9f253…`）；author/committer **完全保留**；t17/t18 **正文逐字相同**；t16 正文按口径改正 |
+| 最终内容一致性 | `main` 的 tree == `backup` 的 tree == `a4c9f2535c2ef08b47355246687331529bf9dda8` ⇒ **内容零变化** |
+| 推送 | `git push --force-with-lease origin main` → `+ b1fcf96d...d075f01a main -> main (forced update)`，**exit 0** |
+| 推送后核验 | `origin/main` = `d075f01a` = 本地 `main`；`but pull` → 3 upstream commits，`cch/17-cycle8-grill` **rebased 成功**（12 提交完好） |
+| 旧 sha 可解析性 | 本地 `git cat-file -t` 对 3 个旧 sha 均返回 `commit`（备份 ref 保活） |
+| 消息改动（**唯一内容差异**） | 旧：`13 张票（12 完整 + T-14 部分）` → 新：`15/15 票（T-01…T-15）`；其余字句**逐字保留** |
+
+> **限制与提醒**：本仓 `main` 为 **PUBLIC** 分支，本次重写使已 clone 者失效、并作废这 3 个 sha 上的 CI 记录（Actions 将对新 sha 重跑）。A-010 与 WORKFLOW §4.2 的修订注记已把本例外**严格限定为「仅此一次、仅此一个提交信息」**，不得据为先例。
+
+---
+
 ## 覆盖率自评
 
 - 已确认条目：**7**（D-001…D-007 = current）｜revised：0｜stale：0｜deferred：0｜pending：**0**
 - 本问覆盖：输入面（B）· 融合（闭环）· `.scratch/` 定性（D-003）· Q3 作用域（D-004·D-005）· **Q4 审计遗留 7 项（D-006）+ 新增心智模型（D-007）** 均已定稿
-- **审计遗留 9 项进度**：A6 **已拍板（授权 force-push）** · B⑦ 已拍板（D-003）· B⑧⑨⑩ 已拍板（D-006）· C⑪⑫ 已拍板（D-006，追认）· **C⑬ 已闭环（D-002）** · C⑭ 已拍板（D-006，一次性清账）
-- 待决（frontier）：**D-006 / D-007 的落地执行**（A6 重写 + 追认 + ADR 注记 + `.editorconfig` + LF 清账）；`audit-closeout` §5 的 **Q3 · Q5 · Q6 · Q7**；新登记 **F-1…F-8**
+- **审计遗留 9 项进度**：**A6 已闭环（force-push 完成）** · B⑦ 已拍板（D-003）· B⑧⑨⑩ 已拍板（D-006）· C⑪⑫ 已闭环（追认落盘）· **C⑬ 已闭环（D-002）** · C⑭ 已拍板（D-006）
+- 待决（frontier）：**D-006 未执行的落地项**（B⑧ ADR-0005 迁 Notes + 更新 `date`；B⑨ ADR-0006 注记；B⑩ ADR-0008 注记；C⑭ LF 清账 + `.editorconfig`）· **D-003 的落地项**（ADR-0006 决策 1 修订）· **D-004/D-005 的落地项**（`.scratch/` 分区 + 留痕三件套 + 事故回溯 ADR + `check-ignore` 门禁）· `audit-closeout` §5 的 **Q3 · Q5 · Q6 · Q7** · 新登记 **F-1…F-8**
