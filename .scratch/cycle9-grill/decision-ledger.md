@@ -26,3 +26,37 @@
 - 已确认条目：**4**（D-001…D-004 = current）｜revised：0｜stale：0｜deferred：0｜pending：0
 - 本问覆盖：目标函数 = **已定**（A+C）｜**A 侧发版口径 = 已定**｜**C 侧收口债口径 = 已定**｜**执行授权与验收面 = 已定**（一次性全授权 + ack 条件触发）
 - 待决（frontier）：**Glog v1.8.0 面向用户文案的定稿**；**本轮收口形态**（是否沿用「账本结算 + 再生 handoff」）；下一轮 frontier（FR-11 站点级语料 / B 侧能力面）
+
+---
+
+## 带日期更正注记（2026-09-18 · Cycle-9 窗口）
+
+> 形式：**原文保留、不改**；本注记由编排 Agent 在 Q5 取证时发现并追加。
+
+### 更正-1：D-002 的「4 条用户可见变更」应为 **5 条**
+
+- **原记（保留）**：D-002 的规范化需求第 ④ 项写「Glog 双语新建 `## v1.8.0` 节，写 **4 条**用户可见变更」。
+- **更正**：实测 `src/detect/index.ts` 的变更**不止 contenteditable** —— 还含 **`isOptOutElement()` + L0 闸门 `gate:optout`**（`data-1p-ignore` 属性存在 / `data-form-type === 'other'` ⇒ `score:0, tier:'none'`），即 **ADR-0012「退出协议实现」**。⇒ 用户可见变更实为 **5 条**（新增「尊重站点退出标记」）。
+- **动因**：编排 Agent 在 Q2 取证时只按提交信息（`feat(cch-t12): contenteditable 扫描层扩展`）归类，**未逐行读 `src/detect/index.ts` 的 diff**；Q5 取证时逐行读 diff 才发现。
+- **影响面**：仅影响 Glog 条目数（4→5）；**不影响 D-002 的实质决策**（版本号 / 收割范围 / 发布门口径 / 时序）。
+- **D-002 状态**：**保持 `current`**（实质决策未变）；本条为**事实层更正**，非决策修订。
+- **是否需标 `revised`**：本仓 `revised` 语义 = current 决策**被后续裁定推翻**；本条**不构成推翻**（决策未变，仅证据补全）。⇒ **不标 `revised`**；如你要标，我改。
+
+### 附带取证（同期实测，均逐行读 diff）
+
+| 项 | 实测 |
+|---|---|
+| `countries.ts` 条目数 | v1.7.0 = **223** → HEAD = **225**（+2：Kosovo/Vatican） |
+| `i18n.ts` 文案 | v1.7.0 与 HEAD 均 **123 个字面量**，归一化 `\uXXXX` 后**零差异** ⇒ 零行为变更成立 |
+| `types.ts` | `AnyEl = HTMLElement & Record<string, any>` → `HTMLElement & AnyElExtras`（显式接口）⇒ **纯类型，零运行时** |
+| `diag/index.ts` | `console.warn('[cch] diag write failed')` → `if (traceFlag) console.warn('[cch][diag] write failed')` ⇒ 门控 + 前缀 |
+| `detect/index.ts` | `OBSERVED_ATTRS` 新增 `contenteditable` / `data-1p-ignore` / `data-form-type`（指纹观测面扩展） |
+| `config.ts` / `fill/` / `ui/` | 注释 + 非空断言 ⇒ **零行为变更** |
+
+### 用户可见变更集（最终，5 条）
+
+1. **contenteditable 区号字段检测**（新增能力）
+2. **contenteditable 候选集收敛 + `contenteditable="false"` 排除**（优化，防误报）
+3. **尊重站点退出标记**（`data-1p-ignore` / `data-form-type="other"` ⇒ 不注入）（**新增**）
+4. **Kosovo（+383）/ Vatican（+379）数据补全**（223 → 225）
+5. **诊断输出改可门控 + 脚本名前缀**（优化）
