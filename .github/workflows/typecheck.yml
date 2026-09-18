@@ -40,3 +40,9 @@ jobs:
 
       - name: Doc facts (ACCEPTANCE-SURFACE vs src)
         run: node tests/scripts/doc-facts.mjs
+
+      # Cycle-8 T-03 / D-005④：防误吞门禁 —— 断言关键路径不被 .gitignore 吞掉。
+      # 关键路径清单只存在于脚本内：本文件不出现受管工件区路径字面量，
+      # 否则会击穿 verify-ticket-07/10/11/12 的反向断言门（ADR-0006 决策 1）。
+      - name: Ignore-swallow guard (key paths must not be gitignored)
+        run: node tests/scripts/check-ignore-guard.mjs

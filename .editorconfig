@@ -1,0 +1,37 @@
+# .editorconfig —— 行尾防再漂移（Cycle-8 T-08 / D-006 C⑭）
+#
+# 背景：.gitattributes 已声明「入库存 LF、工作树也保持 LF」，但工作树 CRLF 是**写入时**
+#   产物（编辑器/工具在 Windows 上写 CRLF），git 侧因 text=auto 归一化而显示为 clean，
+#   于是 121 个文件长期「blob 全 LF / 工作树 CRLF」。本文件把口径下推到编辑器层，
+#   与 .gitattributes 形成双层防线（编辑器约定 + 提交时归一化 + CI 行尾门）。
+#
+# 唯一真源仍是 .gitattributes（提交层）；本文件是编辑器层约定，两者不得相互矛盾。
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# 代码与配置：2 空格
+[*.{ts,tsx,js,mjs,cjs,json,yml,yaml,md,html,css}]
+indent_style = space
+indent_size = 2
+
+# Markdown：不修剪行尾空白（两空格换行是 Markdown 语义）
+[*.md]
+trim_trailing_whitespace = false
+
+# Windows-native 脚本保留 CRLF（与 .gitattributes 的 *.bat/*.ps1/*.cmd 对齐）
+[*.{bat,ps1,cmd}]
+end_of_line = crlf
+
+# 二进制：不作文本约定
+[*.{png,ico,icns,jpg,jpeg,gif,webp,exe,dll,node,pdb,msi,so,dylib,bin,zip,gz,tar,7z}]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
