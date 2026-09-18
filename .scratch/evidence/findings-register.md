@@ -137,3 +137,34 @@
 - **残留风险（开放，随 FC-09 一并追溯）**：required context 以 **job 名** 为键；票级门重命名/删除会使 context 永不上报 ⇒ 可能阻断落地。缓解 = 删去该 context 或 `DELETE /branches/main/protection` 回滚。
 - 同步注记：`docs/adr/0014-ci-evidence-loop-and-landing-model.md` 新增「带日期注记」（含反证条件 2 重评结论）。
 - ⇒ 登记总数现值：**FR-01…FR-07 · FR-09…FR-15（14 条 open）** + **FC-01…FC-09（9 条 closed，含 FC-09 = FR-08 闭环）** + **FN-01…FN-02（2 条 closed）**。
+
+## 十、Cycle-9 窗口（2026-09-18 · 发版收割 v1.8.0 ＋ 收口债清账）新增登记
+
+> **追加**；§一…§九 原文一律保留不改。**具名签核 = 用户**（Cycle-9 grill 答「全部签核，删」，2026-09-18）；Agent 仅代笔记录（D-003 负向①）。
+
+### 10.1 FR-03 追溯面 —— **删除前落盘（删后仅存的追溯面）**
+
+`refs/backup/main-pre-rewrite` 已于本窗口**删除**（授权：Cycle-9 **D-003⑤** ＋ **D-004⑦**；FR-03 原处置「defer（待用户确认）」经用户明确确认后执行）。**该 ref 仅存在于本地，远端无对应 ref**（实测 `git ls-remote origin | grep backup` 零命中）。
+
+**A6 force-push 重写（2026-09-18 · Cycle-8 窗口 · 一次性授权例外；见 WORKFLOW §4.2 修订注记）**
+
+| 序 | 旧 sha（重写前） | 新 sha（重写后 · 现于 `main` 历史） | tree（旧 ＝ 新 · 逐提交相同） |
+|---|---|---|---|
+| t16 | `e63e8253` | `6fbca4c7` | `361075d9f095211912c5ad2e176a79744f8f9393` |
+| t17 | `337461e8` | `d856d75f` | `f79f7f206c041a28d12a4858fe0703f9bdbd560b` |
+| t18（旧 tip） | `b1fcf96d` | `d075f01a` | `a4c9f2535c2ef08b47355246687331529bf9dda8` |
+
+- **唯一内容差异**：t16 提交信息的票数口径「13 张票（12 完整 ＋ T-14 部分）」→「15/15 票（T-01…T-15）」；t17 / t18 提交信息**逐字相同**。
+- **tree 逐提交相同 ⇒ 内容零变化**。
+- **「旧 tip tree ＝ 当前 main tree」的准确口径**：`b1fcf96d^{tree}` ＝ `d075f01a^{tree}` ＝ `a4c9f2535c2ef08b47355246687331529bf9dda8`（本窗口实测复核）。该等式成立于**重写时点**（重写后 `main` tip 即 `d075f01a`）。
+  - ⚠️ **不得延伸解读**：本窗口**当前** `main` ＝ `8032490e`（tree `a9f790cbb49aeb8b8f6e655125b2302bf1dd4472`），已因 Cycle-8 / Cycle-9 后续落地而前进 ⇒ **不得**声称「旧 tip tree 仍等于当前 main tree」。
+- **不可逆性登记**：`main` 为 PUBLIC；重写作废了 3 个旧 sha 上的 CI 记录（见 FR-07）。**备份 ref 删除后，旧 sha 的唯一保活面消失** ⇒ **不得声称旧 sha 仍可恢复**。
+- **FR-03 终态**：本窗口删除 ref 后 **转 closed（记 FC-14）**。
+
+**复跑命令（本窗口实测）**：
+
+```
+git rev-parse b1fcf96d^{tree} d075f01a^{tree}      # 两值相同 = a4c9f253…
+git rev-parse 6fbca4c7^{tree} d856d75f^{tree} d075f01a^{tree}
+git cat-file -t e63e8253 337461e8 b1fcf96d          # 删除 ref 前 = commit；删除后不再受保护
+```
