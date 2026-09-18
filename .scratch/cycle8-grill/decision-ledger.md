@@ -250,13 +250,57 @@
 
 | ID | 原问题 | 调研结论（摘要） | 规范化需求（推荐） | 显式约束 / 负向需求 | 状态 |
 |---|---|---|---|---|---|
-| **D-008** | Q3 — CI 闭环形态：何时 push、哪些分支先落地、run ID 作为闭环证据的口径？ | 口径分界：`push ≠ 落地`；**落地事件 = required checks 绿后的 squash merge**；**权威验收证据 = main 上的绿 run**（分支 run 只作增量确认）；main 保护禁 force-push/删除 + Require status checks；单人**不开 Require approvals**；不需要 merge queue | ① 授权 `push` 后，**分支 run 作增量确认**；② 合入 main 后取 **main 上的 run** 作闭环证据（**run ID 入账**）；③ 启用 main 分支保护（禁 force-push/删除 + Require status checks，job 名唯一）；④ 只开 squash merge；⑤ 验收口径一句话：`PR #N + required checks 绿 + main commit <sha> + Release run <id>` | 不得把**分支 push 的 run** 当作闭环证据；不得开 Require approvals（自审自批/admin 死锁）；不引入 merge queue（10+ 人工具）；**T-1 未决前不得改 landing 模型** | pending |
-| **D-009** | Q5 — T-13 门槛②「< 1／千站点 + 可一键上报」的可测化路径与站点级伪 select 语料抽样预算？ | 零事件上界：1‰ + 95% CI 上界 < 门槛 ⇒ **n ≥ 3000 良性站点零误报**（rule of three 3/n；< 0.5‰ 则 6000）；分层 + Neyman 配额；判定用 **OC 双点**（AQL 0.5‰ / LTPD 2‰）反解 (n,c)；运行期用**燃烧率渐进处置**（>3× 阻断发版 / >1× 冻结并扩样 / <0.5× 常态）；门槛设在 **`tier ∈ {auto}`**，`lowkey` 只监控；配 FP/FN 双指标 + 一键上报率 + reviewer agreement ≥90%；**先行 pilot ~500 站点**估层内方差 | ① 门槛②改为**零事件上界口径**（而非点估计）；② 引入**分层站点语料 + Neyman 配额**；③ 判定改 **OC 双点 + 燃烧率**；④ 门槛收窄至 **auto 档**；⑤ 绝对量与比率双报 | 不得用**点估计**判门槛；不得用**正态近似 CI**（1e-3 量级下覆盖差）；不得用 **Clopper-Pearson**（过保守，多花 10–20% 样本）；不得把 FP 率单独设为 KPI；**T-2（语料承载面）未决前本票不得开工** | pending |
-| **D-010** | Q6 — GF 站内 `sync` 开关的人工确认责任人与时点？ | 确认人 = **能向 release 分支（或 tag）合并代码的人**（单人项目即维护者本人）；确认时点 = **`@version` 变更为唯一发布门**；**同步源只跟 release 分支或 tag，绝不跟 `main`**；留痕三层（Git tag/changelog · CI run/可选 environment required reviewers · 平台版本历史）；红线 = **绝不让自动同步跟随「维护权可能易手的上游」**（The Great Suspender 教训） | ① 确认人与时点按调研口径定稿；② **把确认门从「站内人工确认」改为「仓库侧版本门」**（**待裁定 (a)/(b)**）；③ 同步源 ref **显式指定**并留痕 | 不得据此放宽 **D-002 负向**（禁 CI 主动写 GF、禁伪造 session cookie 的推送 hack、禁据此宣布弃用 GF）；**确认前仍不得声称 D-002 送达链已闭合**；**(a)/(b) 未拍板前不得改 ADR-0006** | pending |
-| **D-011** | Q7 — 交付单位：继续「累积再发」还是切 release（ADR-0010 触发）？ | 维持**批量**口径，但升级为**有节奏的批量**：每 PR 附 changeset 意图 → 固定节奏（**双周/月度**）人工收割一版 → **security/严重 bug 的 patch 随时插发不排队** → 每个发布点打 tag。判据：① 消费者边界（GF 用户自动更新 = 外部无法协同升级的下游 ⇒ **严格 SemVer + 意图积累式批量，禁全自动 patch 直发**）；② 发布摩擦；③ 成熟度阶梯（先 "hard but plausible" 固定节奏）；④ 下游承受力；⑤ **补丁豁免**；⑥ breaking **永不藏进 patch**；⑦ 积累上限（changelog 写不清/diff 审不动即收割） | ① 确立**固定发版节奏**（双周/月度）；② 引入 **changeset 意图文件**；③ **安全 patch 豁免**（不排队）；④ breaking 只进批量点 + 迁移指南 | 不得采用「每 commit 即发」（版本噪音 + 44% breaking 藏在 minor/patch + 升级疲劳）；不得「攒很久才爆发」（反馈滞后 + 发布基础设施腐化 + 风险集中）；**T-3 未决前不得改写 Cycle-7 D-018** | pending |
+| **D-008** | Q3 — CI 闭环形态：何时 push、哪些分支先落地、run ID 作为闭环证据的口径？ | 口径分界：`push ≠ 落地`；**落地事件 = required checks 绿后的 squash merge**；**权威验收证据 = main 上的绿 run**（分支 run 只作增量确认）；main 保护禁 force-push/删除 + Require status checks；单人**不开 Require approvals**；不需要 merge queue | ① 授权 `push` 后，**分支 run 作增量确认**；② 合入 main 后取 **main 上的 run** 作闭环证据（**run ID 入账**）；③ 启用 main 分支保护（禁 force-push/删除 + Require status checks，job 名唯一）；④ 只开 squash merge；⑤ 验收口径一句话：`PR #N + required checks 绿 + main commit <sha> + Release run <id>` | 不得把**分支 push 的 run** 当作闭环证据；不得开 Require approvals（自审自批/admin 死锁）；不引入 merge queue（10+ 人工具）；**T-1 未决前不得改 landing 模型** | current |
+| **D-009** | Q5 — T-13 门槛②「< 1／千站点 + 可一键上报」的可测化路径与站点级伪 select 语料抽样预算？ | 零事件上界：1‰ + 95% CI 上界 < 门槛 ⇒ **n ≥ 3000 良性站点零误报**（rule of three 3/n；< 0.5‰ 则 6000）；分层 + Neyman 配额；判定用 **OC 双点**（AQL 0.5‰ / LTPD 2‰）反解 (n,c)；运行期用**燃烧率渐进处置**（>3× 阻断发版 / >1× 冻结并扩样 / <0.5× 常态）；门槛设在 **`tier ∈ {auto}`**，`lowkey` 只监控；配 FP/FN 双指标 + 一键上报率 + reviewer agreement ≥90%；**先行 pilot ~500 站点**估层内方差 | ① 门槛②改为**零事件上界口径**（而非点估计）；② 引入**分层站点语料 + Neyman 配额**；③ 判定改 **OC 双点 + 燃烧率**；④ 门槛收窄至 **auto 档**；⑤ 绝对量与比率双报 | 不得用**点估计**判门槛；不得用**正态近似 CI**（1e-3 量级下覆盖差）；不得用 **Clopper-Pearson**（过保守，多花 10–20% 样本）；不得把 FP 率单独设为 KPI；**T-2（语料承载面）未决前本票不得开工** | current |
+| **D-010** | Q6 — GF 站内 `sync` 开关的人工确认责任人与时点？ | 确认人 = **能向 release 分支（或 tag）合并代码的人**（单人项目即维护者本人）；确认时点 = **`@version` 变更为唯一发布门**；**同步源只跟 release 分支或 tag，绝不跟 `main`**；留痕三层（Git tag/changelog · CI run/可选 environment required reviewers · 平台版本历史）；红线 = **绝不让自动同步跟随「维护权可能易手的上游」**（The Great Suspender 教训） | ① 确认人与时点按调研口径定稿；② **把确认门从「站内人工确认」改为「仓库侧版本门」**（**待裁定 (a)/(b)**）；③ 同步源 ref **显式指定**并留痕 | 不得据此放宽 **D-002 负向**（禁 CI 主动写 GF、禁伪造 session cookie 的推送 hack、禁据此宣布弃用 GF）；**确认前仍不得声称 D-002 送达链已闭合**；**(a)/(b) 未拍板前不得改 ADR-0006** | current |
+| **D-011** | Q7 — 交付单位：继续「累积再发」还是切 release（ADR-0010 触发）？ | 维持**批量**口径，但升级为**有节奏的批量**：每 PR 附 changeset 意图 → 固定节奏（**双周/月度**）人工收割一版 → **security/严重 bug 的 patch 随时插发不排队** → 每个发布点打 tag。判据：① 消费者边界（GF 用户自动更新 = 外部无法协同升级的下游 ⇒ **严格 SemVer + 意图积累式批量，禁全自动 patch 直发**）；② 发布摩擦；③ 成熟度阶梯（先 "hard but plausible" 固定节奏）；④ 下游承受力；⑤ **补丁豁免**；⑥ breaking **永不藏进 patch**；⑦ 积累上限（changelog 写不清/diff 审不动即收割） | ① 确立**固定发版节奏**（双周/月度）；② 引入 **changeset 意图文件**；③ **安全 patch 豁免**（不排队）；④ breaking 只进批量点 + 迁移指南 | 不得采用「每 commit 即发」（版本噪音 + 44% breaking 藏在 minor/patch + 升级疲劳）；不得「攒很久才爆发」（反馈滞后 + 发布基础设施腐化 + 风险集中）；**T-3 未决前不得改写 Cycle-7 D-018** | current |
 
 ### 四、覆盖率自评（本段追加后）
 
 - 已确认条目：**7**（D-001…D-007 = `current`）｜**待拍板：4**（D-008…D-011 = `pending`）｜`revised`：**0**｜`stale`：0｜`deferred`：0
 - 本问覆盖：**T-09 四问（Q3/Q5/Q6/Q7）均已定稿并落账（D-008 起）** ⇒ T-09 完成判据中「4 问均已定稿并落账」**已满足**；剩余仅「**用户拍板**」一步。
 - 待决（frontier）：D-008…D-011 四问拍板 · 张力 T-1/T-2/T-3 · Q6 控制点选项 (a)/(b) · 是否需将任一 D-xxx 改标 `revised`。
+
+---
+
+## T-09 四问采纳落地（2026-09-18 · 用户拍板「采纳」）
+
+> **依据**：用户于 2026-09-18 本会话指令「采纳，把内容全部做好，并记录报告，最终交给审计窗口」。
+> **形式**：**追加**；上方「T-09 四问深度调研与编排侧对撞」段与 D-001…D-007 原文**未动**；本段只做**状态迁移**与**张力裁定落地**。
+
+### 一、状态迁移（`pending` → `current`）
+
+| ID | 迁移 | 落地载体 |
+|---|---|---|
+| **D-008** | `pending` → **`current`** | `docs/adr/0014-ci-evidence-loop-and-landing-model.md` |
+| **D-009** | `pending` → **`current`** | `docs/adr/0015-site-level-quality-threshold-measurability.md` · `tests/scripts/50-site-threshold-plan.mjs` · ADR-0005 带日期注记 |
+| **D-010** | `pending` → **`current`** | `docs/adr/0006-ci-hygiene-policy.md`「monitor 例外的控制点修订」带日期注记 |
+| **D-011** | `pending` → **`current`** | `docs/adr/0016-release-cadence-policy.md` · `tests/scripts/51-release-readiness.mjs` |
+
+### 二、三处张力 + 一处控制点替代的裁定
+
+| 项 | 裁定 | 载体 | 说明 |
+|---|---|---|---|
+| **T-1**（landing 模型） | **有意识偏离（documented deviation）**：接受「revert 单元 = 发版单元 = 证据单元」在 GitButler 下**不完全重合**；用「一逻辑单元一提交 + 每发版点打 tag」兜住 | ADR-0014 决策 7 + 反证条件 1 | **未改** GitButler 唯一入口（硬边界） |
+| **T-2**（站点级语料承载面） | **库外归档 + 指针 + SHA-256**（复用票 41 / A-018 先例）；镜像页只收**被断言的形态**、不收全量 3838 站点 | ADR-0015 决策 9 | **有意接受的偏离**：可恢复性依赖库外归档持久性 ⇒ 入 findings register |
+| **T-3**（安全 patch 豁免） | Cycle-7 **D-018 的「本轮不发版」是**本轮一次性**裁定**；其「累积再发」的永久化形态 = ADR-0016，且**附加安全补丁豁免** | ADR-0016 决策 9 | 是**扩展**，非推翻（D-018 原文未含豁免） |
+| **Q6 控制点** | **主控制点改为仓库侧版本门**（release 分支/tag + `@version` 变更）；站内人工确认降为**验证步** | ADR-0006 带日期注记 | 原残留结论（确认前不得声称闭合）**不变**；**未对任何 D-xxx 改标 `revised`**（ADR-0006 的该记录属**残留登记**，非 D-xxx 决策） |
+
+### 三、对调研的两处数值修正（辩证性处置，已写入 ADR）
+
+1. **Wilson 守口径 = 3838，不是 3000**：调研的 3000 是 rule of three（3/n）口径；Wilson 上界在 k = 0 时约 `z²/n`，门槛 1‰、95% 置信需 **n ≥ 3838**（实算）。⇒ 操作值取 3838。
+2. **调研引用的 OC 计划 (n = 3000, c = 2) 经复算不满足 AQL 约束**：`P(接受|AQL) = 0.8089 < 0.95`。⇒ 实算最小可行计划 = **n 4636 / c 5**（α = 0.0309、β = 0.0999）。
+
+### 四、覆盖率自评（本段追加后）
+
+- 已确认条目：**11**（D-001…D-011 全部 `current`）｜`pending`：**0**｜`revised`：**0**｜`stale`：0｜`deferred`：0
+- T-09 完成判据「4 问均已定稿并落账（D-008 起）」**已满足**（含用户拍板）。
+- 待决（frontier）：建站点级语料（~3838 站点 + ~500 pilot，**独立票，须授权**）· main 分支保护（GitHub 后台人工项）· push/land 授权（D-008 前提）· findings register FR-01…FR-11 到期重审（2027-03-31）。
+
+### 五、状态位翻转留痕（2026-09-18）
+
+> 形式：**状态列就地翻转**（沿用本仓先例：Cycle-8 `sts` 提交「经用户拍板转入台账并置 current」）；**结论原文未改**。
+
+- D-008…D-011 四行的状态列已由 `pending` 改为 `current`（与 §一 迁移表一致）。
+- 上方「T-09 四问深度调研与编排侧对撞」段内 D-008…D-011 的**结论正文未改**（只改状态列）。
+- 修复动因：自检发现「迁移表已写 current、但行内状态列仍为 pending」的**自相矛盾**（审计上不可接受）。
