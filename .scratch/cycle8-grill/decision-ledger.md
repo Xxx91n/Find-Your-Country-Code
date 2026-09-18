@@ -336,3 +336,95 @@
 
 - **⇒ F-3 闭合**：三条负向前置的解除**已由用户本人逐条追认**；执行窗口的自裁**获追认**。
 - **未变更**：D-001…D-011 状态列（**11 current / 0 pending / 0 revised**）与本段以上全部原文。
+
+---
+
+## 冲突核对 — atomcode 深度调研 对 current 决策（2026-09-18 · 用户授权窗口）
+
+> **形式**：**追加**；D-001…D-011 全表原文与状态列**未动**。
+> **用户指令原文**：「调研的结果辩证性看待 若调研结论与账本中任何 current 决策冲突：禁止静默改向——把对应 D-xxx 标记为 revised（保留原记录），生成新的 D-xxx 记录呈报给我，等我拍板后才继续下探。」
+
+### 一、调研结论摘要（供对撞）
+
+| # | 结论 | 依据 |
+|---|---|---|
+| R-1 | 主流 = **冻结快照 + 独立 provenance manifest**（双轨制）；「**域名出现在 fixture 目录是合规的，出现在网络调用里才是违规的**」 | pagemark `testdata/real-world/`（URL 活在 `fixtures.json`，测试只读文件永不触网） |
+| R-2 | 密封门禁的正确实现是**运行时拦截**（拦 `socket.connect`／网络层），而非**文本禁令**；SLSA 的 hermetic 与其 `materials[*].uri` 真实 URL 在同一标准内共存 | pytest-test-categories；SLSA provenance |
+| R-3 | 若真实域名确需出现在测试面 → **重分级或 Record-Replay**（URL 留在 cassette），**而非拆门禁** | Google Arguelles |
+
+### 二、逐条对撞 — D-001…D-011（11 条，全 current）
+
+| current 记录 | 对撞结果 |
+|---|---|
+| D-001 议程＝收口治理＋证据闭环 | 无涉 |
+| D-002 融合在途变更 | 无涉 |
+| D-003 `.scratch/` 受管、原地保留、保持 Git 跟踪 | 无涉 |
+| **D-004** 受管区内部治理：外部输入留痕三件套（入库 ＋ **SHA-256 ＋ 来源 URL ＋ 抓取日期** ＋ push）；不可再生外部输入一律进受管区 | **强印证（同向）**：R-1／R-2 均把 provenance 归入「采集／构建期元数据」；**本条即下文张力的现行约束方（要求保留来源 URL）** |
+| D-005 被忽略目录处置 | 无涉 |
+| D-006 审计遗留 7 项处置 | 无涉 |
+| **D-007** findings register ＋ 例外生命周期 | **同向**：本段即「登记 ＋ 具名签核 ＋ 待裁定」的 register 形态 |
+| D-008 CI 证据闭环（ADR-0014） | 无涉 |
+| D-009 T-13 门槛可测化（ADR-0015） | 无涉 |
+| D-010 GF sync 控制点（ADR-0006 注记） | 无涉 |
+| D-011 发版节奏（ADR-0016） | 无涉 |
+
+**⇒ 判定：无任何 current D-xxx 被调研结论推翻（决策方向反转）。** 依本账本已写死的 `revised` 语义（`revised` = current 决策被后续裁定推翻），**不触发 `revised`**；亦依「禁止静默改向」的**对称义务**，**不得反向擅自改标**。
+**状态列不变：11 current ／ 0 pending ／ 0 revised。**
+
+### 三、冲突的真实位置（登记，未静默改向）
+
+**冲突不在「调研 ⟷ 账本」，而在「票 39 验收条款 G4e ⟷ 本仓已 accepted 的密封／溯源纪律集群」。**
+
+| 侧 | 条款 | 层级 |
+|---|---|---|
+| **A** | `verify-ticket-39.mjs` G4e「live 目标 host **不出现在**密封 spec/fixture/corpus/helper/config」＝ 对 `sealedFiles` 全文 `c.includes(host)` **裸子串扫描（不剥注释、不分位置）** | 票 39 delta 验收条款（任务书 `issues/39-real-site-enablement.md`「delta 落实」） |
+| **B1** | `CONTEXT.md:112–113`「**密封 E2E**：E2E 仅依赖仓库内 fixtures/corpus 与本地 server 供给、**不触真实站点与外网**的**供给边界**」 | CONTEXT 术语（工程门禁与仓库卫生节） |
+| **B2** | `tests/corpus/forms/README.md:69`「镜像页**零外链**／零分析脚本，hermetic」＋ **`:71`「标 `source_url` ＋ `captured_at`：`manifest.json` 每条 entry 均有；镜像页头注释同步标注」** | 语料合规口径（D-008／issue 验收项 6） |
+| **B3** | `verify-ticket-06.mjs`：**`:145–147`** `stripComments(html)` 后断言无外部 `src=`／`href=`／CSS `url()`（**引用位**断言）；**`:141–143`** 强制 provenance 四键存在；**`:131`** 品牌词表经 `bodyText()`（**剥注释**）判定 | PR 阻断门（`verify-tickets.yml` 21 票级门之一，**当前为绿**） |
+| **B4** | `ADR-0008 决策 4`：语料改动 **append-only**；漂移即 CI 红——**这是设计意图，不是噪声** | accepted ADR |
+| **B5** | `D-004`（current）：外部输入留痕三件套含**来源 URL**；不可再生外部输入一律进受管区 | 本账本 |
+| **B6** | `verify-ticket-06.mjs:111/114/117` **S2 指纹完整性**：镜像页与骨架文件 SHA-256 必须与 `manifest.json` 逐条一致；`:202` 断言 README 纪律「**绝不为修绿而盲目更新快照**」 | PR 阻断门（同上） |
+
+**结构性互斥链（本段核心判定，逐步可验）：**
+
+1. 满足 **A** ⇒ 须从 `tests/corpus/forms/**` 移除 `cdpn.io` 全部出现（实测 **5 处**）。
+2. 其中 2 处在 `mirrors/*.html`、1 处在 `skeletons/*.json` ⇒ 编辑即**打破 B6 的 SHA-256 一致性**，`verify-ticket-06` **转红**。
+3. 修复 B6 须重生成 `manifest.json` 哈希（`06-manifest.mjs`）⇒ 即**语料内容变更**，触发 **B4**（append-only／漂移即红）与 B6 的「绝不为修绿而盲目更新快照」纪律。
+4. 且移除即**销毁 B2:71 与 B5 要求留痕的来源 URL** ⇒ 违反 **D-004（current）**。
+⇒ **A 无法在不破坏至少一条已 accepted 的 PR 阻断门或一条 current 决策的前提下被满足。属结构性冲突，非成本取舍。**
+
+**实测证伪「真违规」假设（引用位普查）：**
+
+对 G4e 的 5 处命中逐处定位（复刻其扫描口径）：
+
+| 文件 | 行 | 位置性质 | 引用位？ |
+|---|---|---|---|
+| `tests/corpus/forms/manifest.json` | 129 | `source_url` 字段值 | 否 |
+| `tests/corpus/forms/sources.json` | 32 | 采集源登记 `url` 字段（`06-capture-forms.mjs:118` 生成） | 否 |
+| `tests/corpus/forms/skeletons/codepen-iti-v17.json` | 6 | `source_url` 字段值 | 否 |
+| `tests/corpus/forms/mirrors/codepen-iti-v17.html` | 11 | HTML 头注释 `source_url` 标注 | 否 |
+| `tests/corpus/forms/mirrors/codepen-iti-v17-child.html` | 11 | HTML 头注释 `source_url` 标注 | 否 |
+
+**汇总：命中 5 处，可发起引用位命中 0 处 ⇒ 假阳性率 100%。** 另：`codepen.io` 在密封面**零命中**（仅出现于第二层 `tests/live/site-manifest.json` 与 gate 脚本自身）⇒ **密封层无任何真实外网引用**，B1 的供给边界不变量**当前实际成立**。
+
+**⇒ 判定：`revised` 不触发（无 current 决策被推翻）；但 A（G4e）须被精化——改验收条款属决策变更，故新立 D-012 呈报待拍板。拍板前不动 `verify-ticket-39.mjs`／不动 workflow／不动语料／不立票。**
+
+### 四、新增条目 D-012（`pending`）
+
+| ID | 原问题 | 调研结论（摘要） | 规范化需求（推荐） | 显式约束／负向需求 | 状态 |
+|---|---|---|---|---|---|
+| **D-012** | 票 39 G4e「live host 不出现在密封面」与 `verify-ticket-06` S2/S3 结构性互斥（修 G4e 必破 06），如何收口？ | R-1／R-2：溯源属采集期元数据；密封门禁应落**运行时可执行面**；「域名出现在 fixture 目录是合规的，出现在网络调用里才是违规的」 | **精化 A 到 B3 同口径 ＋ 正向补偿**：① G4e 改为**引用位断言**——`stripComments`（HTML）后扫描 `liveHosts`，**仅在可发起引用位置**（`src=`／`href=`／`url(`／`fetch(`／`import(`／`route(`／`goto(`／`new URL(`）命中才 FAIL，并显式排除 provenance 键值位（`source_url`／`mirror_of`／`license_note`／`captured_at` 及 `sources.json` 的采集源登记字段）；② **保留** B3 的 provenance 强制、B6 的 SHA-256 一致性与 B4 的 append-only；③ **正向补偿**：在密封供给面加**运行时网络封锁**（非本地 origin 的请求一律 `abort()`，命中即 FAIL），把不变量钉到**不可被字符串拼接绕过**的层；④ 票 39 任务书「delta 落实」行加**带日期注记**（原文保留、不删改） | ① 拍板前不得改 `verify-ticket-39.mjs`／workflow／语料；② 不得删除或弱化 B3 的 provenance 四键断言；③ 不得改写既有语料（B4）；④ 不得把 G4e 降级为「白名单豁免 5 个文件」式点修；⑤ 精化后 G4e **断言强度不得低于**「live host 不得出现在任何可发起引用位置」；⑥ 不得新开 ADR（属既有意图的实现选型修正，走带日期注记） | `pending` |
+
+**已评估并否决的备选（留痕）：**
+
+| 备选 | 否决理由 |
+|---|---|
+| (E1) 删除语料中的来源 URL 以满足 A | 违反 B2:71／B5（D-004 来源 URL 留痕）＋ 触发 B6（SHA-256 断裂／「绝不为修绿而盲目更新快照」）＋ B4（append-only）；代价远大于收益 |
+| (E2) 对 5 个 provenance 文件做**白名单豁免** | 保留粗断言 ＋ 埋维护陷阱（新增语料即再红）；违反 D-012 约束④ |
+| (E3) 把 live 目标换名规避（如改写成 `codepen.io`） | **无效**：`liveHosts` 实测 = `{cdpn.io, codepen.io}` 双 host，语料两处均有；且属「改数据迁就断言」，违反 B4 |
+
+### 五、状态位与覆盖率自评（本段追加后）
+
+- 已确认条目：**11**（D-001…D-011 ＝ `current`）｜**待拍板：1**（D-012 ＝ `pending`）｜`revised`：**0**｜`stale`：0｜`deferred`：0
+- 待决（frontier）：**D-012 拍板** · 票 39 gate 修法 · 是否需将任一 D-xxx 改标 `revised`（**本轮判定：否**）
+- **未继续下探**：未改 `tests/scripts/verify-ticket-39.mjs`、未改任何 `.github/workflows/*.yml`、未改语料、未立票。
