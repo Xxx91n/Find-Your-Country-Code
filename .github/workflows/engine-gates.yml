@@ -35,3 +35,8 @@ jobs:
         run: node tests/scripts/misdetect-repro-v2.mjs
       - name: Issue checkbox audit (issue-checkbox-audit.mjs)
         run: node tests/scripts/issue-checkbox-audit.mjs
+
+      # Cycle-8 T-01 / D-004①：清理脚本白名单自检 —— 证明清理只可能触碰受管区的 draft 子区
+      # （硬白名单 + 越权穿越拒绝 + dry-run 纯度 + 区界文档保护）。
+      - name: Draft cleanup whitelist self-test (scratch-draft-clean.mjs --self-test)
+        run: node tests/scripts/scratch-draft-clean.mjs --self-test

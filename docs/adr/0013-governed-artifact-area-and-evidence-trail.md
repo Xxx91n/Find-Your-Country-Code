@@ -31,6 +31,15 @@
 - 若 CI 平台提供 artifacts 保留能力 → 重评决策 4（测试／浏览器报告迁 artifacts）。
 - 若 `live-out/` 被证实**仅含诊断输出**、无「站点行为基准」→ 决策 4 的复核项关闭。
 
+## Notes（2026-09-18 · T-04：决策 4 的 `live-out/` 复核项关闭）
+
+> 形式：**追加**，不改动上方决策 / 事故回溯 / 后果 / 反证条件 / 参考各节。
+
+- **复核动作**：Cycle-8 **T-04**（D-005②）对 `live-out/` 执行「是否含站点行为基准」复核。
+- **实测证据**：① 唯一写入方 = `.github/workflows/real-site-smoke.yml`（`:75–76` 写 summary/report、`:82` 写 cdp-fitness、`:115` 上传为 CI artifact）；② 全仓检索 `live-out` 的**读取方为零**（只命中写入/上传行，无任何门禁把它当输入）；③ 该层放行判据由 workflow 运行期从 `smoke-summary.json` 读取并写入 step summary + artifact。
+- **结论**：`live-out/` 仅含**诊断输出**、无「站点行为基准」⇒ **不晋升入库**，**保持忽略**。
+- **反证条件 3 相应关闭**：本项不再作为重评决策 4 的触发条件。
+- 操作口径与边界图见受管工件区顶层边界图的 §7 / §7.1（路径见 `check-ignore-guard.mjs` 关键路径清单）。
 ## 参考
 
 - 行业对标：`.scratch/cycle8-grill/research/q3-evidence-workspace-governance.md`（12 条来源）
