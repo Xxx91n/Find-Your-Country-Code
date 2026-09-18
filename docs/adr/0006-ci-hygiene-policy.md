@@ -66,3 +66,12 @@
 - 裁定：**保留 `gf-alignment-check.yml`，本条 monitor 登记继续生效（不关闭）**。理由：其结论取决于 GF 站点实时状态、与 PR 内容无关、作者在 PR 内无能为力、消费方式为报警——四判据全中，仍属 monitor 类。
 - 维持项：`--strict` 维持关闭（D-002：不切红灯）；**不补 `pull_request` 触发面**（保持 `workflow_dispatch` + 每日 `schedule`）。
 - 残留：站内 sync 开关状态须由维护者登入 GF 脚本页人工确认；**确认前不得声称 D-002 送达链已闭合**（D-018：本轮无发版）。
+
+## 决策 1 的带日期修订注记（2026-09-18 · Cycle-8 D-003 / D-006）
+
+> 形式：**原文保留、不删改**；变更只经本注记。
+
+- **原文（保留）**：决策 1 末句「`.scratch/architecture-recovery/research/scripts/` **降级为可抛弃调研现场**，不再是 CI 单点故障。」
+- **修订**：该定性**与事实相反**（Cycle-8 **D-003**）。实测：`.scratch/` **已是 331/331 全量 Git 跟踪**（0 忽略），且被 **5 个 CI 门禁脚本**真实读取（`verify-ticket-06/08/10/12` + `issue-checkbox-audit`；缺文件即 `exit 1`）。用户裁定：`.scratch/` 为**受管工件区**、**不可抛弃**、**原地保留**、**保持 Git 跟踪**。
+- **决策 1 的其余部分继续有效**：CI 脚本仍置 `tests/scripts/`；`.github/workflows/*.yml` 仍**禁止**出现 `.scratch/` 路径引用（脚本读 `.scratch/` 数据 ≠ workflow 引 `.scratch/` 路径）。判据与后果见 **ADR-0013**。
+- **登记（Cycle-8 D-006 B⑨）**：`verify-tickets.yml` 的触发面为 `pull_request` + `workflow_dispatch` + **`push: branches: [main, cch/**]`**。该通配符是 **D-004（Cycle-7）「死触发按分支生命周期清理」的配套设计**——替代原 21 处 `cch/NN-<slug>` 死触发；GitHub 官方语法将分支模式触发列为**推荐形态**（分支集开放演进时用通配符、封闭集合才用枚举）。**本触发面变更在此显式登记**，不收窄（收窄会重造死触发）。
