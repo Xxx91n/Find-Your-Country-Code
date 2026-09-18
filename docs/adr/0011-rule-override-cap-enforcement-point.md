@@ -1,6 +1,6 @@
 # ADR-0011: 站点规则上限（RULES_MAX_OVERRIDES）的强制点在写路径
 
-日期：2026-09-17 ｜ 状态：accepted ｜ 来源：Cycle-6 票 12（A-036）
+状态：accepted | 日期：2026-09-17 | 来源：Cycle-6 票 12（A-036）
 
 ## 背景
 
