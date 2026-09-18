@@ -16,4 +16,6 @@
 
 **delta 落实：** 跳过条目强制非空 reason + ticket（2 个外部候选保留 `enabled:false` + 实测 reason）；live host 不出现在密封 spec/fixture/corpus/helper/config（verify-ticket-39 G4e/G4f）；编辑器页本地被 Cloudflare 挑战时如实报「反爬挑战未化解」不伪造绿。
 
+> **带日期注记（2026-09-18 · D-012 用户拍板「完整采纳」）**：上句「live host 不出现在密封 spec/fixture/corpus/helper/config」为**裸子串**口径，与票 06 的溯源纪律（`verify-ticket-06` S3 强制 provenance 四键 + S2 SHA-256 一致性）及 `ADR-0008 决策 4`（语料 append-only）**结构性互斥** —— 满足它须删除语料中 `cdpn.io` 的 5 处来源登记，而删除即令票 06 转红。**原文保留不改**；G4e 已按 D-012 精化为**引用位断言**（`src=` / `href=` / `url(` / `fetch(` / `import(` / `goto(` / `route(` / `new URL(`），并新增 **G4h**（禁止以删源换绿：语料溯源登记须仍存在）与 **G4i**（密封层门面须装运行时网络封锁）作正向补偿。依据：`CONTEXT.md`「密封 E2E」= **供给边界**语义（不触真实站点与外网），非字符串存在性。
+
 **报告：** `research/window-reports/39-real-site-enablement-report.md`

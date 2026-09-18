@@ -413,7 +413,7 @@
 
 | ID | 原问题 | 调研结论（摘要） | 规范化需求（推荐） | 显式约束／负向需求 | 状态 |
 |---|---|---|---|---|---|
-| **D-012** | 票 39 G4e「live host 不出现在密封面」与 `verify-ticket-06` S2/S3 结构性互斥（修 G4e 必破 06），如何收口？ | R-1／R-2：溯源属采集期元数据；密封门禁应落**运行时可执行面**；「域名出现在 fixture 目录是合规的，出现在网络调用里才是违规的」 | **精化 A 到 B3 同口径 ＋ 正向补偿**：① G4e 改为**引用位断言**——`stripComments`（HTML）后扫描 `liveHosts`，**仅在可发起引用位置**（`src=`／`href=`／`url(`／`fetch(`／`import(`／`route(`／`goto(`／`new URL(`）命中才 FAIL，并显式排除 provenance 键值位（`source_url`／`mirror_of`／`license_note`／`captured_at` 及 `sources.json` 的采集源登记字段）；② **保留** B3 的 provenance 强制、B6 的 SHA-256 一致性与 B4 的 append-only；③ **正向补偿**：在密封供给面加**运行时网络封锁**（非本地 origin 的请求一律 `abort()`，命中即 FAIL），把不变量钉到**不可被字符串拼接绕过**的层；④ 票 39 任务书「delta 落实」行加**带日期注记**（原文保留、不删改） | ① 拍板前不得改 `verify-ticket-39.mjs`／workflow／语料；② 不得删除或弱化 B3 的 provenance 四键断言；③ 不得改写既有语料（B4）；④ 不得把 G4e 降级为「白名单豁免 5 个文件」式点修；⑤ 精化后 G4e **断言强度不得低于**「live host 不得出现在任何可发起引用位置」；⑥ 不得新开 ADR（属既有意图的实现选型修正，走带日期注记） | `pending` |
+| **D-012** | 票 39 G4e「live host 不出现在密封面」与 `verify-ticket-06` S2/S3 结构性互斥（修 G4e 必破 06），如何收口？ | R-1／R-2：溯源属采集期元数据；密封门禁应落**运行时可执行面**；「域名出现在 fixture 目录是合规的，出现在网络调用里才是违规的」 | **精化 A 到 B3 同口径 ＋ 正向补偿**：① G4e 改为**引用位断言**——`stripComments`（HTML）后扫描 `liveHosts`，**仅在可发起引用位置**（`src=`／`href=`／`url(`／`fetch(`／`import(`／`route(`／`goto(`／`new URL(`）命中才 FAIL，并显式排除 provenance 键值位（`source_url`／`mirror_of`／`license_note`／`captured_at` 及 `sources.json` 的采集源登记字段）；② **保留** B3 的 provenance 强制、B6 的 SHA-256 一致性与 B4 的 append-only；③ **正向补偿**：在密封供给面加**运行时网络封锁**（非本地 origin 的请求一律 `abort()`，命中即 FAIL），把不变量钉到**不可被字符串拼接绕过**的层；④ 票 39 任务书「delta 落实」行加**带日期注记**（原文保留、不删改） | ① 拍板前不得改 `verify-ticket-39.mjs`／workflow／语料；② 不得删除或弱化 B3 的 provenance 四键断言；③ 不得改写既有语料（B4）；④ 不得把 G4e 降级为「白名单豁免 5 个文件」式点修；⑤ 精化后 G4e **断言强度不得低于**「live host 不得出现在任何可发起引用位置」；⑥ 不得新开 ADR（属既有意图的实现选型修正，走带日期注记） | `current` |
 
 **已评估并否决的备选（留痕）：**
 
@@ -428,3 +428,40 @@
 - 已确认条目：**11**（D-001…D-011 ＝ `current`）｜**待拍板：1**（D-012 ＝ `pending`）｜`revised`：**0**｜`stale`：0｜`deferred`：0
 - 待决（frontier）：**D-012 拍板** · 票 39 gate 修法 · 是否需将任一 D-xxx 改标 `revised`（**本轮判定：否**）
 - **未继续下探**：未改 `tests/scripts/verify-ticket-39.mjs`、未改任何 `.github/workflows/*.yml`、未改语料、未立票。
+
+
+---
+
+## D-012 采纳落地（2026-09-18 · 用户拍板「完整采纳」）
+
+> **形式**：**追加** + D-012 行**状态列就地翻转**（沿用本仓先例，结论原文未改）。
+> **用户裁定**：① 票 39 G4e 修法 = **完整采纳**（引用位断言 + 运行时封锁正向补偿）；② 「无 current 决策被推翻 ⇒ 不触发 `revised`」= **确认**。
+
+### 一、状态迁移
+
+| ID | 迁移 | 落地载体 |
+|---|---|---|
+| **D-012** | `pending` → **`current`** | `tests/scripts/verify-ticket-39.mjs`（G4e 精化 + G4h + G4i）· `tests/helpers/userscript.ts`（运行时封锁）· `tests/fixtures/network-canary.html` · `tests/hermetic-network.spec.ts` · 票 39 任务书带日期注记 |
+
+### 二、落地动作与证据（逐条对应 D-012 需求 ①②③④）
+
+| 需求 | 落地 | 验证证据 |
+|---|---|---|
+| ① G4e 精化为引用位断言 | `stripComments` 后扫 `liveHosts`，仅 `src=`/`href=`/`url(`/`fetch(`/`import(`/`goto(`/`route(`/`new URL(` 命中才 FAIL | 基线 **30 PASS / 0 FAIL**（原 27/1）；**反向探针 2/2 均红**：HTML `src="https://cdpn.io/…"` → 红；spec `goto('https://codepen.io/…')` → 红 |
+| ② 保留 B 集群全部约束 | `verify-ticket-06` S2/S3、`ADR-0008 决策 4`、`D-004` **均未动**；语料零改写 | 探针后 5 文件按 sha256 聚合逐字节恢复（`restore_ok=YES`） |
+| ③ 运行时网络封锁正向补偿 | `tests/helpers/userscript.ts` **覆写** `installUserscript`（显式导出优先于星号导出）⇒ **25/25 密封 spec 调用点零改动**；`page.route('**')` 非本地 origin 一律 `abort` + 记入 `blockedRequests(page)` | 自证 spec 正向（canary 被 abort 且记录）+ 负向对照（本地供给零阻断、注入照常）；G4i 机器锁定门面须装封锁 |
+| ④ 票 39 任务书带日期注记 | 原文保留、不删改；注记说明互斥链与精化口径 | 见 `issues/39-real-site-enablement.md` |
+| ⑤ 断言强度不得低于「引用位」 | 见 ① 的**反向探针**（非空门已证） | 探针 2/2 红 |
+| ⑥ 不得新开 ADR | **未新开 ADR**（属既有意图的实现选型修正） | `docs/adr/` 文件数与内容未动 |
+
+### 三、否决备选（保持否决，且已机器锁死）
+
+- **(E1) 删除语料来源 URL 以满足 G4e** —— 已由 **G4h** 机器锁死：**PROBE 4** 把 5 处 `cdpn.io` 改为 `cdpn.example` 后 G4e 转绿、**G4h 立即红**（`raw=0`）。⇒ 「删源换绿」此路永久封死。
+- **(E2) 白名单豁免 5 个 provenance 文件** —— 未采纳（保留粗断言 + 埋维护陷阱）。
+- **(E3) 换名规避** —— 无效（`liveHosts` = `{cdpn.io, codepen.io}` 双 host）；且属改数据迁就断言。
+
+### 四、状态位与覆盖率自评（本段追加后）
+
+- 已确认条目：**12**（D-001…D-012 全部 `current`）｜`pending`：**0**｜`revised`：**0**｜`stale`：0｜`deferred`：0
+- 待决（frontier）：票 39 修复后的全套硬验收与 CI 取证 · land 整栈 · 分支清理 · FR-01…FR-14 签核（open，到期 2027-03-31）
+- **上段「五、状态位与覆盖率自评」内「待拍板：1（D-012 = pending）」为拍板前快照，不改（append-only）；以本段为准。**
