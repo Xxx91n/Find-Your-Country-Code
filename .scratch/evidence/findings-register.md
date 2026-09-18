@@ -71,3 +71,19 @@
 | 发布门 ack | `.github/release-gate-ack.json` + `tests/scripts/release-gate.mjs` | **发布放行**的显式确认与立票 |
 
 > 四者**不重复**：本册管「发现」，台账管「输入」，后两者管「语料与发布」的机器前置。
+
+---
+
+## 六、本轮新增过程发现（Cycle-8 T-01…T-08 窗口，2026-09-18）
+
+> 口径：本窗口执行过程中**实测发现**的过程缺陷；已当场闭环者记 `closed`，并保留复现与处置证据。
+
+| ID | 发现 | 复现命令 | 影响 | 处置 | 状态 |
+|---|---|---|---|---|---|
+| **FN-01** | **`/tmp` 在 bash 与 Node 下映射到不同目录**：bash `/tmp` = `%TEMP%`（`C:/Users/Administrator/AppData/Local/Temp`），Node `path.resolve('/tmp/x')` = `D:\tmp\x`。因此「脚本用 `/tmp/x.json` 写、Node 用 `require('/tmp/x.json')` 读」会**读到另一个文件**（本轮曾因此读到昨日残留的 `D:\tmp\cal.json`，得出错误的 `cases=56 / scanSelectors=10`） | `cd /tmp && pwd -W`（bash） vs `node -e "console.log(require('path').resolve('/tmp/x'))"`；`node -e "const fs=require('fs');console.log(fs.statSync('D:/tmp/cal.json').mtime.toISOString())"` → `2026-09-17T13:16:23.930Z`（昨日） | **测量污染**：可让人误判「改动引入回归」。本轮靠 `git archive HEAD` 隔离重建对照才揭穿 | ① 本轮所有产物输出改用**无歧义绝对路径**（`D:/tmp/...`）；② 建议写回 `WORKFLOW §2 工具约定`（待用户拍板） | **closed**（本轮口径已修正；建议条款未落） |
+| **FN-02** | **LF 清账引发 index stat 幽灵**：对 121 个工作区 CRLF 文件做字节级 LF 归一后，git 与 GitButler 均报 `M`，但**内容零差异**（`git hash-object -- <f>` == `git ls-files -s` 的 blob == `git rev-parse HEAD:<f>`；`git diff --numstat` 为空；`but diff` 报 “No diff available”） | `git ls-files --eol -- <f>` → `i/lf w/lf`；`git hash-object -- <f>` == `git rev-parse HEAD:<f>`；`git diff --numstat -- <f>` 为空 | 工作区噪声：121 条幽灵条目会污染 `but status`，并在提交流里制造无内容变更的条目 | **`but discard <id>` 原生清除**（`but` 唯一入口，不破例用裸 `git`）：分 3 批共清 120 条，**清除后逐路径校验 hash 不变（contentChanged=0 / missing=0）**；最终 `git status --porcelain` = **0 行** | **closed** |
+
+### 与 FR 系列的关系
+
+- FN-01 / FN-02 均为**本窗口内新出现的过程缺陷**，不属于审计遗留；已闭环，仅作知识保留（防下次重蹈）。
+- 它们不改变 FR-01…FR-07 的到期日（仍为 **2027-03-31**）。
