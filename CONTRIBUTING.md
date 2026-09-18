@@ -23,6 +23,17 @@ npm run e2e        # 构建 + Playwright 端到端测试
 
 > GreasyFork 侧版本同步是一次性人工配置（站内 Sync from external URL 拉取 GitHub 产物），CI 不会也不能向 GF 写入。步骤与验收见 `docs/greasyfork-sync-setup.md`。
 
+## 发版节奏
+
+发版**不**随每个变更即时发生，而是按**有节奏的批量**收割——固定节奏为**双周至月度**，规则见 **`docs/adr/0016-release-cadence-policy.md`**：
+
+- **补丁豁免**：安全修复与严重 bug 的 patch 版本**随时就绪随时发、不排队**（优先于节奏点与积累阈值）。
+- **积累上限**：自上一 tag 以来 `commits > 30` 或 `diff 行数 > 2000` ⇒ **立即收割**，不再等节奏点。
+- **breaking change**：只进批量点，附迁移指南，**永不藏进 patch**。
+- **机器实现**：`node tests/scripts/51-release-readiness.mjs` 输出累积量、类型分布与收割建议（**advisory，不阻断**）。
+
+变更合入主干即**保持可发布**（continuous delivery），但**何时收割**由维护者按上述节奏决定——即「能力」与「决策」分离。
+
 ## 发布链路（自动化）
 
 推送到 `main` 且命中发布路径（`src/**`、`vite.config.ts`、`package.json`、`package-lock.json`）时，`.github/workflows/release.yml` 自动执行：
@@ -31,6 +42,8 @@ npm run e2e        # 构建 + Playwright 端到端测试
 2. 从产物 `dist/find-your-country-code.user.js` 提取 `// @version`；
 3. 检查远端 tag `v<版本>` 是否已存在——已存在则跳过（幂等，防重复发布）；
 4. 不存在则以 Glog 双语为 Release 说明创建 GitHub Release，产物 `.user.js` 作为附件上传。
+
+> **落地口径（`docs/adr/0014-ci-evidence-loop-and-landing-model.md`）**：`push ≠ 落地`。**落地事件只有一个 = required checks 绿后的合入**；分支上的 run 只证明候选，**不作闭环证据**。**权威验收锚点 = 目标分支（`main`）上的成功 run**（登记 run ID + 被验 sha，不登记「本地跑过」）。本仓版本控制唯一入口是 GitButler（`but`）：`but push`（分支候选）→ `but land`（落地 `main`，即落地事件）。
 
 **版本跳跃策略**：`v1.3.4` 之后的模块化重构 + 评分引擎是行为级换代，建议发 `v2.0.0`（语义化版本主位跳跃）；若希望对 GreasyFork 用户保持低调连续，也可发 `v1.4.0`。取舍见 `.scratch/architecture-recovery/research/window-reports/10-release-pipeline-report.md`，发布前需人工确认版本号与 Glog 内容（发版是面向用户的外发动作）。
 
