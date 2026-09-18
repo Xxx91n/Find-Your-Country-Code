@@ -96,7 +96,7 @@ node -e "const t=require('fs').readFileSync('.scratch/cycle8-grill/decision-ledg
 - **票 39 基线预存红**：21 票级门 20/21；审计 §2「不能动」（FR-04）。
 - **`38-gf-alignment-check.mjs`**：本轮复测为 `INCONCLUSIVE（网络不可达）`，**非**版本判定失败。
 - **未清场**：备份 ref `refs/backup/main-pre-rewrite` 仍在（破坏性操作，待用户确认；FR-03）。
-- **`src/` 零改动**：本轮全部为治理/文档/测试工具，无产品行为变更。
+- **`src/` 有改动（1 文件 / +12 −1）**：`src/detect/index.ts`，来自 D-002 融合 S-05 的 T-12 缺口 2a/2b；已由 `tests/contenteditable-scan.spec.ts`（3 用例）+ fixture 覆盖、E2E 149-0。**本轮 T-09 自身零 `src/` 改动**。
 
 ---
 

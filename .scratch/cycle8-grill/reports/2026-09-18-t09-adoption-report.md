@@ -113,7 +113,7 @@ OC 双点（AQL=0.0005 α=5% / LTPD=0.002 β=10%）：n=4636, c=5（实测 α=0.
 | 不得降低任何既有门禁 | ✅ 零降级；新增门禁只增不减 |
 | 4 个反向断言门不得削弱 | ✅ `grep -rl '\.scratch/' .github/workflows/` → **0** |
 | 语料先行 / 禁物理删除语料条目 | ✅ `tests/corpus/manifest.json` 未动 |
-| 不引入远程网络面 / ML | ✅ `src/` 零改动（新脚本均为纯计算，无外网） |
+| 不引入远程网络面 / ML | ✅ `src/` 改动 = **1 文件 / +12 −1**（`src/detect/index.ts`，来自 D-002 融合 S-05 的 T-12 缺口 2a/2b），已由 `tests/contenteditable-scan.spec.ts`（3 用例）+ fixture 覆盖、E2E 149-0；**本轮 T-09 自身零 `src/` 改动**；无远程网络面 / 无 ML |
 | 禁止静默改向 | ✅ 两处数值修正 + 4 项裁定均**显式写入 ADR/账本**；`revised` = 0 |
 | 依赖只经显式请求 | ✅ 两脚本**零依赖**；未引入 changesets 等外部工具 |
 
