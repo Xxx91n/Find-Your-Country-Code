@@ -123,3 +123,17 @@
 > 1. **FR-08 状态**：上表「**待用户签核**（含后台操作授权）」已过期 —— 用户于 2026-09-18 同批授权（见 `2026-09-18-audit-closeout-handoff.md` §11.2），但**至今未执行**（用户上一轮未选「先配 FR-08」）。⇒ FR-08 现为**「已授权、未执行」**，仍**开放**。
 > 2. **计数更正**：本册上方「现有登记总数：**FR-01…FR-11（11 条 open）**」为**时点快照**、**已过期**（FR-12/13/14 与本节 FR-15 均已登记）。
 >    **现值**：**FR-01…FR-15（15 条 open）** + **FC-01…FC-08（8 条 closed）** + **FN-01…FN-02（2 条 closed）**。
+
+---
+
+## 九、FR-08 已闭环（2026-09-18 · 用户授权窗口续）
+
+> 原文保留不改；本节为追加。
+
+- **FR-08（main 分支保护未配置）→ 已执行，转 closed（记 FC-09）。**
+- 用户 2026-09-18 拍板「按 ADR-0014 配置」后执行，回读 `protected = true`。
+- 配置：`allow_force_pushes=false` · `allow_deletions=false` · `required_status_checks.strict=true` · **25 个 context** · **不开 `Require approvals`** · `enforce_admins=false`。
+- **有意排除 `baseline`**：该 workflow 仅 main 触发，列为 required 会造成「落地需该 check、而该 check 只在落地后才跑」的循环 ⇒ 永久阻断落地。
+- **残留风险（开放，随 FC-09 一并追溯）**：required context 以 **job 名** 为键；票级门重命名/删除会使 context 永不上报 ⇒ 可能阻断落地。缓解 = 删去该 context 或 `DELETE /branches/main/protection` 回滚。
+- 同步注记：`docs/adr/0014-ci-evidence-loop-and-landing-model.md` 新增「带日期注记」（含反证条件 2 重评结论）。
+- ⇒ 登记总数现值：**FR-01…FR-07 · FR-09…FR-15（14 条 open）** + **FC-01…FC-09（9 条 closed，含 FC-09 = FR-08 闭环）** + **FN-01…FN-02（2 条 closed）**。

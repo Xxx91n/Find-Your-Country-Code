@@ -46,3 +46,54 @@ Cycle-7 收口后首次取得 CI run（`337461e8`），但「何时 push、哪�
 - 行业对标：`.scratch/cycle8-grill/research/q3-ci-evidence-loop.md`
 - 上游：`docs/adr/0006-ci-hygiene-policy.md`（决策 2 与 monitor 例外）· `docs/adr/0010-release-gate.md`
 - 账本：`.scratch/cycle8-grill/decision-ledger.md` D-008 · D-006 B⑨ · D-001⑤
+
+---
+
+## 带日期注记 — 反证条件 2 已触发并重评；决策 4 已执行（2026-09-18）
+
+> 本节为**追加**；上方「背景」「决策」「反证条件」「后果」原文**保留不改**。
+
+### 一、触发事实
+
+2026-09-18 用户授权窗口内共执行 **3 次 `but land`**：
+
+| 分支 | 落地 sha |
+|---|---|
+| `cch/17-cycle8-audit --whole-stack`（29 提交） | `a011e47c` |
+| `cch/17-cycle8-statuscell` | `7aa75b29` |
+| `cch/17-cycle8-closeout` | `71d2ac85` |
+
+`but land` 的实现即**直接推送 `origin/main`**、**不产生 PR**（工具自述："lands … directly onto origin/main without a pull request"）。
+
+⇒ **反证条件 2 成立**：「`main` 上的 run 无法回溯到具体 **PR**」（`main` 被直接 push）。
+
+### 二、重评范围与结论
+
+**范围**：仅 **决策 2** 证据链中的「`PR #N` 承载」要素。
+
+**结论（用户 2026-09-18 拍板：加注记、决策 2 维持）**：**维持决策 2**，并将「PR 层缺失」记为**有意偏离（documented deviation）**。理由：
+
+1. **本仓版本控制唯一入口 = GitButler（`but`）**，其 `land` 语义**无 PR 面**；改用 PR 即需改用裸 `git` / forge，违反硬边界。
+2. **验收面可回溯性并未丧失**：每次落地的 sha 与**分支上 required checks 已全绿的同一 sha** 一致（`a011e47c` / `7aa75b29` / `71d2ac85`）⇒ 决策 1「落地事件 = required checks 绿后的合入」与决策 2 的**实质目的（run 可回溯到验收面）成立**；缺的仅是 **PR 这一载体形式**。
+3. 残差由**替代保证**兜住：① 一逻辑单元一提交；② 每个发版点打 tag（决策 7）。
+
+**登记**：`.scratch/evidence/findings-register.md` **FR-15**（开放，到期 2027-03-31）。
+
+**本注记不改变**决策 1 / 3 / 5 / 6 / 7；账本 **D-008 保持 `current`** —— 本仓 `revised` 语义 = current 决策**被后续裁定推翻**；本次为「**维持 + 记录偏离**」，不构成推翻。
+
+### 三、附：决策 4 已执行（同日）
+
+main 分支保护已按决策 4 配置，回读证据 `protected = true`：
+
+| 项 | 值 |
+|---|---|
+| `allow_force_pushes` | `false`（禁 force-push） |
+| `allow_deletions` | `false`（禁删除） |
+| `required_status_checks.strict` | `true`（Require branches to be up to date） |
+| required contexts | **25 个** = 21 个票级门 + `typecheck` + `Regen lockfile from pinned package.json` + `e2e` + `Engine gate (36) + harness (25)` |
+| `Require approvals` | **不开**（`required_pull_request_reviews: null`） |
+| `enforce_admins` | `false`（ADR 未规定；避免管理员死锁） |
+
+**`baseline`（Calibration Baseline）有意排除** —— 该 workflow 仅 `push: branches: [main]` 触发；若列为 required context，会形成「落地需该 check 通过、而该 check 只在落地之后才跑」的循环，**永久阻断落地**。
+
+**残留风险（已登记）**：required context 以 **job 名** 为键；若未来某个票级门被重命名/删除，对应 context 将**永不上报** ⇒ 可能阻断落地。缓解：删去该 context，或 `DELETE /repos/{owner}/{repo}/branches/main/protection` 即时回滚。
