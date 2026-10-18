@@ -27,3 +27,6 @@ playwright-report/
 
 # 真实站点冒烟层运行产物（票 39）
 live-out/
+
+# 治理庭 2026-10-18：.scratch 为本地治理区，不入版本控制（内容永久归档于仓库外 ../choose-your-country-snapshots/）
+.scratch/

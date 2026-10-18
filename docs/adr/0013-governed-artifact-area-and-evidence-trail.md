@@ -45,3 +45,12 @@
 - 行业对标：`.scratch/cycle8-grill/research/q3-evidence-workspace-governance.md`（12 条来源）
 - 上游决策：`docs/adr/0006-ci-hygiene-policy.md`（决策 1 的带日期修订注记）· `.scratch/cycle8-grill/decision-ledger.md`（D-003 · D-004 · D-005 · D-007）
 - 先例：`.scratch/architecture-recovery/README.md`（票 41 / A-018「过程证据归档出工作树」）
+
+## Notes（2026-10-18 · 治理庭：`.scratch/` 移出版本控制）
+
+> 形式：**追加**，不改动上方决策 / 事故回溯 / 后果 / 反证条件 / 既有 Notes 各节。
+
+- **改判**：本 ADR 决策 1 的「`.scratch/` 必须保持 Git 跟踪、原地保留」由用户于 **2026-10-18** 显式改判：`.scratch/` 整目录**移出版本控制**（入 `.gitignore` 并解除追踪），全部内容**先归档**至仓库外 `../choose-your-country-snapshots/2026-10-18/`（357 文件）再解除追踪。
+- **与决策 1 意图的关系**：决策 1 的核心意图（证据不可丢）由「仓外永久归档」承接，变的只是承载位置。这是本面的第三次翻转（票 41/A-018 出仓 → Cycle-8 D-003 回仓受管 → 本次出仓），自本注记起**终结翻转**。
+- **连带处置**：`issue-checkbox-audit.mjs`（对象目录已归档）移除；`verify-ticket-06` 的 3 个探针文件迁入 `tests/corpus/forms/probes/`；`check-ignore-guard.mjs` 关键路径清单移除 `.scratch` 项、新增 `.scratch/` 为阴性对照。
+- **治理报告**：`.scratch/gov-audit/gov-report.md`（本地，不入库）。

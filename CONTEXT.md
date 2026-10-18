@@ -158,25 +158,3 @@ _Avoid_: 日志（无结构化判定语义）、调试开关（那是门控手�
 **判定记录**：
 全链路各层判定点留下的结构化记录（步骤 / 判定 / 依据 / 时序），是诊断面的唯一事实来源；记录中的失败原因必须指向已验证因果，不得猜测。
 _Avoid_: 错误日志、事件日志（无「逐层判定 + 已验证因果」语义）
-
-## 行业心智模型对照
-
-本节固化 2026-09 心智模型 v2 周期的行业对标结论：每个论断一行，证据出处以仓库相对路径标注，调研全文按路径溯源，不在此复制。
-
-### 检测骨架三支柱（行业三方交集）
-
-- **Chromium 分层预测**：字段语义识别采用"autocomplete token 最高优先 → 启发式加权 → 内容验证（rationalization）"的多层瀑布，本脚本落为 L0–L4 五层信号瀑布与置信度分数。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M1/M2、`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`）
-- **Fathom 连续评分**：识别结果输出"类型 + 置信度分数 + 说明"的连续值而非布尔命中，分数驱动分级行动。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M5、`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`）
-- **密码管理器降级兜底**：识别失败不硬猜，降级到用户手动兜底，本脚本对应低置信登记 + 手动召唤 + 负反馈。（证据：`.scratch/architecture-recovery/research/industry-models.md` §M4）
-
-### 工程支柱三件（本周期采纳）
-
-- **可见性正确性**：隐藏字段误注入是正确性/安全问题而非体验问题，clip-path 与 content-visibility 隐藏字段曾使全部密码管理器中招（CCS-20/ACSAC-24），几何/样式可见性闸门是行业标配。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`、`.scratch/architecture-recovery/research/misdetection-root-causes.md`）
-- **数据驱动校准**：权重与阈值不由人工拍定，以正负例语料的 precision/recall 基线与阈值标定脚本为数据依据，CI 执行。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`）
-- **可解释反馈回路**：每次注入决策输出信号明细，可观测、可归因，低置信走手动召唤，用户负反馈沉淀为站点规则。（证据：`docs/adr/0001-scoring-engine-replaces-boolean-detection.md`、`.scratch/architecture-recovery/research/industry-models.md` §M2）
-
-### 对标结论
-
-- 本模型是上述三支柱的交集，方向正确，已被 Chromium 与密码管理器两套生产实现独立验证；油猴/扩展领域无成熟同类竞品。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`、`.scratch/mental-model-v2/report.md`）
-- autocomplete 属性只是强先验，下拉语义必须由选项内容裁决，共享区号需文本消歧。（证据：`.scratch/architecture-recovery/research/atomcode-mental-model-v2.md`）
-- 伪 select 先取证不仓促注入，实现与否由 ADR 裁决。（证据：`docs/adr/0004-pseudo-select-recognition-deferred.md`）
