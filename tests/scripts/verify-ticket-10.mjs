@@ -61,8 +61,8 @@ const ARTIFACTS = [
   'src/config.ts', 'src/main.ts', 'src/store/index.ts',
   'tests/fixtures/srcdoc-frame.html', 'tests/srcdoc-origin.spec.ts',
   'tests/scripts/verify-ticket-10.mjs', '.github/workflows/verify-tickets.yml',
-  '.scratch/architecture-recovery/research/scripts/10-probe-srcdoc-origin.mjs',
-  '.scratch/architecture-recovery/issues/10-srcdoc-origin-fix.md',
+  'tests/evidence/10-probe-srcdoc-origin.mjs',
+  'tests/evidence/10-srcdoc-origin-fix.md',
 ];
 {
   const missing = ARTIFACTS.filter((f) => !has(f));
@@ -77,8 +77,8 @@ const MAIN = read('src/main.ts');
 const STORE = read('src/store/index.ts');
 const FIXTURE = read('tests/fixtures/srcdoc-frame.html');
 const SPEC = read('tests/srcdoc-origin.spec.ts');
-const PROBE = read('.scratch/architecture-recovery/research/scripts/10-probe-srcdoc-origin.mjs');
-const ISSUE = read('.scratch/architecture-recovery/issues/10-srcdoc-origin-fix.md');
+const PROBE = read('tests/evidence/10-probe-srcdoc-origin.mjs');
+const ISSUE = read('tests/evidence/10-srcdoc-origin-fix.md');
 // Cycle-7 D-004：票级 workflow 合并 —— verify-10.yml 删除，CI 挂接点 = 调用方 + plan 的 '10' 条目
 const V10 = read('.github/workflows/verify-tickets.yml');
 const T10 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets || {})['10'] || {};

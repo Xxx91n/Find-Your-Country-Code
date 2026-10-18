@@ -56,8 +56,8 @@ const ARTIFACTS = [
   'tests/scripts/verify-ticket-12.mjs',
   '.github/workflows/verify-tickets.yml',
   'docs/adr/0011-rule-override-cap-enforcement-point.md',
-  '.scratch/architecture-recovery/issues/12-rules-limit-fidelity.md',
-  '.scratch/architecture-recovery/research/scripts/12-ab-cap-fidelity.mjs',
+  'tests/evidence/12-rules-limit-fidelity.md',
+  'tests/evidence/12-ab-cap-fidelity.mjs',
 ];
 {
   const missing = ARTIFACTS.filter((f) => !has(f));
@@ -72,8 +72,8 @@ const CFG = read('src/config.ts');
 const GATE = read('tests/scripts/verify-ticket-05.mjs');
 const SELF = read('tests/scripts/verify-ticket-12.mjs');
 const ADR = read('docs/adr/0011-rule-override-cap-enforcement-point.md');
-const ISSUE = read('.scratch/architecture-recovery/issues/12-rules-limit-fidelity.md');
-const REPORT = read('.scratch/architecture-recovery/research/window-reports/12-rules-limit-fidelity-report.md');
+const ISSUE = read('tests/evidence/12-rules-limit-fidelity.md');
+const REPORT = read('tests/evidence/12-rules-limit-fidelity-report.md');
 // Cycle-7 D-004：票级 workflow 合并 —— verify-12.yml 删除，CI 挂接点 = 调用方 + plan 的 '12' 条目
 const V12 = read('.github/workflows/verify-tickets.yml');
 const T12 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets || {})['12'] || {};
