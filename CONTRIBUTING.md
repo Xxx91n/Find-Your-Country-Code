@@ -45,13 +45,13 @@ npm run e2e        # 构建 + Playwright 端到端测试
 
 > **落地口径（`docs/adr/0014-ci-evidence-loop-and-landing-model.md`）**：`push ≠ 落地`。**落地事件只有一个 = required checks 绿后的合入**；分支上的 run 只证明候选，**不作闭环证据**。**权威验收锚点 = 目标分支（`main`）上的成功 run**（登记 run ID + 被验 sha，不登记「本地跑过」）。本仓版本控制唯一入口是 GitButler（`but`）：`but push`（分支候选）→ `but land`（落地 `main`，即落地事件）。
 
-**版本跳跃策略**：`v1.3.4` 之后的模块化重构 + 评分引擎是行为级换代，建议发 `v2.0.0`（语义化版本主位跳跃）；若希望对 GreasyFork 用户保持低调连续，也可发 `v1.4.0`。取舍见 `.scratch/architecture-recovery/research/window-reports/10-release-pipeline-report.md`，发布前需人工确认版本号与 Glog 内容（发版是面向用户的外发动作）。
+**版本号口径**：按语义化版本（SemVer）——行为级换代升 MAJOR，新增能力累积收割升 MINOR（发版节奏见 `docs/adr/0016-release-cadence-policy.md`），修缺陷升 PATCH。发布前需人工确认版本号与 Glog 内容（发版是面向用户的外发动作）。
 
 **beta 验证发布**：正式发版前，可将版本 bump 为 `2.0.0-beta.1` 走一次完整链路验证，随后删除该 tag/Release 并回滚版本号。该动作必须经用户确认后执行。
 
 ## 下载链接验证方法
 
-发版后核对两条链路（均可程序化验证，见 `.scratch/architecture-recovery/research/scripts/verify-ticket-10.mjs`）：
+发版后核对两条链路（均可程序化验证，见 `tests/scripts/verify-ticket-10.mjs`）：
 
 | 链接 | 位置 | 验证方法 | 预期 |
 |---|---|---|---|

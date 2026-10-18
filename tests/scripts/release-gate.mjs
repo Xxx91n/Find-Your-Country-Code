@@ -96,7 +96,7 @@ const SELF_TEST_CASES = [
   { name: '绿：最近一次运行 success → 放行',
     in: { latestRun: { id: 101, conclusion: 'success' }, ack: null }, want: { pass: true, mode: 'green' } },
   { name: '红 + 合法 ack（reason/ticket/runId/acknowledgedBy 齐备）→ 放行并留痕',
-    in: { latestRun: { id: 202, conclusion: 'failure' }, ack: { acknowledged: true, reason: '第三方站点 Cloudflare 挑战导致 advisory 失败，与本次变更无关，已立票跟踪', ticket: '.scratch/architecture-recovery/issues/07-real-site-and-release-gate.md', runId: 202, acknowledgedBy: 'maintainer' } },
+    in: { latestRun: { id: 202, conclusion: 'failure' }, ack: { acknowledged: true, reason: '第三方站点 Cloudflare 挑战导致 advisory 失败，与本次变更无关，已立票跟踪', ticket: 'docs/adr/0010-release-gate.md', runId: 202, acknowledgedBy: 'maintainer' } },
     want: { pass: true, mode: 'ack' } },
   { name: '无运行记录 + 合法 ack（无 runId）→ 放行',
     in: { latestRun: null, ack: { acknowledged: true, reason: '该 workflow 尚未产生运行记录，本次发版按显式 ack 放行并立票跟踪', ticket: '#123', acknowledgedBy: 'maintainer' } },
