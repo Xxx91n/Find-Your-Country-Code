@@ -3,10 +3,10 @@ name: Engine Gates
 # 公共引擎门（票 34 门禁减肥）：引擎门 verify-ticket-02.mjs（36 例）
 # + 误检 harness misdetect-repro-v2.mjs（25 例）。原 verify-13/16/18 三处逐字重复
 # 各跑一遍，抽到本 workflow 统一跑一次（票级 verify-* 只保留各自专属断言）。
-# 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)（见 CONTEXT.md）。
+# 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)。
 # 返工联①（票 34 R1）：node 20→22 —— 装载脚本需 module.stripTypeScriptTypes（Node>=22.13）。
 # Cycle-7 T-07（D-010）：新增勾销对账门 issue-checkbox-audit.mjs（票据勾销标记 × 报告完成自述；unknown 不得合并为 pass）。
-# 2026-10-18 治理庭：issue-checkbox-audit 随 issues/ 归档出仓而移除（ADR-0013 Notes；治理报告留痕）。
+# 2026-10-18：issue-checkbox-audit 随 issues/ 归档出仓而移除。
 
 on:
   pull_request:
@@ -34,15 +34,11 @@ jobs:
         run: node tests/scripts/verify-ticket-02.mjs
       - name: Harness (misdetect-repro-v2.mjs)
         run: node tests/scripts/misdetect-repro-v2.mjs
-      # Cycle-8 T-01 / D-004①：清理脚本白名单自检 —— 证明清理只可能触碰受管区的 draft 子区
-      # （硬白名单 + 越权穿越拒绝 + dry-run 纯度 + 区界文档保护）。
-      - name: Draft cleanup whitelist self-test (scratch-draft-clean.mjs --self-test)
-        run: node tests/scripts/scratch-draft-clean.mjs --self-test
 
-      # Cycle-8 D-009 / ADR-0015：站点级门槛可测化机器自检（纯计算，零依赖，无外网）。
+      # Cycle-8 D-009：站点级门槛可测化机器自检（纯计算，零依赖，无外网）。
       - name: Site threshold plan self-test (50-site-threshold-plan.mjs --self-test)
         run: node tests/scripts/50-site-threshold-plan.mjs --self-test
 
-      # Cycle-8 D-011 / ADR-0016：发版就绪度机器自检（advisory 类；此处只跑自检，不判 release）。
+      # Cycle-8 D-011：发版就绪度机器自检（advisory 类；此处只跑自检，不判 release）。
       - name: Release readiness self-test (51-release-readiness.mjs --self-test)
         run: node tests/scripts/51-release-readiness.mjs --self-test

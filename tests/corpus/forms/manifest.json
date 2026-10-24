@@ -194,7 +194,7 @@
       "mirror": {
         "file": "tests/corpus/forms/mirrors/mui-autocomplete.html",
         "bytes": 6416,
-        "sha256": "40550d0c76ff3a029385a7dfecb3ca417e1923c492293e593857c8317b836e2b"
+        "sha256": "41cf67141733c850add104b32962611b4bf0e2af4839eb60b3a74960a0741c04"
       },
       "skeleton": {
         "file": "tests/corpus/forms/skeletons/mui-autocomplete.json",
@@ -241,7 +241,7 @@
       "mirror": {
         "file": "tests/corpus/forms/mirrors/element-plus-select.html",
         "bytes": 6252,
-        "sha256": "16b80fa8ad1f6e96b0061685963d1a5f7d1b0d46d21c12a14e8e580378a6b5ce"
+        "sha256": "9b03bb50157f8c41c2180b05390d194ff9e172d54fc737e4079defffbc15a119"
       },
       "skeleton": {
         "file": "tests/corpus/forms/skeletons/element-plus-select.json",

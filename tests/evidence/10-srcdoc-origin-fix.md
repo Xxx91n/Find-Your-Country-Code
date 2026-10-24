@@ -15,8 +15,8 @@
   - 证据：`node tests/scripts/verify-ticket-10.mjs` → `PASS G2d`（main:120）/ `G2e`（main:134）/ `G2f`（store 命中数 = 2）/ `G2g`（全 src 无以 `location.origin` 作比较操作数的残留）
   - 同面实测：探针在 srcdoc 帧内录到 BroadcastChannel 入站 `e.origin = "http://127.0.0.1:4273"`，而该帧 `location.origin = "null"` ⇒ 旧判据必误拦；修复后操作数取 `window.origin`（= 同一值）
 - [x] 复现证据入报告：修复前后 srcdoc 帧 `location.origin` vs `window.origin` 的实测对照（探针脚本）
-  - 证据：`node .scratch/architecture-recovery/research/scripts/10-probe-srcdoc-origin.mjs` → 修复前 `locationOrigin: "null" / windowOrigin: "http://127.0.0.1:4273"`、`fill.hostValue: ""`、`fieldEvents: []`、`feedback.present: false`、`lastFill: null`、`pageErrors: 0`；修复后同探针 `hostValue: "+86"`、`fieldEvents: ["input","change"]`、`feedback.present: true`、`lastFill.asserted: true`
-  - 报告：`research/window-reports/10-srcdoc-origin-fix-report.md` §2 验收项 3（对照表）
+  - 证据：`node tests/evidence/10-probe-srcdoc-origin.mjs` → 修复前 `locationOrigin: "null" / windowOrigin: "http://127.0.0.1:4273"`、`fill.hostValue: ""`、`fieldEvents: []`、`feedback.present: false`、`lastFill: null`、`pageErrors: 0`；修复后同探针 `hostValue: "+86"`、`fieldEvents: ["input","change"]`、`feedback.present: true`、`lastFill.asserted: true`
+  - 验收项 3（对照表）见本文件 §2。
 - [x] 真实站点层 `live-codepen-pen-fullpage` 的 L3/L4 转绿（以 CI run 证据为准）
   - 证据（CI，advisory）：`real-site-smoke.yml` run **35154465918** @ `62f2292a` → `[pass] live-codepen-pen-fullpage expect=injected errs=0 L0+ L1+ L2+ L3+ L4+`（声明阶梯 L0/L1/L2/L3/L4 全部通过）
   - 反向对照（修复前）：票 07 CI run 35120058687 同目标 `L0+ L1+ L2+ L3! L4!` —— 同目标同阶梯的红→绿对照成立
@@ -52,6 +52,6 @@
 | Lockfile Regen | 35154458842 | success |
 | Real-site smoke（advisory，第二轮） | **35154465918** | job success；`live-codepen-pen-fullpage` **L0–L4 全通过**；`live-codepen-editor` 同轮 flaky 红（帧发现阶段，已如实登记） |
 
-推送授权：WORKFLOW §8.2.4 逐次授权（用户裁定「仅新建 cch/10，最小足迹」）；每次推送前后 `git ls-remote` 全量 diff 均仅 `cch/10` 一行变动（详见窗口报告 §7 E-10）。
+推送授权：逐次授权（用户裁定「仅新建 cch/10，最小足迹」）；每次推送前后 `git ls-remote` 全量 diff 均仅 `cch/10` 一行变动（详见窗口报告 §7 E-10）。
 
-窗口报告：`research/window-reports/10-srcdoc-origin-fix-report.md`
+窗口报告：本文件即为该票的窗口报告。

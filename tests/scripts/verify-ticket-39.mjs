@@ -135,7 +135,7 @@ sealedFiles.push(join(ROOT, 'playwright.config.ts'));
 // 引用位口径（与 verify-ticket-06 S3 同轴）：只有「可发起真实请求的位置」才算污染。
 // 溯源元数据（source_url / mirror_of / license_note / captured_at 与采集源登记 url）是
 // 票 06 合规口径**要求**留痕的内容，不属引用位。
-// 依据：CONTEXT.md「密封 E2E」= 供给边界（不触真实站点与外网），非「字符串不得出现」；
+// 依据：密封 E2E = 供给边界（不触真实站点与外网），非「字符串不得出现」；
 // D-012（2026-09-18 用户拍板「完整采纳」）：精化到引用位断言 + 运行时封锁正向补偿。
 const stripComments = (s, isHtml) => {
   let out = isHtml ? s.replace(/<!--[\s\S]*?-->/g, '') : s;

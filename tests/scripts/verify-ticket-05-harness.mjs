@@ -48,7 +48,7 @@ const FILES = {
   pwconfig: 'playwright.config.ts',
 };
 
-// == S0 自证（已知好样本干跑 [WORKFLOW §5 教训]）==
+// == S0 自证（已知好样本干跑）==
 {
   const missing = Object.entries(FILES).filter(([, p]) => !existsSync(abs(p))).map(([k]) => k);
   check(missing.length === 0, 'S0 全部工件存在', 'missing=' + (missing.join(',') || 'none'));

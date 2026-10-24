@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ══════════════════════════════════════════════════════════════════
 // tests/scripts/51-release-readiness.mjs
-// Cycle-8 D-011（ADR-0016）—— 发版节奏的「收割就绪」数据化判据
+// Cycle-8 D-011 —— 发版节奏的「收割就绪」数据化判据
 //
 // 把调研的七条判据中可机械化的三条落地（其余四条属人工裁定）：
 //   判据 5 补丁豁免：存在 security 类修复 → releaseNow（**不排队**）
@@ -25,7 +25,7 @@ const ARGS = process.argv.slice(2);
 const has = (f) => ARGS.includes(f);
 const JSON_OUT = has('--json');
 
-// 可机械化的阈值（ADR-0016 登记值）
+// 可机械化的阈值（>30 提交或 >2000 diff 行即应立即收割）
 export const LIMITS = { maxCommits: 30, maxChangedLines: 2000 };
 const SECURITY_RE = /security|cve-|\b安全\b|vuln/i;
 const WORKSPACE_SUBJECT = /^GitButler Workspace Commit$/;
@@ -97,7 +97,7 @@ const out = { lastTag, commitsSinceTag: real.length, workspaceCommits: entries.l
 
 if (JSON_OUT) console.log(JSON.stringify(out, null, 2));
 else {
-  console.log('══ 发版就绪度（D-011 / ADR-0016）—— advisory（monitor 类，不阻断）══');
+  console.log('══ 发版就绪度（D-011）—— advisory（monitor 类，不阻断）══');
   console.log('上一发版 tag：' + (lastTag || '(无)'));
   console.log('自该 tag 以来的提交：' + real.length + '（已排除 GitButler 工作区合成提交 ' + out.workspaceCommits + ' 个）');
   console.log('类型分布：' + (Object.keys(byType).sort().map((k) => k + '=' + byType[k]).join('  ') || '(空)'));

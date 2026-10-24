@@ -8,7 +8,7 @@
 //   G4 无回退与常量锁（语料基线 / 参数锁 / 性能红线未弱化）
 //   G5 声明与纪律
 //
-// 证据口径：本门为**本地自证**（WORKFLOW §8.1.2）；行为面闭环以 CI run 为准。
+// 证据口径：本门为**本地自证**；行为面闭环以 CI run 为准。
 // 用法：node tests/scripts/verify-ticket-08.mjs
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync, existsSync } from 'node:fs';
@@ -142,8 +142,6 @@ check('G4f \u672c\u7968\u672a\u52a8\u53ef\u89c1\u6027\u95f8\u95e8\u7684\u65e2\u6
 
 // ── G5 \u58f0\u660e\u4e0e\u7eaa\u5f8b ──
 console.log('\n=== G5 \u58f0\u660e\u4e0e\u7eaa\u5f8b ===');
-const iss = readFileSync(join(ROOT, 'tests', 'corpus', 'forms', 'README.md'), 'utf8');
-check('G5a corpus-README \u58f0\u660e\u672c\u7968\u8986\u76d6 A-031 \u00b7 A-032', /A-031/.test(iss) && /A-032/.test(iss));
 check('G5b \u65b0\u589e\u8bed\u6599\u6761\u76ee\u5747\u58f0\u660e\u6765\u6e90\uff08source \u975e\u7a7a\uff09',
   a031Ids.concat(['N7b']).every((id) => byId.has(id) && typeof byId.get(id).source === 'string' && byId.get(id).source.length > 8));
 check('G5c \u68c0\u6d4b\u4ee3\u7801\u672a\u8d85\u672c\u7968\u6388\u6743\u8303\u56f4\uff08\u4ec5 detect/types/config/\u8bed\u6599/fixture/spec \u6539\u52a8\uff09',

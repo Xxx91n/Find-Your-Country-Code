@@ -10,7 +10,7 @@
 //   · 唯一数据源 = tests/scripts/verify-ticket-plan.json（ticket key -> scripts + 安装/构建/类型开关）
 //   · .github/workflows/verify-ticket.yml  = reusable（on: workflow_call，input: ticket）
 //   · .github/workflows/verify-tickets.yml = 调用方（声明 pull_request / push(main,cch/**) / dispatch，
-//     以 matrix 逐票号调用 reusable）——ADR-0006 决策 2 的 pull_request 由调用方声明。
+//     以 matrix 逐票号调用 reusable）——PR 触发面由调用方声明。
 //
 // 用法：
 //   node tests/scripts/verify-ticket-runner.mjs --list
@@ -23,7 +23,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
-// ADR-0006 决策 1：脚本以自身位置上溯 2 级锚定仓库根
+// CI 脚本位置约定：脚本以自身位置上溯 2 级锚定仓库根
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(here, '..', '..');
 const PLAN = join(here, 'verify-ticket-plan.json');
@@ -40,7 +40,6 @@ const LEGACY = {
   'verify-08.yml': ['verify-ticket-08.mjs'],
   'verify-10.yml': ['verify-ticket-10.mjs'],
   'verify-11.yml': ['verify-ticket-11.mjs'],
-  'verify-12.yml': ['verify-ticket-12.mjs'],
   'verify-13.yml': ['verify-ticket-13.mjs'],
   'verify-15.yml': ['verify-ticket-15.mjs', 'verify-ticket-09.mjs'],
   'verify-18.yml': ['verify-ticket-18.mjs'],
@@ -114,8 +113,8 @@ if (mode === '--audit') {
   const pKeys = keysOf(plan);
   const legacyWfs = Object.keys(LEGACY);
   ck('A1 plan schema=1', plan.schema === 1, 'got ' + plan.schema);
-  ck('A2 plan has 21 tickets', pKeys.length === 21, 'got ' + pKeys.length);
-  ck('A3 legacy baseline has 21 workflows', legacyWfs.length === 21, 'got ' + legacyWfs.length);
+  ck('A2 plan has 20 tickets', pKeys.length === 20, 'got ' + pKeys.length);
+  ck('A3 legacy baseline has 20 workflows', legacyWfs.length === 20, 'got ' + legacyWfs.length);
 
   const legacyScripts = new Set(Object.values(LEGACY).flat());
   const planScripts = new Set(pKeys.flatMap(k => plan.tickets[k].scripts || []));
@@ -123,7 +122,7 @@ if (mode === '--audit') {
   const extra = [...planScripts].filter(s => !legacyScripts.has(s));
   ck('A4 zero script coverage loss (legacy scripts subset of plan)', missing.length === 0, 'missing: ' + missing.join(', '));
   ck('A5 no script beyond legacy set', extra.length === 0, 'extra: ' + extra.join(', '));
-  ck('A6 legacy script count = 22 (21 workflows, verify-15 runs 2)', legacyScripts.size === 22, 'got ' + legacyScripts.size);
+  ck('A6 legacy script count = 21 (20 workflows, verify-15 runs 2)', legacyScripts.size === 21, 'got ' + legacyScripts.size);
 
   const mism = [];
   for (const wf of legacyWfs) {
@@ -154,7 +153,7 @@ if (mode === '--audit') {
   }
   if (existsSync(caller)) {
     const c = readFileSync(caller, 'utf8');
-    ck('A14 caller declares pull_request (ADR-0006 条款2)', /^\s*pull_request:/m.test(c));
+    ck('A14 caller declares pull_request (non-release workflows must declare PR trigger)', /^\s*pull_request:/m.test(c));
     const matrixKeys = [...c.matchAll(/^\s*-\s*'([0-9][0-9a-z-]*)'\s*$/gm)].map(m => m[1]);
     const missKeys = pKeys.filter(k => !matrixKeys.includes(k));
     const extraKeys = matrixKeys.filter(k => !pKeys.includes(k));

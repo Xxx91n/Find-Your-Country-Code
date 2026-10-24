@@ -3,7 +3,7 @@
 // 覆盖：无 ARIA 手写自定义下拉（div/span 触发器 + ul/ol>li 选项面板）
 //   ① 候选集扩展（形态描述符，禁止裸 ul li / 全 div 扫描）
 //   ② 结构启发式候选仍走 scoreElement 全瀑布 + 内容证据门槛
-//   ③ ADR-0005 档位上限（登记 + 手动召唤，tier 强制 none）
+//   ③ 伪 select 档位上限（登记 + 手动召唤，tier 强制 none）
 //   ④ 指纹面 = 观测面（tabindex / contenteditable 同步 _fingerprint 与 OBSERVED_ATTRS）
 //   ⑤ 无裸 [contenteditable]（票 12 / D-014）：候选集只收「contenteditable ∧ 可聚焦 tabindex=0 ∧ 强 tel 先验」复合描述符；语料 A-023 已备
 //   ⑥ 元素级退出协议（票 15 [D-016 ②]）：data-1p-ignore / data-form-type="other" 命中即
@@ -90,7 +90,7 @@ const posNames = (rPos.signals || []).map(s => s.name);
 check('2.1 结构信号命中 custom:dropdown', rPos.pseudo === true, 'pseudo=' + rPos.pseudo);
 check('2.2 信号留痕 custom:dropdown', posNames.includes('custom:dropdown'), posNames.join(','));
 check('2.3 登记线达标 score>=25', rPos.score >= 25, 'score=' + rPos.score);
-check('2.4 ADR-0005 档位上限 tier=none（不自动注入）', rPos.tier === 'none', 'tier=' + rPos.tier);
+check('2.4 伪 select 档位上限 tier=none（不自动注入）', rPos.tier === 'none', 'tier=' + rPos.tier);
 check('2.5 未越过低调注入线 score<35', rPos.score < 35, 'score=' + rPos.score);
 
 // ══ 3. 负例：内容无区号/国家证据的列表（导航菜单）══
@@ -140,7 +140,7 @@ check('7.2 _fingerprint 读取 tabindex', /getAttribute\('tabindex'\)/.test(fpRa
 check('7.3 OBSERVED_ATTRS 含 contenteditable（票 12 / D-014）', /'contenteditable'/.test(obsRaw));
 check('7.4 _fingerprint 读取 contenteditable（票 12 / D-014）', /getAttribute\('contenteditable'\)/.test(fpRaw));
 
-// ══ 8. _process 档位上限与 kind 分发（ADR-0005：登记 + 手动召唤）══
+// ══ 8. _process 档位上限与 kind 分发（伪 select：登记 + 手动召唤）══
 const calls = { attach: [], rememberLow: [], detach: [] };
 const UI = {
   attach: (...a) => calls.attach.push(a),
@@ -164,7 +164,7 @@ check('9.2 fill 侧回退不破坏既有 role=option 路径',
 
 // ══ 10. 元素级退出协议（票 15 [D-016 ②]）：data-1p-ignore / data-form-type="other" ══
 // 裁定：退出协议是站点/用户的**显式否决**，压过一切启发式（与 scan() 入口页面豁免同族）——
-// 命中即完全跳过（不评分、不注入、不登记召唤）。裁定与依据：docs/adr/0012-mental-model-adoption.md
+// 命中即完全跳过（不评分、不注入、不登记召唤）。裁定：显式否决在评分瀑布入口短路。
 check('10.1 源码含 data-1p-ignore 退出判定（任意值）',
   DETECT_SRC.includes("getAttribute('data-1p-ignore') !== null"));
 check('10.2 源码含 data-form-type="other" 退出判定',

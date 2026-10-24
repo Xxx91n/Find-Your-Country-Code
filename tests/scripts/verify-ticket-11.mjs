@@ -60,7 +60,7 @@ const FILES = {
   workflow: '.github/workflows/verify-tickets.yml',
 };
 
-// ══ S0 自证（已知好样本干跑 [WORKFLOW §5 教训]）══
+// ══ S0 自证（已知好样本干跑）══
 {
   const missing = Object.entries(FILES).filter(([, p]) => !has(p)).map(([k]) => k);
   check('S0 全部工件存在', missing.length === 0, 'missing=' + (missing.join(',') || 'none'));
@@ -167,8 +167,8 @@ const T11 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets |
   check('G7 manifest 声明 A-035', MANIFEST_SRC.includes('A-035'));
   check('G7 spec 声明 A-035', SPEC.includes('A-035'));
   check('G7 本门与 workflow 声明 A-035', read('tests/scripts/verify-ticket-11.mjs').includes('A-035') && (T11.covers || []).includes('A-035'));
-  check('G7 workflow 触发面合规（ADR-0006 决策 2；D-004 合并后 = PR + push(main, cch/**)）', WF.includes('pull_request:') && WF.includes("'cch/**'"));
-  check('G7 workflow 零 .scratch/ 路径引用（ADR-0006 决策 1）', !WF.includes('.scratch/'));
+  check('G7 workflow 触发面合规（非发版 workflow 必须声明 PR；D-004 合并后 = PR + push(main, cch/**)）', WF.includes('pull_request:') && WF.includes("'cch/**'"));
+  check('G7 workflow 零 .scratch/ 路径引用（CI 脚本住 tests/scripts/）', !WF.includes('.scratch/'));
 }
 
 console.log('');

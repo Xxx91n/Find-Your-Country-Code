@@ -1,5 +1,5 @@
 // 票 29 E2E: 无 ARIA 手写自定义下拉（div 触发器 + ul>li 选项面板，无 role=combobox /
-// 无 aria-controls）端到端。基线口径与票 18 一致：ADR-0005 档位上限 = 登记 + 手动召唤
+// 无 aria-controls）端到端。基线口径与票 18 一致：伪 select 档位上限 = 登记 + 手动召唤
 // （不自动注入图标、不自动填充）；登记候选经面板召唤后由 fillPseudo 按 li 回退定位选项。
 // fixture 为 hermetic 复刻（CI 无外部网络依赖）。
 import { test, expect } from 'playwright/test';
@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('无 ARIA 手写自定义下拉（票 29 / A-003）', () => {
-  test('验收1 ADR-0005 档位: 不自动注入图标; 原生 anchor select 正样本不回归', async ({ page }) => {
+  test('验收1 档位上限: 不自动注入图标; 原生 anchor select 正样本不回归', async ({ page }) => {
     await page.goto('/fixtures/custom-dropdown-no-aria.html');
     await expect(wrapperFor(page, '#cc-custom')).toHaveCount(0);
     await expect(wrapperFor(page, '#anchor-cc')).toHaveCount(1);
@@ -18,7 +18,7 @@ test.describe('无 ARIA 手写自定义下拉（票 29 / A-003）', () => {
 
   test('验收2 登记 + 召唤 + 填充: 面板召唤 → 选 Canada → li 点击选值 → 承值 CA', async ({ page }) => {
     await page.goto('/fixtures/custom-dropdown-no-aria.html');
-    // 登记进召唤面（ADR-0005 档位下不出图标，但召唤入口可见）
+    // 登记进召唤面（该档位下不出图标，但召唤入口可见）
     await openPanel(page, '#anchor-cc');
     await expect(page.locator('#cch-summon')).toBeVisible();
     await page.locator('#cch-summon').click();

@@ -15,13 +15,13 @@ permissions:
   contents: write
 
 jobs:
-  # ══ 发布门（Cycle-6 票 07 / A-029；决策依据 ADR-0010 条款 2） ══
+  # ══ 发布门（Cycle-6 票 07 / A-029） ══
   # 真实站点层最近一次运行必须为绿，或该失败已被**显式 ack 并立票**，否则不出包。
   # 二者必居其一，不得静默绕过 —— 门以 needs 硬依赖挂在 release job 之前（门不过则 release 不运行）。
-  # 门逻辑落 tests/scripts/release-gate.mjs（ADR-0006 决策 1：CI 引用脚本住 tests/scripts/，
+  # 门逻辑落 tests/scripts/release-gate.mjs（CI 引用脚本一律住 tests/scripts/，
   # workflows 禁止引用调研现场路径）。
-  # 注：发布门属发版系 workflow 的例外路径，不改变 ADR-0006 条款 2 的 PR 门控语义；
-  #     也不重开 ADR-0008 第二层（真实站点层仍不进 pull_request、失败仍只告警）。
+  # 注：发布门属发版系 workflow 的例外路径，不改变「非发版 workflow 必须声明 PR 触发」的语义；
+  #     也不动真实站点层的触发面（真实站点层仍不进 pull_request、失败仍只告警）。
   release-gate:
     name: Release gate (real-site layer green or explicitly acked)
     runs-on: ubuntu-latest

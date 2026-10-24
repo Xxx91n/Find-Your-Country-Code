@@ -1,9 +1,9 @@
 // 误报回归组：
 // 误报 5 类样本断言“不插图标”——票 02（五层评分引擎）落地后已转绿，test.fail 标记已按
-// 06 报告 §6.2 的维护契约摘除（引擎级证据：research/scripts/verify-ticket-02.mjs 36/36）。
+// 06 报告 §6.2 的维护契约摘除（引擎级证据：tests/scripts/verify-ticket-02.mjs 36/36）。
 // shadow DOM 样本断言“穿透识别”，票 04（rescan + shadow DOM 穿透）落地后已转绿，test.fail 标记摘除。
 // iti v18.2.1 联动断言：票 03 适配层落地后已转绿（aee9374）。
-// 证据源：.scratch/architecture-recovery/research/misdetection-root-causes.md §2/§4（reproduced 样本）。
+// 证据源：误报根因 §2/§4 的 reproduced 样本，现已固化为本 fixture 的负例。
 import { test, expect } from 'playwright/test';
 import { installUserscript, wrapperFor, openPanel } from './helpers/userscript';
 

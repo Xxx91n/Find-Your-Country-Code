@@ -6,8 +6,8 @@
 //   等待式技术守卫」，因此可被两种 runtime 零转换地加载同一份实现：
 //     · 密封层：playwright/test 运行器（经 tests/helpers/userscript.ts 薄门面 + soft adapter）
 //     · live 层：独立 node 脚本（tests/live/live-smoke.mjs，自建软收集器）
-//   断言（业务判定）一律留在各自 harness —— 边界依据见
-//   .scratch/architecture-recovery/research/atomcode-05-harness-primitives.md §2.2。
+//   断言（业务判定）一律留在各自 harness —— 边界依据：harness 只提供原语与观测，
+//   不做业务裁决（原语层与判定层分离）。
 //
 // 纪律（本票自检项，由 tests/scripts/verify-ticket-05-harness.mjs 结构门钉住）：
 //   ① 本文件是 GM 替身与交互原语的唯一来源（禁止第二套）；
@@ -383,9 +383,7 @@ export function injectionSatisfied(probe, target) {
 // ══════════════════════════════════════════════════════════════════
 // 票 11 / A-035：ITI 形态的 L3 可观测面原语（**只增不改**）
 //
-// 判定依据（atomcode 调研 + 本地确定性复现，见
-// research/atomcode-11-iti-l3-criterion.md 与
-// research/window-reports/11-iti-l3-criterion-report.md）：
+// 判定依据（行业调研 + 本地确定性复现）：
 //   · ITI 官方**不承诺**把所选国家区号写进它接管的 input.value；separateDialCode
 //     模式下区号由独立元素承载，input.value 只留国家号码。
 //   · ITI **从不**派发原生 input / change；切国时派发官方自定义事件 countrychange。

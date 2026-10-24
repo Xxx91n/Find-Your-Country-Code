@@ -5,12 +5,12 @@
 //
 // 断言面：
 //   G1 阶梯契约（manifest）：逐目标声明 ladder；injected 默认满 L0–L4，非全阶梯必须带
-//      degradeReason + ticket；observe 挂账强制非空 reason + ticket（ADR-0010 条款 4）
+//      degradeReason + ticket；observe 挂账强制非空 reason + ticket（不得匿名挂账）
 //   G2 五级实现（live 层）：L0 静默健康 / L1 注入 + 档位 / L2 面板可见 + 搜索收窄（跨帧双端）/
 //      L3 宿主 value + input·change / L4 反馈出现；驱动链消费共享原语唯一来源
 //   G3 触发面与 advisory：真实站点层不进 pull_request；仅 schedule + workflow_dispatch；
 //      失败只告警不阻断合入；本票新增的 PR 门只跑静态断言（不把真实站点拉进 PR 面）
-//   G4 发布门（ADR-0010 条款 2）：release job 以 needs 硬依赖挂在门上；门不得 continue-on-error；
+//   G4 发布门：release job 以 needs 硬依赖挂在门上；门不得 continue-on-error；
 //      双判据（绿 / 显式 ack + 立票）机器可验；判定函数行为由用例直接驱动；无法判定即 fail-closed
 //   G5 覆盖声明：A-029 在 manifest / live 层 / 发布门脚本三处声明
 //   G6 只升不降：L1 在既有「wrapper 存在」之上加强档位判据；阶梯仍为 L0–L4 五级全集
@@ -54,7 +54,7 @@ function onBlock(yaml) {
   return lines.slice(start + 1, end).join('\n');
 }
 
-// ══ S0 自证（已知好样本干跑；WORKFLOW §5 教训）══
+// ══ S0 自证（已知好样本干跑）══
 {
   const FILES = ['tests/live/site-manifest.json', 'tests/live/live-smoke.mjs', 'tests/helpers/primitives.mjs',
     'tests/scripts/release-gate.mjs', '.github/release-gate-ack.json', '.github/workflows/release.yml',
@@ -99,7 +99,7 @@ const enabledLiveInjected = targets.filter((t) => t.kind === 'live' && t.enabled
 check('G1f 至少 1 个 enabled live 目标为断言型（expect=injected，可报绿）', enabledLiveInjected.length >= 1, enabledLiveInjected.map((t) => t.id).join(','));
 const observe = targets.filter((t) => t.expect === 'observe');
 const anonObserve = observe.filter((t) => !String(t.reason || '').trim() || !String(t.ticket || '').trim()).map((t) => t.id);
-check('G1g observe 挂账逐条携带非空 reason + ticket（不得匿名挂账，ADR-0010 条款 4）', observe.length >= 1 && anonObserve.length === 0, 'observe=' + observe.length + ' 匿名=' + (anonObserve.join(',') || 'none'));
+check('G1g observe 挂账逐条携带非空 reason + ticket（不得匿名挂账）', observe.length >= 1 && anonObserve.length === 0, 'observe=' + observe.length + ' 匿名=' + (anonObserve.join(',') || 'none'));
 check('G1h _meta 声明 ladderRule（阶梯契约成文）', typeof manifest._meta?.ladderRule === 'string' && manifest._meta.ladderRule.length > 50, String(manifest._meta?.ladderRule || '').slice(0, 30));
 check('G1i _meta 声明 ladderProbe（未校准目标的驱动参数）', !!manifest._meta?.ladderProbe && !!manifest._meta.ladderProbe.iso && !!manifest._meta.ladderProbe.query);
 check('G1j live 层 validate() 硬校验 ladder 契约', /ladder 缺失或为空/.test(LIVE) && /非全阶梯（/.test(LIVE) && /degradeReason/.test(LIVE));
@@ -130,7 +130,7 @@ check('G3d 失败只告警不阻断合入（冒烟步 continue-on-error）', /co
 check('G3e 失败以 ::warning:: 浮出（不伪造绿、不静默）', /::warning::/.test(SMOKE));
 check('G3f 有头浏览器虚拟显示保留（xvfb-run）', /xvfb-run/.test(SMOKE));
 check('G3g 本票新增的 PR 门只跑静态断言（不把真实站点层拉进 PR 面）', (T7.scripts || []).includes('verify-ticket-07.mjs') && !/playwright|xvfb-run|node tests\/live/.test(V7));
-check('G3h 票级 PR 门触发面合规（ADR-0006 决策 2：非发版 workflow 声明 pull_request）', /pull_request:/.test(onBlock(V7)));
+check('G3h 票级 PR 门触发面合规（非发版 workflow 必须声明 pull_request）', /pull_request:/.test(onBlock(V7)));
 
 // ══ G4 发布门 ══
 const relOn = onBlock(REL);
@@ -139,7 +139,7 @@ const releaseJob = jobBlock(REL, 'release');
 check('G4a release.yml 存在 release-gate job', gateJob.length > 0);
 check('G4b release job 以 needs 硬依赖挂在发布门之后（门不过则不出包）', /needs:\s*release-gate/.test(releaseJob), releaseJob.split('\n').slice(0, 3).join(' | '));
 check('G4c 发布门 job 具备 actions: read（可读运行记录）', /actions:\s*read/.test(gateJob));
-check('G4d 发布门 job 调用 tests/scripts/release-gate.mjs（ADR-0006 决策 1 位置约定）', /node tests\/scripts\/release-gate\.mjs/.test(gateJob));
+check('G4d 发布门 job 调用 tests/scripts/release-gate.mjs（CI 脚本位置约定）', /node tests\/scripts\/release-gate\.mjs/.test(gateJob));
 check('G4e 发布门步不得 continue-on-error（不得静默放行）', gateJob.length > 0 && !/continue-on-error/.test(gateJob));
 check('G4f 发布门 job 不得被 if: always()/失败忽略绕过', gateJob.length > 0 && !/if:\s*always\(\)/.test(gateJob));
 check('G4g 发布门脚本实现双判据（绿 / 显式 ack + 立票）', /conclusion === 'success'/.test(GATE) && /acknowledged !== true/.test(GATE) && /checkTicket/.test(GATE));
@@ -164,7 +164,7 @@ check('G4t 发布门对象 workflow 为真实站点层（不误绑其他 workflo
 check('G4u 发布门属发版系例外路径（release.yml 不声明 pull_request）', relOn.length > 0 && !/pull_request/.test(relOn));
 const wfScratch = ['.github/workflows/release.yml', '.github/workflows/verify-tickets.yml', '.github/workflows/verify-ticket.yml', '.github/workflows/real-site-smoke.yml']
   .filter((f) => /\.scratch\//.test(read(f)));
-check('G4v workflows 零 .scratch/ 路径引用（ADR-0006 决策 1）', wfScratch.length === 0, wfScratch.join(','));
+check('G4v workflows 零 .scratch/ 路径引用（CI 脚本住 tests/scripts/）', wfScratch.length === 0, wfScratch.join(','));
 
 // ══ G5 覆盖声明 ══
 check('G5a manifest 声明本票覆盖 A-029', /A-029/.test(MANIFEST_SRC) && manifest._meta?.coveredA === 'A-029');

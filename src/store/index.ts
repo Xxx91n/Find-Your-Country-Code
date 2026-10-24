@@ -29,7 +29,7 @@
 //     · 既有 id 的更新（改）与删除不受上限影响。
 //   _normRulesDoc 的 slice(0, RULES_MAX_OVERRIDES) 保留，但其定位是外来输入的摄取修复
 //   （BC 接收 / GM 远端监听 / 首次从存储载入），不承担本上限的保证（第二层，非强制点）。
-//   裁定依据：ADR-0011（工业界语义 + 本仓既有语义；被否决路线：读路径强制）。
+//   被否决路线：在读路径强制 —— 会留下「写方超限、读方不超限」的分歧窗口。
 // ════════════════════════════════════════════════════════
 import { RULES_KEY, RULES_BROADCAST, RULE_TIERS, RULES_MAX_OVERRIDES, SELF_ORIGIN } from '../config';
 import type { CchStore, Country, OverrideRule, OverrideRuleInput, RuleScope, RulesDoc } from '../types';
@@ -267,7 +267,7 @@ const Store = {
         return o.id;
       }
     }
-    // 票 12 [A-036]：上限强制点在写路径（裁定与依据见文件头注「上限强制点」/ ADR-0011）——
+    // 票 12 [A-036]：上限强制点在写路径（裁定见文件头注「上限强制点」）——
     //   新增规则前 fail-closed 拒绝，保证内存缓存 / GM 持久化 / 跨标签页广播三面同源不超限。
     //   读路径 _normRulesDoc 的截断仅作外来输入的摄取修复，不承担本上限的保证。
     if (r.overrides.length >= RULES_MAX_OVERRIDES) return null;

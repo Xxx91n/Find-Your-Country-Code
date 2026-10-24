@@ -2,8 +2,7 @@
 // iti-l3-criterion.spec.ts — Cycle-6 票 11 / A-035：ITI 形态下 L3 的正确可观测判据
 //
 // 判定结论（依据：atomcode 深度调研 + 本地确定性复现，见
-// .scratch/architecture-recovery/research/atomcode-11-iti-l3-criterion.md 与
-// research/window-reports/11-iti-l3-criterion-report.md）：
+// 行业调研与本地确定性复现）：
 //   · ITI 官方**不承诺**把所选国家区号写进它接管的 input.value；separateDialCode 模式下
 //     区号由独立元素（.iti__selected-dial-code）承载，input.value 只留国家号码。
 //   · ITI **从不**派发原生 input / change；切国时派发官方自定义事件 countrychange。

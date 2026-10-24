@@ -47,7 +47,6 @@ const bodyText = (html) => {
 
 const FORMS = 'tests/corpus/forms';
 const FILES = {
-  readme: FORMS + '/README.md',
   sources: FORMS + '/sources.json',
   manifest: FORMS + '/manifest.json',
   capture: 'tests/scripts/06-capture-forms.mjs',
@@ -65,7 +64,7 @@ const FILES = {
   probeReal: 'tests/corpus/forms/probes/06-probe-real.mjs',
 };
 
-// == S0 自证（已知好样本干跑 [WORKFLOW §5 教训]）==
+// == S0 自证（已知好样本干跑）==
 {
   const missing = Object.entries(FILES).filter(([, p]) => !existsSync(abs(p))).map(([k]) => k);
   check(missing.length === 0, 'S0 全部工件存在', 'missing=' + (missing.join(',') || 'none'));
@@ -87,10 +86,10 @@ const FILES = {
 const MANIFEST = JSON.parse(read(FILES.manifest));
 const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
-// == S1 三层架构与目录纪律（ADR-0006 条款 5）==
+// == S1 三层架构与目录纪律（单一 tests/ 根）==
 {
   check(existsSync(abs(FORMS + '/mirrors')) && existsSync(abs(FORMS + '/skeletons')), 'S1 三层目录齐备（mirrors/ + skeletons/）');
-  check(!existsSync(abs('corpus')), 'S1 **不新增顶层 corpus/**（ADR-0006 条款 5 单一 tests/ 根）');
+  check(!existsSync(abs('corpus')), 'S1 **不新增顶层 corpus/**（仓库只允许一个 tests/ 根）');
   check(abs(FORMS).startsWith(abs('tests')), 'S1 语料位于单一 tests/ 根下');
   eq(MANIFEST.entries.length, SOURCES.length, 'S1 manifest 条目数 == sources 条目数');
   const ids = MANIFEST.entries.map((e) => e.id).sort().join(',');
@@ -99,7 +98,7 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   check(MANIFEST.entries.every((e) => e.adoption === 'adopted'), 'S1 全部候选为 adopted（8/8）');
   // 不引入对象存储 / S3
   const s3 = ['s3://', 'amazonaws.com', '@aws-sdk', 'minio', 'cloudflare r2', 'backblaze b2'];
-  const blob = read(FILES.readme) + read(FILES.sources) + read(FILES.manifest) + read(FILES.capture) + read(FILES.manifestGen);
+  const blob = read(FILES.sources) + read(FILES.manifest) + read(FILES.capture) + read(FILES.manifestGen);
   check(s3.every((t) => blob.toLowerCase().indexOf(t) < 0), 'S1 不引入对象存储/S3（复用既有仓库外 archive 模式）');
 }
 
@@ -175,7 +174,7 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   };
   walk(abs(FORMS));
   eq(stray.length, 0, 'S4 形态语料目录内无原始快照 / 渲染 DOM / 截图', stray.join(',') || 'clean');
-  // 归档在场时做**指纹实物复核**（WORKFLOW §8.2 本地硬验收：只读、无副作用）；
+  // 归档在场时做**指纹实物复核**（本地硬验收：只读、无副作用）；
   // CI 无归档 → 显式 SKIP（不伪造绿，也不误报红）
   if (existsSync(archiveRoot)) {
     let verified = 0, mismatch = 0;
@@ -195,13 +194,6 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
 // == S5 退化回路成文与工具链 ==
 {
-  const README = read(FILES.readme);
-  for (const step of ['06-capture-forms.mjs', '06-skeleton.mjs', '06-structural-diff.mjs']) {
-    check(README.indexOf(step) >= 0, 'S5 README 记录回路工具 ' + step);
-  }
-  check(/绝不为修绿而盲目更新快照/.test(README), 'S5 README 载明纪律「绝不为修绿而盲目更新快照」');
-  check(/定期重捕/.test(README) && /确定性结构 diff/.test(README) && /回放自检/.test(README) && /分级/.test(README),
-    'S5 README 载明四步回路（重捕 → 结构 diff → 分级 bump → 回放自检）');
   check(!!MANIFEST._meta.degradationLoop && !!MANIFEST._meta.degradationLoop.step1_recapture,
     'S5 清单内嵌退化回路定义');
   const diffSrc = read(FILES.diff);
@@ -213,10 +205,6 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
 // == S6 命名正交（不与「校准语料」混淆）==
 {
-  const README = read(FILES.readme);
-  check(/形态语料/.test(README) && /校准语料/.test(README), 'S6 README 同时说明「形态语料」与「校准语料」');
-  check(/正交/.test(README), 'S6 README 声明两者在语义轴上正交');
-  check(/tests\/corpus\/manifest\.json/.test(README), 'S6 README 指向校准语料路径（不混用）');
   check(MANIFEST._meta.naming.indexOf('校准语料') >= 0, 'S6 清单载明命名正交关系');
   // 形态语料目录内不得出现校准语料的用例结构
   const manSrc = read(FILES.manifest);
@@ -244,7 +232,6 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
 // == S8 覆盖声明与 harness 接入 ==
 {
-  check(/A-030/.test(read(FILES.readme)), 'S8 README 声明本票覆盖的 A-030');
   check(/A-030/.test(read(FILES.sources)), 'S8 sources 声明覆盖的 A-030');
   check(/A-030/.test(read(FILES.spec)), 'S8 spec 声明覆盖的 A-030');
   check(/\/corpus\//.test(read(FILES.server)), 'S8 测试服务器已挂载 /corpus/ 路由（镜像页可被 E2E 加载）');

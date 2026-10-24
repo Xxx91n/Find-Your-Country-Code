@@ -1,10 +1,10 @@
 // ════════════════════════════════════════════════════════
 // 评分引擎常量（票 02）— 五层信号瀑布 L0–L4 的权重/阈值显式常量
-// 出处缩写（调研文件均在 .scratch/architecture-recovery/research/）：
-//   [AM] atomcode-industry-models.md  Chromium 分类优先级链 / WHATWG autocomplete token / 密码管理器三段式
-//   [IM] industry-models.md           §④ L0–L4 蓝图 / P1 多信号 / P2 评分分级 / P3 锚关联 / P4 误报三件套
-//   [MD] misdetection-root-causes.md  §2 误报 5 类 / §3 漏检 / §5 修复方向（harness reproduced 证据）
-//   [SP] spec.md                      Implementation Decisions 评分引擎与分级行动 / US7
+// 出处缩写（原件已移除，标签只标结论类别，不再指向任何文件）：
+//   [AM] 行业模型对照    Chromium 分类优先级链 / WHATWG autocomplete token / 密码管理器三段式
+//   [IM] 评分蓝图        L0–L4 五层瀑布 / P1 多信号 / P2 评分分级 / P3 锚关联 / P4 误报三件套
+//   [MD] 误报根因        误报 5 类 / 漏检 / 修复方向（harness 已复现）
+//   [SP] 实现决策        评分引擎与分级行动
 // ════════════════════════════════════════════════════════
 
 // ── L0 语义标准层 [AM 核心结论1/2：autocomplete 除 off 外压过一切本地启发式；IM §④ L0"一票强命中"] ──
@@ -55,17 +55,17 @@ export const SCORE_LOWKEY = 35;           // ≥ 中置信：低调注入；< �
 
 // ── iti 容器信号（票 16：iti 识别并入评分，取消评分外无条件最高分短路）[SP「评分一致性」/ US10] ──
 // iti 容器证据计入评分而非直接定档：容器内无关字段仍受 L1/L4 词表与既有误报防线拦截。
-// 取值标定（语料依据见 research/window-reports/16-scoring-consistency-report.md）：
+// 取值标定（语料实测）：
 //   60 + type=tel(10) + L2 锚(18) = 88 稳达 auto（E2E cch-test-page2 场景 C 实际形态）；
 //   无锚时 60+10=70 恰达 auto；L4 排除(-70)可完全压过 → 防线对 iti 同等生效。
 export const ITI_CONTAINER_SCORE = 60;    // .iti/.intl-tel-input 容器内 input 的结构强信号
 export const ITI_LOW_REGISTER_SCORE = 25; // none 档登记「面板召唤」最低分 [SP US18]（票 16 自 detect/index.ts:487 收编魔法数 25，值不变）
 
-// ── ARIA combobox 语义层（票 18，ADR-0005「登记 + 手动召唤」档）──
+// ── ARIA combobox 语义层（票 18；伪 select 只登记进召唤面，不自动注入、不自动填充）──
 // 结构组合信号: role=combobox + aria-expanded 属性存在（EP closed 态空串容忍）+
 // aria-controls/owns 可解 [role=listbox]。取值标定: 单独 20 < 登记线 25（无国家语义上下文
 // 的结构信号不进召唤面，站内搜索框不登记）; +L1 country kw(14)=34、+label phrase(26)=46
-// 稳过登记线; 档位经 _process cap 强制 none（ADR-0005: 不自动注入图标、不自动填充），
+// 稳过登记线; 档位经 _process cap 强制 none（伪 select 只登记：不自动注入图标、不自动填充），
 // 分数仅服务登记与信号审计。内容验证分值全部复用 L3 既有常量（口径单一来源）。
 export const ARIA_COMBO_STRUCT_SCORE = 20;
 
@@ -81,11 +81,10 @@ export const WRAPPER_CLASS = 'cch-wrapper';
 
 // ════════════════════════════════════════════════════════
 // 站点规则引擎常量（票 05）
-// [AM] atomcode-industry-models.md 核心结论5：用户可干预后门是行业标配
+// [AM] 核心结论5：用户可干预后门是行业标配
 //      （KeePassXC sites.js Site Preferences / Bitwarden linked custom field / 1Password data-1p-ignore）
-// [SP] spec.md Implementation Decisions「站点规则引擎：GM 存储站点级规则（豁免域名 / 强制选择器 / 置信度覆盖）」
-// 数据格式与 CRUD 函数边界的权威定义见 src/store/index.ts 头注 +
-// research/window-reports/05-site-rules-engine-report.md（07 票接口契约）
+// [SP] 实现决策「站点规则引擎：GM 存储站点级规则（豁免域名 / 强制选择器 / 置信度覆盖）」
+// 数据格式与 CRUD 函数边界的权威定义见 src/store/index.ts 头注。
 // ════════════════════════════════════════════════════════
 export const RULES_KEY = 'cch_site_rules_v1';        // 规则文档独立 GM 键（与 favs 键 cch_v33 解耦）
 export const RULES_BROADCAST = 'cch-rules-sync-v1';  // 规则跨标签页广播通道名
@@ -131,11 +130,11 @@ export const FRAME_FEEDBACK_MSG = 'feedback';
 
 // ════════════════════════════════════════════════════════
 // 诊断面常量（票 03 / A-028）
-// [AM] research/cycle6-investigation.md O2/O3/O4：Greasespot 排障树逐层点亮（第一处熄灭即答案）/
+// [AM] Greasespot 排障树逐层点亮（第一处熄灭即答案）/
 //      Flagr evalDebugLog 决策链作单一事实来源（UI 面板与 CI JSON 从同一份 trace 渲染）/
 //      uBlock Logger 未打开零开销 + 静默失败三招（前移·捕获·归因）
-// [SP] spec.md S-02：结构化诊断事件流唯一事实来源 + 分级门控 + 环形缓冲容量上限
-// [DL] .scratch/cycle6-grill/decision-ledger.md D-012：恒开 = error/warn + 计数器；
+// [SP] 实现决策 S-02：结构化诊断事件流唯一事实来源 + 分级门控 + 环形缓冲容量上限
+// [DL] 决策 D-012：恒开 = error/warn + 计数器；
 //      门控 = info/trace 全链路（惰性构造）；D-013：术语「诊断面」「判定记录」
 // 纪律：reason 取自 DIAG_REASON 闭集（禁止自由合成）；layer 由 reason 前缀推导，不手传。
 // ════════════════════════════════════════════════════════

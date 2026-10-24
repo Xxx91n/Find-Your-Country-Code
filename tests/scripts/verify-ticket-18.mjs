@@ -5,7 +5,7 @@
 //   验收1 ARIA 语义层接入评分: 两形态识别 + 内容验证沿用 L3 口径 + 否决组 + 误报防线同等生效
 //         （含既有语料回归 mismatch=0，规模动态计数 >=41 —— 伪层对既有语料零扰动）
 //   验收2 填充策略: 可编辑型隐藏承值 input 原生 setter+事件 / select-only listbox 点击选值
-//   验收5 ADR-0005 裁决=实现（非缓议）; 检查点二 口径复用静态落点
+//   验收5 伪 select 裁决=实现（非缓议）; 检查点二 口径复用静态落点
 // 装载: 引擎束（config+countries+detect, createDetect 注入记录型 UI）+ 填充束
 //   （i18n+iti-adapter+fill），零构建；与 verify-ticket-02/13 同心智。
 // ══════════════════════════════════════════════════════════════════════
@@ -134,7 +134,7 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
   Det._process(trig);
   // rememberLow(el, kind, score, signals): 被调用本身即 tier=none（none 分支专属）；
   // score>=25 证明登记线口径生效，gate 信号留痕在 signals
-  check('1.5 ADR-0005 档位 cap: none 分支登记 + gate 留痕', calls.rememberLow.length === 1 &&
+  check('1.5 伪 select 档位 cap: none 分支登记 + gate 留痕', calls.rememberLow.length === 1 &&
     calls.rememberLow[0][2] >= 25 &&
     calls.rememberLow[0][3].some(function (s) { return s.name === 'gate:adr-0005-register-only'; }));
   check('1.6 登记 kind=pseudo', calls.rememberLow.length === 1 && calls.rememberLow[0][1] === 'pseudo');

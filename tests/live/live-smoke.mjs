@@ -14,12 +14,11 @@
 //                   · ITI 接管字段 → **选中国家状态**（官方读 API → DOM 选中态）
 //                     + ITI 官方 countrychange 事件。依据：ITI 官方**不承诺**把区号写进其
 //                     input.value（separateDialCode 模式下由独立元素承载），且**从不**派发
-//                     原生 input / change——见 research/atomcode-11-iti-l3-criterion.md
-//                     与 research/window-reports/11-iti-l3-criterion-report.md
+//                     原生 input / change（ITI 官方行为，已本地复现）。
 //   L4 用户反馈出现 #cch-toast 出现且文案非空（外部可观测，非脚本自报）
 // 层归属（§4.2）：本层与 owned 页**都跑全阶梯**，差别只在阻断语义 —— 本层 advisory
 //   （仅 schedule + workflow_dispatch，失败只告警不阻断合入）；阻断只发生在 release.yml 发布门
-//   （ADR-0010：最近一次运行为绿，或失败已被显式 ack 并立票，否则不出包）。
+//   （发布门：最近一次运行为绿，或失败已被显式 ack 并立票，否则不出包）。
 // 硬校验（exit 1）：白名单契约（跳过 / observe 挂账必须带非空 reason + ticket）；全阶梯契约
 //   （expect="injected" 必须声明 L0–L4，非全阶梯必须带非空 degradeReason + ticket）；
 //   expect="injected" 的目标必须真的注入、档位合法、全程无未捕获异常。
@@ -119,7 +118,7 @@ function validate(manifest) {
       for (const f of ['iso', 'query']) if (!t.probe || !t.probe[f]) v.push(t.id + ': probe.' + f + ' 缺失');
     }
     if (!t.enabled && (!t.reason || !t.ticket)) v.push(t.id + ': 跳过条目必须携带 reason + ticket（可审计白名单）');
-    // 票 07 [A-029]：observe 挂账（只记录不裁定）强制非空 reason + ticket（ADR-0010 条款 4）。
+    // 票 07 [A-029]：observe 挂账（只记录不裁定）强制非空 reason + ticket（不得匿名挂账）。
     if (t.expect === 'observe' && (!String(t.reason || '').trim() || !String(t.ticket || '').trim())) {
       v.push(t.id + ': observe 挂账必须携带非空 reason + ticket（不得匿名挂账）');
     }
@@ -401,7 +400,7 @@ async function runTarget(t) {
     }
 
     if (t.expect === 'observe') {
-      // 长期挂账：只记录观测值，不裁定（ADR-0010 条款 4；reason + ticket 已在 validate 硬校验）
+      // 长期挂账：只记录观测值，不裁定（observe 必须带非空 reason + ticket，已在 validate 硬校验）
       await page.waitForTimeout(SETTLE_MS);
       const probe = await readInjection(probeFrame, t.selector || null).catch(() => null);
       rec.observed = probe;
@@ -507,7 +506,7 @@ const ladderChecks = results.flatMap(r => (r.ladder || []).map(c => ({ target: r
 const summary = {
   ticket: 7, coveredA: 'A-029', layer: 'real-site live smoke (advisory) — full ladder L0–L4',
   manifest: 'tests/live/site-manifest.json',
-  ladderRule: 'tests/ACCEPTANCE-SURFACE.md §4.1/§4.2；本层与 owned 页都跑 L0–L4，差别只在阻断语义（本层 advisory，阻断只在 release.yml 发布门 ADR-0010）',
+  ladderRule: 'tests/ACCEPTANCE-SURFACE.md §4.1/§4.2；本层与 owned 页都跑 L0–L4，差别只在阻断语义（本层 advisory，阻断只在 release.yml 发布门）',
   writeSurfaceRule: 'L3 判据按写入口形态分派（票 11 / A-035）：ITI 接管字段 → 选中国家状态（官方读 API / DOM 选中态 / 官方 countrychange 事件）；普通字段 → 宿主 value + input·change（票 07 原判据逐字不变）',
   amendedBy: 'ticket 11 (A-035) — ITI 形态 L3 判据收敛',
   launch: HEADLESS ? 'headless' : 'headed',
@@ -531,7 +530,7 @@ if (mdPath) {
   const L = [];
   L.push('# 真实站点低频冒烟报告（票 32 / A-006 · 票 39 / A-016 · 票 07 / A-029）');
   L.push('');
-  L.push('- 层定位: advisory（仅 schedule / workflow_dispatch 触发，不进 PR 触发面）；阻断只发生在 release.yml 发布门（ADR-0010）');
+  L.push('- 层定位: advisory（仅 schedule / workflow_dispatch 触发，不进 PR 触发面）；阻断只发生在 release.yml 发布门');
   L.push('- 断言阶梯: L0 静默健康 / L1 元素已注入 / L2 交互可驱动 / L3 写入结果正确 / L4 用户反馈出现（tests/ACCEPTANCE-SURFACE.md §4.1）');
   L.push('- 浏览器: ' + (HEADLESS ? 'headless' : 'headed'));
   L.push('- 白名单契约 + 全阶梯契约: ' + (violations.length ? 'FAIL' : 'PASS') + '；harness 自证: ' + (failures.length ? 'FAIL' : 'PASS'));

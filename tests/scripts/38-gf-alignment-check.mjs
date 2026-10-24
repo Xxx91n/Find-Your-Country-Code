@@ -22,7 +22,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-// ADR-0006 决策 1：脚本以自身位置上溯 2 级锚定仓库根
+// CI 脚本位置约定：脚本以自身位置上溯 2 级锚定仓库根
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..', '..');
 

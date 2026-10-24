@@ -2,7 +2,7 @@
 // 覆盖自动判定。优先级：显式选择 > 浏览器语言 > 默认 zh（atomcode 调研：与 CSS 级联 /
 // Accept-Language 协商同构；Tampermonkey / Greasemonkey 官方文档双源确认 GM_getValue 的
 // 默认值语义正好承载「未手动选过」分支）。
-// 约束（decision-ledger A-019）：不破坏既有 t() 契约与中/英文案键；存储键与收藏/规则解耦
+// 约束（A-019）：不破坏既有 t() 契约与中/英文案键；存储键与收藏/规则解耦
 // （沿用 UI_PREFS_KEY 独立键，本模块不直接碰 GM）；不新增依赖（内联字典直查 —— i18next 类
 // 运行时 205-422KB，对单文件 userscript 不可接受，见 Paraglide benchmark）。
 // 本模块保持零 import：单元门按裸模块体装配（tests/scripts/verify-ticket-42.mjs 同心智）。

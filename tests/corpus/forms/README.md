@@ -1,7 +1,7 @@
 # 形态语料（Form Corpus）— 三层架构
 
 > Cycle-6 票 06 | 覆盖 **A-030** | 生成 2026-09-16
-> 上游：`spec.md` S-05 · `.scratch/cycle6-grill/decision-ledger.md`（D-008 / D-009 / D-014）· `decision-ledger.md`（A-030）
+> 定位：形态语料的三层架构定义（镜像页 / 结构骨架 / 校准语料），供密封层与真实站点层共用。
 > 下游：票 07（真实站点层全阶梯 + 发布门）· 票 08（阶段 B：失效驱动修复）
 
 ---
@@ -29,11 +29,11 @@
 | ② **结构骨架** | ✅ 入 git | **长期结构断言基线**：内容无关的归一化结构树，供确定性结构 diff | `skeletons/*.json` |
 | ③ **原始快照** | ❌ **库外** | 保真档案（raw HTML + 渲染后 DOM + 截图）；库内只留 **SHA-256 指纹与元数据** | 仓库外 archive（见 §4） |
 
-**为什么原始快照不入库**：含品牌内容与版权暴露（ADR-0006「冻结基准不入库」）；截图 / 二进制不入 git 历史（D-008 负向需求）。
+**为什么原始快照不入库**：含品牌内容与版权暴露（冻结基准不入库）；截图 / 二进制不入 git 历史（D-008 负向需求）。
 
 **不引入对象存储 / S3**：复用既有**仓库外 archive 模式**（`D:\Aworker\mozilla\choose-your-country-evidence-archive\`，票 41 建立）。
 
-**单一 `tests/` 根**（ADR-0006 条款 5）：本目录位于 `tests/corpus/forms/`，**不新增顶层 `corpus/`**。
+**单一 `tests/` 根**（仓库只允许一个 `tests/` 目录）：本目录位于 `tests/corpus/forms/`，**不新增顶层 `corpus/`**。
 
 ---
 
@@ -92,7 +92,7 @@ tests/corpus/forms/
 | `minor` | 属性 / 重复计数变化（选项增减、role 增补） | minor |
 | `major` | 标签 / class / 子节点数变化（结构改版） | major |
 
-**纪律（硬约束）**：**绝不为修绿而盲目更新快照**。`tier ≠ none` 时，**先归因**——① 站点真实改版；② 抓取环境差异（UA / 地区 / A-B 实验）；③ 归一化缺陷——归因结论落 `research/window-reports/` 后才决定 bump 与镜像页更新。把「更新基线」当作消除红灯的手段，等于把退化探测能力本身退化掉。
+**纪律（硬约束）**：**绝不为修绿而盲目更新快照**。`tier ≠ none` 时，**先归因**——① 站点真实改版；② 抓取环境差异（UA / 地区 / A-B 实验）；③ 归一化缺陷——归因结论写进提交信息或 issue 后才决定 bump 与镜像页更新。把「更新基线」当作消除红灯的手段，等于把退化探测能力本身退化掉。
 
 **命令**：
 
@@ -141,7 +141,7 @@ node tests/scripts/verify-ticket-06.mjs
 
 ## 6 与既有约定的关系
 
-- **ADR-0006 条款 5**：单一 `tests/` 根；本目录不新增顶层 `corpus/`（条款 5 不重开）。
-- **ADR-0008 第二层**：真实站点层仍 advisory、不进 `pull_request`（不重开）；本目录的**镜像页是 owned 可控页**，跑 L0–L4 并进 PR 门（票 01 `tests/ACCEPTANCE-SURFACE.md` §4.2）。
-- **WORKFLOW §4.5 升塔纪律**：真实站点暴露的、塔身未覆盖的形态，先沉淀为 fixture / 镜像页再修脚本。
-- **CONTEXT.md**：术语「形态语料」「结构骨架」「镜像页」以 `CONTEXT.md` 为准（票 04 入库）。
+- **单一 `tests/` 根**：本目录不新增顶层 `corpus/`（该口径不重开）。
+- **真实站点层不进 PR**：真实站点层仍 advisory、不进 `pull_request`（不重开）；本目录的**镜像页是 owned 可控页**，跑 L0–L4 并进 PR 门（票 01 `tests/ACCEPTANCE-SURFACE.md` §4.2）。
+- **升塔纪律**：真实站点暴露的、塔身未覆盖的形态，先沉淀为 fixture / 镜像页再修脚本。
+- **GLOSSARY.md**：术语「形态语料」「结构骨架」「镜像页」以 `GLOSSARY.md` 为准（票 04 入库）。

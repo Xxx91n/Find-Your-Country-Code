@@ -10,8 +10,8 @@
 // 装载兼容：cch-23 引入显式 TS 类型标注后，裸 new Function(bundle) 必 SyntaxError
 //   （Unexpected token ':'）；按 14-lib-engine 票 32 前置修复口径，用
 //   module.stripTypeScriptTypes（Node >= 22.13）剥类型再装配，不引依赖不改语义。
-// 位置：票 30（A-004）自 .scratch/architecture-recovery/research/scripts/ 迁入 tests/scripts/
-//   （ADR-0006 工程卫生基线：CI 脚本入 tests/scripts；此前该门仅 .scratch 磁盘态运行，
+// 位置：票 30（A-004）的脚本已迁入 tests/scripts/
+//   （工程卫生基线：CI 脚本入 tests/scripts；此前该门仅在本地磁盘态运行，
 //   无 CI 挂接点，违反「证据须 commit sha + CI run ID」铁律。verify-30.yml 为首个挂接；
 //   Cycle-7 D-004 合并后由 verify-tickets.yml 的 '30' 矩阵作业承接（plan: verify-ticket-plan.json）。）
 // ══════════════════════════════════════════════════════════════════
@@ -178,7 +178,7 @@ function MSG_KEYS() {
 }
 
 // ══════════════════════════════════════════════════════════════════
-// S0 — 02 票回归自证（验收脚本先对已知好样本干跑 [WORKFLOW §5 教训]）
+// S0 — 02 票回归自证（验收脚本先对已知好样本干跑）
 // ══════════════════════════════════════════════════════════════════
 async function S0() {
   console.log('── S0 02 票回归自证 ──');

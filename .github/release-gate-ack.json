@@ -1,5 +1,5 @@
 {
-  "_howto": "发布门 ack 记录（Cycle-6 票 07 / A-029；ADR-0010 条款 2）。仅当真实站点层最近一次运行非绿、而本次发版仍需放行时使用：把 acknowledged 置 true，逐项填写 reason / ticket / runId / acknowledgedBy，随发版一并提交（提交本身即审计留痕）。acknowledged:false（默认）表示不 ack，发布门按「必须绿」判定。判据与校验见 tests/scripts/release-gate.mjs。",
+  "_howto": "发布门 ack 记录（Cycle-6 票 07 / A-029）。仅当真实站点层最近一次运行非绿、而本次发版仍需放行时使用：把 acknowledged 置 true，逐项填写 reason / ticket / runId / acknowledgedBy，随发版一并提交（提交本身即审计留痕）。acknowledged:false（默认）表示不 ack，发布门按「必须绿」判定。判据与校验见 tests/scripts/release-gate.mjs。",
   "_schema": {
     "acknowledged": "boolean —— 必须显式为 true 才视为 ack（默认 false = 不放行）",
     "reason": "string —— >=20 字符，说明该失败为何与本次变更无关",

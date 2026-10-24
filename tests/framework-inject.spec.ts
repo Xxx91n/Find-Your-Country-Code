@@ -1,7 +1,7 @@
 // 票 09 框架注入加固 E2E：React 18 受控组件 + Vue 3 v-model 值同步 + 三类元素统一注入。
 // fixture 本地 vendored（tests/server.mjs /vendor/react|react-dom|vue 路由，hermetic 无外网）。
 // React 19 未专项核验（atomcode 缺口 5）——本 spec 仅以 React 18.3.1 UMD 为验收基线。
-// 证据源：research/atomcode-industry-models.md 核心结论 9（native setter + 事件序列行业共识）。
+// 证据源：行业模型核心结论 9（native setter + 事件序列行业共识）。
 import { test, expect } from 'playwright/test';
 import { installUserscript, wrapperFor, openPanel } from './helpers/userscript';
 

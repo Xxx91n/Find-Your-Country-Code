@@ -208,6 +208,6 @@ test('票30 显式页面级规则（scope:page）保留全页重映射语义', a
   const strongBtn = wrapperFor(page, '#cc-strong').locator('.cch-btn');
   await expect(strongBtn).toHaveAttribute('data-cch-tier', 'lowkey');
   await expect(strongBtn).toHaveClass(/cch-btn-lowkey/);
-  // none 字段抬到 lowkey（下限语义，与票 05 ADR-0003 记录一致）
+  // none 字段抬到 lowkey（下限语义：页面级规则只抬注入档位下限，不改评分）
   await expect(wrapperFor(page, '#phone').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
 });
