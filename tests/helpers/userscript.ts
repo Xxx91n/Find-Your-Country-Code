@@ -60,7 +60,7 @@ export async function softMenuCallable(scope: Page, re: RegExp): Promise<void> {
 }
 
 // ── 运行时网络封锁（票 39 delta 精化 / D-012 正向补偿） ──
-// 不变量（CONTEXT.md「密封 E2E」= 供给边界）：密封层不得触达真实站点与外网。
+// 不变量（密封 E2E = 供给边界）：密封层不得触达真实站点与外网。
 // 文本扫描可被字符串拼接绕过；请求层拦截绕过不了 —— 故把它钉在运行时可执行面。
 // 口径：非本地 origin 一律 abort（含子 frame）；本地供给放行 —— 127.0.0.1 / localhost /
 // ::1 / [::1]，以及无 host 的 data: / about: / blob: / about:srcdoc（srcdoc 子帧）。

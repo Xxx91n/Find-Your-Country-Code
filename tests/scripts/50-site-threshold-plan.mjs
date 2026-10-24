@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // ══════════════════════════════════════════════════════════════════
 // tests/scripts/50-site-threshold-plan.mjs
-// Cycle-8 D-009（ADR-0015）—— 站点级质量门槛的可测化机器实现
+// Cycle-8 D-009 —— 站点级质量门槛的可测化机器实现
 //
 // 提供三件事（均为纯计算，零依赖，无浏览器，无外网）：
 //   1) 零事件上界反推抽样量：rule of three(3/n) ／ 精确 Clopper-Pearson(k=0) ／ Wilson 上界
 //   2) OC 双点（AQL/LTPD）反解最小 (n, c) 抽样计划
 //   3) 观测结果 → Wilson 区间 + 燃烧率分级（阻断发版 / 冻结并扩样 / 常态 / 观察）
 //
-// 口径纪律（ADR-0015）：
+// 口径纪律（抽样量由置信区间上界反推，不由点估计反推）：
 //   - 抽样量由「CI 上界必须低于门槛」反推，**不得由点估计反推**；
 //   - k=0 时用 rule of three 作**快速口径**，用 Wilson 作**守口径**（取大者）；
 //   - 不用正态近似（1e-3 量级下覆盖度差），不用 Clopper-Pearson 作守口径（过保守）。
@@ -178,7 +178,7 @@ if (has('--self-test')) {
   const out = { mode: 'plan', threshold, zeroEventN: { ruleOfThree: n3, exactClopperPearson: nExact, wilsonConservative: nWilson, operative: Math.max(n3, nExact, nWilson) }, ocPlan: plan, aql, ltpd, neymanDemo: alloc };
   if (JSON_OUT) console.log(JSON.stringify(out, null, 2));
   else {
-    console.log('══ 站点级质量门槛可测化计划（D-009 / ADR-0015）══');
+    console.log('══ 站点级质量门槛可测化计划（D-009）══');
     console.log('门槛 = ' + threshold + '（' + (threshold * 1000).toFixed(2) + '‰）');
     console.log('零事件上界反推抽样量（k=0，95%）：');
     console.log('  rule of three（快速口径）  n ≥ ' + n3);

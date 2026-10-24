@@ -20,7 +20,7 @@
 5. **iti 适配**：getInstance 稳锚（v16–v29 不断代）→ setNumber 优先 → 方法双名 → 双代 DOM 类名兜底。
 6. **注入安全**：原生 prototype setter + input→change→blur（React/Vue/Angular 共识）。
 
-## 3. 关键决策（ADR 索引，详见 docs/adr/）
+## 3. 关键决策（索引）
 
 - 0001 评分制取代布尔制（accepted，3 被否决路线）
 - 0002 vite-plugin-monkey 模块化、单 .user.js 产物（accepted）
@@ -44,7 +44,7 @@
 
 | # | 事项 | 来源 | 建议 |
 |---|---|---|---|
-| B1 | 组件库伪-select 识别（MUI/AntD/Element role=listbox） | ADR-0004 deferred | 先 atomcode 专项调研再立票 |
+| B1 | 组件库伪-select 识别（MUI/AntD/Element role=listbox） | 「伪 select 缓议」 deferred | 先 atomcode 专项调研再立票 |
 | B2 | L2 锚查询不穿透 shadow root（shadow 内锚分缺失） | 04 报告风险 4 | 与 B1 同票或独立小票 |
 | B3 | .gitattributes/CRLF 全仓归一 | 01/04/07 报告共同遗留 | 卫生票，低优先 |
 | B4 | React 19 _valueTracker 行为专项核验 | 09 报告风险 1 | 调研票（npm 形态 fixture） |

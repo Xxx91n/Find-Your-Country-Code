@@ -21,7 +21,7 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-// ADR-0006 决策 1：脚本以自身位置上溯 2 级锚定仓库根
+// CI 脚本位置约定：脚本以自身位置上溯 2 级锚定仓库根
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..', '..');
 
@@ -29,7 +29,6 @@ const ARTIFACT_REL = 'dist/find-your-country-code.user.js';
 const ARTIFACT = join(ROOT, ARTIFACT_REL);
 const MAX_BYTES = 2 * 1024 * 1024; // GF 硬规则：单文件 ≤ 2MB
 const REPO_URL = 'https://github.com/Xxx91n/Find-Your-Country-Code';
-const LATEST_ASSET = REPO_URL + '/releases/latest/download/find-your-country-code.user.js';
 
 let pass = 0;
 let fail = 0;
@@ -111,12 +110,7 @@ check('G4d 产物未 minify（多行可读，非单行压缩）',
   'lines=' + lines.length + ' longestLine=' + longest);
 
 // ══ G5 分发链接不钉死旧版本 ═════════════════════════════════════════
-for (const file of ['README.md', 'README_EN.md']) {
-  const src = readFileSync(join(ROOT, file), 'utf8');
-  check('G5a ' + file + ' 安装链指向 releases/latest', src.includes(LATEST_ASSET));
-  check('G5b ' + file + ' 无钉死旧 tag 的 releases/download 链接',
-    !/releases\/download\/v\d+\.\d+\.\d+\/find-your-country-code\.user\.js/.test(src));
-}
+// 已退役：原 G5 以 README.md / README_EN.md 的措辞判定成败，文档层收口后不再由门禁读文档。
 
 console.log('\n─────────────────────────────────────────────');
 console.log('ticket-38 version consistency: ' + pass + ' passed, ' + fail + ' failed');

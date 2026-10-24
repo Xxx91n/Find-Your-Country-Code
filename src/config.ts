@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════
 // 评分引擎常量（票 02）— 五层信号瀑布 L0–L4 的权重/阈值显式常量
-// 出处缩写（调研文件均在 .scratch/architecture-recovery/research/）：
+// 出处缩写（调研原件已随治理层移除，缩写保留用于追溯历史注释）：
 //   [AM] atomcode-industry-models.md  Chromium 分类优先级链 / WHATWG autocomplete token / 密码管理器三段式
 //   [IM] industry-models.md           §④ L0–L4 蓝图 / P1 多信号 / P2 评分分级 / P3 锚关联 / P4 误报三件套
 //   [MD] misdetection-root-causes.md  §2 误报 5 类 / §3 漏检 / §5 修复方向（harness reproduced 证据）
@@ -61,11 +61,11 @@ export const SCORE_LOWKEY = 35;           // ≥ 中置信：低调注入；< �
 export const ITI_CONTAINER_SCORE = 60;    // .iti/.intl-tel-input 容器内 input 的结构强信号
 export const ITI_LOW_REGISTER_SCORE = 25; // none 档登记「面板召唤」最低分 [SP US18]（票 16 自 detect/index.ts:487 收编魔法数 25，值不变）
 
-// ── ARIA combobox 语义层（票 18，ADR-0005「登记 + 手动召唤」档）──
+// ── ARIA combobox 语义层（票 18；伪 select 只登记进召唤面，不自动注入、不自动填充）──
 // 结构组合信号: role=combobox + aria-expanded 属性存在（EP closed 态空串容忍）+
 // aria-controls/owns 可解 [role=listbox]。取值标定: 单独 20 < 登记线 25（无国家语义上下文
 // 的结构信号不进召唤面，站内搜索框不登记）; +L1 country kw(14)=34、+label phrase(26)=46
-// 稳过登记线; 档位经 _process cap 强制 none（ADR-0005: 不自动注入图标、不自动填充），
+// 稳过登记线; 档位经 _process cap 强制 none（伪 select 只登记：不自动注入图标、不自动填充），
 // 分数仅服务登记与信号审计。内容验证分值全部复用 L3 既有常量（口径单一来源）。
 export const ARIA_COMBO_STRUCT_SCORE = 20;
 
@@ -135,7 +135,7 @@ export const FRAME_FEEDBACK_MSG = 'feedback';
 //      Flagr evalDebugLog 决策链作单一事实来源（UI 面板与 CI JSON 从同一份 trace 渲染）/
 //      uBlock Logger 未打开零开销 + 静默失败三招（前移·捕获·归因）
 // [SP] spec.md S-02：结构化诊断事件流唯一事实来源 + 分级门控 + 环形缓冲容量上限
-// [DL] .scratch/cycle6-grill/decision-ledger.md D-012：恒开 = error/warn + 计数器；
+// [DL] 决策账本 D-012：恒开 = error/warn + 计数器；
 //      门控 = info/trace 全链路（惰性构造）；D-013：术语「诊断面」「判定记录」
 // 纪律：reason 取自 DIAG_REASON 闭集（禁止自由合成）；layer 由 reason 前缀推导，不手传。
 // ════════════════════════════════════════════════════════

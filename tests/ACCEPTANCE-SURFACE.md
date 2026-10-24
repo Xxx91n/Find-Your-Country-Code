@@ -56,7 +56,7 @@
 | 13 | GM 菜单命令 | GM 替身记录 `{title, fn}` 且 `fn` **可调用**；调用「打开面板」后 `#cch-pop` 可见；调用「恢复本站检测」后 `.cch-wrapper` 数量归零（判据只锚定「记录 + 调用后页面侧效果」，不锚定条数 / 文案） | 否 | L2 |
 | 14 | **跨隔离上下文链路**（独立验收项） | 见 §3.3——**必须断言链路两端的写入结果** | 否 | L3 |
 | 15 | 变更重扫 | 动态插入符合区号形态的字段后（350ms 防抖窗口 + 观察窗内）该字段出现 `.cch-wrapper`；移除该字段后其 `.cch-wrapper` 一并消失（**不残留孤儿 wrapper**） | 否 | L2 |
-| 16 | 伪 select / 无 ARIA 下拉 | 按 ADR-0005 档位约束：命中的伪 select 字段**不出现** `data-cch-tier="auto"` 的自动注入图标，仅进入面板召唤面；召唤后按用户交互填充，伪 select 展示文本与写入值同源 | 否 | L3 |
+| 16 | 伪 select / 无 ARIA 下拉 | 按伪 select 档位约束（只登记、不自动注入）：命中的伪 select 字段**不出现** `data-cch-tier="auto"` 的自动注入图标，仅进入面板召唤面；召唤后按用户交互填充，伪 select 展示文本与写入值同源 | 否 | L3 |
 | 17 | intl-tel-input 适配 | `.iti` 容器内字段注入后选中某国时：iti 自身国家按钮的 `title` / `aria-label` 或 `.iti__flag` 类名反映新国家，且底层 `input` 的 `value` 为该区号；**iti 内部搜索框**（`input[role=combobox][type=search]`）**不被注入**（A-031 误报面负例） | 否 | L3 |
 
 ### 2.2 诊断项（移出验收面，1 项）
@@ -174,8 +174,8 @@
 - `src/main.ts`：菜单命令注册（顶层 4 条）· 入站 origin 校验与降级 toast · 双相递归 `isEmbeddedFrame`
 - `src/store/index.ts`：收藏键 `cch_v33`；`src/types.ts`：`FillResult.status ∈ {filled, copied, failed}`
 - `tests/helpers/userscript.ts`：GM 替身（localStorage 承载）+ 菜单命令记录 `{title, fn}`（48 行 / 4 导出——票 05 的起点）
-- `docs/adr/0005`（伪 select 档位约束）· `docs/adr/0006`（单一 `tests/` 根 / PR 门控 / 证据只认 CI）· `docs/adr/0008`（三层测试塔 / CDP Autofill NOT-ADOPTED）· `docs/adr/0009`（证据量档位边界）
-- `CONTEXT.md`：分级行动 · 低调注入 · 手动召唤 · 可见性闸门 · 帧治理 · 密封 E2E
+- 口径来源：伪 select 档位约束（只登记、不自动注入）· 单一 `tests/` 根 / 非发版 workflow 声明 PR / 证据只认 CI · 三层测试塔（真实站点层不进 PR、CDP Autofill NOT-ADOPTED）· 证据量驱动的档位边界（6 选项 72/auto vs 5 选项 68/lowkey）
+- `GLOSSARY.md`：分级行动 · 低调注入 · 手动召唤 · 可见性闸门 · 帧治理
 - `research/cycle6-investigation.md` §2（18 项 × 3 层覆盖矩阵——本清单的编号来源）
 
 **外部（cited，本票 atomcode 调研，2026-09-16，串行护栏下 1 次，三引擎交叉）**

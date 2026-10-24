@@ -9,7 +9,7 @@
 **覆盖 A-xxx:** A-036
 
 - [x] 裁定「上限强制点」：**写路径**（`upsertOverride` 新增前 fail-closed 拒绝）
-  - 依据：`docs/adr/0011-rule-override-cap-enforcement-point.md`（本仓既有语义 3 条 + atomcode 调研 15 来源 + 工程判据 2 条）；报告 §5
+  - 依据：写路径强制点裁定（本票报告 §5）（本仓既有语义 3 条 + atomcode 调研 15 来源 + 工程判据 2 条）；报告 §5
   - 只读验证：`grep -n "上限强制点" src/store/index.ts` → `// ── 上限强制点（票 12 [A-036] 裁定）──` · `//   RULES_MAX_OVERRIDES（config.ts，500）是文档级不变量，强制点在写路径：`
   - sha：`fe0a5df3`
 - [x] 按裁定实现强制点：`upsertOverride` 新增前 `if (r.overrides.length >= RULES_MAX_OVERRIDES) return null;`（不落盘、不广播）；既有 id 的更新与删除不受限；`_normRulesDoc` 摄取截断保留为第二层

@@ -175,7 +175,7 @@ for (const c of CASES) {
 }
 
 // ── G10：A-022 证据量档位边界锁定（票 44 裁决） ──
-// 裁决留档：docs/adr/0009-evidence-quantity-tier-boundary.md
+// 裁决留档：证据量驱动的档位边界（6 选项 72/auto vs 5 选项 68/lowkey 为有意设计，SCORE_AUTO=70 恰在其间）
 // 结论：L3 按证据量单调计分是「有意设计」。P1/P8 证据结构逐项相同，唯一差异 =
 //   区号选项个数（P1 6×L3_PLUS_DIAL_SCORE=24 → 72；P8 5×4=20 → 68），
 //   SCORE_AUTO(70) 恰落 68/72 之间 → 6 选项 auto / 5 选项 lowkey。不统一。
@@ -224,5 +224,5 @@ for (const [name, ok] of G11) {
   if (ok) { pass++; g11Pass++; } else { fail++; failures.push('G11:' + name); }
   console.log(`[${ok ? 'PASS' : 'FAIL'}] G11 ${name}`);
 }
-console.log(`\n用例门 ${casePass}/${CASES.length} pass | G10 边界锁 ${g10Pass}/${G10.length} pass（A-022 证据量档位边界，ADR-0009） | G11 国家数据完整 ${g11Pass}/${G11.length} pass${fail ? ` | FAILURES: ${failures.join(', ')}` : ''}`);
+console.log(`\n用例门 ${casePass}/${CASES.length} pass | G10 边界锁 ${g10Pass}/${G10.length} pass（A-022 证据量档位边界，72/auto vs 68/lowkey） | G11 国家数据完整 ${g11Pass}/${G11.length} pass${fail ? ` | FAILURES: ${failures.join(', ')}` : ''}`);
 process.exit(fail ? 1 : 0);

@@ -4,7 +4,7 @@ name: Lockfile Regen
 # 并以 npm ci --dry-run 断言与 package.json 同步（失同步即红）。
 # 以 artifact 交付（lockfile-regen-<run>）。本 workflow 不自动 push（避免自动提交越权）；
 # artifact 内容由维护者确认后入库。
-# 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)（见 CONTEXT.md）。
+# 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)。
 # 票 43（A-021）：安装面根修后不再需要 peer 例外开关（React 18/19 分居两个 install root）。
 
 on:

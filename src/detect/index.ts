@@ -55,7 +55,7 @@ function isPlaceholderOpt(o: AnyEl): boolean {
   return true;
 }
 
-// ══ 票 18: ARIA combobox（伪 select）证据探测 [ADR-0005 / 17 票逐库取证 observed] ══
+// ══ 票 18: ARIA combobox（伪 select）证据探测 [伪 select 只登记不注入 / 17 票逐库取证 observed] ══
 // 触发器三形态 DIV(MUI)/INPUT(antd/EP/react-select)/BUTTON(Radix)[role=combobox];
 // aria-expanded 判属性存在性（EP closed 态为空串）；弹出层 4/5 库 portal 到 body ——
 // 解引用必须沿 aria-controls/owns 的 id（触发器 root + ownerDocument），不得在触发器
@@ -114,7 +114,7 @@ function pseudoOptionStats(opts: AnyEl[]): OptionStats {
   }
   // 票 08：pseudo 侧的裸 +NN 文本证据**本票不启用**（textDial 恒为 0）——
   // 语料先行：当前语料无该形态的伪 select 正/负例，且伪 select 证据策略受
-  // ADR-0005「登记 + 手动召唤」档位约束（与原生 select 同口径不等价）。
+  // 「伪 select 只登记、不自动注入」的档位约束（与原生 select 同口径不等价）。
   // 该对称性缺口已作为残留登记在票 08 报告，待语料基础到位后再评估。
   return { total: opts.length, plusDial, parenDial, textDial: 0, isoName, numeric };
 }
@@ -321,7 +321,8 @@ const SCAN_SELECTOR_SET = new Set(SCAN_SELECTORS);
 // 一切启发式，不评分/不注入/不登记召唤）同族，只是作用面从整页收敛到单元素。
 //   ① data-1p-ignore（任意值，含裸属性空串）—— 1Password 官方退出协议
 //   ② data-form-type="other"（值须精确为 other）—— Bitwarden 官方退出协议
-// 裁定与依据：docs/adr/0012-mental-model-adoption.md（ADR-0003「用户显式干预 > 引擎启发」）。
+// 裁定：显式否决在评分瀑布入口直接短路（不评分 = 不注入 + 不登记召唤），
+// 因为用户显式干预压过引擎启发式。
 // 注：两属性同步进 OBSERVED_ATTRS 与 _fingerprint（票 04 契约：指纹读什么，observer 就监听
 // 什么）—— 站点动态挂/摘退出属性时指纹翻转即触发重评，退出与恢复都生效。
 function isOptOutElement(el: AnyEl): boolean {
@@ -348,7 +349,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
     if (Diag) Diag.counter('detached');
     UI.detach(el);
   };
-  // 登记面 = ADR-0005「登记 + 手动召唤」：低分登记与伪 select 档位上限共用同一出口
+  // 登记面 = 「登记 + 手动召唤」：低分登记与伪 select 档位上限共用同一出口
   const _register = (el: AnyEl, kind: FillKind, score: number, signals: Signal[]): void => {
     if (Diag) {
       Diag.counter('registered');
@@ -559,7 +560,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
         }
       }
 
-      // ── ARIA combobox 语义层（票 18 [ADR-0005]；信号源: 17 票逐库取证 + 探测策略 §2）──
+      // ── ARIA combobox 语义层（票 18；伪 select 只登记不注入；信号源: 17 票逐库取证 + 探测策略 §2）──
       // 组合结构信号（相当于 L2 关联层）+ L3 口径内容验证复用 + 搜索型否决组。
       // 档位上限「登记 + 手动召唤」在 _process 结算；两形态（可编辑型 INPUT / select-only
       // DIV|BUTTON）同层识别，填充形态在 fill 侧按触发器与承值探测分发。
@@ -963,7 +964,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
           res = { score: res.score, tier: 'none', pseudo: res.pseudo,
             signals: (res.signals || []).concat([{ layer: 'VIS', name: 'gate:visibility-hidden', pts: 0 }]) };
         }
-        // ── 票 18 [ADR-0005]: 伪 select 档位上限 =「登记 + 手动召唤」——不自动注入图标、
+        // ── 票 18: 伪 select 档位上限 =「登记 + 手动召唤」——不自动注入图标、
         // 不自动填充。分数与信号原样保留（≥25 走 rememberLow 登记召唤面），档位强制 none
         // + 0 分留痕；用户显式规则覆盖已在上方生效，不受此限。
         if (res.pseudo && res.tier !== 'none') {

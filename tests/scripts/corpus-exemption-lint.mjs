@@ -9,9 +9,9 @@
 //   ③ 残留 owner/reviewBy/reason    —— 防“删一个字段就绕过门”的残迹。
 // 到期语义（D-003 ④）：reviewBy 过期即 CI 红，必须重新裁定——
 //   摘旗（翻转 knownResidual=false，保留元数据并置 exemptionStatus="lifted"）
-//   或续期（更新 reviewBy）。禁止物理删除语料条目（ADR-0008 决策 4 append-only）。
+//   或续期（更新 reviewBy）。禁止物理删除语料条目（语料 append-only）。
 // 覆盖 cases 与 realSiteForms 两段。零依赖、纯 node、无网络/无时钟依赖（仅读今日日期）。
-// 仓库根由本文件位置上溯两级锚定（ADR-0006 条款 1）。
+// 仓库根由本文件位置上溯两级锚定（CI 脚本位置约定）。
 // 用法：node tests/scripts/corpus-exemption-lint.mjs
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';

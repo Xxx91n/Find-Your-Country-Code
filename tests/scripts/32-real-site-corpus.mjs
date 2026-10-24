@@ -199,7 +199,7 @@ for (const form of manifest.realSiteForms || []) {
     // 正例（MISS/FIXED）expect 必为 inject；COVERED 等负例 expect 必为 none
     const wantExpect = verdict === 'COVERED' ? 'none' : 'inject';
     if (c.expect !== wantExpect) violations.push(form.id + '/' + cid + ': verdict=' + verdict + ' 但 expect 非 ' + wantExpect);
-    // 票 29：登记面可达断言 —— 候选集覆盖已达成且期望档位为 none（ADR-0005 登记不注入）
+    // 票 29：登记面可达断言 —— 候选集覆盖已达成且期望档位为 none（伪 select 只登记不注入）
     // 的形态，实测分数必须 >= 登记线，否则「进了候选集却进不了召唤面」等于修复未落地。
     if (covered && form.coveredByCandidateSetTarget && form.expectedTier === 'none' &&
         r.score < REGISTER_SCORE) {

@@ -152,7 +152,7 @@ const Fill = {
     return true;
   },
 
-  // ══ 票 18: 伪 select（ARIA combobox）填充 [ADR-0005 / 17 票取证 observed] ══
+  // ══ 票 18: 伪 select（ARIA combobox）填充 [伪 select 只登记不注入 / 17 票取证 observed] ══
   // 两形态分发（issue 验收2）:
   //   select-only 型（DIV/BUTTON 触发器或 readonly input 触发器）→ 开面板 + 点击/键盘选值:
   //     驱动站点自身组件 UI（点击 option 由组件自己更新 state）——observed 5/5 库选值无

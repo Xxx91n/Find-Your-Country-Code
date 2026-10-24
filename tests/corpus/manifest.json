@@ -487,10 +487,10 @@
         "L1:kw:country(+14)（class \"select-country\" 经 matchLatin joined 命中 country）",
         "L2:custom:dropdown(+20)（票 29：div[tabindex=0] 可聚焦触发器 + 后代 ul>li 选项，选项文本 (+NN)/ISO2 通过内容门槛）",
         "内容证据仅作门槛不作加分（无 ARIA 语义背书，进 L3 会击穿低调线）",
-        "score 34：>= ITI_LOW_REGISTER_SCORE(25) 进召唤面，< SCORE_LOWKEY(35) 且经 ADR-0005 cap → tier=none"
+        "score 34：>= ITI_LOW_REGISTER_SCORE(25) 进召唤面，< SCORE_LOWKEY(35) 且经伪 select 档位上限（只登记不注入）→ tier=none"
       ],
-      "source": "decision-ledger.md A-003；research/cycle4-atomcode-findings.md 第一路「无 ARIA 纯自定义下拉」；ADR-0005（伪 select 登记不注入）；票 29 atomcode 调研（行业候选集一律收敛在语义控件白名单）",
-      "note": "无 ARIA 的手写下拉（触发器 div.select-country[tabindex=0] + ul>li 选项，选项文本含 (+NN)）。expect=none 是 ADR-0005 的工具口径真值（伪 select 档位上限=登记+手动召唤，不自动注入）。票 29 修复后：候选集可见（div[tabindex=\"0\"]）+ 登记面可达（score 34）+ 档位仍 none，三重缺口闭合；残留项为懒渲染面板与站点侧选值交互，见 realSiteForms.baseline.gaps",
+      "source": "decision-ledger.md A-003；research/cycle4-atomcode-findings.md 第一路「无 ARIA 纯自定义下拉」；伪 select 只登记不注入；票 29 atomcode 调研（行业候选集一律收敛在语义控件白名单）",
+      "note": "无 ARIA 的手写下拉（触发器 div.select-country[tabindex=0] + ul>li 选项，选项文本含 (+NN)）。expect=none 取工具口径真值（伪 select 档位上限=登记+手动召唤，不自动注入）。票 29 修复后：候选集可见（div[tabindex=\"0\"]）+ 登记面可达（score 34）+ 档位仍 none，三重缺口闭合；残留项为懒渲染面板与站点侧选值交互，见 realSiteForms.baseline.gaps",
       "el": {
         "tag": "div",
         "className": "select-country",
@@ -581,7 +581,7 @@
         "L1:kw:country(+14)（aria-label \"Country of residence\" 命中 country 裸词组）",
         "14 < SCORE_LOWKEY(35) → none（国家选择语义不构成区号证据，同 F2/F8 口径）"
       ],
-      "note": "contenteditable 承载的国家选择语义（非区号字段）：contenteditable 形态不改变「国家选择≠区号选择」的语义分层（CONTEXT.md 区号字段/国家选择器 词条）。",
+      "note": "contenteditable 承载的国家选择语义（非区号字段）：contenteditable 形态不改变「国家选择≠区号选择」的语义分层（GLOSSARY.md 区号字段/国家选择器 词条）。",
       "el": {
         "tag": "div",
         "attrs": {
@@ -717,10 +717,10 @@
     "expectedTier": "none",
     "dialEvidence": true,
     "upgradeCandidate": true,
-    "expectBasis": "polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "expectBasis": "polarity=negative 取**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因「伪 select 不注入」口径记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
     "knownResidual": false,
     "source": "Cycle-7 T-13（D-013 / D-015 伪 select 二次裁决）语料先行；形态来源：rs-noaria-custom-dropdown（票 29 / A-003 无 ARIA 手写下拉）+ P31-paren-dial-control 的选项内容证据面（(+NN) 括号区号）",
-    "note": "伪 select 形态①（**升级候选**：选项内容携带区号证据）：无 ARIA 手写下拉（div[tabindex=0] + 后代 ul>li），选项以「国名 (+NN)」承载区号证据（CJK 文本 + ISO2 值）。引擎实测：L1 kw:country(+14) + L2 custom:dropdown(+20) = 34 —— 稳过登记线 25（进召唤面）、< SCORE_LOWKEY(35)（不注入），再经 ADR-0005 cap 落 tier=none（src/detect/index.ts:958-961）。 本例是「若升级为自动注入」的候选集成员。polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "note": "伪 select 形态①（**升级候选**：选项内容携带区号证据）：无 ARIA 手写下拉（div[tabindex=0] + 后代 ul>li），选项以「国名 (+NN)」承载区号证据（CJK 文本 + ISO2 值）。引擎实测：L1 kw:country(+14) + L2 custom:dropdown(+20) = 34 —— 稳过登记线 25（进召唤面）、< SCORE_LOWKEY(35)（不注入），再经档位上限（只登记不注入）落 tier=none（src/detect/index.ts:958-961）。 本例是「若升级为自动注入」的候选集成员。polarity=negative 取**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因「伪 select 不注入」口径记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
     "signalAttribution": [
       "L1:kw:country(+14)（class \"select-country\" 经 matchLatin joined 命中 country）",
       "L2:custom:dropdown(+20)（可聚焦 DIV 触发器 + 后代 li 选项；内容门槛通过：parenDial>0）",
@@ -759,10 +759,10 @@
     "expectedTier": "none",
     "dialEvidence": true,
     "upgradeCandidate": true,
-    "expectBasis": "polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "expectBasis": "polarity=negative 取**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因「伪 select 不注入」口径记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
     "knownResidual": false,
     "source": "Cycle-7 T-13（D-013 / D-015）语料先行；形态来源：rs-noaria-custom-dropdown（票 29）与 P31-noparen-dial-select 的「值即区号」证据面",
-    "note": "伪 select 形态②（**升级候选**：选项内容携带区号证据）：无 ARIA 手写下拉，区号证据落在**选项值**（data-value=\"+NN\"，命中 DIAL_SET）而非文本；选项文本为国名（无括号、无 +NN）。引擎实测：L1 kw:country(+14) + L2 custom:dropdown(+20) = 34 —— 稳过登记线 25（进召唤面）、< SCORE_LOWKEY(35)（不注入），再经 ADR-0005 cap 落 tier=none（src/detect/index.ts:958-961）。 与形态①同档位 ⇒ plusDial / parenDial 两条内容证据在伪 select 侧同口径可判，且均只作门槛（不加分）。polarity=negative 取 ADR-0005 的**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因 ADR-0005 记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
+    "note": "伪 select 形态②（**升级候选**：选项内容携带区号证据）：无 ARIA 手写下拉，区号证据落在**选项值**（data-value=\"+NN\"，命中 DIAL_SET）而非文本；选项文本为国名（无括号、无 +NN）。引擎实测：L1 kw:country(+14) + L2 custom:dropdown(+20) = 34 —— 稳过登记线 25（进召唤面）、< SCORE_LOWKEY(35)（不注入），再经档位上限（只登记不注入）落 tier=none（src/detect/index.ts:958-961）。 与形态①同档位 ⇒ plusDial / parenDial 两条内容证据在伪 select 侧同口径可判，且均只作门槛（不加分）。polarity=negative 取**工具口径真值**（伪 select 档位上限＝登记 + 手动召唤 → 不自动注入），而非内容真值；内容轴由 dialEvidence / upgradeCandidate 两字段承载。同 rs-noaria-custom-dropdown 先例（该例选项同样含 (+NN) 却因「伪 select 不注入」口径记为 negative）。置 positive 会使本例计为 FN，击穿 verify-08/13/18/27 的 FN=0 / recall=1 既有断言（本票不得新增红），故不采。",
     "signalAttribution": [
       "L1:kw:country(+14)（class \"select-country\"）",
       "L2:custom:dropdown(+20)（内容门槛通过：plusDial>0，值域 +NN 命中白名单区号表）",
@@ -844,8 +844,8 @@
     "dialEvidence": false,
     "upgradeCandidate": false,
     "knownResidual": false,
-    "source": "Cycle-7 T-13 语料先行；形态来源：CONTEXT.md「国家选择器≠区号字段」语义分层（F2 / F8 / ce-neg-country 同族）",
-    "note": "伪 select 负例②（经典误报族：纯国家选择器，**无**区号证据）：选项值 ISO2 + 文本国名，无 (+NN)、无 +NN、值非区号 ⇒ 仅 isoName>0 就通过内容门槛，pseudo=true、score=34、进召唤面（登记）。这是升级为自动注入时最危险的误报族：注入口径下仍为 none（TN），但它是**召唤面（升级目标集）内的非候选** → 门槛① 的判别率与门槛② 的 FP 均由本例贡献（见 ADR-0005 Notes）。根因残留：country-semantic:suppress 仅作用于原生 select 的 st（src/detect/index.ts:497-499 / 632），custom 与 ARIA 伪 select 分支无对应抑制。",
+    "source": "Cycle-7 T-13 语料先行；形态来源：GLOSSARY.md「国家选择器≠区号字段」语义分层（F2 / F8 / ce-neg-country 同族）",
+    "note": "伪 select 负例②（经典误报族：纯国家选择器，**无**区号证据）：选项值 ISO2 + 文本国名，无 (+NN)、无 +NN、值非区号 ⇒ 仅 isoName>0 就通过内容门槛，pseudo=true、score=34、进召唤面（登记）。这是升级为自动注入时最危险的误报族：注入口径下仍为 none（TN），但它是**召唤面（升级目标集）内的非候选** → 门槛① 的判别率与门槛② 的 FP 均由本例贡献（见伪 select 档位上限口径）。根因残留：country-semantic:suppress 仅作用于原生 select 的 st（src/detect/index.ts:497-499 / 632），custom 与 ARIA 伪 select 分支无对应抑制。",
     "signalAttribution": [
       "L1:kw:country(+14)（class \"select-country\"）",
       "L2:custom:dropdown(+20)（isoName>0：ISO2 值 ↔ 国名文本互证，内容门槛通过）",
@@ -973,7 +973,7 @@
       "fixingTicket": "29",
       "label": "无 ARIA 手写自定义下拉（div+ul，无 role=combobox、无 aria-controls）",
       "expectedTier": "none",
-      "expectedTierRationale": "ADR-0005 伪 select 档位上限 =「登记 + 手动召唤」，不自动注入、不自动填充；期望档位仍为 none，但必须进入候选集且登记分 >= ITI_LOW_REGISTER_SCORE(25)",
+      "expectedTierRationale": "伪 select 档位上限 =「登记 + 手动召唤」，不自动注入、不自动填充；期望档位仍为 none，但必须进入候选集且登记分 >= ITI_LOW_REGISTER_SCORE(25)",
       "corpusCases": [
         "rs-noaria-custom-dropdown"
       ],
@@ -1005,7 +1005,7 @@
         "gaps": [
           "closed(candidate-set)：票 29 新增形态描述符 div[tabindex=\"0\"],span[tabindex=\"0\"] —— 只收可聚焦非表单容器，未放宽为裸 ul li / 全 div 扫描",
           "closed(kind-dispatch)：结构信号 custom:dropdown 置 pseudo=true → kind=pseudo，rememberLow 登记路径可达",
-          "closed(register-threshold)：score 34（L1 kw:country 14 + 结构 20）>= ITI_LOW_REGISTER_SCORE(25) 进召唤面；< SCORE_LOWKEY(35) 与 ADR-0005 档位上限一致",
+          "closed(register-threshold)：score 34（L1 kw:country 14 + 结构 20）>= ITI_LOW_REGISTER_SCORE(25) 进召唤面；< SCORE_LOWKEY(35) 与伪 select 档位上限一致",
           "residual(懒渲染面板)：选项面板未渲染时无 li 可探测，依赖 childList observer 重扫后登记——面板常驻形态不受影响",
           "residual(填充可达性)：fill 侧已补无 aria-controls 的 li 回退，但手写下拉的选值交互由站点脚本决定，行业实证存在打不开/选不中的形态"
         ]

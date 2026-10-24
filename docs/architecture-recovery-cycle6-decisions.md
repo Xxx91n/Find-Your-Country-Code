@@ -20,18 +20,18 @@
 
 ## 三、可证明（A-029 / A-030 / A-031 / A-032 / A-034 / A-035 / A-036）
 
-- **A-029 断言阶梯与真实站点全阶梯**：定义 L0–L4 五级阶梯与**逐级层归属**（`tests/ACCEPTANCE-SURFACE.md`），建 harness 交互原语（`tests/helpers/primitives.mjs`，两 harness 收敛为同一份），真实站点层**跑满 L0–L4** 但保持 **advisory**（仅 `schedule` + `workflow_dispatch`，**永不进 `pull_request`**）；发布门（ADR-0010）以「绿 / 显式 ack + 立票」二选一**阻断出包**，PR 不阻断。
+- **A-029 断言阶梯与真实站点全阶梯**：定义 L0–L4 五级阶梯与**逐级层归属**（`tests/ACCEPTANCE-SURFACE.md`），建 harness 交互原语（`tests/helpers/primitives.mjs`，两 harness 收敛为同一份），真实站点层**跑满 L0–L4** 但保持 **advisory**（仅 `schedule` + `workflow_dispatch`，**永不进 `pull_request`**）；发布门（「发布门」）以「绿 / 显式 ack + 立票」二选一**阻断出包**，PR 不阻断。
 - **A-030 形态语料三层架构**：镜像页 9 + 结构骨架 8 + `manifest.json`（SHA-256 指纹 + provenance 元数据），**原始快照出仓**（库外 archive，仓内只留指纹），退化回路用**确定性结构 diff 分级**（非像素），纪律「**绝不为修绿而盲目更新快照**」。
 - **A-031 三个新误报面**：iti v29 内部搜索框 / ISO2 值语言下拉 / 无括号区号文本 —— **语料先行**，引擎侧只加 scoped 护栏（无无条件放行）。
 - **A-032 视觉替换型隐藏 select**：两子形态（`width:1px+aria-hidden` 与 `display:none`）入语料并据实修正 N7 的机理假设（原文存 `supersededAssumption`）。
 - **A-034（P0）跨帧 origin 校验误判**：`about:srcdoc` 帧的 `location.origin` 被序列化为字符串 `"null"`，而 `window.origin` 为继承的真实 origin ⇒ 旧判据在 srcdoc 帧**必然误判并丢弃合法填充指令**。修法：全仓唯一定义 `SELF_ORIGIN`（`window.origin` 优先 + 回退分支），四处操作数统一取用；**不放宽任何来源校验**。结果：真实站点 `live-codepen-pen-fullpage` 由 `L3!/L4!` 转 **L0–L4 全绿**。
 - **A-035 ITI 形态 L3 判据**：钉版库全文**仅 1 处 `dispatchEvent`**（只发自定义事件）⇒ 旧「原生 input/change 各 ≥1」对 ITI 目标**确定性不可满足**（假红）。判据按写入口形态分派，普通字段判据**逐字保留**，ITI 分支 fail-closed。
-- **A-036 门保真度缺口**：BC 替身缺 `origin` ⇒ origin 守卫从未被真实行使；缺结构化克隆 ⇒ 接收方就地改写污染发送方缓存 ⇒ 上限断言（S4）的绿是**假绿**。裁定 **`RULES_MAX_OVERRIDES` 强制点在写路径**（`src/store/index.ts:273` fail-closed，读路径 slice 保留为第二层防御），立 **ADR-0011**；替身补克隆保真度后 S4 反映**真实保证**。
+- **A-036 门保真度缺口**：BC 替身缺 `origin` ⇒ origin 守卫从未被真实行使；缺结构化克隆 ⇒ 接收方就地改写污染发送方缓存 ⇒ 上限断言（S4）的绿是**假绿**。裁定 **`RULES_MAX_OVERRIDES` 强制点在写路径**（`src/store/index.ts:273` fail-closed，读路径 slice 保留为第二层防御），立 **「写路径强制点」**；替身补克隆保真度后 S4 反映**真实保证**。
 
 ## 四、域建模（A-033）
 
-- **决策**：为「发布门」立 **ADR-0010**（PR 不阻断 / 发布门阻断的取舍 + 5 条被否路线 + 4 条反证条件）；`CONTEXT.md` 补入 7 条术语（验收阶梯 / 发布门 / 形态语料 / 结构骨架 / 镜像页 / 诊断面 / 判定记录），28→35，零实现细节。
-- **落地**：`docs/adr/0010-release-gate.md` + `docs/adr/0011-rule-override-cap-enforcement-point.md` + `CONTEXT.md`。
+- **决策**：为「发布门」立 **「发布门」**（PR 不阻断 / 发布门阻断的取舍 + 5 条被否路线 + 4 条反证条件）；词表补入 7 条术语（验收阶梯 / 发布门 / 形态语料 / 结构骨架 / 镜像页 / 诊断面 / 判定记录），28→35，零实现细节。
+- **落地**：「发布门」 + 「写路径强制点」 + 词表（现为 `GLOSSARY.md`）。
 
 ## 五、本轮确立的关键取舍（过程决策）
 
@@ -42,6 +42,6 @@
 
 ## 六、已知红与遗留
 
-- **真实站点层 flaky**：`live-codepen-editor` 在 CI 上出现帧发现阶段失败（第三方页面漂移），advisory 语义下**只告警不阻断**；发版时按 ADR-0010 条款 2 走 ack 流程。
+- **真实站点层 flaky**：`live-codepen-editor` 在 CI 上出现帧发现阶段失败（第三方页面漂移），advisory 语义下**只告警不阻断**；发版时按 「发布门」 条款 2 走 ack 流程。
 - **`verify-03` 的 G8c 微基准**：门控关时 trace 100000 次 < 50ms —— 本机测量在 50ms 阈值附近浮动（空载 63–71ms / 负载轻时 < 50ms），**CI 上通过** ⇒ **机器性能敏感**，非代码回归；本地跑该门须以 CI 为准。
-- **遗留 2 处真实脱节（入 backlog）**：① `tests/ACCEPTANCE-SURFACE.md` 仍引用已删除的 `#cch-locale-tg`；② `gf-alignment-check.yml` 未声明 `pull_request`（违反 ADR-0006 条款 2，未登记例外）。
+- **遗留 2 处真实脱节（入 backlog）**：① `tests/ACCEPTANCE-SURFACE.md` 仍引用已删除的 `#cch-locale-tg`；② `gf-alignment-check.yml` 未声明 `pull_request`（违反 「工程卫生基线」 条款 2，未登记例外）。

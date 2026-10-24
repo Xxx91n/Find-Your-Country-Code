@@ -25,7 +25,7 @@ npm run e2e        # 构建 + Playwright 端到端测试
 
 ## 发版节奏
 
-发版**不**随每个变更即时发生，而是按**有节奏的批量**收割——固定节奏为**双周至月度**，规则见 **`docs/adr/0016-release-cadence-policy.md`**：
+发版**不**随每个变更即时发生，而是按**有节奏的批量**收割——固定节奏为**双周至月度**：
 
 - **补丁豁免**：安全修复与严重 bug 的 patch 版本**随时就绪随时发、不排队**（优先于节奏点与积累阈值）。
 - **积累上限**：自上一 tag 以来 `commits > 30` 或 `diff 行数 > 2000` ⇒ **立即收割**，不再等节奏点。
@@ -43,9 +43,9 @@ npm run e2e        # 构建 + Playwright 端到端测试
 3. 检查远端 tag `v<版本>` 是否已存在——已存在则跳过（幂等，防重复发布）；
 4. 不存在则以 Glog 双语为 Release 说明创建 GitHub Release，产物 `.user.js` 作为附件上传。
 
-> **落地口径（`docs/adr/0014-ci-evidence-loop-and-landing-model.md`）**：`push ≠ 落地`。**落地事件只有一个 = required checks 绿后的合入**；分支上的 run 只证明候选，**不作闭环证据**。**权威验收锚点 = 目标分支（`main`）上的成功 run**（登记 run ID + 被验 sha，不登记「本地跑过」）。本仓版本控制唯一入口是 GitButler（`but`）：`but push`（分支候选）→ `but land`（落地 `main`，即落地事件）。
+> **落地口径**：`push ≠ 落地`。**落地事件只有一个 = required checks 绿后的合入**；分支上的 run 只证明候选，**不作闭环证据**。**权威验收锚点 = 目标分支（`main`）上的成功 run**（登记 run ID + 被验 sha，不登记「本地跑过」）。本仓版本控制唯一入口是 GitButler（`but`）：`but push`（分支候选）→ `but land`（落地 `main`，即落地事件）。
 
-**版本号口径**：按语义化版本（SemVer）——行为级换代升 MAJOR，新增能力累积收割升 MINOR（发版节奏见 `docs/adr/0016-release-cadence-policy.md`），修缺陷升 PATCH。发布前需人工确认版本号与 Glog 内容（发版是面向用户的外发动作）。
+**版本号口径**：按语义化版本（SemVer）——行为级换代升 MAJOR，新增能力累积收割升 MINOR（发版节奏见上节），修缺陷升 PATCH。发布前需人工确认版本号与 Glog 内容（发版是面向用户的外发动作）。
 
 **beta 验证发布**：正式发版前，可将版本 bump 为 `2.0.0-beta.1` 走一次完整链路验证，随后删除该 tag/Release 并回滚版本号。该动作必须经用户确认后执行。
 

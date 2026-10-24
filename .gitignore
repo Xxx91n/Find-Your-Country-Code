@@ -10,7 +10,7 @@
 
 # docx
 docs/*
-!docs/adr/
+!docs/agents/
 !docs/architecture-recovery-*.md
 !docs/greasyfork-sync-setup.md
 

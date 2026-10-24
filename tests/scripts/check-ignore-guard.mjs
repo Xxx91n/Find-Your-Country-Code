@@ -14,7 +14,7 @@
 //   B) 阴性对照：已知可抛弃目录（构建与运行产物）**必须确实被忽略** ——
 //      证明本门禁真的能区分「被吞」与「没被吞」。
 //
-// 2026-10-18 治理庭：.scratch 移出版本控制（ADR-0013 Notes）——关键路径清单不再含 .scratch，.scratch/ 转为阴性对照。
+// 2026-10-18 治理庭：.scratch 移出版本控制——关键路径清单不再含 .scratch，.scratch/ 转为阴性对照。
 // 关键路径清单只存在于本文件：`.github/workflows/*.yml` 不出现 `.scratch/` 字面量
 //   （否则会击穿 verify-ticket-07 G4v / 10 G7e / 11 G7 / 12 G7e 的反向断言门）。
 //
@@ -34,9 +34,8 @@ const JSON_OUT = ARGS.has('--json');
 
 // ── A) 关键路径：必须 **不被** 忽略（被吞即门禁失败）──
 const MUST_NOT_BE_IGNORED = [
-  // 领域语言与决策（CONTEXT.md / docs/adr 白名单形态）
-  'CONTEXT.md',
-  'docs/adr/',
+  // 领域语言（GLOSSARY.md 等白名单形态）
+  'GLOSSARY.md',
   // 测试与门禁输入面
   'tests/ACCEPTANCE-SURFACE.md',
   'tests/corpus/manifest.json',
@@ -49,9 +48,9 @@ const MUST_NOT_BE_IGNORED = [
 
 // ── B) 阴性对照：必须 **确实** 被忽略（否则门禁无区分力）──
 const MUST_BE_IGNORED = [
-  // 治理庭 2026-10-18：.scratch 移出版本控制（ADR-0013 Notes）——转为阴性对照
+  // 治理庭 2026-10-18：.scratch 移出版本控制——转为阴性对照
   '.scratch/',
-  // 治理庭 2026-10-18：.scratch 移出版本控制（ADR-0013 Notes）——转为阴性对照
+  // 治理庭 2026-10-18：.scratch 移出版本控制——转为阴性对照
   'dist/',
   'test-results/',
   'playwright-report/',
@@ -91,7 +90,7 @@ function runSelfTest() {
   t('self-test: parse empty output', parseCheckIgnore('') === null && parseCheckIgnore('\n') === null);
   // 清单非空且含受管工件区（防止清单被静默清空后门禁恒真）
   t('self-test: MUST_NOT_BE_IGNORED non-empty', MUST_NOT_BE_IGNORED.length > 0);
-  t('self-test: .scratch is a negative control (out of VCS per ADR-0013 Notes)', MUST_BE_IGNORED.includes('.scratch/'));
+  t('self-test: .scratch is a negative control (out of VCS)', MUST_BE_IGNORED.includes('.scratch/'));
   t('self-test: negative controls non-empty', MUST_BE_IGNORED.length >= 4);
   // 真跑一条阴性对照，证明探测通道真的能看见「被忽略」
   const probe = checkIgnore('dist/');

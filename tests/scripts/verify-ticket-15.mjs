@@ -269,7 +269,7 @@ const probeSrc = readFileSync(join(ROOT, 'src', 'fill', 'index.ts'), 'utf8');
   check('S3:probe-single-point', (fillSrc.match(/_probe\.hit\(/g) || []).length === 1 && (fillSrc.match(/_probe\.forceDiff\(/g) || []).length === 1, '探测+兜底收敛于 _inject 单点');
   check('S4:dispatch-single',
     (fillSrc.match(/dispatchEvent/g) || []).length - (fillSrc.match(/dispatchEvent\(new KeyboardEvent/g) || []).length === 1,
-    '值事件派发仅 _inject 一处（textarea/select 原型路径未改；cch-18 伪 select keydown 键盘派发不入值事件口径——ADR-0006 后果1 登记修法）');
+    '值事件派发仅 _inject 一处（textarea/select 原型路径未改；cch-18 伪 select keydown 键盘派发不入值事件口径——S4 口径限定为仅统计 input/change 值事件）');
   check('S5:probe-readonly', fillSrc.includes('Object.getOwnPropertyDescriptor(el, \'value\')') && !fillSrc.includes('defineProperty'), '探测只读（不写元素属性，无新失败面）');
 }
 

@@ -11,8 +11,8 @@
 //   G3 校验未删除、未放宽（本票 delta 硬约束）：票 24 语义不变
 //   G4 只升不降：既有密封 spec 文件集零删减；本票 5 例（含 L0/L3/L4 阶梯）在位
 //   G5 票 12 delta：跨域 fixture 与既有用例仍在；本票新增非嵌入来源拒绝用例
-//   G6 发布面判据不变（ADR-0010）：真实站点层不进 pull_request；release 以 needs 硬依赖挂发布门
-//   G7 覆盖声明与 workflow 卫生：A-034 四处声明；workflow 零 .scratch/ 路径引用（ADR-0006 决策 1）
+//   G6 发布面判据不变：真实站点层不进 pull_request；release 以 needs 硬依赖挂发布门
+//   G7 覆盖声明与 workflow 卫生：A-034 四处声明；workflow 零 .scratch/ 路径引用（CI 脚本住 tests/scripts/）
 //
 // 运行时用例数（135 → 140）由 CI 的 e2e.yml 运行结果锚定，本门只做静态结构锁。
 // 用法：node tests/scripts/verify-ticket-10.mjs
@@ -78,7 +78,6 @@ const STORE = read('src/store/index.ts');
 const FIXTURE = read('tests/fixtures/srcdoc-frame.html');
 const SPEC = read('tests/srcdoc-origin.spec.ts');
 const PROBE = read('tests/evidence/10-probe-srcdoc-origin.mjs');
-const ISSUE = read('tests/evidence/10-srcdoc-origin-fix.md');
 // Cycle-7 D-004：票级 workflow 合并 —— verify-10.yml 删除，CI 挂接点 = 调用方 + plan 的 '10' 条目
 const V10 = read('.github/workflows/verify-tickets.yml');
 const T10 = (JSON.parse(read('tests/scripts/verify-ticket-plan.json')).tickets || {})['10'] || {};
@@ -140,10 +139,10 @@ const IFSPEC = read('tests/iframe.e2e.spec.ts');
 check('G5b 票 12 跨域 fixture 既有用例仍在（拒绝语义载体）', IFSPEC.includes('iframe-cross-origin.html'));
 check('G5c 本票新增「非嵌入来源仍被拒绝」用例（入站校验未放宽）', SPEC.includes('非嵌入来源'));
 
-// ══ G6 发布面判据不变（ADR-0008 第二层 / ADR-0010 条款 2）══
+// ══ G6 发布面判据不变（真实站点层 advisory / 发布门阻断）══
 const SMOKE = read('.github/workflows/real-site-smoke.yml');
 const smokeOn = onBlock(SMOKE);
-check('G6a 真实站点层 on: 触发块仍无 pull_request（ADR-0008 第二层）', smokeOn.length > 0 && !smokeOn.includes('pull_request'), smokeOn.split(NL).filter((l) => l.trim()).join(' / '));
+check('G6a 真实站点层 on: 触发块仍无 pull_request（真实站点层不进 PR）', smokeOn.length > 0 && !smokeOn.includes('pull_request'), smokeOn.split(NL).filter((l) => l.trim()).join(' / '));
 check('G6a2 真实站点层仍仅 schedule + workflow_dispatch 触发', smokeOn.includes('schedule:') && smokeOn.includes('workflow_dispatch:'));
 const REL = read('.github/workflows/release.yml');
 check('G6b release 仍以 needs 硬依赖挂在发布门之后', REL.includes('release-gate:') && REL.includes('needs: release-gate'));
@@ -152,9 +151,9 @@ check('G6b release 仍以 needs 硬依赖挂在发布门之后', REL.includes('r
 check('G7a A-034 在 fixture 声明', FIXTURE.includes('A-034'));
 check('G7b A-034 在密封 spec 声明', SPEC.includes('A-034'));
 check('G7c A-034 在探针脚本声明', PROBE.includes('A-034'));
-check('G7d A-034 在本门与 issue 声明', (T10.covers || []).includes('A-034') && ISSUE.includes('A-034'));
+check('G7d A-034 在本门声明', (T10.covers || []).includes('A-034'));
 const scratchRefs = scan(V10, (l) => l.includes('.scratch/'));
-check('G7e workflow 零 .scratch/ 路径引用（ADR-0006 决策 1）', scratchRefs.length === 0, scratchRefs.join(' | '));
+check('G7e workflow 零 .scratch/ 路径引用（CI 脚本住 tests/scripts/）', scratchRefs.length === 0, scratchRefs.join(' | '));
 
 console.log(NL + 'verify-ticket-10: ' + pass + ' PASS, ' + failures.length + ' FAIL');
 if (failures.length) { console.log('failures:'); for (const f of failures) console.log('  - ' + f); process.exit(1); }
