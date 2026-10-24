@@ -7,7 +7,7 @@
 //
 // 纪律：与密封层共用同一份交互原语（tests/helpers/primitives.mjs），不新造第二套；
 //      不 import playwright/test，不含 expect（探针只输出事实）。
-// 运行：npm run build && node .scratch/architecture-recovery/research/scripts/10-probe-srcdoc-origin.mjs
+// 运行：npm run build && node tests/evidence/10-probe-srcdoc-origin.mjs
 // ══════════════════════════════════════════════════════════════
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';

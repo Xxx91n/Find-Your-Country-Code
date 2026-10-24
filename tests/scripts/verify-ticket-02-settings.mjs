@@ -33,7 +33,7 @@ const MAIN = read('src/main.ts');
 const TYPES = read('src/types.ts');
 const UI = read('src/ui/index.ts');
 
-// == S0 \u81EA\u8BC1\uFF08\u5DF2\u77E5\u597D\u6837\u672C\u5E72\u8DD1 [WORKFLOW \u00A75 \u6559\u8BAD]\uFF09==
+// == S0 \u81EA\u8BC1\uFF08\u5DF2\u77E5\u597D\u6837\u672C\u5E72\u8DD1\uFF09==
 {
   check(CONFIG.length > 0 && I18N.length > 0 && MAIN.length > 0 && UI.length > 0 && TYPES.length > 0,
     'S0 \u4E94\u4EFD\u6E90\u6587\u4EF6\u53EF\u8BFB\u975E\u7A7A',

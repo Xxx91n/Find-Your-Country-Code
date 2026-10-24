@@ -32,13 +32,13 @@ A push to `main` touching release paths (`src/**`, `vite.config.ts`, `package.js
 3. check whether remote tag `v<version>` already exists — skip if it does (idempotent, prevents duplicate releases);
 4. otherwise create a GitHub Release with both Glog files as notes and upload the `.user.js` artifact.
 
-**Version jump policy**: the modularization + scoring engine after `v1.3.4` is a generation-level behavior change; `v2.0.0` (semver major bump) is recommended. `v1.4.0` is a valid low-key alternative. Trade-offs: `.scratch/architecture-recovery/research/window-reports/10-release-pipeline-report.md`. The actual version number and Glog content require maintainer sign-off before publishing (releases are user-facing, outbound actions).
+**Version jump policy**: the modularization + scoring engine after `v1.3.4` is a generation-level behavior change; `v2.0.0` (semver major bump) is recommended. `v1.4.0` is a valid low-key alternative. The actual version number and Glog content require maintainer sign-off before publishing (releases are user-facing, outbound actions).
 
 **Beta validation release**: before the real release you may bump to e.g. `2.0.0-beta.1`, run the full pipeline once, then delete that tag/Release and roll the version back. This action requires explicit user confirmation.
 
 ## Download link verification
 
-After a release, verify both channels (scripted: `.scratch/architecture-recovery/research/scripts/verify-ticket-10.mjs`):
+After a release, verify both channels (scripted: `node tests/scripts/verify-ticket-10.mjs`):
 
 | Link | Where | How to verify | Expected |
 |---|---|---|---|

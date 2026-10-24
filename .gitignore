@@ -11,7 +11,6 @@
 # docx
 docs/*
 !docs/agents/
-!docs/architecture-recovery-*.md
 !docs/greasyfork-sync-setup.md
 
 # worktrees
@@ -28,5 +27,5 @@ playwright-report/
 # 真实站点冒烟层运行产物（票 39）
 live-out/
 
-# 治理庭 2026-10-18：.scratch 为本地治理区，不入版本控制（内容永久归档于仓库外 ../choose-your-country-snapshots/）
+# .scratch 为本地治理区，不入版本控制（该目录已于 2026-10-24 删除，未保留归档；规则保留以防重建时误入库）
 .scratch/

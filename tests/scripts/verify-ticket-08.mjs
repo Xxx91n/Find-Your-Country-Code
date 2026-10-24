@@ -8,7 +8,7 @@
 //   G4 无回退与常量锁（语料基线 / 参数锁 / 性能红线未弱化）
 //   G5 声明与纪律
 //
-// 证据口径：本门为**本地自证**（WORKFLOW §8.1.2）；行为面闭环以 CI run 为准。
+// 证据口径：本门为**本地自证**；行为面闭环以 CI run 为准。
 // 用法：node tests/scripts/verify-ticket-08.mjs
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync, existsSync } from 'node:fs';

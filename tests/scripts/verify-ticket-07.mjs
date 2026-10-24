@@ -54,7 +54,7 @@ function onBlock(yaml) {
   return lines.slice(start + 1, end).join('\n');
 }
 
-// ══ S0 自证（已知好样本干跑；WORKFLOW §5 教训）══
+// ══ S0 自证（已知好样本干跑）══
 {
   const FILES = ['tests/live/site-manifest.json', 'tests/live/live-smoke.mjs', 'tests/helpers/primitives.mjs',
     'tests/scripts/release-gate.mjs', '.github/release-gate-ack.json', '.github/workflows/release.yml',

@@ -14,8 +14,7 @@
 //                   · ITI 接管字段 → **选中国家状态**（官方读 API → DOM 选中态）
 //                     + ITI 官方 countrychange 事件。依据：ITI 官方**不承诺**把区号写进其
 //                     input.value（separateDialCode 模式下由独立元素承载），且**从不**派发
-//                     原生 input / change——见 research/atomcode-11-iti-l3-criterion.md
-//                     与 research/window-reports/11-iti-l3-criterion-report.md
+//                     原生 input / change（ITI 官方行为，已本地复现）。
 //   L4 用户反馈出现 #cch-toast 出现且文案非空（外部可观测，非脚本自报）
 // 层归属（§4.2）：本层与 owned 页**都跑全阶梯**，差别只在阻断语义 —— 本层 advisory
 //   （仅 schedule + workflow_dispatch，失败只告警不阻断合入）；阻断只发生在 release.yml 发布门

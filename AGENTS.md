@@ -1,22 +1,23 @@
 # Find-Your-Country-Code
-浏览器油猴脚本：在任意网页识别电话国家区号字段，注入 🌐 图标与快速选择面板。
 
-## 装 / 跑 / 测
+Userscript: finds phone country-code fields on any page, injects a 🌐 icon and a quick-pick panel.
 
-- 安装 `npm ci`；构建 `npm run build`（产物在 `dist/`）；开发 `npm run dev`
-- 类型门禁 `npm run typecheck`；E2E `npm run e2e`（首次先 `npx playwright install chromium`）
+## Install / run / test
 
-## 别改
+- `npm ci`; build with `npm run build` (output in `dist/`); dev with `npm run dev`
+- Type gate: `npm run typecheck`; E2E: `npm run e2e` (run `npx playwright install chromium` once first)
 
-- `tests/corpus/`、`tests/fixtures/`：语料，改动须同步 manifest 与基线
-- `dist/`、`playwright-report/`、`test-results/`：产物，不手改
-- `.github/workflows/`：门禁定义，改前先确认触发面
+## Don't touch
 
-## 看不出来的坑
+- `tests/corpus/`, `tests/fixtures/`: corpus — changes must update the manifest and baselines
+- `dist/`, `playwright-report/`, `test-results/`: generated output, never edit by hand
+- `.github/workflows/`: gate definitions — check the trigger surface before editing
 
-- 注入走 Shadow DOM，样式不得泄漏到宿主页面。
-- 给受控组件写值必须用元素原型上的原生 value setter，再派发 input→change→blur；直接赋值不会同步框架状态。
-- `about:srcdoc` 帧的 `location.origin` 是字符串 `"null"`，判来源要用 `window.origin`。
+## Traps you cannot infer from the code
+
+- Injection lives in Shadow DOM; styles must not leak into the host page.
+- Writing to a controlled component requires the element's prototype value setter, then input→change→blur. Direct assignment does not sync framework state.
+- Inside `about:srcdoc` frames `location.origin` is the string `"null"`; use `window.origin` for origin checks.
 
 ## Agent skills
 

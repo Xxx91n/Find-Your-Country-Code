@@ -4,8 +4,8 @@
 // 方法：读文本做结构断言（无浏览器、无 npm 依赖、零外网，node 直跑；零正则，逐行扫描）。
 //
 // 断言面：
-//   S0 自证：全部工件存在且可读非空（WORKFLOW §5 教训：验收工具也要先自证）
-//   G1 缺陷形态已沉淀为塔身 fixture（WORKFLOW §4.5.1 硬序：先沉淀再改脚本）
+//   S0 自证：全部工件存在且可读非空（验收工具也要先自证）
+//   G1 缺陷形态已沉淀为塔身 fixture（硬序：先沉淀再改脚本）
 //   G2 修复面完整：SELF_ORIGIN 唯一定义（window.origin 优先）；四处操作数全部改用之；
 //      全 src/ 内无以 location.origin 作比较操作数的残留
 //   G3 校验未删除、未放宽（本票 delta 硬约束）：票 24 语义不变
@@ -94,7 +94,7 @@ function srcFiles() {
 }
 const ALL_SRC = srcFiles().map((f) => read(f)).join(NL);
 
-// ══ G1 缺陷形态已沉淀为塔身 fixture（WORKFLOW §4.5.1 硬序）══
+// ══ G1 缺陷形态已沉淀为塔身 fixture（升塔硬序：先沉淀再改脚本）══
 check('G1a srcdoc 形态 fixture 存在且内联 srcdoc 帧', FIXTURE.includes('srcdoc=') && FIXTURE.includes('iframe'));
 check('G1b fixture 子帧含可驱动的区号字段', FIXTURE.includes('id="srcc-cc"'));
 check('G1c 密封 spec 钉住根因前提（location.origin 为 null 字符串 / window.origin 为真实 origin）', SPEC.includes("toBe('null')") && SPEC.includes('window.origin'));

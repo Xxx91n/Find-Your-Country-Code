@@ -6,7 +6,7 @@
 // 硬门禁（任一失败 → exit 1）:
 //   1) realSiteForms 契约字段完整
 //   2) corpusCases 必须存在于 cases 且 family="real-site"
-//   3) 覆盖探针自证（已知命中/已知不命中样本全部符合预期）——验收工具先自证 [WORKFLOW §5]
+//   3) 覆盖探针自证（已知命中/已知不命中样本全部符合预期）——验收工具先自证
 //   4) SCAN_SELECTORS 提取成功且非空
 //   5) 实测候选集覆盖 === 登记的覆盖基线；实测引擎结果 === 登记的复现基线
 //      （27/28/29 修复后必须显式更新 manifest，禁止静默漂移）
@@ -105,7 +105,7 @@ function normalizeDescriptor(d) {
   };
 }
 
-// ── 探针自证：已知命中 / 已知不命中样本，全部必须符合预期 [WORKFLOW §5 教训] ──
+// ── 探针自证：已知命中 / 已知不命中样本，全部必须符合预期 ──
 function selfTest(scanSelectors) {
   const cases = [
     ['select', { tag: 'select' }, true],

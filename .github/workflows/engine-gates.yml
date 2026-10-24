@@ -6,7 +6,7 @@ name: Engine Gates
 # 触发面对齐 CI 门禁定义：pull_request + push(main, cch/**)。
 # 返工联①（票 34 R1）：node 20→22 —— 装载脚本需 module.stripTypeScriptTypes（Node>=22.13）。
 # Cycle-7 T-07（D-010）：新增勾销对账门 issue-checkbox-audit.mjs（票据勾销标记 × 报告完成自述；unknown 不得合并为 pass）。
-# 2026-10-18 治理庭：issue-checkbox-audit 随 issues/ 归档出仓而移除（.scratch/ 已移出版本控制）。
+# 2026-10-18：issue-checkbox-audit 随 issues/ 归档出仓而移除。
 
 on:
   pull_request:

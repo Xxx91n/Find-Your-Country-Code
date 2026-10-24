@@ -64,7 +64,7 @@ const FILES = {
   probeReal: 'tests/corpus/forms/probes/06-probe-real.mjs',
 };
 
-// == S0 自证（已知好样本干跑 [WORKFLOW §5 教训]）==
+// == S0 自证（已知好样本干跑）==
 {
   const missing = Object.entries(FILES).filter(([, p]) => !existsSync(abs(p))).map(([k]) => k);
   check(missing.length === 0, 'S0 全部工件存在', 'missing=' + (missing.join(',') || 'none'));
@@ -174,7 +174,7 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   };
   walk(abs(FORMS));
   eq(stray.length, 0, 'S4 形态语料目录内无原始快照 / 渲染 DOM / 截图', stray.join(',') || 'clean');
-  // 归档在场时做**指纹实物复核**（WORKFLOW §8.2 本地硬验收：只读、无副作用）；
+  // 归档在场时做**指纹实物复核**（本地硬验收：只读、无副作用）；
   // CI 无归档 → 显式 SKIP（不伪造绿，也不误报红）
   if (existsSync(archiveRoot)) {
     let verified = 0, mismatch = 0;

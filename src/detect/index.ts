@@ -10,8 +10,8 @@
 //   content-visibility:hidden）只降注入档位为 none 并保留登记召唤（Bitwarden
 //   dom-element-visibility / KeePassXC #2184 可见性教训）；L3 加码（票 13）：ISO2
 //   全集成员测试 + 占位首项剔除计分；iti 容器唯一证据防线（票 13 检查点四 = 16-fix §5①）。
-// 蓝图出处：research/industry-models.md §④ + M8 + atomcode-industry-models.md 核心结论1/2/3/10
-// 误报标定：research/misdetection-root-causes.md §2 五类 + 25 例 harness（FP 全落 none 档）
+// 蓝图：五层瀑布 L0–L4 + M8 分级行动 + 行业模型核心结论1/2/3/10
+// 误报标定：误报根因五类 + 25 例 harness（FP 全落 none 档）
 // 站点规则接线（票 05）：规则匹配先于检测 —— scan 入口查豁免（=完全跳过）；
 //   _process 评分前查强制选择器/页面级分档覆盖（Rules 引擎，见 ../rules；Rules 缺省时行为=无规则）
 //   票 30 [A-004]：页面级分档覆盖仅来自显式 scope:'page' 规则；selector 规则只作用于命中元素

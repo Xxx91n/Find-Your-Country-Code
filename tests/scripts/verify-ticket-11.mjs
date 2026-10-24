@@ -60,7 +60,7 @@ const FILES = {
   workflow: '.github/workflows/verify-tickets.yml',
 };
 
-// ══ S0 自证（已知好样本干跑 [WORKFLOW §5 教训]）══
+// ══ S0 自证（已知好样本干跑）══
 {
   const missing = Object.entries(FILES).filter(([, p]) => !has(p)).map(([k]) => k);
   check('S0 全部工件存在', missing.length === 0, 'missing=' + (missing.join(',') || 'none'));

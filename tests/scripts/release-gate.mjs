@@ -13,7 +13,7 @@
 // ack 记录即审计：谁 ack、为什么、对应哪次运行、跟踪票在哪，逐项强制留痕。
 //
 // 位置：本脚本置于 tests/scripts/（CI 引用脚本一律住 tests/scripts/，
-// .github/workflows/*.yml 禁止出现 .scratch/ 路径引用）。
+// 且 workflow 不得引用受管区路径）。
 //
 // 本地自证：node tests/scripts/release-gate.mjs --self-test        （纯函数判定表，零外网）
 // 本地干跑：RELEASE_GATE_REPO_JSON=<file> RELEASE_GATE_RUNS_JSON=<file> \
@@ -32,7 +32,7 @@ export const MIN_REASON = 20;
 
 // ── 立票可解析性：三条合法形式（仓库内文件路径 / #NNN / GitHub issue URL） ──
 // 说明：机器只能验证「票存在且可定位」，不能验证「票内容恰当」——后者是人的职责，
-// 由 ack.reason + acknowledgedBy 的留痕承担（WORKFLOW §8.2.5：人工门禁不是免检）。
+// 由 ack.reason + acknowledgedBy 的留痕承担（人工门禁不是免检）。
 export function checkTicket(ticket) {
   const t = String(ticket === null || ticket === undefined ? '' : ticket).trim();
   if (!t) return { ok: false, why: '为空' };
