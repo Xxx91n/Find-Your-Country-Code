@@ -279,3 +279,19 @@ test('票T1 负反馈对特殊 id 字段：生成选择器经 CSS.escape 转义�
   await page.reload();
   expect((await gmDoc(page)).overrides).toHaveLength(1);
 });
+
+test('票T1 复审③ 上限拒绝不误报选择器非法：满 500 条时合法选择器保存出上限 toast', async ({ page }) => {
+  const seed = { version: 1, exempt: [] as string[], global: null, overrides: Array.from({ length: 500 }, (_, i) => ({
+    id: 'r-cap' + i, host: '127.0.0.1', selector: '#cap' + i, action: { tier: 'auto' }, scope: 'element', note: '', createdAt: 1, updatedAt: 1,
+  })) };
+  await boot(page, { rules: seed });
+  await openPanel(page, '#cc-strong');
+  await openRules(page);
+  await addRule(page, '#phone', 'lowkey'); // 合法选择器，但 RULES_MAX_OVERRIDES 已满
+  await expect(page.locator('#cch-toast')).toContainText(/limit reached|数量上限/);
+  expect((await gmDoc(page)).overrides).toHaveLength(500); // 上限 fail-closed，文档不变
+  // 同输入非法选择器仍报「选择器非法」——两种拒绝原因可区分
+  await addRule(page, 'div[[');
+  await expect(page.locator('#cch-toast')).toContainText(/invalid selector|选择器非法/);
+  expect((await gmDoc(page)).overrides).toHaveLength(500);
+});

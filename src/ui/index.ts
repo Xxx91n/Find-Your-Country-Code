@@ -1,5 +1,5 @@
 import { t, getLocale, setLocale, LOCALE_MODES } from '../i18n';
-import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, SETTINGS_SECTION_LOCALE, SETTINGS_VIEW, RULE_TIERS } from '../config';
+import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, SETTINGS_SECTION_LOCALE, SETTINGS_VIEW, RULE_TIERS, RULES_MAX_OVERRIDES } from '../config';
 // 票 03 [A-028]：诊断面常量（reason 闭集 + 判定点命名空间 + 门控开关持久键）
 import { DIAG_REASON, DIAG_POINT_PREFIX, DIAG_TRACE_PREF } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
@@ -726,6 +726,11 @@ border-radius:8px;cursor:pointer;text-align:center}
       const sel = addSel.value.trim();
       // 空输入静默不动作：未提交任何选择器，不属于「保存被拒」，不出错反馈
       if (!sel) return;
+      // 票 T1 复审③：按真实拒绝原因出 toast（非法选择器 ≠ 上限）；store 写路径预检仍是兜底，
+      // 这里预检只为让反馈准确——上限在 UI 侧可先行判定（listRules 读面），选择器合法性委托
+      // 与写路径同一来源的 isValidSelector，两处预检口径不漂移。
+      if (!R.isValidSelector(sel)) { this.toast(t('ruleInvalidSel')); return; }
+      if (R.listRules().overrides.length >= RULES_MAX_OVERRIDES) { this.toast(t('ruleCap')); return; }
       const id = R.upsertOverride({ host: location.href, selector: sel, action: { tier: addTier.value as 'auto' | 'lowkey' }, note: 'panel-force-selector' });
       if (id) {
         addSel.value = '';
