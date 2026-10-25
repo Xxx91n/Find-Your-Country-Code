@@ -259,13 +259,23 @@ test('票T1 合法选择器保存生效：规则入列 + 强制选择器按声�
   await expect(wrapperFor(page, '#phone').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
 });
 
-test('票T1 负反馈路径同受预检：字段 id 产生非法选择器时保存被拒并反馈', async ({ page }) => {
+test('票T1 负反馈对特殊 id 字段：生成选择器经 CSS.escape 转义后照常写入生效', async ({ page }) => {
   await boot(page);
   const wrap = wrapperFor(page, '#cc-mid');
   await wrap.locator('.cch-btn').click(); // 先开面板（target 已捕获），再改 id
   await page.evaluate(() => { (document.getElementById('cc-mid') as HTMLElement).setAttribute('id', 'div[['); });
-  await page.locator('#cch-fb').click(); // rememberNone 生成 '#div[[' → 写路径拒绝
-  await expect(page.locator('#cch-toast')).toContainText(/invalid selector|选择器非法/);
+  await page.locator('#cch-fb').click(); // 'div[[' 裸拼即非法选择器 → 生成侧 CSS.escape 转义
+  await expect(page.locator('#cch-toast')).toContainText(/Remembered|已记住/);
+  await expect(wrapperFor(page, '#cc-mid')).toHaveCount(0); // 即时拆图标
   const doc = await gmDoc(page);
-  expect(doc?.overrides ?? []).toHaveLength(0);
+  expect(doc.overrides).toHaveLength(1);
+  // 转义形态与宿主 CSS 引擎同源（同一 CSS.escape），且选择器合法命中该字段
+  const expectedSel = await page.evaluate(() => '#' + CSS.escape('div[['));
+  expect(doc.overrides[0].selector).toBe(expectedSel);
+  // 转义规则真实命中：重扫（350ms 防抖）后按新 id 查找仍不挂图标（规则匹配的是转义前那个 id）
+  await page.waitForTimeout(700);
+  await expect(wrapperFor(page, '[id="div[["]')).toHaveCount(0);
+  // 持久化：刷新后规则文档仍在（fixture 重载恢复原 id，不再命中属预期）
+  await page.reload();
+  expect((await gmDoc(page)).overrides).toHaveLength(1);
 });

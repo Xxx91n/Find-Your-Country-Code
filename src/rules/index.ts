@@ -107,6 +107,17 @@ export function createRules(Store: CchStore): CchRules {
     // 删除覆盖规则
     removeOverride(id: string): boolean { return Store.removeOverride(id); },
 
+    // ── 内部：CSS 标识符转义（票 T1 复审①）──
+    //   DOM id / name 是任意字符串（'123'、'a b'、'div[['），裸拼进选择器即非法——合法标识符
+    //   也会被写路径预检拒收，负反馈失灵。CSS.escape 产出合法标识符；属性值内 \XX 转义在
+    //   字符串上下文解码回原值，匹配语义不变。无 CSS 环境（verify 单元门）降级原样拼接。
+    _cssEscape(v: string): string {
+      try {
+        if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(v);
+      } catch {}
+      return v;
+    },
+
     // 面板负反馈（spec US9）便捷入口：目标字段 + 当前页 → 记 'none' 覆盖规则
     // 自身 UI（面板/按钮/搜索框）不可登记 —— 规则引擎永不作用于脚本自身 UI。
     rememberNone(el: AnyEl): string | null {
@@ -120,11 +131,11 @@ export function createRules(Store: CchStore): CchRules {
         let sel = '';
         const tag = el.tagName.toLowerCase();
         if (el.id) {
-          sel = '#' + el.id;
+          sel = '#' + this._cssEscape(el.id);
         } else {
           let name = null;
           try { name = el.getAttribute('name'); } catch {}
-          sel = name ? tag + '[name="' + name + '"]' : tag;
+          sel = name ? tag + '[name="' + this._cssEscape(name) + '"]' : tag;
         }
         return Store.upsertOverride({
           host, selector: sel, action: { tier: 'none' }, note: 'panel-negative-feedback',
