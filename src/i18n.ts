@@ -18,6 +18,8 @@ const MSG = {
         ruleExemptRemoved:'已恢复本站检测',
         feedback:'这不是区号字段', rules:'站点规则', ruleExempt:'在本站禁用',
         rulesEmpty:'本站暂无规则', ruleDeleted:'已删除规则', on:'开', off:'关',
+        // 票 T1/#8: 强制选择器录入行 + 保存被拒反馈
+        ruleSelPlaceholder:'强制选择器，如 #phone', ruleAdd:'添加规则', ruleAdded:'规则已保存', ruleInvalidSel:'规则未保存：选择器非法',
         lowkeyStyle:'低调样式（中置信）', lowkeyDim:'低调显示', lowkeyHidden:'隐藏，仅召唤',
         // ticket 03 [A-028]: diagnostics surface strings (independent view + summary entry + per-layer fix hints)
         diagnostics:'诊断', diagOpen:'诊断', diagLayers:'四层判定', diagCounters:'计数器', diagTimeline:'决策链时间线', diagExport:'导出诊断', diagTrace:'全链路 trace', diagClear:'清空诊断', diagEmpty:'暂无诊断记录', diagTool:'工具层', diagInject:'注入层', diagLogic:'逻辑层', diagWrite:'写入层', diagPass:'通过', diagFail:'失败', diagUnknown:'未知', diagAll:'全部', diagTruncated:'记录已截断', diagFixTool:'检查字段识别信号与站点规则', diagFixInject:'检查注入档位与可见性闸门', diagFixLogic:'检查选项匹配与目标解析', diagFixWrite:'检查写入后读回断言', diagExported:'诊断已复制',
@@ -33,6 +35,8 @@ const MSG = {
         ruleExemptRemoved:'Detection restored on this site',
         feedback:'Not a country-code field', rules:'Site rules', ruleExempt:'Disable on this site',
         rulesEmpty:'No rules on this site', ruleDeleted:'Rule removed', on:'On', off:'Off',
+        // 票 T1/#8: force-selector input row + rejected-save feedback
+        ruleSelPlaceholder:'Force selector, e.g. #phone', ruleAdd:'Add rule', ruleAdded:'Rule saved', ruleInvalidSel:'Rule not saved: invalid selector',
         lowkeyStyle:'Low-key style (mid-confidence)', lowkeyDim:'Dim (visible)', lowkeyHidden:'Hidden (summonable)',
         // ticket 03 [A-028]: diagnostics surface strings (independent view + summary entry + per-layer fix hints)
         diagnostics:'Diagnostics', diagOpen:'Diagnostics', diagLayers:'Four layers', diagCounters:'Counters', diagTimeline:'Decision timeline', diagExport:'Export', diagTrace:'Full-chain trace', diagClear:'Clear', diagEmpty:'No diagnostics yet', diagTool:'Tool', diagInject:'Inject', diagLogic:'Logic', diagWrite:'Write', diagPass:'pass', diagFail:'fail', diagUnknown:'unknown', diagAll:'all', diagTruncated:'truncated', diagFixTool:'Check field signals and site rules', diagFixInject:'Check inject tier and visibility gate', diagFixLogic:'Check option matching and target resolution', diagFixWrite:'Check post-write read-back assertion', diagExported:'Diagnostics copied',

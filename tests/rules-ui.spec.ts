@@ -44,6 +44,23 @@ async function openRules(page: Page): Promise<void> {
   await expect(page.locator('#cch-rules-view')).toBeVisible();
 }
 
+// 票 T1（#8）：rules-ui 用例族全程 pageerror = 0（预检拒绝路径不得抛未捕获异常）
+let pageErrors: string[];
+test.beforeEach(({ page }) => {
+  pageErrors = [];
+  page.on('pageerror', (e) => pageErrors.push(String(e.message).slice(0, 120)));
+});
+test.afterEach(async () => {
+  expect(pageErrors, 'rules-ui 全程 pageerror 应为 0').toEqual([]);
+});
+
+// 票 T1（#8）：强制选择器录入行便捷操作
+async function addRule(page: Page, selector: string, tier: 'auto' | 'lowkey' = 'auto'): Promise<void> {
+  await page.locator('#cch-rule-new-sel').fill(selector);
+  if (tier !== 'auto') await page.locator('#cch-rule-new-tier').selectOption(tier);
+  await page.locator('#cch-rule-add').click();
+}
+
 test('验收1 三档差异可见（dim 默认）：auto 全亮 / lowkey 低调 / none 不注入', async ({ page }) => {
   await boot(page);
   const autoBtn = wrapperFor(page, '#cc-strong').locator('.cch-btn');
@@ -210,4 +227,45 @@ test('票30 显式页面级规则（scope:page）保留全页重映射语义', a
   await expect(strongBtn).toHaveClass(/cch-btn-lowkey/);
   // none 字段抬到 lowkey（下限语义：页面级规则只抬注入档位下限，不改评分）
   await expect(wrapperFor(page, '#phone').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
+});
+
+// ══ 票 T1（#8）：非法 CSS 选择器保存预检 + toast 反馈 ══
+test('票T1 非法选择器保存被拒：toast 反馈，规则不写入规则文档', async ({ page }) => {
+  await boot(page);
+  await openPanel(page, '#cc-strong');
+  await openRules(page);
+  await addRule(page, 'div[[');
+  await expect(page.locator('#cch-toast')).toContainText(/invalid selector|选择器非法/);
+  const doc = await gmDoc(page);
+  expect(doc?.overrides ?? []).toHaveLength(0); // 写路径 fail-closed：不落盘（无任何写入时规则文档键不出现）
+  await expect(page.locator('#cch-rules-view .cch-rule-sel', { hasText: 'div[[' })).toHaveCount(0); // 不进列表
+});
+
+test('票T1 合法选择器保存生效：规则入列 + 强制选择器按声明档注入', async ({ page }) => {
+  await boot(page);
+  await openPanel(page, '#cc-strong');
+  await openRules(page);
+  await addRule(page, '#phone', 'lowkey'); // 引擎 none 字段：强制选择器命中 → 按声明档注入
+  await expect(page.locator('#cch-toast')).toContainText(/Rule saved|规则已保存/);
+  const row = page.locator('#cch-rules-view .cch-rule-row', { hasText: '#phone' });
+  await expect(row).toContainText('lowkey');
+  const doc = await gmDoc(page);
+  expect(doc.overrides).toHaveLength(1);
+  expect(doc.overrides[0]).toMatchObject({ selector: '#phone', action: { tier: 'lowkey' }, note: 'panel-force-selector' });
+  // 强制选择器语义（评分前命中）：重扫后该字段按声明档注入
+  await expect(wrapperFor(page, '#phone').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
+  // 持久化：刷新后规则仍生效
+  await page.reload();
+  await expect(wrapperFor(page, '#phone').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
+});
+
+test('票T1 负反馈路径同受预检：字段 id 产生非法选择器时保存被拒并反馈', async ({ page }) => {
+  await boot(page);
+  const wrap = wrapperFor(page, '#cc-mid');
+  await wrap.locator('.cch-btn').click(); // 先开面板（target 已捕获），再改 id
+  await page.evaluate(() => { (document.getElementById('cc-mid') as HTMLElement).setAttribute('id', 'div[['); });
+  await page.locator('#cch-fb').click(); // rememberNone 生成 '#div[[' → 写路径拒绝
+  await expect(page.locator('#cch-toast')).toContainText(/invalid selector|选择器非法/);
+  const doc = await gmDoc(page);
+  expect(doc?.overrides ?? []).toHaveLength(0);
 });

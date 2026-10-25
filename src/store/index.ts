@@ -16,7 +16,8 @@
 //                                  //   'page' = 页面级分档覆盖显式规则类型（全页 auto/lowkey 档重映射；
 //                                  //   selector 为展示占位、约定 '*'，不参与元素级匹配）
 //       action: { tier },            // tier ∈ 'auto' | 'lowkey' | 'none'
-//       note: string,                // 来源备注（07 面板展示；'panel-negative-feedback' = 负反馈记忆）
+//       note: string,                // 来源备注（07 面板展示；'panel-negative-feedback' = 负反馈记忆；
+//                                    //   'panel-force-selector' = 面板强制选择器录入行，票 T1/#8）
 //       createdAt: number, updatedAt: number   // epoch ms
 //     }],
 //     global: null | { thresholds: { auto?: number, lowkey?: number } }  // 置信度分档覆盖（可选，
@@ -30,6 +31,10 @@
 //   _normRulesDoc 的 slice(0, RULES_MAX_OVERRIDES) 保留，但其定位是外来输入的摄取修复
 //   （BC 接收 / GM 远端监听 / 首次从存储载入），不承担本上限的保证（第二层，非强制点）。
 //   被否决路线：在读路径强制 —— 会留下「写方超限、读方不超限」的分歧窗口。
+// ── 选择器合法性强制点（票 T1/#8）──
+//   upsertOverride 对 selector 做合法性预检：非法 CSS 选择器 fail-closed 拒绝（返回 null，
+//   不落盘、不广播），杜绝「规则存在但永不生效」的静默失效。上游 UI（负反馈 / 强制选择器
+//   录入行）对 null 返回给可见 toast 反馈。
 // ════════════════════════════════════════════════════════
 import { RULES_KEY, RULES_BROADCAST, RULE_TIERS, RULES_MAX_OVERRIDES, SELF_ORIGIN } from '../config';
 import type { CchStore, Country, OverrideRule, OverrideRuleInput, RuleScope, RulesDoc } from '../types';
@@ -249,6 +254,19 @@ const Store = {
     this._writeRules(r);
     return true;
   },
+  // ── 选择器合法性预检（票 T1/#8）──
+  //   非法选择器（如 'div[['）写入后在匹配层被 _safeMatches 静默吞掉 → 「规则存在但永不生效」。
+  //   强制点在写路径（与 RULES_MAX_OVERRIDES 同一心智：生产者 fail-closed 拒绝，读路径不补救）。
+  //   校验借宿主 CSS 引擎：游离元素 matches() 对非法选择器抛 SyntaxError，命中与否无关紧要。
+  //   无 DOM 环境（verify-ticket-05 单元门）无校验能力，放行——选择器语法的正/负例由
+  //   rules-ui E2E 面覆盖（浏览器运行时 document 恒在，强制点不落空）。
+  _validSelector(sel: string): boolean {
+    try {
+      if (typeof document === 'undefined') return true;
+      document.createElement('div').matches(sel);
+      return true;
+    } catch { return false; }
+  },
   // 增/改（U）：元素级覆盖规则（幂等按 id；新规则生成 id/timestamps）
   upsertOverride(rule: OverrideRuleInput): string | null {
     const r = this.getSiteRules();
@@ -256,6 +274,8 @@ const Store = {
     const sel = rule && typeof rule.selector === 'string' ? rule.selector.trim() : '';
     const tier = rule && rule.action && rule.action.tier;
     if (!host || !sel || !tier || !RULE_TIERS.includes(tier)) return null;
+    // 票 T1/#8：合法性与空值同层拒绝——非法选择器不落盘、不广播、不进规则列表
+    if (!this._validSelector(sel)) return null;
     // 票 30 [A-004]：scope 显式归一——仅 'page' 生效，其余（含旧文档缺字段）一律 'element'
     const scope: RuleScope = rule && rule.scope === 'page' ? 'page' : 'element';
     const note = typeof rule.note === 'string' ? rule.note : '';
