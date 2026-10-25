@@ -193,6 +193,8 @@ export interface CchStore {
   _hostOf(input: string | { hostname?: string } | null | undefined): string;
   // 票 T1 复审③：写路径选择器校验的内部读面（Rules.isValidSelector 委托同一来源）
   _validSelector(sel: string): boolean;
+  // 票 T1 复审：CSS 空白裁剪内部读面（UI 录入行与写路径同一裁剪口径）
+  _trimCss(sel: string): string;
   upsertOverride(rule: OverrideRuleInput): string | null;
   removeOverride(id: string): boolean;
   isFav(code: string, iso: string): boolean;

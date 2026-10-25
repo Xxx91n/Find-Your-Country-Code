@@ -723,7 +723,8 @@ border-radius:8px;cursor:pointer;text-align:center}
     addBtn.setAttribute('data-i18n-aria-label', 'ruleAdd');
     addBtn.addEventListener('click', e => {
       e.stopPropagation();
-      const sel = addSel.value.trim();
+      // CSS 空白裁剪（与写路径同一 Store._trimCss 口径）：JS trim 会吞掉 CSS 语义内字符
+      const sel = Store._trimCss(addSel.value);
       // 空输入静默不动作：未提交任何选择器，不属于「保存被拒」，不出错反馈
       if (!sel) return;
       // 票 T1 复审③：按真实拒绝原因出 toast（非法选择器 ≠ 上限）；store 写路径预检仍是兜底，

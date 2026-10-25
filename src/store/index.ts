@@ -267,11 +267,18 @@ const Store = {
       return true;
     } catch { return false; }
   },
+  // ── CSS 空白裁剪（票 T1 复审：JS trim 的空白集 ⊃ CSS 空白集）──
+  //   JS trim 会吞掉 CSS 语义内有意义的字符（U+00A0 等），'#field\u00a0' 被裁成
+  //   '#field' 后仍合法且保存成功 → 静默指向另一个 id。CSS 语法空白仅
+  //   U+0020 / U+0009 / U+000A / U+000C / U+000D（css-syntax-3），只裁这些。
+  _trimCss(sel: string): string {
+    return sel.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, '');
+  },
   // 增/改（U）：元素级覆盖规则（幂等按 id；新规则生成 id/timestamps）
   upsertOverride(rule: OverrideRuleInput): string | null {
     const r = this.getSiteRules();
     const host = this._hostOf(rule && rule.host);
-    const sel = rule && typeof rule.selector === 'string' ? rule.selector.trim() : '';
+    const sel = rule && typeof rule.selector === 'string' ? this._trimCss(rule.selector) : '';
     const tier = rule && rule.action && rule.action.tier;
     if (!host || !sel || !tier || !RULE_TIERS.includes(tier)) return null;
     // 票 T1/#8：合法性与空值同层拒绝——非法选择器不落盘、不广播、不进规则列表
