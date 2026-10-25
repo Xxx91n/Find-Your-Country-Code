@@ -710,6 +710,8 @@ border-radius:8px;cursor:pointer;text-align:center}
     addSel.setAttribute('autocomplete', 'off');
     const addTier = document.createElement('select');
     addTier.id = 'cch-rule-new-tier';
+    addTier.setAttribute('aria-label', t('ruleTier'));
+    addTier.setAttribute('data-i18n-aria-label', 'ruleTier');
     // 档位选项从 RULE_TIERS 派生并排除 'none'（'none' 语义走负反馈，不在此暴露），防止新增档位漂移
     for (const tier of RULE_TIERS.filter(x => x !== 'none')) {
       const opt = document.createElement('option');
