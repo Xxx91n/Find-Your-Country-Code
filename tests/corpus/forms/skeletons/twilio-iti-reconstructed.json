@@ -1,0 +1,142 @@
+{
+  "id": "twilio-iti-reconstructed",
+  "skeleton_version": 1,
+  "source": "reconstructed",
+  "source_file": "tests/corpus/forms/mirrors/twilio-iti-reconstructed.html",
+  "source_url": "https://www.twilio.com/try-twilio",
+  "root_selector": ".iti",
+  "node_count": 15,
+  "sha256": "f7e22aa14b63a0f5983a061424b51946cf63a7140524b711b679325a6461b2e9",
+  "tree": {
+    "tag": "div",
+    "class": [
+      "iti"
+    ],
+    "children": [
+      {
+        "tag": "div",
+        "class": [
+          "iti__flag-container"
+        ],
+        "children": [
+          {
+            "tag": "button",
+            "class": [
+              "selected-flag"
+            ],
+            "attrs": {
+              "aria-label": "aaaaaaaa aaaaaaa",
+              "type": "aaaaaa"
+            },
+            "children": [
+              {
+                "tag": "div",
+                "class": [
+                  "iti-flag"
+                ]
+              },
+              {
+                "tag": "span",
+                "class": [
+                  "selected-dial-code"
+                ],
+                "text": "+##"
+              }
+            ]
+          },
+          {
+            "tag": "ul",
+            "class": [
+              "hide",
+              "iti__country-list"
+            ],
+            "attrs": {
+              "role": "aaaaaaa"
+            },
+            "children": [
+              {
+                "tag": "li",
+                "class": [
+                  "country"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "##",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti-flag"
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "country-name"
+                    ],
+                    "text": "aaaaa"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "dial-code"
+                    ],
+                    "text": "+##"
+                  }
+                ],
+                "repeat": 3
+              },
+              {
+                "tag": "li",
+                "class": [
+                  "country"
+                ],
+                "attrs": {
+                  "data-country-code": "aa",
+                  "data-dial-code": "#",
+                  "role": "aaaaaa"
+                },
+                "children": [
+                  {
+                    "tag": "div",
+                    "class": [
+                      "iti-flag"
+                    ]
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "country-name"
+                    ],
+                    "text": "aaaaaa aaaaaa"
+                  },
+                  {
+                    "tag": "span",
+                    "class": [
+                      "dial-code"
+                    ],
+                    "text": "+#"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "input",
+        "class": [
+          "tel-input"
+        ],
+        "attrs": {
+          "aria-label": "aaaaa aaaaaa",
+          "placeholder": "aaaaa aaaaa aaaaaa",
+          "type": "aaa"
+        }
+      }
+    ]
+  },
+  "provenance": "手工重构（GLOSSARY「手工重构镜像」，issue #13 / spec #9 Q9）：try-twilio 注册页历史首屏的 intl-tel-input 区号控件已不可重现——依据 tests/live/site-manifest.json live-twilio-signup 2026-09-14 人工核对记录「历史 intl-tel-input 控件未在首屏渲染（疑似改为多步表单或延迟加载）」。控件具体版本无存档，形态按本仓 iti v17 系形态存档（codepen-iti-v17 镜像 + 仓库外 archive 快照）重建，非逐像素复刻；无捕获时点（不标 captured_at）；不参与结构比对。"
+}

@@ -16,7 +16,12 @@
 // 用法：
 //   node tests/scripts/06-structural-diff.mjs --base <baseline.json> --new <new.json>
 //   node tests/scripts/06-structural-diff.mjs --id <id> [--archive <dir>]   # 重捕后比对已提交基线
-// 退出码：0 = none/patch；1 = minor/major（供 cron / 人工升级判定）
+// 退出码：0 = none/patch，或 reconstructed SKIP（显式跳过，非判定）；1 = minor/major；
+//         2 = 失败
+//
+// 手工重构镜像排除（issue #13 / spec #9 Q9）：基线骨架 source=reconstructed 的
+//   条目**一律跳过结构比对**——无可信基线，diff 只会误报。skip 是显式动作：
+//   输出 SKIP 行留记录（不静默）、不产 tier 判定（不 none/patch/minor/major）。
 // ══════════════════════════════════════════════════════════════════
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -69,6 +74,20 @@ function main() {
   }
 
   const base = loadSkeleton(basePath);
+
+  // 手工重构镜像（GLOSSARY「手工重构镜像」；issue #13 / spec #9 Q9）：
+  // 基线 source=reconstructed ⇒ 无可信基线，结构比对一律显式 skip——
+  // 留记录（不静默）、不产 tier 判定（退出 0 是「未裁定」，非 none 判定）。
+  // 判定先于 new 侧加载：重构条目没有重捕产物，new 路径多半不存在。
+  if (base.source === 'reconstructed') {
+    console.log('structural-diff [' + label + ']');
+    console.log('  base: ' + basePath.replace(/\\/g, '/'));
+    console.log('  new : ' + newPath.replace(/\\/g, '/') + '  （未读取比对）');
+    console.log('  SKIP source=reconstructed —— 手工重构镜像：无可信基线，结构比对一律跳过，不产 tier 判定');
+    console.log('  provenance: ' + (base.provenance || '（缺失：reconstructed 骨架必须随附 provenance，见 verify-ticket-43）'));
+    return;
+  }
+
   const next = loadSkeleton(newPath);
   const changes = [];
   diff(base.tree, next.tree, '', changes);

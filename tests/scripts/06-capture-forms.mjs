@@ -218,6 +218,14 @@ async function main() {
   };
 
   for (const s of sources) {
+    // 手工重构镜像（issue #13 / spec #9 Q9）：页面已不可访问、无法再重现——
+    // 不重捕，显式 SKIP 留记录（跳过附 reason：source=reconstructed + provenance
+    // 见 sources.json），也不往 CAPTURE-MANIFEST 塞空壳条目（06-manifest 对
+    // reconstructed + 抓取记录互斥有硬校验）。
+    if (s.adoption === 'reconstructed') {
+      console.log('SKIP ' + s.id + '  source=reconstructed —— 手工重构镜像不重捕（provenance 见 sources.json；结构比对由 06-structural-diff 显式 skip）');
+      continue;
+    }
     const entry = { id: s.id, source_url: s.url, family: s.family };
     try {
       const raw = await fetchRaw(s.url);

@@ -53,7 +53,8 @@ tests/corpus/forms/
 │   ├── element-plus-select.html        # 伪下拉（select-only 型：readonly 触发器）
 │   ├── antd-select.html                # 伪下拉（select-only 型，另一类名族）
 │   ├── chosen-select.html              # 视觉替换型隐藏 select（display:none，A-032 子形态 B）
-│   └── heroku-signup.html              # 真实注册页原生 select（value = 国名）
+│   ├── heroku-signup.html              # 真实注册页原生 select（value = 国名）
+│   └── twilio-iti-reconstructed.html   # 手工重构镜像（iti v17 系形态凭存档重建；不参与结构比对）
 └── skeletons/          # ② 结构骨架（入 git）
     └── <id>.json
 ```
@@ -70,6 +71,7 @@ tests/corpus/forms/
 | **内容替换** | 页面正文替换为自拟文案；仅保留**公开表单形态**（DOM 结构 + 类名/属性 + 交互行为） |
 | **标 `source_url` + `captured_at`** | `manifest.json` 每条 entry 均有；镜像页头注释同步标注 |
 | **不含真实 PII** | 镜像页无任何真实用户数据；原始快照只采公开页首屏（未登录态） |
+| **不可重现页面（票 T4 / issue #13）** | 页面已不可访问、无法再重现时允许**手工重构镜像**（GLOSSARY「手工重构镜像」；spec #9 Q9）：凭截图 / 存档 / 记忆重建，标 `adoption=reconstructed` + `source=reconstructed` + `provenance`（重构依据，即「附 reason」惯例）；**无 `captured_at`、无 capture 块**（不伪造捕获 provenance）；**永不参与结构比对**（无可信基线，diff 只会误报），重捕与结构比对均显式 SKIP 留记录 |
 
 ---
 
@@ -94,6 +96,8 @@ tests/corpus/forms/
 
 **纪律（硬约束）**：**绝不为修绿而盲目更新快照**。`tier ≠ none` 时，**先归因**——① 站点真实改版；② 抓取环境差异（UA / 地区 / A-B 实验）；③ 归一化缺陷——归因结论写进提交信息或 issue 后才决定 bump 与镜像页更新。把「更新基线」当作消除红灯的手段，等于把退化探测能力本身退化掉。
 
+**reconstructed 排除（票 T4 / issue #13；spec #9 Q9）**：`source=reconstructed` 的条目（手工重构镜像）**一律跳过结构比对**——无可信基线，diff 只会误报。`06-structural-diff.mjs` 对其显式输出 `SKIP source=reconstructed` 行留记录（不静默、不产 tier 判定，退出码 0 = 未裁定）；`06-capture-forms.mjs` 对其不重捕（SKIP 行留记录，CAPTURE-MANIFEST 不塞空壳条目）。`06-manifest.mjs` 对「重构条目 + 抓取记录」互斥硬拒（页面不可重现与抓取成功互斥，属标记矛盾）。
+
 **命令**：
 
 ```bash
@@ -105,7 +109,11 @@ node tests/scripts/06-capture-forms.mjs --id iti-v29    # 单个
 node tests/scripts/06-capture-forms.mjs --attach --id <id> --cdp-port 9222
 # ② 派生骨架
 node tests/scripts/06-skeleton.mjs --id iti-v29 --from archive
-# ③ 结构 diff（退出码 1 = minor/major，供 cron / 人工升级）
+# ②-bis 手工重构镜像骨架派生（票 T4：只服务 adoption=reconstructed 条目，
+#     必附 provenance；产物 source=reconstructed，永不参与结构比对）
+node tests/scripts/06-skeleton.mjs --id twilio-iti-reconstructed --from reconstructed
+# ③ 结构 diff（退出码 1 = minor/major，供 cron / 人工升级；
+#     reconstructed 条目显式 SKIP 留记录，不产判定）
 node tests/scripts/06-structural-diff.mjs --id iti-v29
 # ④ 回放自检（owned 镜像页 L0–L4）
 npm run e2e -- tests/corpus-forms.spec.ts
@@ -124,6 +132,8 @@ node tests/scripts/verify-ticket-06.mjs
   "id": "iti-v29",
   "skeleton_version": 1,
   "source": "archive",                 // archive（真实页基线）| mirror（离线自检）
+                                       //   | reconstructed（手工重构镜像，票 T4：
+                                       //     附 provenance，永不参与结构比对）
   "source_url": "https://intl-tel-input.com/",
   "root_selector": ".iti",
   "node_count": 36,
@@ -131,6 +141,8 @@ node tests/scripts/verify-ticket-06.mjs
   "tree": { "tag": "div", "class": ["iti", …], "attrs": {…}, "text": "+##", "children": […] }
 }
 ```
+
+**reconstructed 骨架**（票 T4 / issue #13）：由 `--from reconstructed` 从重构镜像页派生，额外随附 `provenance`（= sources.json 该条目的重构依据）；对应 manifest 条目**无 `captured_at`、无 `capture` 块**（页面不可重现，无捕获时点，不伪造捕获 provenance）。
 
 **归一化规则**（`06-skeleton.mjs`，唯一定义处）：
 

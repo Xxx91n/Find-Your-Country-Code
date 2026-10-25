@@ -6,7 +6,8 @@
 //   原始快照**不入库**——库内只留：
 //     · 镜像页 / 结构骨架的**文件 SHA-256**（入库文件的可验证指纹）；
 //     · 原始快照的 **SHA-256 + 归档相对路径 + 字节数**（指向仓库外 archive）；
-//     · 合规元数据（source_url / captured_at / mirror_of / license_note）。
+//     · 合规元数据（source_url / captured_at / mirror_of / license_note；
+//       手工重构条目以 provenance（重构依据）替代 captured_at，无 capture 块）。
 //
 // 用法：node tests/scripts/06-manifest.mjs [--archive <dir>]
 // ══════════════════════════════════════════════════════════════════
@@ -43,7 +44,20 @@ function main() {
   const sources = JSON.parse(readFileSync(path.join(FORMS, 'sources.json'), 'utf8')).sources;
 
   const entries = sources.map((s) => {
+    // 手工重构镜像（issue #13 / spec #9 Q9）：页面已不可访问、无法再重现——
+    // 无捕获时点（captured_at 不落）、无抓取记录（capture 块不落），
+    // 以 provenance（重构依据，即「附 reason」惯例）替代；骨架 source=reconstructed。
+    const isReconstructed = s.adoption === 'reconstructed';
+    if (isReconstructed && !String(s.provenance || '').trim()) {
+      throw new Error('reconstructed 条目必须附 provenance（重构依据）——' + s.id + ' 的 sources.json 条目缺失');
+    }
     const c = capById.get(s.id);
+    if (isReconstructed && c) {
+      throw new Error(
+        'reconstructed 条目不得有抓取记录（' + s.id + ' 出现在 CAPTURE-MANIFEST）——' +
+        '页面不可重现与抓取成功互斥，属标记矛盾：先核对 adoption 再入库'
+      );
+    }
     const mirrorName = s.mirror_file || s.id + '.html';
     const mirrorPath = path.join(FORMS, 'mirrors', mirrorName);
     const skelPath = path.join(FORMS, 'skeletons', s.id + '.json');
@@ -53,7 +67,7 @@ function main() {
       family: s.family,
       adoption: s.adoption,
       source_url: s.url,
-      captured_at: cap.capturedAt,
+      ...(isReconstructed ? { provenance: s.provenance } : { captured_at: cap.capturedAt }),
       mirror_of: s.id,
       license_note: s.license_note || DEFAULT_LICENSE,
       form_selector: s.form_selector,
@@ -117,7 +131,7 @@ function main() {
       compliance: {
         publicPagesOnly: '只采公开页；不登录、不提交表单、不抓取 PII',
         brandStripped: '剥离品牌内容（产品名 / logo / 文案）与追踪（分析 / 外链）',
-        provenance: '每条标 source_url + captured_at + mirror_of + license_note',
+        provenance: '每条标 source_url + captured_at + mirror_of + license_note；reconstructed 条目（手工重构镜像，GLOSSARY）以 provenance（重构依据）替代 captured_at——页面不可重现，无捕获时点，且不参与结构比对（无可信基线）',
         noPii: '不含真实 PII',
         rawNotInGit: '原始快照（含品牌内容与版权）一律出仓归档，不入 git',
       },

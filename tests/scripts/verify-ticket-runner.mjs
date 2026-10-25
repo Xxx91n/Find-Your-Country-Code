@@ -113,7 +113,7 @@ if (mode === '--audit') {
   const pKeys = keysOf(plan);
   const legacyWfs = Object.keys(LEGACY);
   ck('A1 plan schema=1', plan.schema === 1, 'got ' + plan.schema);
-  ck('A2 plan has 21 tickets (20 D-004 merge + 12 login-derived capture, issue #12)', pKeys.length === 21, 'got ' + pKeys.length);
+  ck('A2 plan has 22 tickets (20 D-004 merge + 12 login-derived capture issue #12 + 43 hand-reconstructed mirrors issue #13)', pKeys.length === 22, 'got ' + pKeys.length);
   ck('A3 legacy baseline has 20 workflows', legacyWfs.length === 20, 'got ' + legacyWfs.length);
 
   const legacyScripts = new Set(Object.values(LEGACY).flat());
