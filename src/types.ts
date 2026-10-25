@@ -191,6 +191,8 @@ export interface CchStore {
   isExempt(input: string): boolean;
   setExempt(input: string, on: boolean): boolean;
   _hostOf(input: string | { hostname?: string } | null | undefined): string;
+  // 票 T1 复审③：写路径选择器校验的内部读面（Rules.isValidSelector 委托同一来源）
+  _validSelector(sel: string): boolean;
   upsertOverride(rule: OverrideRuleInput): string | null;
   removeOverride(id: string): boolean;
   isFav(code: string, iso: string): boolean;
@@ -211,6 +213,10 @@ export interface CchRules {
   upsertOverride(rule: OverrideRuleInput): string | null;
   removeOverride(id: string): boolean;
   rememberNone(el: AnyEl): string | null;
+  // 票 T1 复审②③：负反馈生成选择器的纯计算读面 + 选择器合法性查询（UI 保存处
+  // 先验证后动既有规则，并据拒绝原因选 toast；校验与 Store 写路径同一来源）
+  noneSelector(el: AnyEl): string | null;
+  isValidSelector(sel: string): boolean;
 }
 
 export interface CchUI {

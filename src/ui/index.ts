@@ -607,7 +607,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
     const R = this._rules();
     let remembered = false;
-    let saveRejected = false; // 票 T1/#8：写路径拒绝（选择器非法预检等）→ 可见 toast，不留静默失效规则
+    let rejected: 'invalid' | 'cap' | null = null; // 票 T1 复审③：按拒绝原因选 toast
     if (R) {
       try {
         const hit = matchingOverrides(el, R.pageOverrides());
@@ -615,15 +615,25 @@ border-radius:8px;cursor:pointer;text-align:center}
         if (noneHit) {
           remembered = true;
         } else {
-          for (const o of hit) R.removeOverride(o.id);
-          remembered = !!R.rememberNone(el);
-          if (!remembered) saveRejected = true;
+          // 票 T1 复审②：先验证将生成的替换选择器，再动既有规则——被拒不产生
+          // 「删了旧的、新的没写上」的数据丢失；先删后写保留（命中上限时由删除腾位）。
+          // noneSelector 返回 null = 目标不可登记（自身 UI / host 缺失），维持 needTarget 语义。
+          const sel = R.noneSelector(el);
+          if (sel === null) {
+            // 目标不可登记（自身 UI / host 缺失）：不动既有规则，维持 needTarget 语义
+          } else if (!R.isValidSelector(sel)) {
+            rejected = 'invalid';
+          } else {
+            for (const o of hit) R.removeOverride(o.id);
+            remembered = !!R.rememberNone(el);
+            if (!remembered) rejected = 'cap'; // 替换选择器合法仍失败：上限腾位后仍未写入
+          }
         }
       } catch {}
     }
     this._lowFields.delete(el);
     this.detach(el);
-    this.toast(t(remembered ? 'ruleNoneRemembered' : saveRejected ? 'ruleInvalidSel' : 'needTarget'));
+    this.toast(t(remembered ? 'ruleNoneRemembered' : rejected === 'invalid' ? 'ruleInvalidSel' : rejected === 'cap' ? 'ruleCap' : 'needTarget'));
     if (this._popup) this._closePopup();
   },
 

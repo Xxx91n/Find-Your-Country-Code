@@ -118,9 +118,9 @@ export function createRules(Store: CchStore): CchRules {
       return v;
     },
 
-    // 面板负反馈（spec US9）便捷入口：目标字段 + 当前页 → 记 'none' 覆盖规则
-    // 自身 UI（面板/按钮/搜索框）不可登记 —— 规则引擎永不作用于脚本自身 UI。
-    rememberNone(el: AnyEl): string | null {
+    // 面板负反馈将生成的 none 规则选择器（纯计算，不落盘；票 T1 复审②：
+    // UI 保存处先验证选择器、再动既有规则——替换被拒不得留下「删了旧的、新的没写上」）
+    noneSelector(el: AnyEl): string | null {
       try {
         if (this._own(el)) return null;
         let host = '';
@@ -128,20 +128,33 @@ export function createRules(Store: CchStore): CchRules {
           host = Store._hostOf(location.href);
         }
         if (!host || !el || typeof el.tagName !== 'string') return null;
-        let sel = '';
         const tag = el.tagName.toLowerCase();
-        if (el.id) {
-          sel = '#' + this._cssEscape(el.id);
-        } else {
-          let name = null;
-          try { name = el.getAttribute('name'); } catch {}
-          sel = name ? tag + '[name="' + this._cssEscape(name) + '"]' : tag;
+        if (el.id) return '#' + this._cssEscape(el.id);
+        let name = null;
+        try { name = el.getAttribute('name'); } catch {}
+        return name ? tag + '[name="' + this._cssEscape(name) + '"]' : tag;
+      } catch { return null; }
+    },
+
+    // 面板负反馈（spec US9）便捷入口：目标字段 + 当前页 → 记 'none' 覆盖规则
+    // 自身 UI（面板/按钮/搜索框）不可登记 —— 规则引擎永不作用于脚本自身 UI。
+    rememberNone(el: AnyEl): string | null {
+      try {
+        const sel = this.noneSelector(el);
+        if (!sel) return null;
+        let host = '';
+        if (typeof location !== 'undefined' && location && location.href) {
+          host = Store._hostOf(location.href);
         }
+        if (!host) return null;
         return Store.upsertOverride({
           host, selector: sel, action: { tier: 'none' }, note: 'panel-negative-feedback',
         });
       } catch { return null; }
     },
+
+    // 选择器合法性查询（委托 Store 写路径同一校验；UI 保存处用于区分拒绝原因，票 T1 复审③）
+    isValidSelector(sel: string): boolean { return Store._validSelector(sel); },
 
   };
   return Rules;
