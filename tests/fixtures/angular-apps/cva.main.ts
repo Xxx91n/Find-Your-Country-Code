@@ -17,7 +17,7 @@ import { bootstrapApplication } from '@angular/platform-browser';
 @Component({
   selector: 'fycc-dial-input',
   standalone: true,
-  template: `<input id="a-cva-input" name="dialCode" type="text" placeholder="+86">`,
+  template: `<input id="a-cva-input" name="dialCode" type="text" placeholder="+86" (blur)="handleBlur()">`,
   providers: [
     // useExisting 自引用：legacy decorator 在类绑定完成后才应用，无需 forwardRef
     { provide: NG_VALUE_ACCESSOR, useExisting: CvaDialInput, multi: true },
@@ -47,7 +47,7 @@ class CvaDialInput implements ControlValueAccessor {
     this.onChange(value);
   }
 
-  @HostListener('blur')
+  // blur 挂内层 input（blur 不冒泡，host 上的监听永远收不到 —— CodeRabbit review 修正）
   handleBlur(): void {
     this.onTouched();
   }
@@ -63,6 +63,7 @@ class CvaDialInput implements ControlValueAccessor {
       <input id="a-cva-tel" type="tel" name="phone" placeholder="手机号">
       <button id="a-cva-submit" type="submit">提交</button>
       <pre id="a-cva-state">{{ stateJson }}</pre>
+      <pre id="a-cva-touched">{{ dialCodeTouched }}</pre>
       @if (submitted) {<pre id="a-cva-submitted">{{ submitted }}</pre>}
     </form>
   `,
@@ -73,6 +74,10 @@ class CvaApp {
 
   get stateJson(): string {
     return JSON.stringify(this.form.value);
+  }
+
+  get dialCodeTouched(): boolean {
+    return this.form.get('dialCode')!.touched;
   }
 
   submit(): void {

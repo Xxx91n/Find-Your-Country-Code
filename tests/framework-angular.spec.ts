@@ -61,13 +61,18 @@ test.describe('Angular 20 响应式自定义 CVA（tests/fixtures/framework-angu
   test('cva-input：面板选 +81 后 FormControl 状态真实同步（经 CVA registerOnChange）', async ({ page }) => {
     await page.goto('/fixtures/framework-angular-cva.html');
     await expect(wrapperFor(page, '#a-cva-input')).toHaveCount(1);
+    // touched 前态：填充前未触碰（证明后述 true 来自填充序列的 blur，而非初始态）
+    await expect(page.locator('#a-cva-touched')).toHaveText('false');
     await openPanel(page, '#a-cva-input');
     await recordEvents(page, '#a-cva-input');
     await page.locator('.cch-row[data-iso="jp" i]').click();
     await expect(page.locator('#cch-pop')).toHaveCount(0);
+    // touched 后态：填充序列的 blur 经内层 input (blur) 绑定进 onTouched（CodeRabbit review 修正）
+    await expect(page.locator('#a-cva-touched')).toHaveText('true');
     // DOM 终态 + FormControl 终态（form.value 回读）+ 提交回读三重断言
     await expect(page.locator('#a-cva-input')).toHaveValue('+81');
     await expect(page.locator('#a-cva-state')).toHaveText('{"dialCode":"+81"}');
+    await expect(page.locator('#a-cva-touched')).toHaveText('true');
     await page.locator('#a-cva-submit').click();
     await expect(page.locator('#a-cva-submitted')).toHaveText('{"dialCode":"+81"}');
     expect(await page.evaluate(() => (window as any).__events)).toEqual(['input', 'change', 'blur']);
