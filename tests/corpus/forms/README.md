@@ -100,6 +100,9 @@ tests/corpus/forms/
 # ① 重捕（显式动作；不进 CI pull_request 门）
 node tests/scripts/06-capture-forms.mjs                 # 全部候选
 node tests/scripts/06-capture-forms.mjs --id iti-v29    # 单个
+# ①-bis 登录态镜像采集（人工 CDP 附着旁路；runbook 见 LOGIN-CAPTURE.md；
+#     CI/自动化永不登录，产物同构 + login-derived + 敏感字段形状占位）
+node tests/scripts/06-capture-forms.mjs --attach --id <id> --cdp-port 9222
 # ② 派生骨架
 node tests/scripts/06-skeleton.mjs --id iti-v29 --from archive
 # ③ 结构 diff（退出码 1 = minor/major，供 cron / 人工升级）
