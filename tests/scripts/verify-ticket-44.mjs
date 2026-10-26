@@ -218,8 +218,12 @@ const ORCH = read(FILES.orchestrator);
       readFileSync(abs(FORMS + '/mirrors/chosen-select.html'), 'utf8');
     writeFileSync(join(corpus, 'dom', 'chosen-select.html'), chosenHtml);
     writeFileSync(join(corpus, 'raw', 'chosen-select.html'), chosenHtml);
-    const chosenStimulus = containsToken(chosenHtml, 'challenges.cloudflare.com');
-    check(chosenStimulus.ok, 'V5 反例刺激在场（Turnstile 组件脚本确实注入）', chosenStimulus.detail);
+    // 刺激断言取精确前缀（review #29）：只查域名会让畸形 Turnstile URL 蒙混过关，
+    // 无法证明注入契约本身成立。
+    const chosenStimulus = chosenHtml.startsWith(
+      '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>\n'
+    );
+    check(chosenStimulus, 'V5 反例刺激在场（Turnstile 组件脚本确实注入）');
 
     const entry = (id, file, html, extra) => Object.assign({
       id,
