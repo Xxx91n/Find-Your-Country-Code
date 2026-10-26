@@ -1,5 +1,5 @@
 import { t, getLocale, setLocale, LOCALE_MODES } from '../i18n';
-import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, SETTINGS_SECTION_LOCALE, SETTINGS_VIEW } from '../config';
+import { OWN_ROOT_ID, WRAPPER_CLASS, UI_PREFS_KEY, LOWKEY_MODES, IS_TOP_FRAME, FRAME_TAG, FRAME_OPEN_MSG, FRAME_FILL_MSG, FRAME_FEEDBACK_MSG, SETTINGS_SECTION_LOCALE, SETTINGS_VIEW, RULE_TIERS, RULES_MAX_OVERRIDES } from '../config';
 // 票 03 [A-028]：诊断面常量（reason 闭集 + 判定点命名空间 + 门控开关持久键）
 import { DIAG_REASON, DIAG_POINT_PREFIX, DIAG_TRACE_PREF } from '../config';
 import { COUNTRIES, ISO2_MAP } from '../data/countries';
@@ -134,6 +134,12 @@ border-radius:8px;cursor:pointer;text-align:center}
 .cch-rule-del:hover{color:#be123c}
 .cch-rule-note{flex-shrink:0;font-size:10px;color:#8a95a3;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cch-rule-host{flex:1;min-width:0;font-size:11px;color:var(--cch-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 票 T1/#8：强制选择器录入行（input/select/保存钮） */
+#cch-rule-new-sel{flex:1;min-width:0;font-size:11px;padding:3px 6px;border:1px solid rgba(15,23,42,.12);border-radius:6px;background:rgba(255,255,255,.85);color:var(--cch-text);font-family:ui-monospace,SFMono-Regular,Monaco,monospace}
+#cch-rule-new-sel:focus{outline:none;border-color:rgba(15,118,110,.45)}
+#cch-rule-new-tier{flex-shrink:0;font-size:10px;padding:2px;border:1px solid rgba(15,23,42,.12);border-radius:6px;background:rgba(255,255,255,.85);color:var(--cch-text)}
+#cch-rule-add{flex-shrink:0;background:rgba(15,118,110,.1);border:none;cursor:pointer;font-size:11px;font-weight:700;color:#0f766e;padding:3px 8px;border-radius:6px}
+#cch-rule-add:hover{background:rgba(15,118,110,.18)}
 .cch-rules-cap{padding:2px 2px 0;font-size:10px;font-weight:700;color:#8a95a3;text-transform:uppercase;letter-spacing:.02em}
 /* 票 02 [A-026]：设置深链定位高亮 —— 脉冲后衰减（不持续抢注意力，D-011） */
 .cch-flash{animation:cchFlash 1.5s ease-out}
@@ -601,6 +607,7 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
     const R = this._rules();
     let remembered = false;
+    let rejected: 'invalid' | 'cap' | null = null; // 票 T1 复审③：按拒绝原因选 toast
     if (R) {
       try {
         const hit = matchingOverrides(el, R.pageOverrides());
@@ -608,14 +615,25 @@ border-radius:8px;cursor:pointer;text-align:center}
         if (noneHit) {
           remembered = true;
         } else {
-          for (const o of hit) R.removeOverride(o.id);
-          remembered = !!R.rememberNone(el);
+          // 票 T1 复审②：先验证将生成的替换选择器，再动既有规则——被拒不产生
+          // 「删了旧的、新的没写上」的数据丢失；先删后写保留（命中上限时由删除腾位）。
+          // noneSelector 返回 null = 目标不可登记（自身 UI / host 缺失），维持 needTarget 语义。
+          const sel = R.noneSelector(el);
+          if (sel === null) {
+            // 目标不可登记（自身 UI / host 缺失）：不动既有规则，维持 needTarget 语义
+          } else if (!R.isValidSelector(sel)) {
+            rejected = 'invalid';
+          } else {
+            for (const o of hit) R.removeOverride(o.id);
+            remembered = !!R.rememberNone(el);
+            if (!remembered) rejected = 'cap'; // 替换选择器合法仍失败：上限腾位后仍未写入
+          }
         }
       } catch {}
     }
     this._lowFields.delete(el);
     this.detach(el);
-    this.toast(t(remembered ? 'ruleNoneRemembered' : 'needTarget'));
+    this.toast(t(remembered ? 'ruleNoneRemembered' : rejected === 'invalid' ? 'ruleInvalidSel' : rejected === 'cap' ? 'ruleCap' : 'needTarget'));
     if (this._popup) this._closePopup();
   },
 
@@ -680,6 +698,53 @@ border-radius:8px;cursor:pointer;text-align:center}
     }
     const cap2 = document.createElement('div'); cap2.className = 'cch-rules-cap'; cap2.textContent = t('rules');
     bd.appendChild(cap2);
+    // 票 T1/#8：强制选择器录入行 —— 元素级显式规则（auto/lowkey 档；'none' 语义走负反馈，
+    // 页面级 scope:'page' 不在面板暴露）。合法性预检在 Store.upsertOverride 写路径：
+    // 非法选择器返回 null → 保存处拒绝 + toast 反馈，规则不进列表（可见拒绝而非静默失效）。
+    const addRow = document.createElement('div');
+    addRow.className = 'cch-rule-row';
+    const addSel = document.createElement('input');
+    addSel.type = 'text'; addSel.id = 'cch-rule-new-sel';
+    addSel.placeholder = t('ruleSelPlaceholder');
+    addSel.setAttribute('data-i18n-placeholder', 'ruleSelPlaceholder');
+    addSel.setAttribute('autocomplete', 'off');
+    const addTier = document.createElement('select');
+    addTier.id = 'cch-rule-new-tier';
+    addTier.setAttribute('aria-label', t('ruleTier'));
+    addTier.setAttribute('data-i18n-aria-label', 'ruleTier');
+    // 档位选项从 RULE_TIERS 派生并排除 'none'（'none' 语义走负反馈，不在此暴露），防止新增档位漂移
+    for (const tier of RULE_TIERS.filter(x => x !== 'none')) {
+      const opt = document.createElement('option');
+      opt.value = tier; opt.textContent = tier;
+      addTier.appendChild(opt);
+    }
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button'; addBtn.id = 'cch-rule-add';
+    addBtn.textContent = t('ruleAdd');
+    addBtn.setAttribute('data-i18n', 'ruleAdd');
+    addBtn.setAttribute('data-i18n-aria-label', 'ruleAdd');
+    addBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      // CSS 空白裁剪（与写路径同一 Store._trimCss 口径）：JS trim 会吞掉 CSS 语义内字符
+      const sel = Store._trimCss(addSel.value);
+      // 空输入静默不动作：未提交任何选择器，不属于「保存被拒」，不出错反馈
+      if (!sel) return;
+      // 票 T1 复审③：按真实拒绝原因出 toast（非法选择器 ≠ 上限）；store 写路径预检仍是兜底，
+      // 这里预检只为让反馈准确——上限在 UI 侧可先行判定（listRules 读面），选择器合法性委托
+      // 与写路径同一来源的 isValidSelector，两处预检口径不漂移。
+      if (!R.isValidSelector(sel)) { this.toast(t('ruleInvalidSel')); return; }
+      if (R.listRules().overrides.length >= RULES_MAX_OVERRIDES) { this.toast(t('ruleCap')); return; }
+      const id = R.upsertOverride({ host: location.href, selector: sel, action: { tier: addTier.value as 'auto' | 'lowkey' }, note: 'panel-force-selector' });
+      if (id) {
+        addSel.value = '';
+        this.toast(t('ruleAdded'));
+        this._renderRules();
+      } else {
+        this.toast(t('ruleInvalidSel'));
+      }
+    });
+    addRow.appendChild(addSel); addRow.appendChild(addTier); addRow.appendChild(addBtn);
+    bd.appendChild(addRow);
     const cap3 = document.createElement('div'); cap3.className = 'cch-rules-cap'; cap3.textContent = t('lowkeyStyle');
     const lkRow = document.createElement('div'); lkRow.className = 'cch-rule-row';
     const lkBtn = document.createElement('button');

@@ -107,9 +107,20 @@ export function createRules(Store: CchStore): CchRules {
     // 删除覆盖规则
     removeOverride(id: string): boolean { return Store.removeOverride(id); },
 
-    // 面板负反馈（spec US9）便捷入口：目标字段 + 当前页 → 记 'none' 覆盖规则
-    // 自身 UI（面板/按钮/搜索框）不可登记 —— 规则引擎永不作用于脚本自身 UI。
-    rememberNone(el: AnyEl): string | null {
+    // ── 内部：CSS 标识符转义（票 T1 复审①）──
+    //   DOM id / name 是任意字符串（'123'、'a b'、'div[['），裸拼进选择器即非法——合法标识符
+    //   也会被写路径预检拒收，负反馈失灵。CSS.escape 产出合法标识符；属性值内 \XX 转义在
+    //   字符串上下文解码回原值，匹配语义不变。无 CSS 环境（verify 单元门）降级原样拼接。
+    _cssEscape(v: string): string {
+      try {
+        if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(v);
+      } catch {}
+      return v;
+    },
+
+    // 面板负反馈将生成的 none 规则选择器（纯计算，不落盘；票 T1 复审②：
+    // UI 保存处先验证选择器、再动既有规则——替换被拒不得留下「删了旧的、新的没写上」）
+    noneSelector(el: AnyEl): string | null {
       try {
         if (this._own(el)) return null;
         let host = '';
@@ -117,20 +128,33 @@ export function createRules(Store: CchStore): CchRules {
           host = Store._hostOf(location.href);
         }
         if (!host || !el || typeof el.tagName !== 'string') return null;
-        let sel = '';
         const tag = el.tagName.toLowerCase();
-        if (el.id) {
-          sel = '#' + el.id;
-        } else {
-          let name = null;
-          try { name = el.getAttribute('name'); } catch {}
-          sel = name ? tag + '[name="' + name + '"]' : tag;
+        if (el.id) return '#' + this._cssEscape(el.id);
+        let name = null;
+        try { name = el.getAttribute('name'); } catch {}
+        return name ? tag + '[name="' + this._cssEscape(name) + '"]' : tag;
+      } catch { return null; }
+    },
+
+    // 面板负反馈（spec US9）便捷入口：目标字段 + 当前页 → 记 'none' 覆盖规则
+    // 自身 UI（面板/按钮/搜索框）不可登记 —— 规则引擎永不作用于脚本自身 UI。
+    rememberNone(el: AnyEl): string | null {
+      try {
+        const sel = this.noneSelector(el);
+        if (!sel) return null;
+        let host = '';
+        if (typeof location !== 'undefined' && location && location.href) {
+          host = Store._hostOf(location.href);
         }
+        if (!host) return null;
         return Store.upsertOverride({
           host, selector: sel, action: { tier: 'none' }, note: 'panel-negative-feedback',
         });
       } catch { return null; }
     },
+
+    // 选择器合法性查询（委托 Store 写路径同一校验；UI 保存处用于区分拒绝原因，票 T1 复审③）
+    isValidSelector(sel: string): boolean { return Store._validSelector(sel); },
 
   };
   return Rules;
