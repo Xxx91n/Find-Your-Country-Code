@@ -264,6 +264,15 @@ async function main() {
     );
   }
 
+  // 数据完整性（review #18）：空运行不落盘——如 `--id <重构条目>`（全部被 skip）
+  // 时 report.entries 为空，若仍写 CAPTURE-MANIFEST 会以空 entries 覆盖既有台账、
+  // 抹掉既有抓取记录（「不重捕」≠「清账」）。非空运行照常写。
+  if (report.entries.length === 0) {
+    console.log('---');
+    console.log('no capture entries in this run — CAPTURE-MANIFEST.json left untouched');
+    return;
+  }
+
   writeFileSync(
     path.join(outDir, 'CAPTURE-MANIFEST.json'),
     JSON.stringify(report, null, 2) + '\n'

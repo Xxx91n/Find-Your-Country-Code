@@ -211,7 +211,7 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
     eq(skelAfter.source, 'reconstructed', 'U4 拒绝路径未覆盖登记骨架（source 仍 reconstructed）');
     eq(skelAfter.provenance, RSRC.provenance, 'U4 拒绝路径未洗掉 provenance（登记骨架字节原样）');
 
-    // (c) 重捕 skip 留记录（零网络：单跑重构条目即被跳过，CAPTURE-MANIFEST 不塞空壳条目）
+    // (c) 重捕 skip 留记录（零网络：单跑重构条目即被跳过；重构-only = 空运行）
     const arch = join(tmp, 'archive');
     let capOut = null, capCode = 0;
     try {
@@ -221,8 +221,20 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
     check(capOut.indexOf('SKIP ' + RID) >= 0 && capOut.indexOf('source=reconstructed') >= 0,
       'U4 重捕输出 SKIP 行留记录（附 reason：source=reconstructed）');
     check(!/^OK  /m.test(capOut) && !/^FAIL/m.test(capOut), 'U4 重捕未发起任何抓取（零网络实证）');
-    const cap = JSON.parse(readFileSync(join(arch, 'corpus-forms', 'CAPTURE-MANIFEST.json'), 'utf8'));
-    eq(cap.entries.length, 0, 'U4 CAPTURE-MANIFEST 零条目（不伪造抓取记录）');
+    // 空运行不落盘（review #18）：全新 archive 上不新建台账（不伪造抓取记录）
+    const ledgerPath = join(arch, 'corpus-forms', 'CAPTURE-MANIFEST.json');
+    check(!existsSync(ledgerPath), 'U4 重构-only 空运行不新建 CAPTURE-MANIFEST（fresh archive 零副作用）');
+    // 既有台账字节不变（数据完整性）：空运行不得以空 entries 覆盖既有抓取记录
+    const sentinel = JSON.stringify({
+      capturedAt: 'sentinel-2026-10-26T00:00:00.000Z', archiveRoot: arch.replace(/\\/g, '/'),
+      archiveDir: 'corpus-forms', userAgent: 'sentinel', entries: [{ id: 'iti-v29', ok: true }],
+    }, null, 2) + '\n';
+    writeFileSync(ledgerPath, sentinel);
+    let capCode2 = 0;
+    try { execFileSync(process.execPath, [abs(FILES.captureTool), '--id', RID, '--archive', arch, '--no-render'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
+    catch (e) { capCode2 = e.status; }
+    eq(capCode2, 0, 'U4 既有台账下重构-only 运行退出码 0');
+    eq(readFileSync(ledgerPath, 'utf8'), sentinel, 'U4 既有台账字节不变（空运行不清空抓取记录）');
 
     // (d) 清单互斥硬拒：重构条目出现抓取记录 = 标记矛盾，生成器整体拒绝（清单是权威账本）
     const badArch = join(tmp, 'bad-archive');
