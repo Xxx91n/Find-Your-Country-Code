@@ -59,18 +59,21 @@ function ledgerToCaptureReport() {
   };
 }
 
-// 旧条目再生成一致性（--from-ledger 的写入前置）：逐条 deep-equal，
+// 旧条目再生成一致性（--from-ledger 的写入前置）：逐条 deep-equal + id 集守恒，
 // 任一漂移即整体拒绝——台账是权威账本，更新必须先归因。
+// 旧条目在再生成后消失 = 破坏性删除（sources.json 删了 id 或生成逻辑漏条），
+// 必须与字段漂移同等拒绝，否则删除会静默落盘。
 function assertLedgerStable(cur, out) {
   const byId = new Map(cur.entries.map((e) => [e.id, e]));
-  const drifts = [];
+  const outIds = new Set(out.entries.map((e) => e.id));
+  const drifts = cur.entries.filter((e) => !outIds.has(e.id)).map((e) => e.id);
   for (const e of out.entries) {
     const old = byId.get(e.id);
     if (old && JSON.stringify(old) !== JSON.stringify(e)) drifts.push(e.id);
   }
   if (drifts.length) {
     throw new Error(
-      '--from-ledger 台账漂移（旧条目再生成不一致）：' + drifts.join(', ') +
+      '--from-ledger 台账漂移（旧条目再生成不一致 / 消失）：' + drifts.join(', ') +
       ' —— 先核对差异来源（抓取环境 / 归一化 / 手工改动），归因后才允许更新，禁止直接覆盖'
     );
   }

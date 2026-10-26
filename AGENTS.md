@@ -6,7 +6,7 @@ Userscript: finds phone country-code fields on any page, injects a 🌐 icon and
 
 - `npm ci`; build with `npm run build` (output in `dist/`); dev with `npm run dev`
 - Type gate: `npm run typecheck`; E2E: `npm run e2e` (run `npx playwright install chromium` once first)
-- Ticket gates: `node tests/scripts/verify-ticket-runner.mjs --run-all` (all ticket-level gates, mirrors CI; `--audit` for wiring only)
+- Ticket gates: `node tests/scripts/verify-ticket-runner.mjs --run-all` (runs ticket scripts only, without the plan's install, build, and typecheck steps; `--audit` for wiring only)
 
 ## Don't touch
 

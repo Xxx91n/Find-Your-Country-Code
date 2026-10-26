@@ -285,6 +285,26 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
       writeFileSync(realManifestPath, backup2);
       eq(readFileSync(realManifestPath).equals(backup2), true, 'U4 --from-ledger 后 manifest.json 字节级还原（净副作用为零）');
     }
+
+    // (e2) 反向（review #24）：sources.json 丢一条 → 旧条目消失属破坏性删除，拒绝写入
+    //      （id 集守恒；缺条不得静默落盘）
+    const srcPath = abs(FILES.sources);
+    const srcBackup = readFileSync(srcPath);
+    try {
+      const doc = JSON.parse(srcBackup);
+      doc.sources = doc.sources.filter((s) => s.id !== 'chosen-select');
+      writeFileSync(srcPath, JSON.stringify(doc, null, 2) + '\n');
+      let missCode = 0, missErr = '';
+      try {
+        execFileSync(process.execPath, [abs(FILES.manifestGen), '--from-ledger'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (e) { missCode = e.status; missErr = String(e.stderr); }
+      eq(missCode, 1, 'U4 --from-ledger 对旧条目消失拒绝写入（id 集守恒）');
+      check(/台账漂移/.test(missErr) && /chosen-select/.test(missErr), 'U4 拒绝信息点名缺失条目');
+      eq(readFileSync(realManifestPath).equals(backup2), true, 'U4 缺条拒绝路径零副作用（manifest.json 不变）');
+    } finally {
+      writeFileSync(srcPath, srcBackup);
+      eq(readFileSync(srcPath).equals(srcBackup), true, 'U4 sources.json 字节级还原');
+    }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

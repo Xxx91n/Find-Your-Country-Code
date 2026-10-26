@@ -16,7 +16,7 @@
 //   node tests/scripts/verify-ticket-runner.mjs --list
 //   node tests/scripts/verify-ticket-runner.mjs --plan <ticket>   # 输出 GITHUB_OUTPUT 行
 //   node tests/scripts/verify-ticket-runner.mjs --run <ticket>
-//   node tests/scripts/verify-ticket-runner.mjs --run-all         # 全量票级门（本地一条命令镜像 CI matrix）
+//   node tests/scripts/verify-ticket-runner.mjs --run-all         # 全部票级脚本（不含 plan 的 install/build/typecheck 前置步）
 //   node tests/scripts/verify-ticket-runner.mjs --audit           # 零覆盖丢失守卫（本地 + CI 可跑）
 // ══════════════════════════════════════════════════════════════════════
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -120,8 +120,9 @@ if (mode === '--run-all') {
         console.log('PASS [' + k + '] ' + s);
       } catch (e) {
         failed++;
+        // 取末 6 条匹配行（尾部才是最新失败；首部只会有铺垫输出）
         const tail = ((e.stdout || '') + (e.stderr || '')).trim().split('\n')
-          .filter((l) => /FAIL|failures|Error/.test(l)).slice(0, 6);
+          .filter((l) => /FAIL|failures|Error/.test(l)).slice(-6);
         console.error('FAIL [' + k + '] ' + s + ' (exit ' + (e.status === undefined ? 'signal' : e.status) + ')');
         if (tail.length) console.error(tail.map((l) => '  ' + l).join('\n'));
       }
