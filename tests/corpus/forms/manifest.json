@@ -4,7 +4,7 @@
     "ticket": "06-form-corpus",
     "covers": "A-030",
     "generated_by": "tests/scripts/06-manifest.mjs",
-    "generated_at": "2026-09-16T10:32:42.074Z",
+    "generated_at": "2026-10-25T17:38:14.361Z",
     "role": "**库内唯一权威清单**。原始快照不入库；库内只留指纹与元数据。",
     "layers": {
       "mirror": "① 镜像页（入 git，测试主力）：去品牌 / 去追踪 / 内容替换，断言确定性最高",
@@ -14,7 +14,7 @@
     "compliance": {
       "publicPagesOnly": "只采公开页；不登录、不提交表单、不抓取 PII",
       "brandStripped": "剥离品牌内容（产品名 / logo / 文案）与追踪（分析 / 外链）",
-      "provenance": "每条标 source_url + captured_at + mirror_of + license_note",
+      "provenance": "每条标 source_url + captured_at + mirror_of + license_note；reconstructed 条目（手工重构镜像，GLOSSARY）以 provenance（重构依据）替代 captured_at——页面不可重现，无捕获时点，且不参与结构比对（无可信基线）",
       "noPii": "不含真实 PII",
       "rawNotInGit": "原始快照（含品牌内容与版权）一律出仓归档，不入 git"
     },
@@ -193,7 +193,7 @@
       "shape_notes": "MUI Autocomplete：input[role=combobox][aria-autocomplete=list][aria-controls] + role=listbox 浮层（可编辑型伪下拉）",
       "mirror": {
         "file": "tests/corpus/forms/mirrors/mui-autocomplete.html",
-        "bytes": 6416,
+        "bytes": 6418,
         "sha256": "41cf67141733c850add104b32962611b4bf0e2af4839eb60b3a74960a0741c04"
       },
       "skeleton": {
@@ -240,7 +240,7 @@
       "shape_notes": "Element Plus Select：div 触发器 + readonly input.el-select__input[role=combobox][aria-controls] + 浮层 listbox（Vue 形态，select-only 型）",
       "mirror": {
         "file": "tests/corpus/forms/mirrors/element-plus-select.html",
-        "bytes": 6252,
+        "bytes": 6254,
         "sha256": "9b03bb50157f8c41c2180b05390d194ff9e172d54fc737e4079defffbc15a119"
       },
       "skeleton": {
@@ -451,6 +451,33 @@
           "path": "corpus-forms/shot/heroku-signup.png"
         },
         "ok": true
+      }
+    },
+    {
+      "id": "twilio-iti-reconstructed",
+      "family": "iti",
+      "adoption": "reconstructed",
+      "source_url": "https://www.twilio.com/try-twilio",
+      "provenance": "手工重构（GLOSSARY「手工重构镜像」，issue #13 / spec #9 Q9）：try-twilio 注册页历史首屏的 intl-tel-input 区号控件已不可重现——依据 tests/live/site-manifest.json live-twilio-signup 2026-09-14 人工核对记录「历史 intl-tel-input 控件未在首屏渲染（疑似改为多步表单或延迟加载）」。控件具体版本无存档，形态按本仓 iti v17 系形态存档（codepen-iti-v17 镜像 + 仓库外 archive 快照）重建，非逐像素复刻；无捕获时点（不标 captured_at）；不参与结构比对。",
+      "mirror_of": "twilio-iti-reconstructed",
+      "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
+      "form_selector": ".iti",
+      "shape_notes": "iti v17 系形态重构：.iti > .iti__flag-container > .selected-flag + li.country[data-country-code][data-dial-code]（与 codepen-iti-v17 同代、与 iti-v29 的 .iti__selected-country / data-iso2 区分）；骨架由 --from reconstructed 派生（source=reconstructed + provenance），结构比对显式 skip",
+      "mirror": {
+        "file": "tests/corpus/forms/mirrors/twilio-iti-reconstructed.html",
+        "bytes": 6432,
+        "sha256": "6677ace3b661dcff5e784d2996d111ef69268db7002ddeccf955baf72e84be12"
+      },
+      "skeleton": {
+        "file": "tests/corpus/forms/skeletons/twilio-iti-reconstructed.json",
+        "bytes": 4102,
+        "sha256": "e4f7d1c7429561b01aed0e509d62cdc26fe99dedcee8fe4e9ee1eee449a35d07",
+        "tree_sha256": "f7e22aa14b63a0f5983a061424b51946cf63a7140524b711b679325a6461b2e9",
+        "node_count": 15,
+        "root_selector": ".iti",
+        "skeleton_version": 1,
+        "derived_from": "reconstructed",
+        "source_file": "tests/corpus/forms/mirrors/twilio-iti-reconstructed.html"
       }
     }
   ]

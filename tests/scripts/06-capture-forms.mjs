@@ -218,6 +218,14 @@ async function main() {
   };
 
   for (const s of sources) {
+    // 手工重构镜像（issue #13 / spec #9 Q9）：页面已不可访问、无法再重现——
+    // 不重捕，显式 SKIP 留记录（跳过附 reason：source=reconstructed + provenance
+    // 见 sources.json），也不往 CAPTURE-MANIFEST 塞空壳条目（06-manifest 对
+    // reconstructed + 抓取记录互斥有硬校验）。
+    if (s.adoption === 'reconstructed') {
+      console.log('SKIP ' + s.id + '  source=reconstructed —— 手工重构镜像不重捕（provenance 见 sources.json；结构比对由 06-structural-diff 显式 skip）');
+      continue;
+    }
     const entry = { id: s.id, source_url: s.url, family: s.family };
     try {
       const raw = await fetchRaw(s.url);
@@ -254,6 +262,15 @@ async function main() {
       '  raw=' + (entry.raw ? entry.raw.bytes + 'B' : '-') +
       (entry.error ? '  err=' + entry.error : '')
     );
+  }
+
+  // 数据完整性（review #18）：空运行不落盘——如 `--id <重构条目>`（全部被 skip）
+  // 时 report.entries 为空，若仍写 CAPTURE-MANIFEST 会以空 entries 覆盖既有台账、
+  // 抹掉既有抓取记录（「不重捕」≠「清账」）。非空运行照常写。
+  if (report.entries.length === 0) {
+    console.log('---');
+    console.log('no capture entries in this run — CAPTURE-MANIFEST.json left untouched');
+    return;
   }
 
   writeFileSync(

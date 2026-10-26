@@ -83,7 +83,7 @@ const CAPTURE_SRC = read(FILES.capture);
   check(!!t12, 'T0 plan 注册票 12（issue #12 登录态镜像采集旁路）');
   eq(JSON.stringify(t12 && t12.scripts), JSON.stringify(['verify-ticket-12.mjs']), 'T0 票 12 门脚本唯一指向本文件');
   check(/-\s*'12'/.test(read(FILES.workflow)), 'T0 verify-tickets.yml matrix 含 12（A15/A16 全等守卫面）');
-  check(/A2 plan has 21 tickets/.test(read(FILES.runner)), 'T0 audit A2 期望数随新票更新（20 → 21）');
+  check(/A2 plan has 22 tickets/.test(read(FILES.runner)), 'T0 audit A2 期望数随新票更新（21 → 22，票 43 issue #13）');
 }
 
 // ══════════════════════════════════════════════════════════════════

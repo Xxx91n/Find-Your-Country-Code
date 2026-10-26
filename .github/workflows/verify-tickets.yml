@@ -50,6 +50,7 @@ jobs:
           - '38'
           - '39'
           - '42'
+          - '43'
     uses: ./.github/workflows/verify-ticket.yml
     with:
       ticket: ${{ matrix.ticket }}

@@ -12,10 +12,16 @@
 //       **值域形态变化会触发**——这正是检测关心的差异面。
 //
 // 用法：
-//   node tests/scripts/06-skeleton.mjs --id <id> [--from archive|mirror]
+//   node tests/scripts/06-skeleton.mjs --id <id> [--from archive|mirror|reconstructed]
 //        [--archive <dir>] [--root <selector>] [--out <file>]
-//   --from archive（默认）：读仓库外 archive 的渲染后 DOM（真实页基线）
-//   --from mirror          ：读仓库内镜像页（离线自检用）
+//   --from archive（默认）      ：读仓库外 archive 的渲染后 DOM（真实页基线）
+//   --from mirror               ：读仓库内镜像页（离线自检用）
+//   --from reconstructed        ：读手工重构镜像页（issue #13 / spec #9 Q9）——
+//                                 页面已不可访问、无法再重现（GLOSSARY「手工重构镜像」）。
+//                                 仅服务 sources.json 里 adoption=reconstructed 的条目，
+//                                 且必须附 provenance（重构依据，即「附 reason」惯例）；
+//                                 产物 source 标 reconstructed，**永不参与结构比对**
+//                                 （无可信基线，06-structural-diff 显式 skip）。
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -221,10 +227,32 @@ function main() {
   const src = sources.find((s) => s.id === args.id);
   if (!src) throw new Error('unknown id: ' + args.id);
 
+  // 手工重构镜像纪律（issue #13 / Q9）：重构是显式登记动作，不是派生选项——
+  // 成对约束：reconstructed 条目只许 --from reconstructed（--from mirror/archive
+  // 会把 source 洗成 mirror/archive 并丢 provenance，让本应 skip 的骨架变成
+  // 可比较基线）；非重构条目不许 --from reconstructed。provenance（重构依据）必填。
+  if (src.adoption === 'reconstructed' && args.from !== 'reconstructed') {
+    throw new Error(
+      'reconstructed 条目只许 --from reconstructed（' + src.id + ' 收到 --from ' + args.from + '）——' +
+      '用 mirror/archive 派生会洗掉 source=reconstructed 与 provenance，使结构比对失去排除依据'
+    );
+  }
+  if (args.from === 'reconstructed') {
+    if (src.adoption !== 'reconstructed') {
+      throw new Error(
+        '--from reconstructed 只服务 adoption=reconstructed 条目（' + src.id +
+        ' 当前 adoption=' + src.adoption + '）——重构须在 sources.json 显式登记'
+      );
+    }
+    if (!String(src.provenance || '').trim()) {
+      throw new Error('reconstructed 条目必须附 provenance（重构依据）——' + src.id + ' 的 sources.json 条目缺失');
+    }
+  }
+
   const selector = args.root || src.skeleton_root || src.form_selector;
   const frameIdx = args.frame != null ? args.frame : (src.skeleton_frame != null ? src.skeleton_frame : null);
   const domName = frameIdx != null ? src.id + '.frame' + frameIdx + '.html' : src.id + '.html';
-  const htmlPath = args.from === 'mirror'
+  const htmlPath = args.from === 'mirror' || args.from === 'reconstructed'
     ? path.join(FORMS, 'mirrors', (src.mirror_file || src.id + '.html'))
     : path.join(path.resolve(args.archive), 'corpus-forms', 'dom', domName);
 
@@ -248,6 +276,9 @@ function main() {
     sha256: hash,
     tree,
   };
+  // 手工重构镜像：provenance（重构依据）随骨架落盘——骨架自带重构出处，
+  // 结构比对侧（06-structural-diff）读 source=reconstructed 即显式 skip。
+  if (args.from === 'reconstructed') out.provenance = src.provenance;
 
   const outPath = args.out || path.join(FORMS, 'skeletons', src.id + '.json');
   mkdirSync(path.dirname(outPath), { recursive: true });

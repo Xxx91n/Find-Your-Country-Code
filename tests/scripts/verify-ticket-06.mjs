@@ -73,7 +73,7 @@ const FILES = {
   const skel = JSON.parse(read(FORMS + '/skeletons/iti-v29.json'));
   check(!!skel.tree && skel.tree.tag === 'div', 'S0 已知好样本命中 iti-v29 骨架根节点');
   const man = JSON.parse(read(FILES.manifest));
-  check(Array.isArray(man.entries) && man.entries.length === 8, 'S0 已知好样本命中 8 条清单条目');
+  check(Array.isArray(man.entries) && man.entries.length === 9, 'S0 已知好样本命中 9 条清单条目（8 捕获 + 1 重构，票 T4）');
 }
 
 // == S0b 票级 CI 挂接点（Cycle-7 D-004 合并后口径）==
@@ -95,7 +95,13 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   const ids = MANIFEST.entries.map((e) => e.id).sort().join(',');
   eq(ids, SOURCES.map((s) => s.id).sort().join(','), 'S1 manifest 条目 id 与 sources 一致');
   check(MANIFEST.entries.every((e) => e.mirror && e.skeleton), 'S1 每条均有镜像页 + 结构骨架');
-  check(MANIFEST.entries.every((e) => e.adoption === 'adopted'), 'S1 全部候选为 adopted（8/8）');
+  // 手工重构镜像（issue #13 / spec #9 Q9）：adoption 枚举扩展 reconstructed，
+  // 与 adopted 正交分账——重构条目必须附 provenance（「附 reason」惯例）
+  eq(MANIFEST.entries.filter((e) => e.adoption === 'adopted').length, 8, 'S1 捕获候选全为 adopted（8/8）');
+  const recon = MANIFEST.entries.filter((e) => e.adoption === 'reconstructed');
+  eq(recon.length, 1, 'S1 重构条目恰 1 条（twilio-iti-reconstructed）');
+  check(recon.every((e) => typeof e.provenance === 'string' && e.provenance.trim().length > 20),
+    'S1 重构条目附非空 provenance（重构依据）');
   // 不引入对象存储 / S3
   const s3 = ['s3://', 'amazonaws.com', '@aws-sdk', 'minio', 'cloudflare r2', 'backblaze b2'];
   const blob = read(FILES.sources) + read(FILES.manifest) + read(FILES.capture) + read(FILES.manifestGen);
@@ -114,6 +120,11 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     }
     const sp = abs(e.skeleton.file);
     eq(sha256File(sp), e.skeleton.sha256, 'S2 ' + e.id + ' 骨架文件 SHA-256 与清单一致');
+    // 字节数同检（票 T4 增补）：曾发现两处 stale bytes（sha 一致、bytes 差 2）——
+    // 指纹门只看哈希会让字节数腐化不可见，此处锁死
+    eq(statSync(mp).size, e.mirror.bytes, 'S2 ' + e.id + ' 镜像页字节数与清单一致');
+    if (e.child_mirror) eq(statSync(abs(e.child_mirror.file)).size, e.child_mirror.bytes, 'S2 ' + e.id + ' 子帧镜像字节数与清单一致');
+    eq(statSync(sp).size, e.skeleton.bytes, 'S2 ' + e.id + ' 骨架字节数与清单一致');
     const skel = JSON.parse(read(e.skeleton.file));
     eq(sha256(JSON.stringify(skel.tree)), skel.sha256, 'S2 ' + e.id + ' 骨架内部树哈希自校验');
     eq(skel.sha256, e.skeleton.tree_sha256, 'S2 ' + e.id + ' 骨架树哈希 == 清单 tree_sha256');
@@ -127,18 +138,27 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 {
   const BRAND = ['international telephone input', 'intl-tel-input', 'intl tel input',
     'react-phone-number-input', 'material ui', 'element plus', 'ant design', 'mui',
-    'antd', 'heroku', 'codepen', 'harvesthq', 'chosen'];
+    'antd', 'heroku', 'codepen', 'harvesthq', 'chosen', 'twilio'];
   const TRACK = ['google-analytics', 'googletagmanager', 'gtag(', 'analytics.js', '_paq', 'facebook.net', 'hotjar', 'segment.com', 'mixpanel'];
   const mirrorFiles = readdirSync(abs(FORMS + '/mirrors')).filter((f) => f.endsWith('.html'));
-  check(mirrorFiles.length === 9, 'S3 镜像页数 = 9（8 主 + 1 子帧）', mirrorFiles.length + ' files');
+  check(mirrorFiles.length === 10, 'S3 镜像页数 = 10（8 主 + 1 子帧 + 1 手工重构）', mirrorFiles.length + ' files');
   for (const f of mirrorFiles) {
     const html = read(FORMS + '/mirrors/' + f);
     const body = bodyText(html).toLowerCase();
     const hit = BRAND.filter((t) => body.indexOf(t) >= 0);
     check(hit.length === 0, 'S3 ' + f + ' 可见正文无品牌内容', hit.join(',') || 'clean');
-    // provenance：头注释必须含 source_url / captured_at / mirror_of / license_note
-    for (const key of ['source_url', 'captured_at', 'mirror_of', 'license_note']) {
+    // provenance：头注释必须含 source_url / mirror_of / license_note；
+    // 捕获镜像另须 captured_at，手工重构镜像（票 T4）以 reconstructed_at + provenance
+    // 替代（页面不可重现，无捕获时点——头注释不得声称捕获时点）
+    const isReconstructed = /source\s*:\s*reconstructed/.test(html);
+    const keys = isReconstructed
+      ? ['source_url', 'reconstructed_at', 'mirror_of', 'provenance', 'license_note']
+      : ['source_url', 'captured_at', 'mirror_of', 'license_note'];
+    for (const key of keys) {
       check(html.indexOf(key) >= 0, 'S3 ' + f + ' 标注 ' + key);
+    }
+    if (isReconstructed) {
+      check(html.indexOf('captured_at') < 0, 'S3 ' + f + ' 重构镜像不标捕获时点（无 captured_at，不伪造捕获 provenance）');
     }
     // 去追踪 + 零外链（hermetic）
     const code = stripComments(html);
@@ -153,11 +173,19 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
 // == S4 原始快照不入库 ==
 {
-  const archiveRoot = MANIFEST.entries[0].capture.archive_root;
+  // 手工重构镜像（票 T4）：页面不可重现 ⇒ 无 capture 块（不伪造抓取记录），
+  // 以 provenance（重构依据）替代捕获指纹；原始快照纪律只约束捕获条目
+  const capturedEntries = MANIFEST.entries.filter((e) => e.capture);
+  const reconEntries = MANIFEST.entries.filter((e) => e.adoption === 'reconstructed');
+  eq(capturedEntries.length + reconEntries.length, MANIFEST.entries.length, 'S4 条目二分干净（capture 块 ⇔ 非重构）');
+  check(reconEntries.every((e) => !e.capture), 'S4 重构条目无 capture 块（不伪造抓取记录）');
+  check(reconEntries.every((e) => !('captured_at' in e) && typeof e.provenance === 'string' && e.provenance.trim()),
+    'S4 重构条目无 captured_at、以 provenance 替代（重构依据非空）');
+  const archiveRoot = capturedEntries[0].capture.archive_root;
   const rootN = ROOT.replace(/\\/g, '/');
   check(!!archiveRoot && archiveRoot !== rootN && !archiveRoot.startsWith(rootN + '/'),
     'S4 归档根在**仓库外**（前缀碰撞防护：须以分隔符为界）', archiveRoot);
-  for (const e of MANIFEST.entries) {
+  for (const e of capturedEntries) {
     check(e.capture.raw && e.capture.raw.path.startsWith('corpus-forms/'), 'S4 ' + e.id + ' 原始快照路径为归档相对路径');
     check(!String(e.capture.raw.path).startsWith('/') && !String(e.capture.raw.path).includes(ROOT.replace(/\\/g, '/')),
       'S4 ' + e.id + ' 原始快照路径非仓库绝对路径');
@@ -178,7 +206,7 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   // CI 无归档 → 显式 SKIP（不伪造绿，也不误报红）
   if (existsSync(archiveRoot)) {
     let verified = 0, mismatch = 0;
-    for (const e of MANIFEST.entries) {
+    for (const e of capturedEntries) {
       for (const a of [e.capture.raw, e.capture.dom, ...(e.capture.frames || [])]) {
         if (!a) continue;
         const p = join(archiveRoot, a.path);
