@@ -31,6 +31,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { before, containsToken } from './gate-assert.mjs';
+
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..', '..');
 const abs = (p) => join(ROOT, p);
@@ -82,6 +84,13 @@ const check = (c, m, extra) => {
     execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (e) { auditCode = e.status; }
   eq(auditCode, 0, 'V0 audit 全绿（票数期望 23 / workflow 数 12 由 runner 常量自维护）');
+
+  // V0b 共享断言器自检：缺失 / 逆序都必须红（防「门恒真」回归）
+  eq(before('alpha beta', 'alpha', 'beta').ok, true, 'V0 gate-assert 顺序成立 → ok');
+  eq(before('alpha beta', 'missing', 'beta').ok, false, 'V0 gate-assert 缺失 token → 红（-1 不得恒真）');
+  eq(before('alpha beta', 'beta', 'alpha').ok, false, 'V0 gate-assert 逆序 → 红');
+  eq(containsToken('alpha', 'alpha').ok, true, 'V0 gate-assert 刺激在场 → ok');
+  eq(containsToken('alpha', 'missing').ok, false, 'V0 gate-assert 刺激缺失 → 红（fixture 空操作可见）');
 }
 
 const WF = read(FILES.workflow);
@@ -127,12 +136,10 @@ const ORCH = read(FILES.orchestrator);
   check(/assertArchiveOutsideRepo/.test(ORCH), 'V2 复用共享仓外护栏（公开页 / 附着 / 漂移同源）');
   check(/assertReportOutsideCorpus\s*\(/.test(ORCH), 'V2 报告目录护栏存在');
   {
-    // 匹配调用点（带分号）而不是函数定义；TOOLS.capture 的第一处使用在 capArgs。
-    // 两处都必须找到，否则 indexOf 的 -1 会让顺序断言恒真（review #27）。
-    const reportGuardAt = ORCH.indexOf('assertReportOutsideCorpus(outDir);');
-    const captureAt = ORCH.indexOf('TOOLS.capture,');
-    check(reportGuardAt >= 0 && captureAt >= 0 && reportGuardAt < captureAt,
-      'V2 报告护栏先于抓取动作（检查在首个 mutation 之前）');
+    // 匹配调用点（带分号）而不是函数定义；token 缺失时 before 返回 ok:false，
+    // 不再依赖 indexOf 的 -1 恰好小于（review #27 / retro 2026-10-26）。
+    const guardOrder = before(ORCH, 'assertReportOutsideCorpus(outDir);', 'TOOLS.capture,');
+    check(guardOrder.ok, 'V2 报告护栏先于抓取动作（检查在首个 mutation 之前）', guardOrder.detail);
   }
   check(/拒绝写入：报告目录不得位于/.test(ORCH), 'V2 报告写进语料目录被硬拒');
   check(!/06-manifest\.mjs/.test(ORCH), 'V2 编排器不调用 06-manifest（清单更新永远是人工显式动作）');
@@ -211,6 +218,12 @@ const ORCH = read(FILES.orchestrator);
       readFileSync(abs(FORMS + '/mirrors/chosen-select.html'), 'utf8');
     writeFileSync(join(corpus, 'dom', 'chosen-select.html'), chosenHtml);
     writeFileSync(join(corpus, 'raw', 'chosen-select.html'), chosenHtml);
+    // 刺激断言取精确前缀（review #29）：只查域名会让畸形 Turnstile URL 蒙混过关，
+    // 无法证明注入契约本身成立。
+    const chosenStimulus = chosenHtml.startsWith(
+      '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>\n'
+    );
+    check(chosenStimulus, 'V5 反例刺激在场（Turnstile 组件脚本确实注入）');
 
     const entry = (id, file, html, extra) => Object.assign({
       id,
