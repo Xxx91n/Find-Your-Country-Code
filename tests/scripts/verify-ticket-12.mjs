@@ -83,7 +83,13 @@ const CAPTURE_SRC = read(FILES.capture);
   check(!!t12, 'T0 plan 注册票 12（issue #12 登录态镜像采集旁路）');
   eq(JSON.stringify(t12 && t12.scripts), JSON.stringify(['verify-ticket-12.mjs']), 'T0 票 12 门脚本唯一指向本文件');
   check(/-\s*'12'/.test(read(FILES.workflow)), 'T0 verify-tickets.yml matrix 含 12（A15/A16 全等守卫面）');
-  check(/A2 plan has 22 tickets/.test(read(FILES.runner)), 'T0 audit A2 期望数随新票更新（21 → 22，票 43 issue #13）');
+  // 票数期望是 runner 本地常量（加票在同票提交里自维护）；此处只断言 audit 可跑通，
+  // 不再对别的文件里的字面量做正则（加票不再需要回改本文件）
+  let auditCode = 0;
+  try {
+    execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (e) { auditCode = e.status; }
+  eq(auditCode, 0, 'T0 audit 全绿（A2 票数期望的维护面已收敛到 runner 常量）');
 }
 
 // ══════════════════════════════════════════════════════════════════

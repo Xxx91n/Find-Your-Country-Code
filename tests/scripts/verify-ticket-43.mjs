@@ -84,7 +84,12 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
   check(!!t43, 'U0 plan 注册票 43（issue #13 手工重构镜像）');
   eq(JSON.stringify(t43 && t43.scripts), JSON.stringify(['verify-ticket-43.mjs']), 'U0 票 43 门脚本唯一指向本文件');
   check(/-\s*'43'/.test(read(FILES.workflow)), 'U0 verify-tickets.yml matrix 含 43（A15/A16 全等守卫面）');
-  check(/A2 plan has 22 tickets/.test(read(FILES.runner)), 'U0 audit A2 期望数随新票更新（21 → 22）');
+  // 票数期望是 runner 本地常量（加票在同票提交里自维护）；本门只断言 audit 可跑通
+  let auditCode = 0;
+  try {
+    execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (e) { auditCode = e.status; }
+  eq(auditCode, 0, 'U0 audit 全绿（A2 票数期望由 runner 常量自维护）');
 }
 
 // ══════════════════════════════════════════════════════════════════
