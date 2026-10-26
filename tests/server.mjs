@@ -30,6 +30,11 @@ const ROUTES = [
   { prefix: '/vendor/vue/', dir: path.join(ROOT, 'node_modules', 'vue', 'dist') },
   // 票 15 React 19 本地 vendored（生产构建，hermetic 无外网）；票 43 起改由独立 install root 供给
 
+  // 票 T2（#11）：Angular fixture 的 zone.js（UMD bundle 直供）
+  { prefix: '/vendor/zone.js/', dir: path.join(ROOT, 'node_modules', 'zone.js', 'bundles') },
+  // 票 T2（#11）：Angular 20 fixture 应用现场 JIT bundle（esbuild，内存缓存，hermetic 无外网）
+  { prefix: '/gen/angular/', handler: serveAngularGen },
+
   { prefix: '/gen/react19/', handler: serveReact19Gen },
 
 ];
@@ -102,6 +107,50 @@ async function serveReact19Gen(pathname, res) {
     if (res.headersSent) { res.end(); return; }
     res.writeHead(500);
     res.end('react19 gen error: ' + (e && e.message));
+  }
+}
+
+// ── 票 T2（#11）：Angular 20 fixture 应用现场 JIT bundle ──
+// Angular npm 包只发布 FESM（无 UMD），且模板/装饰器需要编译面，无法像 react/vue 那样
+// 直供构建产物，也无法像 react19 那样纯文本转译——按需 esbuild bundle 是唯一 hermetic 路。
+// JIT（@angular/compiler 进 bundle）而非 AOT：省掉 ngc 工具链，fixture 体量下编译成本可忽略。
+// esbuild 不支持 emitDecoratorMetadata，应用源码的 DI 一律走 inject()（见 angular-apps/ 注释）。
+const ANGULAR_APPS_DIR = path.join(ROOT, 'tests', 'fixtures', 'angular-apps');
+const ANGULAR_TSCONFIG = path.join(ANGULAR_APPS_DIR, 'tsconfig.json');
+const angularBundleCache = new Map();
+let esbuildMod = null;
+
+async function serveAngularGen(pathname, res) {
+  const name = pathname.slice('/gen/angular/'.length).replace(/\/+$/, '');
+  if (!/^[a-z][\w-]*\.js$/.test(name)) { res.writeHead(404); res.end('not found'); return; }
+  try {
+    let code = angularBundleCache.get(name);
+    if (code === undefined) {
+      if (!esbuildMod) esbuildMod = (await import('esbuild')).default;
+      // URL→入口约定：/gen/angular/<name>.js ← tests/fixtures/angular-apps/<name>.main.ts
+      const result = await esbuildMod.build({
+        entryPoints: [path.join(ANGULAR_APPS_DIR, name.replace(/\.js$/, '.main.ts'))],
+        bundle: true,
+        write: false,
+        format: 'iife',
+        platform: 'browser',
+        target: 'es2020',
+        tsconfig: ANGULAR_TSCONFIG,
+        // ngDevMode=false 是 Angular 生产惯例（关 dev 断言）；ngJitMode 必须为 true，否则 JIT 装饰器走不进编译面
+        define: { ngDevMode: 'false', ngJitMode: 'true', 'process.env.NODE_ENV': '"production"' },
+        logLevel: 'silent',
+      });
+      code = result.outputFiles[0].text;
+      angularBundleCache.set(name, code);
+    }
+    res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+    res.end(code);
+  } catch (e) {
+    // headersSent 防御与 react19 同款：响应已开始则只收尾，绝不双写头
+    if (res.headersSent) { res.end(); return; }
+    console.error('angular gen error:', e && (e.message || e));
+    res.writeHead(500);
+    res.end('angular gen error: ' + (e && e.message));
   }
 }
 

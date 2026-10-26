@@ -11,6 +11,7 @@
     "08": { "name": "phase-B failure-driven fixes", "scripts": ["verify-ticket-08.mjs"] },
     "10": { "name": "srcdoc frame cross-frame origin", "covers": ["A-034"], "scripts": ["verify-ticket-10.mjs"] },
     "11": { "name": "ITI L3 observable criterion", "covers": ["A-035"], "scripts": ["verify-ticket-11.mjs"] },
+    "12": { "name": "login-derived capture bypass — CDP attach + isomorphic artifacts + compliance gate (issue #12, spec #9 Q3/Q8)", "scripts": ["verify-ticket-12.mjs"] },
     "13": { "name": "visibility L3 hardening (corpus dynamic count + gate statics)", "scripts": ["verify-ticket-13.mjs"] },
     "15": { "name": "react19 fill probe + injection safety layer", "scripts": ["verify-ticket-15.mjs", "verify-ticket-09.mjs"] },
     "18": { "name": "pseudo-select e2e", "scripts": ["verify-ticket-18.mjs"] },

@@ -8,6 +8,7 @@
     "candidateRule": "候选非承诺（D-014）：候选页须过 D-008 合规口径（只采公开页 / 剥离品牌内容 / 标 source_url + captured_at / 不含真实 PII）后才得入库；原始快照一律出仓归档，不入 git。",
     "adoptionValues": "adopted = 已派生镜像页 + 结构骨架入库；skeleton-only = 仅结构骨架入库（镜像页未派生，附 reason）；deferred = 未采用（附 reason）",
     "captureTool": "tests/scripts/06-capture-forms.mjs（退化回路第 1 步；输出仓库外 archive）",
+    "loginDerived": "login: true = 登录后才能到达的页面（GLOSSARY「登录态镜像」）。此类 source 只能经 --attach（CDP 附着本地已登录标签页）采集；匿名采集被工具拒绝；CI/自动化永不登录。产物同构 + 敏感字段形状占位，镜像页头注释必须带 login-derived 标记与 capture_mode: cdp-attach provenance（verify-ticket-12.mjs 硬校验）。runbook：tests/corpus/forms/LOGIN-CAPTURE.md",
     "mirrorRoot": "tests/corpus/forms/mirrors/（单一 tests/ 根下，不新增顶层 corpus/）"
   },
   "sources": [

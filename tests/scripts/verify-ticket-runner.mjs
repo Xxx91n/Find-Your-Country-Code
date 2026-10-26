@@ -113,7 +113,7 @@ if (mode === '--audit') {
   const pKeys = keysOf(plan);
   const legacyWfs = Object.keys(LEGACY);
   ck('A1 plan schema=1', plan.schema === 1, 'got ' + plan.schema);
-  ck('A2 plan has 20 tickets', pKeys.length === 20, 'got ' + pKeys.length);
+  ck('A2 plan has 21 tickets (20 D-004 merge + 12 login-derived capture, issue #12)', pKeys.length === 21, 'got ' + pKeys.length);
   ck('A3 legacy baseline has 20 workflows', legacyWfs.length === 20, 'got ' + legacyWfs.length);
 
   const legacyScripts = new Set(Object.values(LEGACY).flat());
@@ -121,7 +121,10 @@ if (mode === '--audit') {
   const missing = [...legacyScripts].filter(s => !planScripts.has(s));
   const extra = [...planScripts].filter(s => !legacyScripts.has(s));
   ck('A4 zero script coverage loss (legacy scripts subset of plan)', missing.length === 0, 'missing: ' + missing.join(', '));
-  ck('A5 no script beyond legacy set', extra.length === 0, 'extra: ' + extra.join(', '));
+  // 票 12（issue #12 登录态镜像采集旁路）起允许 D-004 合并之后新增票：
+  // 冻结面只保「零覆盖丢失」（A4）；新增脚本须在盘（A8 全量断言），
+  // 且新票同样受 A15/A16（plan ↔ verify-tickets.yml matrix 全等）约束。
+  ck('A5 post-merge additions allowed but must exist on disk', extra.every(s => existsSync(join(here, s))), 'extra missing on disk: ' + extra.filter(s => !existsSync(join(here, s))).join(', '));
   ck('A6 legacy script count = 21 (20 workflows, verify-15 runs 2)', legacyScripts.size === 21, 'got ' + legacyScripts.size);
 
   const mism = [];

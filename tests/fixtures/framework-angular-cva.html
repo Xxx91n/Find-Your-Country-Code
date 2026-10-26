@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Angular 20 响应式 ControlValueAccessor fixture — 票 T2 (#11)</title>
+</head>
+<body>
+<h1>Angular 20 响应式表单自定义 CVA（native prototype setter + input→change→blur）</h1>
+<p>自定义 CVA 的 input 监听（HostListener）必须经 registerOnChange 回调写进 FormControl；
+这验证原生事件序列在真实 Angular 表单管线上状态真实同步。</p>
+<fycc-cva-root></fycc-cva-root>
+<script src="/vendor/zone.js/zone.umd.js"></script>
+<script src="/gen/angular/cva.js"></script>
+</body>
+</html>
