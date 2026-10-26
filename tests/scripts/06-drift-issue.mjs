@@ -78,8 +78,17 @@ function validateIssues(doc) {
   return list;
 }
 
+// 分页 REST 响应可能超过 execFileSync 的默认 stdout 上限（Node 22 为 1 MiB），
+// 默认值会在开票前抛 ENOBUFS，等于告警投递整体失败。显式放宽到 64 MiB：
+// 100 条/页 × 多页的 issue 正文足够覆盖本仓规模；仍超限则如实 exit 2。
+const GH_MAX_BUFFER = 64 * 1024 * 1024;
+
 function gh(args) {
-  return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  return execFileSync('gh', args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: GH_MAX_BUFFER,
+  }).trim();
 }
 
 // 去重必须看到全部 open issue：gh issue list 的 --limit 有上限（1000），命中票

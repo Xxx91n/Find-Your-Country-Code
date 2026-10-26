@@ -219,6 +219,8 @@ function onBlockOf(src) {
   check(/'api', '--paginate', '--slurp'/.test(ISSUE_TOOL), 'V3 去重查询分页拉全量 open issue（无 --limit 上限）');
   check(/per_page=100/.test(ISSUE_TOOL), 'V3 分页页大小 100');
   check(/issuesFromPages\s*\(/.test(ISSUE_TOOL), 'V3 分页结果经 lib 映射（PR 过滤 / is_bot 可离线测）');
+  check(/GH_MAX_BUFFER = 64 \* 1024 \* 1024/.test(ISSUE_TOOL) && /maxBuffer:\s*GH_MAX_BUFFER/.test(ISSUE_TOOL),
+    'V3 gh 分页输出上限显式放宽（防 1 MiB 默认 buffer 中止投递）');
   check(/deliverPlan\s*\(/.test(ISSUE_TOOL), 'V3 投递执行经 lib（失败路径可离线锁定）');
   check(/outcomeOf\s*\(/.test(ISSUE_TOOL), 'V3 结果账本经 lib（计数唯一处）');
   check(/exitCodeFor\(outcome\)/.test(ISSUE_TOOL), 'V3 失败映射经 lib exitCodeFor（可单测）');
