@@ -10,7 +10,7 @@ Userscript: finds phone country-code fields on any page, injects a 🌐 icon and
 
 ## Don't touch
 
-- `tests/corpus/`, `tests/fixtures/`: corpus — changes must update the manifest and baselines
+- `tests/corpus/`, `tests/fixtures/`: corpus content (mirror / skeleton / fingerprint) — changes update the manifest and baselines; runtime ledgers under `tests/corpus/forms/` are exempt (README §4)
 - `dist/`, `playwright-report/`, `test-results/`: generated output, never edit by hand
 - `.github/workflows/`: gate definitions — check the trigger surface before editing
 

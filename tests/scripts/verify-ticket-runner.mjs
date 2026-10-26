@@ -32,6 +32,9 @@ const WORKFLOWS = join(ROOT, '.github', 'workflows');
 
 // plan 票数 canary：新增/删除票时**在本文件**同步期望数（同票提交里自维护）——
 // 任何门只断言 `--audit` 退出码，不对本行做跨文件字面量正则（加票不再改别家的门）。
+// 门 key 规则（retro 2026-10-26）：取现有最大 key 的下一个序号；它与 GitHub
+// issue 号、历史 A 号散文（如 calibration corpus 的「票 44」）无关。溯源写在
+// plan entry 的 name 里（issue #NN / spec #NN），不让门 key 承担。
 const EXPECTED_TICKETS = 23;
 
 // 冻结期望：本合并替换掉的 21 个票级 workflow 及其脚本清单。
