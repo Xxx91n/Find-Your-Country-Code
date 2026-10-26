@@ -96,7 +96,7 @@ _Avoid_: 登录采集（无「人工旁路」语义）、内部页快照
 **手工重构镜像**：页面已不可访问、无法再重现时，凭截图 / 存档 / 记忆重建的镜像页；provenance 标明重构依据，不参与结构比对（无可信基线）。
 _Avoid_: 复刻页、凭空造页（无证据约束语义）
 
-**形态漂移探测**：对候选真实站点的「定期重捕 → 结构骨架派生 → 确定性结构比对」回路，把站点改版变成可归因的告警。红灯只触发人工归因；结论写入提交信息或 issue；绝不自动更新基线。原型实现 = advisory workflow `corpus-drift`（仅 `workflow_dispatch`，产出可达性矩阵 + 漂移报告 artifact）；被拦源按 reason + ticket 登记在降级账本，不伪造绿。
+**形态漂移探测**：对候选真实站点的「定期重捕 → 结构骨架派生 → 确定性结构比对」回路，把站点改版变成可归因的告警。红灯只触发人工归因；结论写入提交信息或 issue；绝不自动更新基线。实现 = advisory workflow `corpus-drift`（weekly `schedule` + 手动 `workflow_dispatch`；minor/major 漂移自动开 `needs-triage` issue，none/patch 不开；产出可达性矩阵 + 漂移报告 artifact）；被拦源按 reason + ticket 登记在降级账本，不伪造绿。
 _Avoid_: 页面监控（泛称，无结构基线语义）、定时截图（像素语义）
 
 ## 诊断

@@ -39,6 +39,15 @@ export function containsToken(src, token) {
     ? { ok: true, detail: '' }
     : { ok: false, detail: '未找到刺激：' + JSON.stringify(token) + '（fixture 注入可能是空操作）' };
 }
+// workflow 写权限扫描（issue #15 review）：返回「值带 write / write-all 的 scope」。
+// 覆盖 workflow 级与 job 级、引号键值、YAML 锚点/标签前缀、行尾注释；
+// permissions: write-all 会以 scope=permissions 命中。调用方据此断言只允许
+// 预期的写 scope（例如仅 issues），堵住 `"contents": write` / `contents: &w write`
+// 这类绕过字面量正则的写法。
+export function writeScopesIn(src) {
+  return [...String(src).matchAll(/^\s*["']?([a-z-]+)["']?:\s*(?:[&*!][^\s]+\s+)*['"]?(write|write-all)['"]?\s*(?:#.*)?$/gm)]
+    .map((m) => m[1]);
+}
 
 // 精确前缀断言：fixture 的刺激写你注入的完整片段（标签 / URL / 行），不要写
 // 畸形版本也含有的子串（review #29：只查域名会让畸形 Turnstile URL 蒙混过关）。
