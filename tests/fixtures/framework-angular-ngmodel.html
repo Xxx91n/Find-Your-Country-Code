@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Angular 20 模板驱动 ngModel fixture — 票 T2 (#11)</title>
+</head>
+<body>
+<h1>Angular 20 模板驱动 ngModel（native prototype setter + input→change→blur）</h1>
+<p>select 走 SelectControlValueAccessor 的 change 监听，input 走 DefaultValueAccessor 的 input 监听；
+填充必须经 zone.js 内的原生事件序列同步进组件状态，直接赋值不会触发 Angular 变更检测。</p>
+<fycc-ngmodel-root></fycc-ngmodel-root>
+<script src="/vendor/zone.js/zone.umd.js"></script>
+<script src="/gen/angular/ngmodel.js"></script>
+</body>
+</html>
