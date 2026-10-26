@@ -9,19 +9,34 @@
 //   SHA256 指纹与元数据清单（tests/corpus/forms/manifest.json）。
 //
 // 纪律（本票硬约束）：
-//   ① 只采公开页；不登录、不提交表单、不抓取 PII；
+//   ① 公开页只做匿名 GET + 渲染；不登录、不提交表单、不抓取 PII；
 //   ② 原始快照（含品牌内容与版权）**绝不写进仓库工作树**——输出根默认
 //      指向仓库外 archive，且脚本拒绝把输出写进 REPO 内；
-//   ③ 抓取是显式动作（人工 / 定期），不进 CI `pull_request` 门。
+//   ③ 抓取是显式动作（人工 / 定期），不进 CI `pull_request` 门；
+//   ④ 登录态镜像（issue #12 / GLOSSARY「登录态镜像」）：CI/自动化永不登录。
+//      登录页经 --attach（CDP 附着用户本地已登录标签页）人工采集，产物与
+//      公开页同构、标 login-derived，敏感字段值替换为形状占位；操作手册见
+//      tests/corpus/forms/LOGIN-CAPTURE.md。成对拒绝（机器纪律）：
+//      匿名模式拒绝 login:true source；附着模式只服务 login:true source。
 //
 // 用法：
 //   node tests/scripts/06-capture-forms.mjs [--id <id>] [--archive <dir>] [--no-render]
+//   node tests/scripts/06-capture-forms.mjs --attach --id <id> [--cdp-port 9222] [--tab <url 子串>]
 //   CCH_ARCHIVE_ROOT=<dir> 可覆盖归档根（CI / 异机用）。
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import {
+  assertArchiveOutsideRepo,
+  assertCaptureDiscipline,
+  redactSensitiveValues,
+  buildAttachEntry,
+  mergeCaptureManifest,
+  newCaptureReport,
+} from './12-login-capture.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -37,12 +52,15 @@ const UA =
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
 function parseArgs(argv) {
-  const out = { id: null, archive: DEFAULT_ARCHIVE_ROOT, render: true };
+  const out = { id: null, archive: DEFAULT_ARCHIVE_ROOT, render: true, attach: false, cdpPort: 9222, tab: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--id') out.id = argv[++i];
     else if (a === '--archive') out.archive = argv[++i];
     else if (a === '--no-render') out.render = false;
+    else if (a === '--attach') out.attach = true;
+    else if (a === '--cdp-port') out.cdpPort = Number(argv[++i]);
+    else if (a === '--tab') out.tab = argv[++i];
   }
   return out;
 }
@@ -91,20 +109,105 @@ async function renderDom(url, shotPath) {
   }
 }
 
+// ── 附着采集（登录态镜像；issue #12） ──
+// 只读用户已登录的标签页现场：**绝不导航**（goto 会破坏登录态现场），
+// 绝不触碰表单；DOM / 子帧先过敏感字段脱敏再落盘，截图只进仓外 archive。
+async function attachCapture(source, args, outDir) {
+  const { chromium } = await import('playwright');
+  const browser = await chromium.connectOverCDP('http://127.0.0.1:' + args.cdpPort);
+  try {
+    const pages = browser.contexts().flatMap((c) => c.pages());
+    let origin = null;
+    try { origin = new URL(source.url).origin; } catch {}
+    let candidates = pages.filter((p) => {
+      try { return origin != null && new URL(p.url()).origin === origin; } catch { return false; }
+    });
+    if (args.tab) candidates = candidates.filter((p) => p.url().includes(args.tab));
+    if (candidates.length === 0) {
+      throw new Error(
+        '没有匹配的已登录标签页（source origin: ' + origin + (args.tab ? '，--tab: ' + args.tab : '') + '）。\n' +
+        '  当前标签页：\n' + pages.slice(0, 10).map((p) => '    ' + p.url()).join('\n')
+      );
+    }
+    if (candidates.length > 1) {
+      throw new Error(
+        '同源标签页不止一个，用 --tab <url 子串> 消歧：\n' +
+        candidates.map((p) => '    ' + p.url()).join('\n')
+      );
+    }
+    const page = candidates[0];
+
+    const userAgent = await page.evaluate(() => navigator.userAgent);
+    const shotRel = 'shot/' + source.id + '.png';
+    await page.screenshot({ path: path.join(outDir, shotRel), fullPage: false });
+
+    const { html: domHtml, redactions } = redactSensitiveValues(await page.content());
+    const domBuf = Buffer.from(domHtml, 'utf8');
+    writeFileSync(path.join(outDir, 'dom', source.id + '.html'), domBuf);
+
+    const frames = [];
+    for (const f of page.frames()) {
+      if (f === page.mainFrame()) continue;
+      try {
+        const buf = Buffer.from(redactSensitiveValues(await f.content()).html, 'utf8');
+        const rel = 'dom/' + source.id + '.frame' + frames.length + '.html';
+        writeFileSync(path.join(outDir, rel), buf);
+        frames.push({ rel, buf, url: f.url() });
+      } catch {}
+    }
+
+    const entry = buildAttachEntry({
+      id: source.id,
+      sourceUrl: source.url,
+      family: source.family,
+      attachedUrl: page.url(),
+      userAgent,
+      domBuf,
+      frames,
+      shotRel,
+      redactionCount: redactions.length,
+    });
+
+    console.log(
+      'OK   ' + entry.id + '  (cdp-attach)\n' +
+      '     attached_url=' + entry.attached_url + '\n' +
+      '     dom=' + entry.dom.bytes + 'B  frames=' + frames.length + '  脱敏=' + redactions.length + ' 处（password/otp/identity → 形状占位）'
+    );
+    return entry;
+  } finally {
+    await browser.close(); // connectOverCDP 的 close = 断开连接，不退出用户的 Chrome
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const archiveRoot = path.resolve(args.archive);
   const outDir = path.join(archiveRoot, 'corpus-forms');
 
-  // 硬护栏：输出必须落在仓库外（原始快照不入库）
-  if (outDir === REPO || outDir.startsWith(REPO + path.sep)) {
-    throw new Error('拒绝写入：原始快照输出目录不得位于仓库内 → ' + outDir);
-  }
+  // 硬护栏：输出必须落在仓库外（原始快照不入库；公开页/附着同源，共享实现于 12-login-capture.mjs）
+  assertArchiveOutsideRepo(outDir, REPO);
 
   const sources = loadSources().filter((s) => !args.id || s.id === args.id);
   if (sources.length === 0) throw new Error('没有匹配的 source（--id ' + args.id + '）');
 
+  // ── 登录纪律（issue #12：CI/自动化永不登录；成对拒绝，判定同源于 12-login-capture.mjs） ──
+  assertCaptureDiscipline(args, sources);
+
   for (const sub of ['raw', 'dom', 'shot']) mkdirSync(path.join(outDir, sub), { recursive: true });
+
+  // ── 附着路径：按 id 原位合并进既有 CAPTURE-MANIFEST（不整批覆盖公开页条目） ──
+  if (args.attach) {
+    const entry = await attachCapture(sources[0], args, outDir);
+    const capPath = path.join(outDir, 'CAPTURE-MANIFEST.json');
+    const report = existsSync(capPath)
+      ? mergeCaptureManifest(JSON.parse(readFileSync(capPath, 'utf8')), [entry])
+      : newCaptureReport(entry, archiveRoot);
+    writeFileSync(capPath, JSON.stringify(report, null, 2) + '\n');
+    console.log('---');
+    console.log('attached ' + entry.id + ' → ' + archiveRoot + '/corpus-forms（login-derived，已脱敏）');
+    console.log('manifest → corpus-forms/CAPTURE-MANIFEST.json（按 id 合并）');
+    return;
+  }
 
   const report = {
     capturedAt: new Date().toISOString(),
