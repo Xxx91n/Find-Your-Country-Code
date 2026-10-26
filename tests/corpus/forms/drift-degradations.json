@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "name": "corpus-drift 降级登记（可达性矩阵的如实红账本）",
+    "ticket": 14,
+    "ticket_label": "T5 corpus-drift workflow——仅 workflow_dispatch，产出可达性矩阵（spec #9 Q4/Q7）",
+    "role": "非 ok 源（challenged / unreachable）的显式登记处。06-corpus-drift.mjs 硬校验：每个非 ok 源必须在此登记非空 reason + ticket，否则整次运行如实红；登记与实测不一致时报告如实记录实测状态。",
+    "pairingRule": "登记是双向契约：① 未登记的非 ok 源 = 违规（不伪造绿）；② 已恢复（reachability=ok）却仍有登记 = stale = 违规（恢复是显式动作，stale 登记会在下次真被拦时伪造放行）。登记不是删除——被拦源仍留在 sources.json 的重捕与结构比对集中。",
+    "reasonRule": "reason 写明实测证据（挑战标记 / HTTP 状态 / 错误），ticket 指向归因与恢复动作的票；沿用 site-manifest skipTestsRule 与 sources.json reconstructed provenance 的「附 reason」惯例。",
+    "workflow": ".github/workflows/corpus-drift.yml"
+  },
+  "sources": []
+}

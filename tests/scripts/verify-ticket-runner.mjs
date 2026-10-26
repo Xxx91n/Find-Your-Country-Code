@@ -32,7 +32,7 @@ const WORKFLOWS = join(ROOT, '.github', 'workflows');
 
 // plan 票数 canary：新增/删除票时**在本文件**同步期望数（同票提交里自维护）——
 // 任何门只断言 `--audit` 退出码，不对本行做跨文件字面量正则（加票不再改别家的门）。
-const EXPECTED_TICKETS = 22;
+const EXPECTED_TICKETS = 23;
 
 // 冻结期望：本合并替换掉的 21 个票级 workflow 及其脚本清单。
 // 独立真源（不读 plan）——用于 --audit 的「零票级覆盖丢失」断言。
@@ -203,7 +203,8 @@ if (mode === '--audit') {
     if (/cch\/[0-9]/.test(src)) deadRefs.push(f);
   }
   ck('A18 no workflow references a literal cch/<NN> branch', deadRefs.length === 0, 'dead refs in: ' + deadRefs.join(', '));
-  ck('A19 workflow count reduced 30 -> 11', wfFiles.length === 11, 'got ' + wfFiles.length + ': ' + wfFiles.sort().join(', '));
+  // 票 44（corpus-drift 原型 workflow）新增 1 个 advisory workflow：30 -> 12。
+  ck('A19 workflow count reduced 30 -> 12', wfFiles.length === 12, 'got ' + wfFiles.length + ': ' + wfFiles.sort().join(', '));
 
   console.log('');
   console.log('AUDIT ' + pass + ' passed / ' + fail + ' failed');

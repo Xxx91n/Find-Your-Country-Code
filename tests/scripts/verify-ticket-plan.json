@@ -24,6 +24,7 @@
     "38": { "name": "distribution-last-mile (version consistency + GF hard rules)", "scripts": ["38-version-consistency.mjs"], "install": true, "build": true },
     "39": { "name": "real-site-enablement", "scripts": ["verify-ticket-39.mjs"] },
     "42": { "name": "locale-switch", "scripts": ["verify-ticket-42.mjs"] },
-    "43": { "name": "hand-reconstructed mirrors — skeleton source=reconstructed + structural-diff skip (issue #13, spec #9 Q9)", "scripts": ["verify-ticket-43.mjs"] }
+    "43": { "name": "hand-reconstructed mirrors — skeleton source=reconstructed + structural-diff skip (issue #13, spec #9 Q9)", "scripts": ["verify-ticket-43.mjs"] },
+    "44": { "name": "corpus-drift workflow prototype — workflow_dispatch only, reachability matrix + degradation ledger (issue #14, spec #9 T5)", "scripts": ["verify-ticket-44.mjs"] }
   }
 }
