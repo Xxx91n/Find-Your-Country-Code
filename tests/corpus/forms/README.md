@@ -101,8 +101,9 @@ tests/corpus/forms/
 
 **advisory 漂移 workflow（票 T5 / issue #14；spec #9 Q4/Q7）**：`.github/workflows/corpus-drift.yml` 把上面三步串成一次可审计运行，产出「可达性矩阵 + 漂移报告」artifact（live-out/corpus-drift，运行产物不入 git）。原型阶段**只挂 `workflow_dispatch`**——不设 schedule、不自动开 issue；连续两次绿（含降级登记的如实红）后才升级为正式模式。编排器 `tests/scripts/06-corpus-drift.mjs` 零新引擎代码：采集 / 骨架 / diff 的归一化与分级判定仍唯一定义在既有三脚本。
 
-- **可达性三态**：`ok`（表单页可达）/ `challenged`（HTTP 200 但命中反爬挑战标记：Cloudflare / Imperva / PerimeterX / DataDome / 阿里云 WAF 等）/ `unreachable`（抓取失败或 HTTP ≥400）。`challenged` 的 DOM 是拦截页，**不派生骨架**（否则污染基线）。
+- **可达性三态**：`ok`（浏览器导航成功且无拦截标记）/ `challenged`（命中反爬挑战标记，**无论 HTTP 状态**：Cloudflare / Imperva / PerimeterX / DataDome / 阿里云 WAF 等）/ `unreachable`（抓取失败或浏览器导航 HTTP ≥400）。判定以浏览器导航状态为准；裸 fetch 的 `http_status` 仅作证据（反爬站点常对裸 fetch 回 403/503、对浏览器正常渲染）。标记按页面部位分域匹配（标题 / 正文 block-page 标记 / 挑战帧），表单自带的 Turnstile 组件不算被拦。`challenged` 的 DOM 是拦截页，**不派生骨架**（否则污染基线）。
 - **降级登记（reason + ticket 硬校验）**：非 ok 源必须在 drift-degradations.json 登记非空 `reason` + `ticket`，否则运行如实红（exit 1；**不伪造绿**；报告仍产出）。反向同样红：已恢复（`ok`）却仍登记 = `stale-degradation`——恢复是显式动作。登记不是删除：被拦源仍留在重捕与结构比对集中。
+- **账本不是语料内容**：drift-degradations.json 只记录运行期可达性，不改变任何镜像页 / 结构骨架 / 指纹，因此**不需要重生成 manifest.json 或更新骨架基线**（例外口径；指纹完整性仍由 verify-ticket-06 守，账本字段与语料零副作用由 verify-ticket-44 守）。
 - **无写回红线**：新骨架一律 `--out` 到仓库外 archive；报告拒绝写入 `tests/corpus/**`；workflow 不调用 `06-manifest`，也没有任何 git / issue 写动作。清单与镜像页更新永远是人工归因后的显式动作。
 - **有头浏览器**：CI 用 `xvfb-run` 提供虚拟显示（复用真实站点冒烟层已验证的启动口径）；`06-capture-forms.mjs` 默认有头，无 DISPLAY 时回退 headless 并告警，`CCH_CAPTURE_HEADLESS=1` 可强制。
 

@@ -55,15 +55,26 @@ const TIERS = ['NONE', 'PATCH', 'MINOR', 'MAJOR', 'SKIP', 'ERROR', 'NOT_EVALUATE
 
 // 反爬挑战识别（与 tests/live/live-smoke.mjs 的 CHALLENGE_RE / CHALLENGE_FRAME_RE
 // 同轴；只用于可达性诊断，不作控制流）：命中即 challenged，不伪造 ok。
-// 只匹配「拦截页 / 挑战平台」标记，不匹配页面里零散出现的 captcha 组件
-// （表单自带的 captcha 不阻断 DOM 采集，不算不可达）。
-const CHALLENGE_MARKERS = [
-  { name: 'cloudflare-title', re: /just a moment|attention required|checking your browser|verify you are human|ddos-guard/i },
-  { name: 'cloudflare-platform', re: /challenge-platform|challenges\.cloudflare\.com|cf-chl/i },
-  { name: 'imperva', re: /_incapsula_resource|incapsula incident|pardon our interruption/i },
-  { name: 'perimeterx', re: /px-captcha|perimeterx/i },
-  { name: 'datadome', re: /captcha-delivery\.com|datadome/i },
-  { name: 'aliyun-waf', re: /aliyun_waf|acw_sc__v2/i },
+// 按页面部位分域匹配（review #27）：标题只认拦截页文案；正文只认 block-page
+// 标记；帧 URL 只认真实挑战帧。表单自带的 Turnstile / captcha 组件会加载
+// challenges.cloudflare.com，但不算被拦——不把「页面里提到某产品」当拦截。
+const TITLE_MARKERS = [
+  { name: 'cloudflare-title', re: /just a moment|attention required|checking your browser|verify you are human/i },
+  { name: 'ddos-guard-title', re: /ddos-guard/i },
+  { name: 'waf-title', re: /access denied|unusual traffic|are you a robot|security check/i },
+];
+const BODY_MARKERS = [
+  { name: 'cloudflare-block', re: /challenge-platform|cf-chl/i },
+  { name: 'imperva-block', re: /_incapsula_resource|incapsula incident|pardon our interruption/i },
+  { name: 'perimeterx-block', re: /px-captcha/i },
+  { name: 'aliyun-waf-block', re: /acw_sc__v2/i },
+];
+// 帧 URL 只认挑战帧路径；challenges.cloudflare.com 是 Turnstile 组件的通用宿主
+// （表单自带的验证码也用它），故排除，只认 cdn-cgi/challenge-platform。
+const FRAME_MARKERS = [
+  { name: 'cloudflare-challenge-frame', re: /cdn-cgi\/challenge-platform/i },
+  { name: 'datadome-frame', re: /captcha-delivery\.com/i },
+  { name: 'imperva-frame', re: /_incapsula_resource/i },
 ];
 
 const rel = (p) => path.relative(REPO, p).replace(/\\/g, '/');
@@ -141,8 +152,12 @@ function readPage(archiveRoot, entry) {
 }
 
 function detectChallenge({ title, html, frames }) {
-  const hay = [title || '', html || '', (frames || []).map((f) => f.url || '').join('\n')].join('\n');
-  return CHALLENGE_MARKERS.filter((m) => m.re.test(hay)).map((m) => m.name);
+  const hits = [];
+  const frameUrls = (frames || []).map((f) => f.url || '').join('\n');
+  for (const m of TITLE_MARKERS) if (m.re.test(title || '')) hits.push(m.name);
+  for (const m of BODY_MARKERS) if (m.re.test(html || '')) hits.push(m.name);
+  for (const m of FRAME_MARKERS) if (m.re.test(frameUrls)) hits.push(m.name);
+  return hits;
 }
 
 // 可达性分类：ok / challenged / unreachable / reconstructed（重构条目显式排除，
@@ -160,11 +175,12 @@ function classifySource(source, entry, archiveRoot) {
       evidence: { detail: 'CAPTURE-MANIFEST 无该源条目（抓取未执行或提前失败）' },
     };
   }
-  const httpStatus = entry.http_status == null ? null : entry.http_status;
+  const rawStatus = entry.http_status == null ? null : entry.http_status;
+  const browserStatus = entry.browser_status == null ? null : entry.browser_status;
   if (!entry.ok) {
     return {
       status: 'unreachable',
-      evidence: { http_status: httpStatus, error: entry.error || null },
+      evidence: { http_status: rawStatus, browser_status: browserStatus, error: entry.error || null },
     };
   }
   const html = readPage(archiveRoot, entry);
@@ -173,19 +189,25 @@ function classifySource(source, entry, archiveRoot) {
   if (markers.length) {
     return {
       status: 'challenged',
-      evidence: { http_status: httpStatus, title, markers },
+      evidence: { http_status: rawStatus, browser_status: browserStatus, title, markers },
     };
   }
-  if (httpStatus != null && httpStatus >= 400) {
+  // 可达性以浏览器导航为准（review #27）：裸 fetch 的 403/503 只作证据。
+  // 反爬站点常对裸 fetch 回 403/503、对有头浏览器正常渲染；已渲染 DOM 在场时
+  // 即使 raw fetch 被拦也不算不可达。无浏览器状态时以「有 DOM」为准。
+  const rendered = !!(entry.dom && entry.dom.bytes);
+  const status = browserStatus != null ? browserStatus : (rendered ? null : rawStatus);
+  if (status != null && status >= 400) {
     return {
       status: 'unreachable',
-      evidence: { http_status: httpStatus, title, detail: 'HTTP ' + httpStatus },
+      evidence: { http_status: rawStatus, browser_status: browserStatus, title, detail: 'browser HTTP ' + status },
     };
   }
   return {
     status: 'ok',
     evidence: {
-      http_status: httpStatus,
+      http_status: rawStatus,
+      browser_status: browserStatus,
       title,
       dom_bytes: entry.dom ? entry.dom.bytes : null,
       raw_bytes: entry.raw ? entry.raw.bytes : null,
@@ -304,7 +326,8 @@ function mdCell(v) {
 function evidenceText(row) {
   const e = row.evidence || {};
   const bits = [];
-  if (e.http_status != null) bits.push('HTTP ' + e.http_status);
+  if (e.browser_status != null) bits.push('browser=' + e.browser_status);
+  if (e.http_status != null) bits.push('raw=' + e.http_status);
   if (e.markers && e.markers.length) bits.push('markers=' + e.markers.join(','));
   if (e.title) bits.push('title=' + JSON.stringify(e.title));
   if (e.error) bits.push('error=' + e.error);

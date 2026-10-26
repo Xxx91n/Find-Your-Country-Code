@@ -105,7 +105,7 @@ async function renderDom(url, shotPath) {
   const browser = await chromium.launch({ headless: HEADLESS });
   try {
     const page = await browser.newPage({ userAgent: UA });
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
     // 等 SPA 首屏挂载：网络空闲或 3s 上限，不硬等（退化回路要的是形态，不是完整加载）
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     const html = await page.content();
@@ -116,7 +116,9 @@ async function renderDom(url, shotPath) {
       if (f === page.mainFrame()) continue;
       try { frames.push({ url: f.url(), html: await f.content() }); } catch {}
     }
-    return { html, frames };
+    // 浏览器导航状态（票 T5）：反爬站点常对裸 fetch 回 403/503、对有头浏览器
+    // 正常渲染。漂移矩阵据此判可达性，fetchRaw 的 http_status 只作证据。
+    return { html, frames, status: response ? response.status() : null };
   } finally {
     await browser.close();
   }
@@ -258,6 +260,7 @@ async function main() {
       if (args.render) {
         const shotPath = path.join(outDir, 'shot', s.id + '.png');
         const rendered = await renderDom(s.url, shotPath);
+        entry.browser_status = rendered.status;
         const domBuf = Buffer.from(rendered.html, 'utf8');
         writeFileSync(path.join(outDir, 'dom', s.id + '.html'), domBuf);
         entry.dom = { file: 'dom/' + s.id + '.html', bytes: domBuf.length, sha256: sha256(domBuf) };

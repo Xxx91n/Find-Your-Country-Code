@@ -126,8 +126,14 @@ const ORCH = read(FILES.orchestrator);
   check(/'--out', outPath/.test(ORCH), 'V2 新骨架经 --out 落仓外 archive（不覆盖已提交基线）');
   check(/assertArchiveOutsideRepo/.test(ORCH), 'V2 复用共享仓外护栏（公开页 / 附着 / 漂移同源）');
   check(/assertReportOutsideCorpus\s*\(/.test(ORCH), 'V2 报告目录护栏存在');
-  check(ORCH.indexOf('assertReportOutsideCorpus(outDir)') < ORCH.indexOf('TOOLS.capture'),
-    'V2 报告护栏先于抓取动作（检查在首个 mutation 之前）');
+  {
+    // 匹配调用点（带分号）而不是函数定义；TOOLS.capture 的第一处使用在 capArgs。
+    // 两处都必须找到，否则 indexOf 的 -1 会让顺序断言恒真（review #27）。
+    const reportGuardAt = ORCH.indexOf('assertReportOutsideCorpus(outDir);');
+    const captureAt = ORCH.indexOf('TOOLS.capture,');
+    check(reportGuardAt >= 0 && captureAt >= 0 && reportGuardAt < captureAt,
+      'V2 报告护栏先于抓取动作（检查在首个 mutation 之前）');
+  }
   check(/拒绝写入：报告目录不得位于/.test(ORCH), 'V2 报告写进语料目录被硬拒');
   check(!/06-manifest\.mjs/.test(ORCH), 'V2 编排器不调用 06-manifest（清单更新永远是人工显式动作）');
   check(!/06-manifest\.mjs/.test(WF), 'V2 workflow 不调用 06-manifest（无写回清单 step）');
@@ -199,6 +205,13 @@ const ORCH = read(FILES.orchestrator);
     writeFileSync(join(corpus, 'dom', 'rpn-input.html'), challengeHtml);
     writeFileSync(join(corpus, 'raw', 'rpn-input.html'), challengeHtml);
 
+    // 表单自带 Turnstile 组件的普通页（既有镜像 + 注入组件脚本）：不得误判
+    // challenged（review #27：标记按页面部位分域，通用 Turnstile 宿主不算拦截）
+    const chosenHtml = '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>\n' +
+      readFileSync(abs(FORMS + '/mirrors/chosen-select.html'), 'utf8');
+    writeFileSync(join(corpus, 'dom', 'chosen-select.html'), chosenHtml);
+    writeFileSync(join(corpus, 'raw', 'chosen-select.html'), chosenHtml);
+
     const entry = (id, file, html, extra) => Object.assign({
       id,
       source_url: 'https://example.invalid/' + id,
@@ -215,8 +228,10 @@ const ORCH = read(FILES.orchestrator);
       archiveDir: 'corpus-forms',
       userAgent: 'fixture',
       entries: [
-        entry('iti-v29', 'iti-v29.html', itiHtml),
-        entry('rpn-input', 'rpn-input.html', challengeHtml),
+        // 反爬站点对裸 fetch 回 403、浏览器正常渲染（review #27）：可达性以浏览器为准
+        entry('iti-v29', 'iti-v29.html', itiHtml, { http_status: 403, browser_status: 200 }),
+        entry('rpn-input', 'rpn-input.html', challengeHtml, { browser_status: 200 }),
+        entry('chosen-select', 'chosen-select.html', chosenHtml, { browser_status: 200 }),
         { id: 'mui-autocomplete', source_url: 'https://example.invalid/mui', family: 'fixture', ok: false, error: 'net::ERR_NAME_NOT_RESOLVED' },
       ],
     }, null, 2) + '\n');
@@ -231,7 +246,7 @@ const ORCH = read(FILES.orchestrator);
       writeFileSync(p, JSON.stringify({ sources }, null, 2) + '\n');
       return p;
     };
-    const IDS = ['--id', 'iti-v29', '--id', 'rpn-input', '--id', 'mui-autocomplete'];
+    const IDS = ['--id', 'iti-v29', '--id', 'rpn-input', '--id', 'mui-autocomplete', '--id', 'chosen-select'];
     const runDrift = (out, reg) => {
       const args = [abs(FILES.orchestrator), '--archive', arch, '--out', out,
         '--no-capture', '--degradations', reg, ...IDS];
@@ -251,9 +266,13 @@ const ORCH = read(FILES.orchestrator);
     const a = runDrift(outA, emptyReg);
     eq(a.code, 1, 'V5 未登记被拦源 → exit 1（如实红）');
     const sA = summaryOf(outA);
-    eq(sA.matrix.length, 3, 'V5 矩阵覆盖 3 个在册源（--id 过滤）');
+    eq(sA.matrix.length, 4, 'V5 矩阵覆盖 4 个在册源（--id 过滤）');
     eq(rowOf(sA, 'iti-v29').reachability, 'ok', 'V5 正常页判 ok');
+    eq(rowOf(sA, 'iti-v29').evidence.http_status, 403, 'V5 裸 fetch 403 原样留作证据');
+    eq(rowOf(sA, 'iti-v29').evidence.browser_status, 200, 'V5 可达性以浏览器导航状态为准（raw 403 不判 unreachable）');
     eq(rowOf(sA, 'rpn-input').reachability, 'challenged', 'V5 HTTP 200 的拦截页判 challenged（不伪造 ok）');
+    eq(rowOf(sA, 'chosen-select').reachability, 'ok', 'V5 表单自带 Turnstile 组件的普通页不误判 challenged');
+    eq((rowOf(sA, 'chosen-select').evidence.markers || []).length, 0, 'V5 通用 Turnstile 宿主不计入拦截标记');
     eq(rowOf(sA, 'mui-autocomplete').reachability, 'unreachable', 'V5 抓取失败判 unreachable');
     check(rowOf(sA, 'rpn-input').evidence.markers.length > 0, 'V5 challenged 行带挑战标记证据',
       JSON.stringify(rowOf(sA, 'rpn-input').evidence.markers));
@@ -282,7 +301,7 @@ const ORCH = read(FILES.orchestrator);
     eq(b.code, 0, 'V5 如实登记后 exit 0（降级 ≠ 失败；如实红已入账）');
     const sB = summaryOf(outB);
     eq(sB.contract.ok, true, 'V5 登记后契约成立');
-    eq(JSON.stringify(sB.official_set), JSON.stringify(['iti-v29']), 'V5 正式采集集 = 可达源');
+    eq(JSON.stringify(sB.official_set), JSON.stringify(['iti-v29', 'chosen-select']), 'V5 正式采集集 = 可达源');
     eq(rowOf(sB, 'rpn-input').decision, 'degraded', 'V5 被拦源处置 = degraded');
     check(rowOf(sB, 'rpn-input').degradation.ticket === '14' &&
       /Cloudflare/.test(rowOf(sB, 'rpn-input').degradation.reason), 'V5 处置行携带 reason + ticket');
@@ -365,6 +384,8 @@ const ORCH = read(FILES.orchestrator);
   check(/形态漂移探测/.test(gl) && /corpus-drift/.test(gl), 'V6 GLOSSARY「形态漂移探测」指向 corpus-drift workflow');
   check(/CCH_CAPTURE_HEADLESS/.test(read(FILES.capture)) && /headless: HEADLESS/.test(read(FILES.capture)),
     'V6 采集工具采用有头启动 / 无 DISPLAY 回退口径（与冒烟层同源）');
+  check(/browser_status/.test(read(FILES.capture)) && /response\.status\(\)/.test(read(FILES.capture)),
+    'V6 采集工具记录浏览器导航状态（漂移矩阵以浏览器为准，raw fetch 仅作证据）');
 }
 
 console.log('-----------------------------');
