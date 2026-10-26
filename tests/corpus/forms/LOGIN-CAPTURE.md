@@ -46,7 +46,8 @@ node tests/scripts/06-capture-forms.mjs --attach --id <id> --cdp-port 9222 --tab
 ## 3 脱敏（密码/验证码等敏感字段 → 形状占位）
 
 捕获时自动把敏感字段**值**替换为**形状占位**——与 `06-skeleton.mjs` 文本形状
-令牌同词表（数字→`#`、字母→`a`、其余→`·`，如 `user@example.com` → `aaaa·aaaaaaa·caa`），
+令牌同词表（数字→`#`、字母→`a`、其余→`·`；`+ - ( ) . : /` 保留，如
+`user@example.com` → `aaaa·aaaaaaa.aaa`），
 保形状不保内容，且对骨架派生不可见（归一化本就丢弃 `value`）：
 
 | 类别 | 判定（`12-login-capture.mjs` 唯一定义处） |

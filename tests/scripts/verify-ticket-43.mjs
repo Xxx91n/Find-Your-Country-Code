@@ -198,6 +198,19 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
     check(!!cliErr && /只服务 adoption=reconstructed/.test(String(cliErr.stderr)),
       'U4 CLI --from reconstructed --id iti-v29 被拒（重构不可当派生选项滥用）');
 
+    // (b2) 反向成对：reconstructed 条目不许经 mirror/archive 派生（否则 source/provenance
+    //      被洗掉，结构比对失去排除依据）。不带 --out 即默认覆盖登记骨架的危险路径——
+    //      拒绝必须先于写入，且登记骨架内容（source / provenance）原样。
+    let cliErr2 = null;
+    try {
+      execFileSync(process.execPath, [abs(FILES.skeletonTool), '--id', RID, '--from', 'mirror'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (e) { cliErr2 = e; }
+    check(!!cliErr2 && /只许 --from reconstructed/.test(String(cliErr2.stderr)),
+      'U4 CLI --id 重构条目 --from mirror 被拒（不洗 source/provenance）');
+    const skelAfter = JSON.parse(read(FILES.skeleton));
+    eq(skelAfter.source, 'reconstructed', 'U4 拒绝路径未覆盖登记骨架（source 仍 reconstructed）');
+    eq(skelAfter.provenance, RSRC.provenance, 'U4 拒绝路径未洗掉 provenance（登记骨架字节原样）');
+
     // (c) 重捕 skip 留记录（零网络：单跑重构条目即被跳过，CAPTURE-MANIFEST 不塞空壳条目）
     const arch = join(tmp, 'archive');
     let capOut = null, capCode = 0;

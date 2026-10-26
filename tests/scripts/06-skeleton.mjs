@@ -228,7 +228,15 @@ function main() {
   if (!src) throw new Error('unknown id: ' + args.id);
 
   // 手工重构镜像纪律（issue #13 / Q9）：重构是显式登记动作，不是派生选项——
-  // 只服务 adoption=reconstructed 的条目，且 provenance（重构依据）必填。
+  // 成对约束：reconstructed 条目只许 --from reconstructed（--from mirror/archive
+  // 会把 source 洗成 mirror/archive 并丢 provenance，让本应 skip 的骨架变成
+  // 可比较基线）；非重构条目不许 --from reconstructed。provenance（重构依据）必填。
+  if (src.adoption === 'reconstructed' && args.from !== 'reconstructed') {
+    throw new Error(
+      'reconstructed 条目只许 --from reconstructed（' + src.id + ' 收到 --from ' + args.from + '）——' +
+      '用 mirror/archive 派生会洗掉 source=reconstructed 与 provenance，使结构比对失去排除依据'
+    );
+  }
   if (args.from === 'reconstructed') {
     if (src.adoption !== 'reconstructed') {
       throw new Error(
