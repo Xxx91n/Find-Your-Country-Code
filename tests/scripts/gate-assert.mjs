@@ -39,3 +39,15 @@ export function containsToken(src, token) {
     ? { ok: true, detail: '' }
     : { ok: false, detail: '未找到刺激：' + JSON.stringify(token) + '（fixture 注入可能是空操作）' };
 }
+
+// 精确前缀断言：fixture 的刺激写你注入的完整片段（标签 / URL / 行），不要写
+// 畸形版本也含有的子串（review #29：只查域名会让畸形 Turnstile URL 蒙混过关）。
+export function startsWithToken(src, prefix) {
+  return String(src).startsWith(prefix)
+    ? { ok: true, detail: '' }
+    : {
+        ok: false,
+        detail: '刺激前缀不符：期望以 ' + JSON.stringify(prefix) + ' 开头，实际为 ' +
+          JSON.stringify(String(src).slice(0, Math.max(40, prefix.length))),
+      };
+}
