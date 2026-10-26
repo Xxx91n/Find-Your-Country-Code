@@ -26,6 +26,26 @@ export function isBotAuthor(author) {
   return /\[bot\]$/.test(String(author.login || ''));
 }
 
+// REST /issues 分页结果 → 去重所需的 {number, body, author}。
+// 去重必须看到全部 open issue：gh issue list 的 --limit 有上限，命中票落在上限外
+// 会被误判为「未见过」并重复开票，故调用方用 gh api --paginate 拉全量。
+// /issues 同时返回 PR，必须过滤；author.is_bot 由 user.type === 'Bot' 映射。
+export function issuesFromPages(pages) {
+  if (!Array.isArray(pages) || pages.some((p) => !Array.isArray(p))) {
+    throw new Error('GitHub issues API 返回非分页数组');
+  }
+  return pages.flat()
+    .filter((issue) => issue && !issue.pull_request)
+    .map((issue) => ({
+      number: issue.number,
+      body: issue.body,
+      author: {
+        login: issue.user && issue.user.login,
+        is_bot: !!(issue.user && issue.user.type === 'Bot'),
+      },
+    }));
+}
+
 // 同一源的稳定去重标记（issue 正文内）；后续探测命中同标记时追加评论而不是
 // 每周重复开票。标记只含 source id（tier 升级也归到同一票下）。
 export function issueMarker(id) {

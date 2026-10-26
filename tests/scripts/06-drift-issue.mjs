@@ -27,12 +27,10 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { deliverPlan, exitCodeFor, outcomeOf, planDeliveries } from './lib-corpus-drift-issues.mjs';
+import { deliverPlan, exitCodeFor, issuesFromPages, outcomeOf, planDeliveries } from './lib-corpus-drift-issues.mjs';
 
 const DEFAULT_ISSUES = path.join('live-out', 'corpus-drift', 'drift-issues.json');
 const DEFAULT_OUT = path.join('live-out', 'corpus-drift', 'drift-issue-outcome.json');
-// gh issue list 的硬上限是 1000；去重扫描全部 open issue（不止最近 200 张）。
-const GH_OPEN_LIMIT = '1000';
 
 function parseArgs(argv) {
   const o = { issues: DEFAULT_ISSUES, out: DEFAULT_OUT, existing: null, dryRun: false };
@@ -84,14 +82,20 @@ function gh(args) {
   return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
+// 去重必须看到全部 open issue：gh issue list 的 --limit 有上限（1000），命中票
+// 落在上限外会被误判为「未见过」并重复开票。改用 REST 分页（--paginate --slurp）。
 function openIssues() {
   const raw = gh([
-    'issue', 'list', '--state', 'open', '--limit', GH_OPEN_LIMIT,
-    '--json', 'number,body,author',
+    'api', '--paginate', '--slurp',
+    'repos/{owner}/{repo}/issues?state=open&per_page=100',
   ]);
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed)) throw new Error('gh issue list 返回非数组');
-  return parsed;
+  let pages;
+  try {
+    pages = JSON.parse(raw);
+  } catch (e) {
+    throw new Error('GitHub issues API 返回非 JSON：' + e.message);
+  }
+  return issuesFromPages(pages);
 }
 
 const errText = (e) => String((e && (e.stderr || e.message)) || e).trim();

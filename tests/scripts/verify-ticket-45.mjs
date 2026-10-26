@@ -35,6 +35,7 @@ import {
   exitCodeFor,
   isBotAuthor,
   issueMarker,
+  issuesFromPages,
   outcomeOf,
   planDeliveries,
 } from './lib-corpus-drift-issues.mjs';
@@ -212,10 +213,12 @@ function onBlockOf(src) {
   check(!isBotAuthor({ is_bot: false, login: 'mallory' }), 'V3 人类作者不参与去重');
   check(/'issue', 'create'/.test(ISSUE_TOOL), 'V3 投递脚本调用 gh issue create');
   check(/'issue', 'comment'/.test(ISSUE_TOOL), 'V3 同源后续漂移调用 gh issue comment（不重复开票）');
-  check(/'issue', 'list'/.test(ISSUE_TOOL) && /number,body,author/.test(ISSUE_TOOL),
-    'V3 去重查询 open issue 的 number + body + author');
-  check(/GH_OPEN_LIMIT = '1000'/.test(ISSUE_TOOL) && /--limit', GH_OPEN_LIMIT/.test(ISSUE_TOOL),
-    'V3 去重扫描 1000 张 open issue（不止最近 200）');
+  check(/number: issue\.number/.test(read(FILES.issuesLib)) && /body: issue\.body/.test(read(FILES.issuesLib)) &&
+    /author:/.test(read(FILES.issuesLib)),
+    'V3 分页映射产出 number + body + author（去重字段齐全）');
+  check(/'api', '--paginate', '--slurp'/.test(ISSUE_TOOL), 'V3 去重查询分页拉全量 open issue（无 --limit 上限）');
+  check(/per_page=100/.test(ISSUE_TOOL), 'V3 分页页大小 100');
+  check(/issuesFromPages\s*\(/.test(ISSUE_TOOL), 'V3 分页结果经 lib 映射（PR 过滤 / is_bot 可离线测）');
   check(/deliverPlan\s*\(/.test(ISSUE_TOOL), 'V3 投递执行经 lib（失败路径可离线锁定）');
   check(/outcomeOf\s*\(/.test(ISSUE_TOOL), 'V3 结果账本经 lib（计数唯一处）');
   check(/exitCodeFor\(outcome\)/.test(ISSUE_TOOL), 'V3 失败映射经 lib exitCodeFor（可单测）');
@@ -364,6 +367,26 @@ let issues = [];
     eq(loginBot.find((p) => p.issue.id === 'src-minor').action, 'comment',
       'V5 *[bot] 登录名（无 is_bot 字段）同样参与去重');
     eq(loginBot.find((p) => p.issue.id === 'src-minor').number, 11, 'V5 登录名 bot 的评论目标正确');
+
+    // 分页映射（CR finding）：/issues 会同时返回 PR，必须过滤；user.type 映射 is_bot。
+    const pages = [
+      [
+        { number: 21, body: 'bot ' + issueMarker('src-minor'), user: { login: 'app/github-actions', type: 'Bot' } },
+        { number: 22, body: 'a PR with the same marker', pull_request: { url: 'https://example.invalid/pr/22' }, user: { login: 'app/github-actions', type: 'Bot' } },
+      ],
+      [
+        { number: 23, body: 'human', user: { login: 'mallory', type: 'User' } },
+      ],
+    ];
+    const flattened = issuesFromPages(pages);
+    eq(flattened.length, 2, 'V5 分页映射过滤 PR（只保留 issue）');
+    eq(flattened[0].number, 21, 'V5 分页映射保留 issue 号');
+    eq(flattened[0].author.is_bot, true, 'V5 user.type=Bot 映射为 is_bot=true');
+    eq(flattened[1].author.is_bot, false, 'V5 user.type=User 映射为 is_bot=false');
+    check(flattened[0].body.includes('src-minor'), 'V5 分页映射保留正文（marker 去重可用）');
+    let pageThrew = false;
+    try { issuesFromPages([{}, []]); } catch { pageThrew = true; }
+    check(pageThrew, 'V5 非分页数组 → 抛出（不静默当空列表）');
 
     const unrelated = planDeliveries(issues, [{ number: 9, author: { login: 'app/github-actions', is_bot: true }, body: 'unrelated' }]);
     eq(JSON.stringify(unrelated.map((p) => p.action)), JSON.stringify(['create', 'create']),
