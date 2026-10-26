@@ -89,6 +89,17 @@ function main() {
   }
 
   const next = loadSkeleton(newPath);
+  // new 侧同轴（review #18）：--base/--new 可任意拼接，重构骨架出现在**任一侧**
+  // 都不参与比对——否则捕获基线 × 重构 new 会走常规 diff 并误产 tier。
+  // （base 侧检查须先于 new 加载：重构条目没有重捕产物，new 路径可能不存在。）
+  if (next.source === 'reconstructed') {
+    console.log('structural-diff [' + label + ']');
+    console.log('  base: ' + basePath.replace(/\\/g, '/'));
+    console.log('  new : ' + newPath.replace(/\\/g, '/'));
+    console.log('  SKIP source=reconstructed —— 手工重构镜像（new 侧）：无可信基线，结构比对一律跳过，不产 tier 判定');
+    console.log('  provenance: ' + (next.provenance || '（缺失：reconstructed 骨架必须随附 provenance，见 verify-ticket-43）'));
+    return;
+  }
   const changes = [];
   diff(base.tree, next.tree, '', changes);
 

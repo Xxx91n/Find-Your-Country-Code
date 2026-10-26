@@ -161,6 +161,17 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
     } catch (e) { code2 = e.status; out2 = (e.stdout || '') + (e.stderr || ''); }
     eq(code2, 0, 'U3 --base 重构基线退出码 0');
     check(out2.indexOf('SKIP source=reconstructed') >= 0 && !/tier:\s*[A-Z]+/.test(out2), 'U3 --base 模式同轴 skip（不产判定）');
+
+    // (b2) new 侧同轴（review #18）：捕获基线 × 重构 new（--base/--new 可任意拼）
+    //      ——重构骨架出现在任一侧都不参与比对，否则会走常规 diff 误产 tier
+    let out2b = null, code2b = 0;
+    try {
+      out2b = execFileSync(process.execPath, [abs(FILES.diffTool), '--base', abs(FORMS + '/skeletons/iti-v29.json'), '--new', baseCopy], { encoding: 'utf8' });
+    } catch (e) { code2b = e.status; out2b = (e.stdout || '') + (e.stderr || ''); }
+    eq(code2b, 0, 'U3 new 侧重构骨架退出码 0（skip ≠ 判定 ≠ 失败）');
+    check(out2b.indexOf('SKIP source=reconstructed') >= 0 && out2b.indexOf('（new 侧）') >= 0 &&
+      out2b.indexOf(RSRC.provenance.slice(0, 12)) >= 0 && !/tier:\s*[A-Z]+/.test(out2b),
+      'U3 new 侧重构骨架同样 skip 并随附 provenance（不产判定）');
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 
   // (c) 负空间：捕获条目 tier 判定 machinery 不受伤——iti-v29 自比对仍产 tier NONE
