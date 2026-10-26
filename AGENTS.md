@@ -34,3 +34,7 @@ Five canonical roles map to the same label strings (`needs-triage`, `needs-info`
 ### Domain docs
 
 Single-context: glossary at the repo root, open decisions as `needs-triage` issues. See `docs/agents/domain.md`.
+
+### Review checklist
+
+Diffs that add or move a rejection, error, or failure path: see `docs/agents/review.md`.
