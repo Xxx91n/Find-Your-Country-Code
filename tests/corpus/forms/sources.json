@@ -10,7 +10,7 @@
     "captureTool": "tests/scripts/06-capture-forms.mjs（退化回路第 1 步；输出仓库外 archive）",
     "loginDerived": "login: true = 登录后才能到达的页面（GLOSSARY「登录态镜像」）。此类 source 只能经 --attach（CDP 附着本地已登录标签页）采集；匿名采集被工具拒绝；CI/自动化永不登录。产物同构 + 敏感字段形状占位，镜像页头注释必须带 login-derived 标记与 capture_mode: cdp-attach provenance（verify-ticket-12.mjs 硬校验）。runbook：tests/corpus/forms/LOGIN-CAPTURE.md",
     "mirrorRoot": "tests/corpus/forms/mirrors/（单一 tests/ 根下，不新增顶层 corpus/）",
-    "driftDegradations": "tests/corpus/forms/drift-degradations.json = 形态漂移探测的降级账本（issue #14 / spec #9 Q4/Q7）。非 ok 源（challenged / unreachable）必须在账本登记非空 reason + ticket，否则 06-corpus-drift.mjs 如实红；已恢复却仍登记 = stale，同样红（恢复是显式动作）。登记不是删除：被拦源仍留在重捕与结构比对集中。workflow：.github/workflows/corpus-drift.yml（原型仅 workflow_dispatch）"
+    "driftDegradations": "tests/corpus/forms/drift-degradations.json = 形态漂移探测的降级账本（issue #14 / spec #9 Q4/Q7）。非 ok 源（challenged / unreachable）必须在账本登记非空 reason + ticket，否则 06-corpus-drift.mjs 如实红；已恢复却仍登记 = stale，同样红（恢复是显式动作）。登记不是删除：被拦源仍留在重捕与结构比对集中。workflow：.github/workflows/corpus-drift.yml（正式模式：weekly schedule + 手动 workflow_dispatch；minor/major 漂移自动开 needs-triage issue，none/patch 不开；唯一写动作 = issue，仓库无写回）"
   },
   "sources": [
     {

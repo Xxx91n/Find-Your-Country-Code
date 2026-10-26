@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 // ══════════════════════════════════════════════════════════════════
-// 06-corpus-drift.mjs — 形态漂移探测的编排器（票 T5 / issue #14；spec #9 Q4/Q7）
+// 06-corpus-drift.mjs — 形态漂移探测的编排器（票 T6 / issue #15；spec #9 Q4/Q7）
 //
-// 定位：**advisory 原型**。把既有采集 / 骨架 / 结构 diff 脚本族串成一次
+// 定位：**advisory 正式模式**。把既有采集 / 骨架 / 结构 diff 脚本族串成一次
 //   可审计的运行，产出「可达性矩阵 + 漂移报告」artifact。零新引擎代码：
 //   归一化与分级判定的唯一定义处仍是 06-skeleton / 06-structural-diff。
+//   tier=minor/major 漂移另写 drift-issues.json（载荷契约见
+//   lib-corpus-drift-issues.mjs），由 06-drift-issue.mjs 投递为 needs-triage
+//   issue 交人工归因；none/patch 不写、不开票。
 //
 // 红线（spec #9 Q7；本票验收项 3）：
 //   ① 永不写回仓库：骨架一律 --out 到仓库外 archive；报告只许落
@@ -14,6 +17,7 @@
 //      （exit 1）。已恢复的源却仍有登记 = stale（同样红）——登记是双向
 //      契约，不是一次性豁免。
 //   ③ 被拦源如实登记为 challenged / unreachable，不「跳过」成绿。
+//   ④ 告警 ≠ 写回：issue 由独立投递脚本开立；本脚本只产载荷。
 //
 // 用法：
 //   node tests/scripts/06-corpus-drift.mjs [--archive <dir>] [--out <dir>]
@@ -22,7 +26,8 @@
 //   --no-capture     复用 archive 里已有的 CAPTURE-MANIFEST（离线 / 门测试）
 //   --id             可重复；多个 id 时抓取全量再本地过滤（capture CLI 只收单个 --id）
 //   --degradations   降级登记文件（默认 tests/corpus/forms/drift-degradations.json）
-//   --strict         漂移 minor/major 也判红（未来 weekly 正式模式；原型不开）
+//   --strict         漂移 minor/major 也判红（仅手动诊断；schedule 不带——
+//                    正式模式的「红灯」是开 issue，不阻断运行）
 //   退出码：0 = 报告产出且契约成立（可含如实降级行）；1 = 契约违规
 //          （未登记 / stale / 派生失败）；2 = 无法运行（护栏 / 抓取基础设施 /
 //          登记文件非法）。
@@ -33,6 +38,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertArchiveOutsideRepo } from './12-login-capture.mjs';
+import {
+  buildDriftIssues,
+  DRIFT_ISSUE_LABEL,
+  DRIFT_ISSUE_TIERS,
+  DRIFT_REPORT_ARTIFACT,
+  excerptLog,
+} from './lib-corpus-drift-issues.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -50,7 +62,7 @@ const DEFAULT_ARCHIVE =
 const DEFAULT_OUT = path.join(REPO, 'live-out', 'corpus-drift');
 const DEFAULT_DEGRADATIONS = path.join(FORMS, 'drift-degradations.json');
 
-const TICKET = '14';
+const TICKET = '15';
 const TIERS = ['NONE', 'PATCH', 'MINOR', 'MAJOR', 'SKIP', 'ERROR', 'NOT_EVALUATED'];
 
 // 反爬挑战识别（与 tests/live/live-smoke.mjs 的 CHALLENGE_RE / CHALLENGE_FRAME_RE
@@ -339,7 +351,7 @@ function evidenceText(row) {
 
 function renderMarkdown(summary) {
   const L = [];
-  L.push('# corpus-drift 漂移与可达性报告（票 T5 / issue #' + TICKET + '）');
+  L.push('# corpus-drift 漂移与可达性报告（票 T6 / issue #' + TICKET + '）');
   L.push('');
   L.push('- 生成时间: ' + summary.generated_at);
   L.push('- commit: ' + (summary.run.commit || '（本地运行）'));
@@ -414,12 +426,21 @@ function renderMarkdown(summary) {
     for (const w of summary.contract.warnings) L.push('- ' + w);
   }
   L.push('');
-  L.push('## 5 下一步');
+  L.push('## 5 自动告警（minor/major）');
+  L.push('');
+  if (summary.drift_alerts && summary.drift_alerts.length) {
+    L.push('以下漂移由 06-drift-issue.mjs 投递为 needs-triage issue（人工归因，禁止自动 bump）：');
+    for (const a of summary.drift_alerts) L.push('- ' + a.id + ' (' + a.tier + ')');
+  } else {
+    L.push('- 无 minor/major 漂移：本次不开 issue（none/patch 不开）。');
+  }
+  L.push('');
+  L.push('## 6 下一步');
   L.push('');
   const steps = [];
   const unregistered = summary.matrix.filter((r) => r.decision === 'unregistered-degradation');
   const stale = summary.matrix.filter((r) => r.decision === 'stale-degradation');
-  const drifting = summary.matrix.filter((r) => ['MINOR', 'MAJOR'].includes(r.drift.tier));
+  const drifting = summary.matrix.filter((r) => DRIFT_ISSUE_TIERS.includes(r.drift.tier));
   if (unregistered.length) {
     steps.push('未登记被拦源: ' + unregistered.map((r) => r.id).join(', ') +
       ' —— 在 drift-degradations.json 如实登记 reason + ticket 后重跑（登记不是删除）。');
@@ -431,7 +452,7 @@ function renderMarkdown(summary) {
     steps.push('结构漂移: ' + drifting.map((r) => r.id + '(' + r.drift.tier + ')').join(', ') +
       ' —— **先归因**（站点改版 / 抓取环境差异 / 归一化缺陷），禁止为修绿盲目更新快照。');
   }
-  steps.push('原型连续两次绿（含如实降级登记）后，才把本 workflow 升级为 schedule 正式模式并启用漂移红灯自动开 issue。');
+  steps.push('minor/major 漂移由 06-drift-issue.mjs 自动开 needs-triage issue（none/patch 不开）；归因与 bump 永远人工。');
   for (const s of steps) L.push('- ' + s);
   L.push('');
   return L.join('\n');
@@ -552,7 +573,9 @@ function main() {
         tier: drift.tier,
         changes: drift.changes,
         exit_code: drift.exitCode,
-        log_excerpt: drift.log ? tail(drift.log, 25) : '',
+        // 头部（tier / base / new）与尾部（逐项变化）都保留；只取 tail 会把
+        // tier 行截掉，长 diff 的 issue 正文就看不出 minor 还是 major。
+        log_excerpt: drift.log ? excerptLog(drift.log) : '',
       },
       decision: d.decision,
       degradation: degradation
@@ -586,7 +609,7 @@ function main() {
       console.log('::warning::corpus-drift ' + source.id + ' [' + reach.status + '] ' +
         degradation.reason + ' (ticket ' + degradation.ticket + ')');
     }
-    if (['MINOR', 'MAJOR'].includes(drift.tier)) {
+    if (DRIFT_ISSUE_TIERS.includes(drift.tier)) {
       console.log('::warning::corpus-drift ' + source.id + ' 结构漂移 tier=' + drift.tier +
         '（先归因再决定 bump；禁止为修绿盲目更新快照）');
     }
@@ -599,7 +622,7 @@ function main() {
   const summary = {
     tool: 'tests/scripts/06-corpus-drift.mjs',
     ticket: TICKET,
-    ticket_label: 'T5 corpus-drift prototype（spec #9 Q4/Q7）',
+    ticket_label: 'T6 corpus-drift 正式模式（weekly schedule + 漂移自动开 issue；spec #9 Q4/Q7）',
     generated_at: new Date().toISOString(),
     run: runMetadata(),
     archive_root: posix(archiveRoot),
@@ -621,6 +644,37 @@ function main() {
     matrix,
   };
 
+  // 漂移告警载荷（决策规则在 lib：只有 MINOR / MAJOR 产票；none/patch 不产）。
+  // 与报告同目录落盘，投递脚本（06-drift-issue.mjs）只负责去重投递，不重新判定。
+  const reportPath = rel(path.join(outDir, 'drift-report.md'));
+  const driftIssues = buildDriftIssues(summary, { reportPath });
+  summary.drift_alerts = driftIssues.map((i) => ({ id: i.id, tier: i.tier, title: i.title }));
+  summary.counts.drift_alerts = driftIssues.length;
+
+  const issueDoc = {
+    tool: 'tests/scripts/06-corpus-drift.mjs',
+    ticket: TICKET,
+    ticket_label: summary.ticket_label,
+    generated_at: summary.generated_at,
+    run: summary.run,
+    report: {
+      artifact: DRIFT_REPORT_ARTIFACT,
+      run_url: summary.run.run_url,
+      local_report: reportPath,
+      report_md: 'drift-report.md',
+      summary_json: 'drift-summary.json',
+    },
+    policy: {
+      tiers: DRIFT_ISSUE_TIERS,
+      excluded: TIERS.filter((t) => !DRIFT_ISSUE_TIERS.includes(t)),
+      label: DRIFT_ISSUE_LABEL,
+      dedupe: '正文 marker + bot author（is_bot）：同源已有 open issue 时追加评论，不重复开票',
+      delivery: 'tests/scripts/06-drift-issue.mjs',
+    },
+    issues: driftIssues,
+  };
+
+  writeFileSync(path.join(outDir, 'drift-issues.json'), JSON.stringify(issueDoc, null, 2) + '\n');
   writeFileSync(path.join(outDir, 'drift-summary.json'), JSON.stringify(summary, null, 2) + '\n');
   writeFileSync(path.join(outDir, 'drift-report.md'), renderMarkdown(summary) + '\n');
 
@@ -628,18 +682,21 @@ function main() {
   console.log('matrix: ' + matrix.length + ' 源  ok=' + summary.counts.ok + '  challenged=' + summary.counts.challenged +
     '  unreachable=' + summary.counts.unreachable + '  reconstructed=' + summary.counts.reconstructed);
   console.log('official set: ' + (summary.official_set.join(', ') || '（空）'));
-  console.log('report → ' + rel(path.join(outDir, 'drift-report.md')) + '  summary → ' + rel(path.join(outDir, 'drift-summary.json')));
+  console.log('drift issues: ' + driftIssues.length +
+    (driftIssues.length ? '（' + driftIssues.map((i) => i.id + '/' + i.tier).join(', ') + '）' : '（none/patch 不开票）'));
+  console.log('report → ' + reportPath + '  summary → ' + rel(path.join(outDir, 'drift-summary.json')) +
+    '  issues → ' + rel(path.join(outDir, 'drift-issues.json')));
   if (violations.length) {
     console.log('CONTRACT VIOLATION ×' + violations.length + '（如实红；报告已产出）');
     process.exitCode = 1;
     return;
   }
-  if (args.strict && (driftCounts.MINOR || driftCounts.MAJOR)) {
+  if (args.strict && DRIFT_ISSUE_TIERS.some((t) => driftCounts[t])) {
     console.log('STRICT：漂移 minor/major 判红（--strict）');
     process.exitCode = 1;
     return;
   }
-  console.log('CONTRACT OK（漂移为 advisory；--strict 才判红）');
+  console.log('CONTRACT OK（漂移为 advisory：minor/major 开 issue；--strict 才判红）');
 }
 
 try {

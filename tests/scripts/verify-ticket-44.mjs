@@ -3,9 +3,15 @@
 // verify-ticket-44.mjs — corpus-drift workflow 原型票验收门（issue #14 / 票 T5）
 //
 // 依据：spec #9 Q4/Q7 —— weekly advisory 漂移探测的**原型岔路**：候选源在
-//   GitHub-hosted runner 上的可达性只有跑起来才能回答。本票只挂
+//   GitHub-hosted runner 上的可达性只有跑起来才能回答。原型只挂
 //   workflow_dispatch；产出可达性矩阵 + 证据 artifact；永不写回骨架/清单/
 //   镜像页；被拦源按 reason + ticket 硬校验如实降级。
+//
+// 演进（issue #15 / 票 T6）：原型连续两次绿后已按 spec Q4 升级为 schedule 正式
+//   模式，并启用 minor/major 自动开 issue。因此本门不再断言「仅 workflow_dispatch /
+//   不自动开 issue」这两条原型期约束，只守仍然成立的不变量——
+//   advisory（无 pull_request）/ 仓库无写回 / 降级纪律 / 可达性矩阵；
+//   新触发面与告警面的验收归 verify-ticket-45。
 //
 // 方法：**离线**（无网络、无浏览器、无 npm 依赖）读文本 + 哈希断言；
 //   H 段以 execFileSync 跑编排器 --no-capture（fixture archive，零网络），
@@ -13,9 +19,9 @@
 //
 // 覆盖（issue #14 验收项一一对应）：
 //   V0 门自身接线（plan / matrix / audit）
-//   V1 触发面：仅 workflow_dispatch（无 schedule / 无 pull_request）；read-only 权限
+//   V1 触发面：advisory 红线（无 pull_request / 无 push）；完整触发口径归 verify-ticket-45
 //   V2 无写回：编排器复用三脚本、骨架 --out 到仓外、报告拒写语料目录；
-//      workflow 不直接调 06-manifest / 采集 / 骨架 / diff，无 git/issue 写动作
+//      workflow 不直接调 06-manifest / 采集 / 骨架 / diff，无 git 写动作
 //   V3 可达性矩阵：xvfb 有头、archive 在 workspace 外、报告 artifact 上传
 //   V4 降级纪律：reason + ticket 双向硬校验（未登记 / stale / 空登记 / 非法登记）
 //   V5 端到端（fixture archive）：矩阵分类 ok / challenged / unreachable、
@@ -31,7 +37,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { before, containsToken } from './gate-assert.mjs';
+import { before, containsToken, writeScopesIn } from './gate-assert.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..', '..');
@@ -83,7 +89,7 @@ const check = (c, m, extra) => {
   try {
     execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (e) { auditCode = e.status; }
-  eq(auditCode, 0, 'V0 audit 全绿（票数期望 23 / workflow 数 12 由 runner 常量自维护）');
+  eq(auditCode, 0, 'V0 audit 全绿（票数与 workflow 数由 runner 常量自维护）');
 
   // V0b 共享断言器自检：缺失 / 逆序都必须红（防「门恒真」回归）
   eq(before('alpha beta', 'alpha', 'beta').ok, true, 'V0 gate-assert 顺序成立 → ok');
@@ -97,7 +103,7 @@ const WF = read(FILES.workflow);
 const ORCH = read(FILES.orchestrator);
 
 // ══════════════════════════════════════════════════════════════════
-// V1 触发面（原型：仅 workflow_dispatch；advisory：不进 PR）
+// V1 触发面（advisory：永不进 pull_request；原型期已按 #15 升为 schedule）
 // ══════════════════════════════════════════════════════════════════
 {
   const lines = WF.split('\n');
@@ -110,17 +116,16 @@ const ORCH = read(FILES.orchestrator);
   }
   const onBlock = onStart >= 0 ? lines.slice(onStart + 1, onEnd).join('\n') : '';
   check(onStart >= 0, 'V1 corpus-drift.yml 存在 on: 块');
-  check(/^\s{2}workflow_dispatch:/m.test(onBlock), 'V1 触发面含 workflow_dispatch');
+  // 触发面的完整口径（schedule + workflow_dispatch + 无 push）归 verify-ticket-45；
+  // 本门只守原型票留下的 advisory 红线——永不进 PR。
   check(!/pull_request/.test(onBlock), 'V1 触发面不含 pull_request（advisory：失败不阻断 PR）');
-  check(!/schedule/.test(onBlock), 'V1 原型不设 schedule（连续两次绿后才升级正式模式）');
-  const triggers = [...onBlock.matchAll(/^\s{2}([a-z_]+):/gm)].map((m) => m[1]);
-  eq(JSON.stringify(triggers), JSON.stringify(['workflow_dispatch']),
-    'V1 触发面唯一 = workflow_dispatch（原型岔路口径）');
 
   const perm = /^permissions:\n([\s\S]*?)(?=^\S)/m.exec(WF);
   check(!!perm, 'V1 声明 permissions 块');
-  check(!!perm && /contents:\s*read/.test(perm[1]), 'V1 permissions contents: read');
-  check(!/:\s*write\b/.test(WF), 'V1 无任何 write 权限（报告只读仓库）');
+  check(!!perm && /contents:\s*['"]?read/.test(perm[1]), 'V1 permissions contents: read（仓库内容只读）');
+  const writes = writeScopesIn(WF);
+  check(!writes.includes('contents'), 'V1 无 contents: write（含引号键 / 锚点写法）', JSON.stringify(writes));
+  check(!writes.includes('permissions'), 'V1 无 permissions: write-all（整体写权限）');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -148,7 +153,8 @@ const ORCH = read(FILES.orchestrator);
     check(!new RegExp(tool + '\\.mjs').test(WF), 'V2 workflow 不直接调 ' + tool + '.mjs（编排在脚本内）');
   }
   check(!/\bgit\s+(add|commit|push|tag)\b/.test(WF), 'V2 workflow 无 git 写动作');
-  check(!/gh\s+issue|issues:\s*write|create-pull-request/.test(WF), 'V2 原型不自动开 issue / PR');
+  check(!/create-pull-request/.test(WF) && !/contents:\s*write/.test(WF),
+    'V2 无 PR / 仓库写动作（issue 告警面由 verify-ticket-45 单独守）');
   check(!/continue-on-error/.test(WF), 'V2 运行时步不吞失败（如实红：契约违规 exit 1 可见）');
 }
 
@@ -387,7 +393,6 @@ const ORCH = read(FILES.orchestrator);
 {
   const md = read(FILES.readme);
   check(/corpus-drift/.test(md), 'V6 README 载明 corpus-drift workflow');
-  check(/workflow_dispatch/.test(md) && /不设 schedule|无 schedule/.test(md), 'V6 README 载明原型仅 workflow_dispatch');
   check(/drift-degradations\.json/.test(md), 'V6 README 指向降级登记账本');
   check(/不伪造绿/.test(md) && /reason \+ ticket/.test(md), 'V6 README 载明 reason + ticket 硬校验与不伪造绿');
   check(/写回|永不自动更新基线|禁止任何 workflow 自动写回/.test(md), 'V6 README 载明无写回红线');
