@@ -23,6 +23,13 @@
 //   node tests/scripts/06-capture-forms.mjs [--id <id>] [--archive <dir>] [--no-render]
 //   node tests/scripts/06-capture-forms.mjs --attach --id <id> [--cdp-port 9222] [--tab <url 子串>]
 //   CCH_ARCHIVE_ROOT=<dir> 可覆盖归档根（CI / 异机用）。
+//   CCH_CAPTURE_HEADLESS=1 强制 headless（默认有头，同 live-smoke 的启动口径）。
+//
+// 启动模式（票 T5 / issue #14；复用真实站点冒烟层已验证的模式）：
+//   真实站点普遍前置反爬托管挑战，headless shell 常被拦。默认有头启动；
+//   CI 用 xvfb-run 提供虚拟显示。无 DISPLAY 的 Linux 自动回退 headless 并
+//   打印告警（受挑战的源会如实失败，不伪造绿）。不采用 UA 伪造与反自动化
+//   指纹开关。
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -48,6 +55,12 @@ const DEFAULT_ARCHIVE_ROOT =
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+
+// 启动口径与 tests/live/live-smoke.mjs 同轴（票 T5）：默认有头；无 DISPLAY 的
+// Linux 回退 headless 并告警；CCH_CAPTURE_HEADLESS=1 强制 headless。
+const NO_DISPLAY_LINUX = process.platform === 'linux' && !process.env.DISPLAY;
+const FORCE_HEADLESS = process.env.CCH_CAPTURE_HEADLESS === '1';
+const HEADLESS = FORCE_HEADLESS || NO_DISPLAY_LINUX;
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
@@ -89,7 +102,7 @@ async function fetchRaw(url) {
 
 async function renderDom(url, shotPath) {
   const { chromium } = await import('playwright');
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ headless: HEADLESS });
   try {
     const page = await browser.newPage({ userAgent: UA });
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
@@ -192,6 +205,14 @@ async function main() {
 
   // ── 登录纪律（issue #12：CI/自动化永不登录；成对拒绝，判定同源于 12-login-capture.mjs） ──
   assertCaptureDiscipline(args, sources);
+
+  // 启动模式留痕（不伪造绿：无 DISPLAY 时的回退必须可见）
+  if (!args.attach) {
+    if (NO_DISPLAY_LINUX && !FORCE_HEADLESS) {
+      console.log('WARN 无 DISPLAY：浏览器自动回退 headless（受反爬挑战的源会如实失败，不伪造绿；CI 用 xvfb-run 提供有头显示）');
+    }
+    console.log('browser mode: ' + (args.render ? (HEADLESS ? 'headless' : 'headed') : 'n/a (--no-render)'));
+  }
 
   for (const sub of ['raw', 'dom', 'shot']) mkdirSync(path.join(outDir, sub), { recursive: true });
 

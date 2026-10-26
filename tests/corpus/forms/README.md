@@ -44,6 +44,7 @@ tests/corpus/forms/
 ├── README.md           # 本文件：约定 + 合规 + 退化回路
 ├── sources.json        # 候选指定页输入清单（hand-maintained）
 ├── manifest.json       # 指纹与元数据清单（generated：06-manifest.mjs）
+├── drift-degradations.json  # 漂移降级账本（非 ok 源的 reason + ticket 硬校验；票 T5）
 ├── mirrors/            # ① 镜像页（入 git，测试主力）
 │   ├── iti-v29.html                    # iti v29（.iti + 内部搜索框，A-031 误报面）
 │   ├── rpn-input.html                  # 原生 select，value 恰为 ISO2
@@ -98,6 +99,13 @@ tests/corpus/forms/
 
 **reconstructed 排除（票 T4 / issue #13；spec #9 Q9）**：`source=reconstructed` 的条目（手工重构镜像）**一律跳过结构比对**——无可信基线，diff 只会误报。`06-structural-diff.mjs` 对其显式输出 `SKIP source=reconstructed` 行留记录（不静默、不产 tier 判定，退出码 0 = 未裁定）；`06-capture-forms.mjs` 对其不重捕（SKIP 行留记录，CAPTURE-MANIFEST 不塞空壳条目）。`06-manifest.mjs` 对「重构条目 + 抓取记录」互斥硬拒（页面不可重现与抓取成功互斥，属标记矛盾）。
 
+**advisory 漂移 workflow（票 T5 / issue #14；spec #9 Q4/Q7）**：`.github/workflows/corpus-drift.yml` 把上面三步串成一次可审计运行，产出「可达性矩阵 + 漂移报告」artifact（live-out/corpus-drift，运行产物不入 git）。原型阶段**只挂 `workflow_dispatch`**——不设 schedule、不自动开 issue；连续两次绿（含降级登记的如实红）后才升级为正式模式。编排器 `tests/scripts/06-corpus-drift.mjs` 零新引擎代码：采集 / 骨架 / diff 的归一化与分级判定仍唯一定义在既有三脚本。
+
+- **可达性三态**：`ok`（表单页可达）/ `challenged`（HTTP 200 但命中反爬挑战标记：Cloudflare / Imperva / PerimeterX / DataDome / 阿里云 WAF 等）/ `unreachable`（抓取失败或 HTTP ≥400）。`challenged` 的 DOM 是拦截页，**不派生骨架**（否则污染基线）。
+- **降级登记（reason + ticket 硬校验）**：非 ok 源必须在 drift-degradations.json 登记非空 `reason` + `ticket`，否则运行如实红（exit 1；**不伪造绿**；报告仍产出）。反向同样红：已恢复（`ok`）却仍登记 = `stale-degradation`——恢复是显式动作。登记不是删除：被拦源仍留在重捕与结构比对集中。
+- **无写回红线**：新骨架一律 `--out` 到仓库外 archive；报告拒绝写入 `tests/corpus/**`；workflow 不调用 `06-manifest`，也没有任何 git / issue 写动作。清单与镜像页更新永远是人工归因后的显式动作。
+- **有头浏览器**：CI 用 `xvfb-run` 提供虚拟显示（复用真实站点冒烟层已验证的启动口径）；`06-capture-forms.mjs` 默认有头，无 DISPLAY 时回退 headless 并告警，`CCH_CAPTURE_HEADLESS=1` 可强制。
+
 **命令**：
 
 ```bash
@@ -123,6 +131,11 @@ node tests/scripts/06-manifest.mjs
 node tests/scripts/06-manifest.mjs --from-ledger
 # CI 结构门（离线；指纹 / 合规 / 目录纪律）
 node tests/scripts/verify-ticket-06.mjs
+# ⑤ 漂移探测（advisory 原型；corpus-drift.yml 的 workflow_dispatch 运行面）
+node tests/scripts/06-corpus-drift.mjs                 # 重捕 → 新骨架 → 结构 diff → 可达性矩阵
+node tests/scripts/06-corpus-drift.mjs --no-capture    # 复用已有 archive（离线）
+# 漂移门（离线；触发面 / 无写回 / 降级纪律 / fixture 端到端）
+node tests/scripts/verify-ticket-44.mjs
 ```
 
 ---

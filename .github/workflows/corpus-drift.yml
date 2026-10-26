@@ -1,0 +1,96 @@
+name: Corpus drift (advisory prototype)
+
+# 形态漂移探测——原型票（票 T5 / issue #14；spec #9 Q4/Q7）
+#
+# 本 workflow 是「原型岔路」的执行面：候选源在 GitHub-hosted runner 上的
+# 可达性（反爬挑战矩阵）只有跑起来才能回答。因此：
+#   · 只挂 workflow_dispatch —— **不设 schedule、不自动开 issue**（原型阶段）；
+#   · 产出 = 每源 OK / 挑战 / 不可达的实测矩阵 + 证据（run artifact），
+#     据此裁定正式采集集；
+#   · 被拦源如实降级登记（drift-degradations.json 的 reason + ticket 硬校验），
+#     不伪造绿；
+#   · 连续两次绿（含降级登记的如实红）之后才升级为 schedule 正式模式。
+#
+# 红线（spec #9 Q7）：
+#   · 本 workflow 永不出现在 pull_request 触发面（advisory：失败天然不阻断 PR）。
+#   · **没有任何写回 skeleton / manifest / 镜像页的 step**——编排器把新骨架
+#     `--out` 到仓库外 archive，报告只落 live-out/；06-manifest / 镜像页更新
+#     永远是人工归因后的显式动作。
+#   · 采集只做匿名 GET + 渲染；不登录、不提交表单、不抓 UA 伪造。
+#   · 有头 Chrome + xvfb：复用真实站点冒烟层（real-site-smoke.yml）已验证的
+#     启动口径——headless shell 常被反爬挑战拦截，有头完整 Chrome 可正常渲染。
+on:
+  workflow_dispatch:
+    inputs:
+      strict:
+        description: 'strict 模式：漂移 minor/major 也判红（原型默认 false；正式模式再启用）'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  corpus-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Line-ending guard (CRLF in tracked text)
+        run: |
+          bad=$(git ls-files | grep -vE '\.(bat|ps1|cmd|png|ico|icns|jpg|jpeg|gif|webp|exe|dll|node|pdb|msi|so|dylib|bin|zip|gz|tar|7z)$' | xargs -r grep -lU "$(printf '\r')" 2>/dev/null || true)
+          if [ -n "$bad" ]; then echo "::error::CRLF found in tracked text files: $bad"; exit 1; fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # 有头浏览器需要虚拟显示（同 real-site-smoke.yml）。
+      - name: Ensure xvfb (headed browser virtual display)
+        run: command -v xvfb-run || (sudo apt-get update && sudo apt-get install -y xvfb)
+
+      # archive 根锚定在 workspace 的兄弟目录（与本地默认 D:/…-evidence-archive 同构）：
+      # 06-capture-forms 的仓外护栏拒绝把原始快照写进仓库内。
+      - name: Run corpus drift (capture → skeleton → structural diff)
+        env:
+          CCH_ARCHIVE_ROOT: ${{ github.workspace }}/../choose-your-country-evidence-archive
+        run: |
+          strict=""
+          if [ "${{ inputs.strict }}" = "true" ]; then strict="--strict"; fi
+          xvfb-run -a node tests/scripts/06-corpus-drift.mjs --out live-out/corpus-drift $strict
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '## corpus-drift（advisory 原型，票 T5 / issue #14）'
+            echo ''
+            echo '- 触发面: workflow_dispatch（原型；无 schedule、无 pull_request、不自动开 issue）'
+            echo '- 写回: 无（新骨架 --out 到仓库外 archive；报告只进 live-out/）'
+            echo '- 降级登记: tests/corpus/forms/drift-degradations.json（reason + ticket 硬校验）'
+            echo ''
+            if [ -f live-out/corpus-drift/drift-summary.json ]; then
+              node -e "const j=require('./live-out/corpus-drift/drift-summary.json');console.log('- 契约: '+(j.contract.ok?'OK':'VIOLATION ×'+j.contract.violations.length));console.log('- 计数: '+JSON.stringify(j.counts));console.log('- 正式采集集: '+(j.official_set.join(', ')||'（空）'));for(const r of j.matrix)console.log('- '+r.id+' ['+r.reachability+'] drift='+r.drift.tier+' → '+r.decision);for(const v of j.contract.violations)console.log('::error::'+v);"
+            else
+              echo '- 报告未产出；见 job log'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload drift report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-drift
+          path: live-out/corpus-drift/
+          if-no-files-found: warn
