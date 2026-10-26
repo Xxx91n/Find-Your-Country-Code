@@ -84,7 +84,12 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
   check(!!t43, 'U0 plan 注册票 43（issue #13 手工重构镜像）');
   eq(JSON.stringify(t43 && t43.scripts), JSON.stringify(['verify-ticket-43.mjs']), 'U0 票 43 门脚本唯一指向本文件');
   check(/-\s*'43'/.test(read(FILES.workflow)), 'U0 verify-tickets.yml matrix 含 43（A15/A16 全等守卫面）');
-  check(/A2 plan has 22 tickets/.test(read(FILES.runner)), 'U0 audit A2 期望数随新票更新（21 → 22）');
+  // 票数期望是 runner 本地常量（加票在同票提交里自维护）；本门只断言 audit 可跑通
+  let auditCode = 0;
+  try {
+    execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (e) { auditCode = e.status; }
+  eq(auditCode, 0, 'U0 audit 全绿（A2 票数期望由 runner 常量自维护）');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -263,6 +268,43 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
     check(!!mgErr && /不得有抓取记录|标记矛盾/.test(String(mgErr.stderr)),
       'U4 清单生成对「重构 + 抓取记录」互斥硬拒（页面不可重现与抓取成功互斥）');
     eq(readFileSync(realManifestPath).equals(backup), true, 'U4 拒绝路径零副作用（manifest.json 字节不变）');
+
+    // (e) --from-ledger：本机无 archive 时的确定性再生成——旧条目逐字段稳定、净副作用为零
+    const backup2 = readFileSync(realManifestPath);
+    let lgCode = 0, lgOut = '';
+    try {
+      lgOut = execFileSync(process.execPath, [abs(FILES.manifestGen), '--from-ledger'], { encoding: 'utf8' });
+    } catch (e) { lgCode = e.status; lgOut = (e.stdout || '') + (e.stderr || ''); }
+    try {
+      eq(lgCode, 0, 'U4 --from-ledger 再生成退出码 0（无 archive 亦可）');
+      check(/ledger round-trip/.test(lgOut), 'U4 再生成来源标注 ledger round-trip');
+      const regen = JSON.parse(readFileSync(realManifestPath, 'utf8'));
+      eq(JSON.stringify(regen.entries), JSON.stringify(JSON.parse(backup2).entries),
+        'U4 --from-ledger 旧条目逐字段稳定（仅 generated_at 变）');
+    } finally {
+      writeFileSync(realManifestPath, backup2);
+      eq(readFileSync(realManifestPath).equals(backup2), true, 'U4 --from-ledger 后 manifest.json 字节级还原（净副作用为零）');
+    }
+
+    // (e2) 反向（review #24）：sources.json 丢一条 → 旧条目消失属破坏性删除，拒绝写入
+    //      （id 集守恒；缺条不得静默落盘）
+    const srcPath = abs(FILES.sources);
+    const srcBackup = readFileSync(srcPath);
+    try {
+      const doc = JSON.parse(srcBackup);
+      doc.sources = doc.sources.filter((s) => s.id !== 'chosen-select');
+      writeFileSync(srcPath, JSON.stringify(doc, null, 2) + '\n');
+      let missCode = 0, missErr = '';
+      try {
+        execFileSync(process.execPath, [abs(FILES.manifestGen), '--from-ledger'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (e) { missCode = e.status; missErr = String(e.stderr); }
+      eq(missCode, 1, 'U4 --from-ledger 对旧条目消失拒绝写入（id 集守恒）');
+      check(/台账漂移/.test(missErr) && /chosen-select/.test(missErr), 'U4 拒绝信息点名缺失条目');
+      eq(readFileSync(realManifestPath).equals(backup2), true, 'U4 缺条拒绝路径零副作用（manifest.json 不变）');
+    } finally {
+      writeFileSync(srcPath, srcBackup);
+      eq(readFileSync(srcPath).equals(srcBackup), true, 'U4 sources.json 字节级还原');
+    }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }

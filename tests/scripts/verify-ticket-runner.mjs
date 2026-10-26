@@ -16,6 +16,7 @@
 //   node tests/scripts/verify-ticket-runner.mjs --list
 //   node tests/scripts/verify-ticket-runner.mjs --plan <ticket>   # 输出 GITHUB_OUTPUT 行
 //   node tests/scripts/verify-ticket-runner.mjs --run <ticket>
+//   node tests/scripts/verify-ticket-runner.mjs --run-all         # 全部票级脚本（不含 plan 的 install/build/typecheck 前置步）
 //   node tests/scripts/verify-ticket-runner.mjs --audit           # 零覆盖丢失守卫（本地 + CI 可跑）
 // ══════════════════════════════════════════════════════════════════════
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -28,6 +29,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(here, '..', '..');
 const PLAN = join(here, 'verify-ticket-plan.json');
 const WORKFLOWS = join(ROOT, '.github', 'workflows');
+
+// plan 票数 canary：新增/删除票时**在本文件**同步期望数（同票提交里自维护）——
+// 任何门只断言 `--audit` 退出码，不对本行做跨文件字面量正则（加票不再改别家的门）。
+const EXPECTED_TICKETS = 22;
 
 // 冻结期望：本合并替换掉的 21 个票级 workflow 及其脚本清单。
 // 独立真源（不读 plan）——用于 --audit 的「零票级覆盖丢失」断言。
@@ -102,6 +107,32 @@ if (mode === '--run') {
   process.exit(failed ? 1 : 0);
 }
 
+if (mode === '--run-all') {
+  // 全量票级门：按 plan 顺序串行跑全部脚本，首个失败不中断（一次收全量失败）
+  let failed = 0, ran = 0;
+  for (const k of keysOf(plan)) {
+    for (const s of (plan.tickets[k].scripts || [])) {
+      const p = join(here, s);
+      ran++;
+      if (!existsSync(p)) { failed++; console.error('FAIL [' + k + '] missing script: ' + s); continue; }
+      try {
+        execFileSync(process.execPath, [p], { encoding: 'utf8', cwd: ROOT });
+        console.log('PASS [' + k + '] ' + s);
+      } catch (e) {
+        failed++;
+        // 取末 6 条匹配行（尾部才是最新失败；首部只会有铺垫输出）
+        const tail = ((e.stdout || '') + (e.stderr || '')).trim().split('\n')
+          .filter((l) => /FAIL|failures|Error/.test(l)).slice(-6);
+        console.error('FAIL [' + k + '] ' + s + ' (exit ' + (e.status === undefined ? 'signal' : e.status) + ')');
+        if (tail.length) console.error(tail.map((l) => '  ' + l).join('\n'));
+      }
+    }
+  }
+  console.log('');
+  console.log('RUN-ALL ' + (ran - failed) + ' passed / ' + failed + ' failed (' + ran + ' scripts)');
+  process.exit(failed ? 1 : 0);
+}
+
 if (mode === '--audit') {
   let pass = 0, fail = 0;
   const failures = [];
@@ -113,7 +144,7 @@ if (mode === '--audit') {
   const pKeys = keysOf(plan);
   const legacyWfs = Object.keys(LEGACY);
   ck('A1 plan schema=1', plan.schema === 1, 'got ' + plan.schema);
-  ck('A2 plan has 22 tickets (20 D-004 merge + 12 login-derived capture issue #12 + 43 hand-reconstructed mirrors issue #13)', pKeys.length === 22, 'got ' + pKeys.length);
+  ck('A2 plan ticket count matches EXPECTED_TICKETS', pKeys.length === EXPECTED_TICKETS, 'got ' + pKeys.length + ', want ' + EXPECTED_TICKETS);
   ck('A3 legacy baseline has 20 workflows', legacyWfs.length === 20, 'got ' + legacyWfs.length);
 
   const legacyScripts = new Set(Object.values(LEGACY).flat());
@@ -180,5 +211,5 @@ if (mode === '--audit') {
   process.exit(fail ? 1 : 0);
 }
 
-console.error('usage: verify-ticket-runner.mjs --list | --plan <ticket> | --run <ticket> | --audit');
+console.error('usage: verify-ticket-runner.mjs --list | --plan <ticket> | --run <ticket> | --run-all | --audit');
 process.exit(2);
