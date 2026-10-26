@@ -119,6 +119,8 @@ node tests/scripts/06-structural-diff.mjs --id iti-v29
 npm run e2e -- tests/corpus-forms.spec.ts
 # 清单重生成
 node tests/scripts/06-manifest.mjs
+# 清单再生成（本机无 archive 时从已提交台账确定性重建；旧条目漂移即拒绝写入）
+node tests/scripts/06-manifest.mjs --from-ledger
 # CI 结构门（离线；指纹 / 合规 / 目录纪律）
 node tests/scripts/verify-ticket-06.mjs
 ```

@@ -268,6 +268,23 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
     check(!!mgErr && /不得有抓取记录|标记矛盾/.test(String(mgErr.stderr)),
       'U4 清单生成对「重构 + 抓取记录」互斥硬拒（页面不可重现与抓取成功互斥）');
     eq(readFileSync(realManifestPath).equals(backup), true, 'U4 拒绝路径零副作用（manifest.json 字节不变）');
+
+    // (e) --from-ledger：本机无 archive 时的确定性再生成——旧条目逐字段稳定、净副作用为零
+    const backup2 = readFileSync(realManifestPath);
+    let lgCode = 0, lgOut = '';
+    try {
+      lgOut = execFileSync(process.execPath, [abs(FILES.manifestGen), '--from-ledger'], { encoding: 'utf8' });
+    } catch (e) { lgCode = e.status; lgOut = (e.stdout || '') + (e.stderr || ''); }
+    try {
+      eq(lgCode, 0, 'U4 --from-ledger 再生成退出码 0（无 archive 亦可）');
+      check(/ledger round-trip/.test(lgOut), 'U4 再生成来源标注 ledger round-trip');
+      const regen = JSON.parse(readFileSync(realManifestPath, 'utf8'));
+      eq(JSON.stringify(regen.entries), JSON.stringify(JSON.parse(backup2).entries),
+        'U4 --from-ledger 旧条目逐字段稳定（仅 generated_at 变）');
+    } finally {
+      writeFileSync(realManifestPath, backup2);
+      eq(readFileSync(realManifestPath).equals(backup2), true, 'U4 --from-ledger 后 manifest.json 字节级还原（净副作用为零）');
+    }
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
