@@ -19,6 +19,7 @@ Userscript: finds phone country-code fields on any page, injects a 🌐 icon and
 - Injection lives in Shadow DOM; styles must not leak into the host page.
 - Writing to a controlled component requires the element's prototype value setter, then input→change→blur. Direct assignment does not sync framework state.
 - Inside `about:srcdoc` frames `location.origin` is the string `"null"`; use `window.origin` for origin checks.
+- Diffs that add or move a rejection, error, or failure path: read `docs/agents/review.md` before writing it — the check sits ahead of the first mutation, and a negative test locks the persisted state.
 
 ## Agent skills
 
