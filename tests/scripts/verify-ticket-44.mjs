@@ -235,6 +235,10 @@ const ORCH = read(FILES.orchestrator);
       id,
       source_url: 'https://example.invalid/' + id,
       family: 'fixture',
+      // 采集条件（issue #34）：fixture 如实建模「重捕之后」的 CAPTURE-MANIFEST 形状——
+      // 骨架派生对缺这两个键的台账硬拒（--no-capture 复用旧 archive 同样被拒）。
+      capture_country: 'us',
+      browser_locale: 'en-US',
       http_status: 200,
       raw: { file: 'raw/' + file, bytes: Buffer.byteLength(html), sha256: '0'.repeat(64) },
       dom: { file: 'dom/' + file, bytes: Buffer.byteLength(html), sha256: '0'.repeat(64) },
@@ -251,7 +255,10 @@ const ORCH = read(FILES.orchestrator);
         entry('iti-v29', 'iti-v29.html', itiHtml, { http_status: 403, browser_status: 200 }),
         entry('rpn-input', 'rpn-input.html', challengeHtml, { browser_status: 200 }),
         entry('chosen-select', 'chosen-select.html', chosenHtml, { browser_status: 200 }),
-        { id: 'mui-autocomplete', source_url: 'https://example.invalid/mui', family: 'fixture', ok: false, error: 'net::ERR_NAME_NOT_RESOLVED' },
+        {
+          id: 'mui-autocomplete', source_url: 'https://example.invalid/mui', family: 'fixture',
+          capture_country: 'us', browser_locale: null, ok: false, error: 'net::ERR_NAME_NOT_RESOLVED',
+        },
       ],
     }, null, 2) + '\n');
 

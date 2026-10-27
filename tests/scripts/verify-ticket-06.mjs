@@ -3,18 +3,24 @@
 // 方法：**离线**（无网络、无浏览器、无 npm 依赖）读文本 + 哈希 + 目录纪律断言。
 // 覆盖：S0 自证 / S1 三层架构与目录纪律 / S2 指纹完整性 /
 //   S3 合规口径（去品牌·去追踪·provenance）/ S4 原始快照不入库 /
-//   S5 退化回路成文与工具链 / S6 命名正交 / S7 结构骨架确定性 / S8 覆盖声明 /
-//   S9 双探测口径同源 / S10 结构 diff 标签变化后继续递归子树（issue #33 负例）。
+//   S5 退化回路成文与工具链 / S6 命名正交 / S7 结构骨架确定性（含指定国别）/ S8 覆盖声明 /
+//   S9 双探测口径同源 / S10 结构 diff 标签变化后继续递归子树（issue #33 负例）/
+//   S11 采集国别固定与采集条件入台账（issue #34）.
 // 用法：node tests/scripts/verify-ticket-06.mjs
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { containsToken } from './gate-assert.mjs';
+import { before, containsToken } from './gate-assert.mjs';
+import {
+  IPAPI_LOOKUP_URL_RE,
+  installCountryRoute,
+  normalizeCountry,
+} from './06-capture-country.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..', '..');
@@ -65,7 +71,75 @@ const FILES = {
   probeCommon: 'tests/corpus/forms/probes/06-probe-common.mjs',
   probeMirrors: 'tests/corpus/forms/probes/06-probe-mirrors.mjs',
   probeReal: 'tests/corpus/forms/probes/06-probe-real.mjs',
+  // issue #34：国别固定的唯一实现（工具与门共用，门断言的就是工具跑的）
+  country: 'tests/scripts/06-capture-country.mjs',
+  drift: 'tests/scripts/06-corpus-drift.mjs',
 };
+
+// ══════════════════════════════════════════════════════════════════
+// S7 / S11 共用：仓库外 archive 的最小同构体（零网络、零浏览器）
+//   骨架 --from archive 需要的现场只有 dom/<id>.html + CAPTURE-MANIFEST 条目；
+//   两条路径（确定性、负例）用同一份构造，不各造各的。
+//   conditions 三态：完整两键（正常）/ 只一个键（半登记负例）/ null（早于旋钮的旧台账）。
+//   形状取自 spec #32 记录的本地离线渲染事实：placeholder 由国家决定
+//   （us `201-555-0123` / jp `90-1234-5678`），国旗 class 同步换 iso2。
+// ══════════════════════════════════════════════════════════════════
+const ITI_SHAPE_HTML = (iso2, dial, placeholder) => [
+  '<!doctype html><html><body>',
+  '<div class="iti iti--input-container iti--has-country-selector">',
+  '<div class="iti__country-container">',
+  '<button type="button" class="iti__selected-country" aria-label="Selected country">',
+  '<span class="iti__selected-country-primary">',
+  '<span class="iti__flag iti__' + iso2 + '"></span>',
+  '<span class="iti__arrow"></span></span>',
+  '<span class="iti__selected-dial-code">' + dial + '</span></button>',
+  '</div>',
+  '<input type="tel" class="iti__tel-input" placeholder="' + placeholder + '" aria-label="Phone number">',
+  '</div></body></html>',
+].join('');
+
+function writeCaptureFixture(archiveRoot, { conditions, html }) {
+  const corpus = join(archiveRoot, 'corpus-forms');
+  for (const d of ['dom', 'raw']) mkdirSync(join(corpus, d), { recursive: true });
+  writeFileSync(join(corpus, 'dom', 'iti-v29.html'), html);
+  writeFileSync(join(corpus, 'raw', 'iti-v29.html'), html);
+  const entry = {
+    id: 'iti-v29',
+    source_url: 'https://example.invalid/iti-v29',
+    family: 'iti',
+    http_status: 200,
+    browser_status: 200,
+    raw: { file: 'raw/iti-v29.html', bytes: Buffer.byteLength(html), sha256: '0'.repeat(64) },
+    dom: { file: 'dom/iti-v29.html', bytes: Buffer.byteLength(html), sha256: '0'.repeat(64) },
+    frames: [],
+    ok: true,
+  };
+  if (conditions) Object.assign(entry, conditions, { ipapi_stub_hits: 1 });
+  writeFileSync(join(corpus, 'CAPTURE-MANIFEST.json'), JSON.stringify({
+    capturedAt: '2026-10-27T00:00:00.000Z',
+    archiveRoot: String(archiveRoot).replace(/\\/g, '/'),
+    archiveDir: 'corpus-forms',
+    userAgent: 'fixture',
+    entries: [entry],
+  }, null, 2) + '\n');
+  return corpus;
+}
+
+// 派生一次骨架并留住退出码 + 输出：正例断言 code 0，负例断言「拒绝得干脆」
+function deriveFromArchive(archiveRoot, out) {
+  const r = spawnSync(
+    process.execPath,
+    [abs(FILES.skeleton), '--id', 'iti-v29', '--from', 'archive', '--archive', archiveRoot, '--out', out],
+    { encoding: 'utf8' }
+  );
+  return { code: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
+}
+
+// 跑工具 CLI 并留住退出码（负例断言要看拒绝，不是只看消息）
+function runTool(script, args) {
+  const r = spawnSync(process.execPath, [abs(script), ...args], { encoding: 'utf8' });
+  return { code: r.status, out: String(r.stdout || '') + String(r.stderr || '') };
+}
 
 // == S0 自证（已知好样本干跑）==
 {
@@ -254,6 +328,23 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     const ja = JSON.parse(readFileSync(a, 'utf8'));
     eq(sha256(JSON.stringify(ja.tree)), ja.sha256, 'S7 派生骨架内部树哈希自校验');
     check(ja.source === 'mirror', 'S7 派生来源标记为 mirror（离线可复现）');
+
+    // 指定国别后仍确定（issue #34 / spec #32 Q14：复用的就是这条既有接缝）——
+    // 同一份 fixture archive 连派两次必须字节级一致，采集条件入 meta 不引入抖动。
+    const archJp = join(tmp, 'arch-jp');
+    writeCaptureFixture(archJp, {
+      conditions: { capture_country: 'jp', browser_locale: 'en-US' },
+      html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'),
+    });
+    const c1 = join(tmp, 'c1.json');
+    const c2 = join(tmp, 'c2.json');
+    eq(deriveFromArchive(archJp, c1).code, 0, 'S7 指定国别的 archive 派生成功（fixture 台账齐备）');
+    deriveFromArchive(archJp, c2);
+    eq(sha256File(c1), sha256File(c2), 'S7 指定国别后同源两次派生同哈希（采集条件入 meta 不破坏确定性）');
+    const jc = JSON.parse(readFileSync(c1, 'utf8'));
+    eq(jc.capture_country, 'jp', 'S7 骨架 meta 记采集国别（取自 CAPTURE-MANIFEST）');
+    eq(jc.browser_locale, 'en-US', 'S7 骨架 meta 记浏览器 locale（只记录，不固定）');
+    eq(jc.source, 'archive', 'S7 带采集条件的骨架仍是 archive 基线语义（真实页派生）');
   } catch (e) {
     failures.push('S7 骨架派生失败: ' + ((e && e.message) || e));
   } finally {
@@ -352,6 +443,177 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     eq(run.status, 1, 'S10 major 退出码仍为 1（分级判定未变）');
   } catch (e) {
     failures.push('S10 结构 diff 负例失败: ' + ((e && e.message) || e));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+// == S11 采集国别固定与采集条件入台账（issue #34 / spec #32 Q7/Q10/Q16）==
+{
+  const CAP_SRC = read(FILES.capture);
+  const LOGIN_SRC = read('tests/scripts/12-login-capture.mjs');
+  const DRIFT_SRC = read(FILES.drift);
+
+  // (1) --country 取值口径：两字母 alpha-2，大小写归一，其余如实拒
+  eq(normalizeCountry('JP'), 'jp', 'S11 --country 大小写归一（台账只留一种写法）');
+  let rej = '';
+  try { normalizeCountry('usa'); } catch (e) { rej = String(e.message); }
+  check(containsToken(rej, '两字母').ok, 'S11 三字母国家码被拒（ISO 3166-1 alpha-2）', rej.slice(0, 90));
+  let rejEmpty = '';
+  try { normalizeCountry(''); } catch (e) { rejEmpty = String(e.message); }
+  check(containsToken(rejEmpty, '--country 需两字母').ok, 'S11 空值同样被拒（不是静默回落默认）', rejEmpty.slice(0, 90));
+
+  // (2) 拦截匹配器：站点真实请求必须命中（URL 取自 2026-10-27 抓的 homepage.js），
+  //     对照负例证明拦截不越界（别的 host / ipapi 其它路径一律放行真请求）
+  const LIVE_LOOKUP_URL = 'https://ipapi.co/json?token=9gJwtZv3zaQMcFetHDpEtPalSNBz1JL3gJI98vg4bxZBTwwWLZ';
+  check(IPAPI_LOOKUP_URL_RE.test(LIVE_LOOKUP_URL), 'S11 站点真实 lookup URL（含 token 查询）命中拦截');
+  check(IPAPI_LOOKUP_URL_RE.test('https://ipapi.co/json/'), 'S11 同端点带尾斜杠同样命中');
+  check(!IPAPI_LOOKUP_URL_RE.test('https://example.invalid/json?token=x'), 'S11 别的 host 不命中（只钉 ipapi.co）');
+  check(!IPAPI_LOOKUP_URL_RE.test('https://ipapi.co/countries/'), 'S11 ipapi 其它路径不命中（只钉 lookup 端点）');
+
+  // (3) 接线行为：假 page 走真 installCountryRoute（门断言的就是工具跑的）
+  const fired = [];
+  const fakePage = {
+    pattern: null, handler: null,
+    route(re, handler) { this.pattern = re; this.handler = handler; return Promise.resolve(); },
+  };
+  const pin = await installCountryRoute(fakePage, 'jp');
+  check(fakePage.pattern === IPAPI_LOOKUP_URL_RE, 'S11 路由按库里的匹配器注册（工具与门同一份定义）');
+  eq(pin.country, 'jp', 'S11 固定结果回传（条目记的就是它，不是请求原文）');
+  fakePage.handler({ fulfill: (o) => { fired.push(o); return Promise.resolve(); } });
+  eq(pin.hits(), 1, 'S11 命中计数入台账（ipapi_stub_hits 的唯一来源）');
+  eq(fired.length, 1, 'S11 命中即应答（不放过、不落真网络）');
+  const stubBody = JSON.parse(fired[0].body);
+  eq(stubBody.country_code, 'jp', 'S11 桩把 initialCountryLookup 解析成指定国家');
+  eq(Object.keys(stubBody).join(','), 'country_code', 'S11 桩只给站点真正读取的字段（不替站点编造响应形状）');
+  eq(fired[0].status, 200, 'S11 桩以 200 应答');
+  check(/json/i.test(String((fired[0].headers || {})['content-type'])), 'S11 桩以 application/json 应答（页面 res.json() 走得通）');
+  // 旋钮随运行变：换国家 → 换响应（钉死常量的实现过不了这条）
+  const fired2 = [];
+  const fakePage2 = { route(re, handler) { this.h = handler; return Promise.resolve(); } };
+  const pin2 = await installCountryRoute(fakePage2, 'us');
+  fakePage2.h({ fulfill: (o) => { fired2.push(o); return Promise.resolve(); } });
+  eq(JSON.parse(fired2[0].body).country_code, 'us', 'S11 同一段接线换国家即换响应（--country 真生效）');
+
+  // (4) 顺序：拦截先于导航（晚注册的那次 lookup 走真出口 IP = 假漂移成因）
+  const ord = before(CAP_SRC, 'await installCountryRoute(page, country);', "await page.goto(url, { waitUntil");
+  check(ord.ok, 'S11 路由拦截在 goto 之前注册', ord.detail);
+  const ordCli = before(CAP_SRC, 'args.country = normalizeCountry(', 'mkdirSync(path.join(outDir, sub)');
+  check(ordCli.ok, 'S11 国别校验先于首次写盘（拒了不留半成品 archive）', ordCli.detail);
+
+  // (5) CLI 负例：非法 --country / --attach 组合都在任何副作用之前拒绝
+  const tmpCli = mkdtempSync(join(tmpdir(), 'cch06-country-cli-'));
+  try {
+    const fresh = join(tmpCli, 'never-created');
+    const badCountry = runTool(FILES.capture, ['--country', 'usa', '--archive', fresh]);
+    eq(badCountry.code, 2, 'S11 非法 --country → 采集退出码 2');
+    check(containsToken(badCountry.out, '--country 需两字母').ok, 'S11 非法 --country 的成因单列', badCountry.out.trim().slice(0, 90));
+    const fresh2 = join(tmpCli, 'never-created-2');
+    const attachMix = runTool(FILES.capture, ['--attach', '--id', 'iti-v29', '--country', 'jp', '--archive', fresh2]);
+    eq(attachMix.code, 2, 'S11 --attach 配 --country → 退出码 2（成对拒绝）');
+    check(containsToken(attachMix.out, '--country 与 --attach 互斥').ok,
+      'S11 附着模式不固定国别，传了即拒（不产「固定了但没生效」的台账）', attachMix.out.trim().slice(0, 90));
+    eq(existsSync(fresh), false, 'S11 非法 --country 未创建 archive（零副作用）');
+    eq(existsSync(fresh2), false, 'S11 互斥组合未创建 archive（零副作用）');
+  } finally {
+    rmSync(tmpCli, { recursive: true, force: true });
+  }
+
+  // (6) 不同国别 → 不同骨架（旋钮真的生效，不是同一棵树换个标签），
+  //     且差异面正是归一化**不许**抹平的 placeholder / 国旗 class（spec #32 Q7）
+  const tmp = mkdtempSync(join(tmpdir(), 'cch06-country-'));
+  try {
+    const mk = (name, iso2, dial, placeholder) => {
+      const arch = join(tmp, name);
+      writeCaptureFixture(arch, {
+        conditions: { capture_country: iso2, browser_locale: 'en-US' },
+        html: ITI_SHAPE_HTML(iso2, dial, placeholder),
+      });
+      const out = join(tmp, name + '.json');
+      eq(deriveFromArchive(arch, out).code, 0, 'S11 ' + name + ' 骨架派生成功');
+      return { arch, out, skel: JSON.parse(readFileSync(out, 'utf8')) };
+    };
+    const jp = mk('arch-jp', 'jp', '+81', '90-1234-5678');
+    const us = mk('arch-us', 'us', '+1', '201-555-0123');
+    for (const [label, src, token] of [
+      ['jp 国旗 class', ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'), 'iti__flag iti__jp'],
+      ['jp placeholder 形状', ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'), 'placeholder="90-1234-5678"'],
+      ['us 国旗 class', ITI_SHAPE_HTML('us', '+1', '201-555-0123'), 'iti__flag iti__us'],
+    ]) {
+      const s = containsToken(src, token);
+      check(s.ok, 'S11 反例刺激在场：' + label, s.detail);
+    }
+    eq(jp.skel.capture_country, 'jp', 'S11 jp 骨架记自己那次的采集国别');
+    eq(us.skel.capture_country, 'us', 'S11 us 骨架记自己那次的采集国别');
+    check(jp.skel.sha256 !== us.skel.sha256, 'S11 不同国别派生不同骨架（树哈希不同）',
+      jp.skel.sha256.slice(0, 12) + '… vs ' + us.skel.sha256.slice(0, 12) + '…');
+    const jpFlat = JSON.stringify(jp.skel.tree);
+    const usFlat = JSON.stringify(us.skel.tree);
+    check(containsToken(jpFlat, '"iti__jp"').ok, 'S11 国旗 class 留在骨架树里（未被归一化抹平）');
+    check(containsToken(usFlat, '"iti__us"').ok, 'S11 换国家后 class 跟着换（同一规则下的真实形态差异）');
+    check(containsToken(jpFlat, '"placeholder":"##-####-####"').ok,
+      'S11 placeholder 形状令牌保留（jp 形态未被抹平）', jpFlat.slice(0, 200));
+    check(containsToken(usFlat, '"placeholder":"###-###-####"').ok, 'S11 placeholder 形状令牌保留（us 形态）');
+
+    // (7) 采集条件缺失 / 半登记 → 硬拒，且拒在写盘之前
+    const archStale = join(tmp, 'arch-stale');
+    writeCaptureFixture(archStale, { conditions: null, html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678') });
+    const staleOut = join(tmp, 'stale.json');
+    const stale = deriveFromArchive(archStale, staleOut);
+    eq(stale.code, 1, 'S11 台账无采集条件（早于旋钮的 archive）→ 派生硬拒');
+    check(containsToken(stale.out, '没有采集条件').ok, 'S11 硬拒点名成因并给出路（重捕）', stale.out.trim().slice(0, 120));
+    eq(existsSync(staleOut), false, 'S11 硬拒不产出骨架文件（拒在任何写盘之前）');
+    const archHalf = join(tmp, 'arch-half');
+    writeCaptureFixture(archHalf, { conditions: { capture_country: 'jp' }, html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678') });
+    const half = deriveFromArchive(archHalf, join(tmp, 'half.json'));
+    eq(half.code, 1, 'S11 采集条件半登记同样硬拒（两键同生同灭）');
+    check(containsToken(half.out, '半登记').ok, 'S11 半登记的消息与「缺失」区分（一条消息一个成因）', half.out.trim().slice(0, 120));
+
+    // (8) 入库台账传播：capture 块随带采集条件；清单自我声明口径；跑完字节级还原
+    const realManifest = abs(FILES.manifest);
+    const backup = readFileSync(realManifest);
+    try {
+      eq(runTool(FILES.manifestGen, ['--archive', jp.arch]).code, 0, 'S11 06-manifest 对 fixture archive 实跑成功');
+      const doc = JSON.parse(readFileSync(realManifest, 'utf8'));
+      const ent = doc.entries.find((e) => e.id === 'iti-v29');
+      eq(ent.capture.capture_country, 'jp', 'S11 采集国别入仓内台账 capture 块（git 可见的归因面）');
+      eq(ent.capture.browser_locale, 'en-US', 'S11 浏览器 locale 入仓内台账 capture 块');
+      const committedIti = JSON.parse(backup.toString('utf8')).entries.find((e) => e.id === 'iti-v29');
+      eq(ent.skeleton.sha256, committedIti.skeleton.sha256, 'S11 骨架文件指纹未因采集条件而变（入库基线不动）');
+      eq(ent.mirror.sha256, committedIti.mirror.sha256, 'S11 镜像页指纹未变');
+      check(typeof doc._meta.compliance.captureConditions === 'string' && doc._meta.compliance.captureConditions.length > 20,
+        'S11 清单自我声明采集条件口径（读台账的人不必再翻工具源码）');
+    } finally {
+      writeFileSync(realManifest, backup);
+      eq(readFileSync(realManifest).equals(backup), true, 'S11 manifest.json 字节级还原（净零副作用）');
+    }
+
+    // (9) 编排器透传：接线在运行采集之前；非法国别在首次写盘之前拒；报告分记「请求值」与「实况」
+    const ordDrift = before(DRIFT_SRC, "capArgs.push('--country', args.country);", 'const r = run(capArgs');
+    check(ordDrift.ok, 'S11 编排器把固定国别显式交给采集（先接线后运行）', ordDrift.detail);
+    const neverOut = join(tmp, 'drift-never');
+    const badDrift = runTool(FILES.drift, ['--archive', jp.arch, '--out', neverOut, '--country', 'xx1']);
+    eq(badDrift.code, 2, 'S11 编排器非法 --country → 退出码 2');
+    eq(existsSync(neverOut), false, 'S11 编排器非法 --country 不产报告目录（护栏先于写盘）');
+    const driftOut = join(tmp, 'drift-out');
+    const d = runTool(FILES.drift, ['--archive', jp.arch, '--out', driftOut, '--no-capture', '--country', 'gb', '--id', 'iti-v29']);
+    eq(d.code, 0, 'S11 编排器 --no-capture + --country 跑通（漂移是 advisory，不阻断）', d.out.trim().slice(-160));
+    const sum = JSON.parse(readFileSync(join(driftOut, 'drift-summary.json'), 'utf8'));
+    eq(sum.capture_country_requested, 'gb', 'S11 报告记本次运行**请求**的固定国别');
+    const row = sum.matrix.find((r) => r.id === 'iti-v29');
+    eq(row.skeleton.capture_country, 'jp', 'S11 矩阵行记台账**实况**（与请求值分列，条件变了当场可见）');
+    const md = readFileSync(join(driftOut, 'drift-report.md'), 'utf8');
+    check(containsToken(md, '采集国别（本次运行请求）: `gb`').ok, 'S11 报告正文点名采集国别', md.split('\n').slice(0, 12).join(' | ').slice(0, 160));
+    check(containsToken(md, 'country=jp').ok, 'S11 矩阵证据列含骨架实况');
+
+    // (10) 生产侧接线（台账三键 + 附着模式显式「未固定」）：行为面在 S7/S11(6)，
+    //      这里只锁「字段确实由工具写进条目」——不写就没人能记上条件
+    check(containsToken(CAP_SRC, '[COUNTRY_FIELD]: null').ok && containsToken(CAP_SRC, '[LOCALE_FIELD]: null').ok &&
+      containsToken(CAP_SRC, '[HITS_FIELD]: 0').ok, 'S11 采集条目先落三个采集条件键（缺值也落键，不是不写）');
+    check(containsToken(CAP_SRC, 'entry[COUNTRY_FIELD] = rendered.country').ok,
+      'S11 固定值只在真渲染之后写入（--no-render / 渲染前失败如实留 null，不写没生效的请求值）');
+    check(containsToken(LOGIN_SRC, '[COUNTRY_FIELD]: null').ok,
+      'S11 附着条目显式记「未固定」（与「台账早于旋钮」两种语义不混）');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
