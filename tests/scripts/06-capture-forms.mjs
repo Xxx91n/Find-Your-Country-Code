@@ -54,6 +54,7 @@ import {
   DEFAULT_COUNTRY,
   normalizeCountry,
   installCountryRoute,
+  resolvedCountry,
   COUNTRY_FIELD,
   LOCALE_FIELD,
   HITS_FIELD,
@@ -310,7 +311,8 @@ async function main() {
         const shotPath = path.join(outDir, 'shot', s.id + '.png');
         const rendered = await renderDom(s.url, shotPath, args.country);
         entry.browser_status = rendered.status;
-        entry[COUNTRY_FIELD] = rendered.country;
+        // 固定值只在桩真的被请求之后成立；hits=0 → 如实记 null（见 06-capture-country）
+        entry[COUNTRY_FIELD] = resolvedCountry(rendered.country, rendered.stubHits);
         entry[LOCALE_FIELD] = rendered.locale;
         entry[HITS_FIELD] = rendered.stubHits;
         const domBuf = Buffer.from(rendered.html, 'utf8');

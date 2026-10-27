@@ -20,6 +20,7 @@ import {
   IPAPI_LOOKUP_URL_RE,
   installCountryRoute,
   normalizeCountry,
+  resolvedCountry,
 } from './06-capture-country.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -494,6 +495,11 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   const pin2 = await installCountryRoute(fakePage2, 'us');
   fakePage2.h({ fulfill: (o) => { fired2.push(o); return Promise.resolve(); } });
   eq(JSON.parse(fired2[0].body).country_code, 'us', 'S11 同一段接线换国家即换响应（--country 真生效）');
+  // 固定值只在桩真的被请求之后才成立：hits=0 时把请求值写进台账，等于谎报采集条件
+  eq(resolvedCountry('us', 1), 'us', 'S11 桩被请求过 → 固定值入台账');
+  eq(resolvedCountry('us', 0), null, 'S11 桩未被请求 → 如实记 null（不做 lookup 的源不冒充「按 us 采」）');
+  check(containsToken(CAP_SRC, 'resolvedCountry(rendered.country, rendered.stubHits)').ok,
+    'S11 采集工具经这道判定才写 capture_country（不是直接把请求值落台账）');
 
   // (4) 顺序：拦截先于导航（晚注册的那次 lookup 走真出口 IP = 假漂移成因）
   const ord = before(CAP_SRC, 'await installCountryRoute(page, country);', "await page.goto(url, { waitUntil");
@@ -569,6 +575,19 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     eq(half.code, 1, 'S11 采集条件半登记同样硬拒（两键同生同灭）');
     check(containsToken(half.out, '半登记').ok, 'S11 半登记的消息与「缺失」区分（一条消息一个成因）', half.out.trim().slice(0, 120));
 
+    // 三态的第三态：键在、值为 null（附着模式 / 桩未被请求）= 已记录「未固定」，
+    // 与「键缺失 = 条件未知」不同，必须照常派生并把 null 抄进骨架 meta。
+    const archUnpinned = join(tmp, 'arch-unpinned');
+    writeCaptureFixture(archUnpinned, {
+      conditions: { capture_country: null, browser_locale: 'zh-CN' },
+      html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'),
+    });
+    const unpinnedOut = join(tmp, 'unpinned.json');
+    eq(deriveFromArchive(archUnpinned, unpinnedOut).code, 0, 'S11 「已记录未固定」的台账照常派生（不误当条件未知）');
+    const unpinned = JSON.parse(readFileSync(unpinnedOut, 'utf8'));
+    eq(unpinned.capture_country, null, 'S11 骨架 meta 原样保留 null（未固定是记录，不是猜测）');
+    eq(unpinned.browser_locale, 'zh-CN', 'S11 未固定时 locale 照记');
+
     // (8) 入库台账传播：capture 块随带采集条件；清单自我声明口径；跑完字节级还原
     const realManifest = abs(FILES.manifest);
     const backup = readFileSync(realManifest);
@@ -581,8 +600,14 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       const committedIti = JSON.parse(backup.toString('utf8')).entries.find((e) => e.id === 'iti-v29');
       eq(ent.skeleton.sha256, committedIti.skeleton.sha256, 'S11 骨架文件指纹未因采集条件而变（入库基线不动）');
       eq(ent.mirror.sha256, committedIti.mirror.sha256, 'S11 镜像页指纹未变');
-      check(typeof doc._meta.compliance.captureConditions === 'string' && doc._meta.compliance.captureConditions.length > 20,
-        'S11 清单自我声明采集条件口径（读台账的人不必再翻工具源码）');
+      const decl = String((doc._meta.compliance || {}).captureConditions || '');
+      check(containsToken(decl, 'capture_country').ok && containsToken(decl, 'browser_locale').ok,
+        'S11 清单声明点名的就是那两个真实键名（声明与字段同源，不是一段随便的说明文字）', decl.slice(0, 80));
+      const mgSrc = read(FILES.manifestGen);
+      check(containsToken(mgSrc, '...readCaptureConditions(skel, s.id)').ok,
+        'S11 skeleton 块同样抄骨架自带的采集条件');
+      check(containsToken(mgSrc, '...readCaptureConditions(c, e.id)').ok,
+        'S11 --from-ledger 把采集条件原样带回重建的 cap 条目（否则台账再生成当场漂移）');
     } finally {
       writeFileSync(realManifest, backup);
       eq(readFileSync(realManifest).equals(backup), true, 'S11 manifest.json 字节级还原（净零副作用）');
@@ -610,8 +635,6 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     //      这里只锁「字段确实由工具写进条目」——不写就没人能记上条件
     check(containsToken(CAP_SRC, '[COUNTRY_FIELD]: null').ok && containsToken(CAP_SRC, '[LOCALE_FIELD]: null').ok &&
       containsToken(CAP_SRC, '[HITS_FIELD]: 0').ok, 'S11 采集条目先落三个采集条件键（缺值也落键，不是不写）');
-    check(containsToken(CAP_SRC, 'entry[COUNTRY_FIELD] = rendered.country').ok,
-      'S11 固定值只在真渲染之后写入（--no-render / 渲染前失败如实留 null，不写没生效的请求值）');
     check(containsToken(LOGIN_SRC, '[COUNTRY_FIELD]: null').ok,
       'S11 附着条目显式记「未固定」（与「台账早于旋钮」两种语义不混）');
   } finally {

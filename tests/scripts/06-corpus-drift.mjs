@@ -368,8 +368,8 @@ function renderMarkdown(summary) {
   if (summary.run.run_url) L.push('- run: ' + summary.run.run_url);
   L.push('- 浏览器: ' + summary.browser + '（CI 经 xvfb-run 提供有头虚拟显示）');
   L.push('- 采集国别（本次运行请求）: `' + summary.capture_country_requested + '`' +
-    '（ipapi.co lookup 被路由拦截固定；逐源实况见矩阵「证据」列 country=…，' +
-    '未做 IP lookup 的源固定不生效，如实记 null/未固定）');
+    '（路由拦截 ipapi.co lookup；逐源实况见矩阵证据列 `country=`，取自骨架 meta——' +
+    '桩未被请求的源如实记 null，即固定对它没有作用）');
   L.push('- archive: ' + summary.archive_root + '（仓库外；原始快照不入库）');
   L.push('- 契约: ' + (summary.contract.ok ? 'OK' : 'VIOLATION ×' + summary.contract.violations.length));
   L.push('');

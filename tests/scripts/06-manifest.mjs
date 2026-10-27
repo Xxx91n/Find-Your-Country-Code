@@ -208,7 +208,7 @@ function main() {
         provenance: '每条标 source_url + captured_at + mirror_of + license_note；reconstructed 条目（手工重构镜像，GLOSSARY）以 provenance（重构依据）替代 captured_at——页面不可重现，无捕获时点，且不参与结构比对（无可信基线）',
         noPii: '不含真实 PII',
         rawNotInGit: '原始快照（含品牌内容与版权）一律出仓归档，不入 git',
-        captureConditions: '采集条件入台账（issue #34）：capture 块记 capture_country（06-capture-forms --country 固定的初始国家，默认 us）+ browser_locale（浏览器自报 locale，只记录不固定）；skeleton 块同步骨架 meta。清单再生成对历史条目**不补 null**（补了台账当场漂移）；而 --from archive 的骨架派生对缺这两个键的台账硬拒（早于本旋钮 → 重捕）。ipapi.co 之外的源固定不生效，逐条 ipapi_stub_hits=0 如实记。',
+        captureConditions: '采集条件入台账（issue #34）：capture 块记 capture_country（06-capture-forms --country 固定的初始国家，默认 us）+ browser_locale（浏览器自报 locale，只记录不固定）；skeleton 块同步骨架 meta；另有证据字段 ipapi_stub_hits（桩被该页请求过几次，不入强制两键）。国别只在 hits>0 时才写值，否则如实记 null（没生效的请求值不写成固定值）。清单再生成对历史条目**不补 null**（补了台账当场漂移）；而 --from archive 的骨架派生对**键缺失**的台账硬拒（早于本旋钮 → 重捕）。',
       },
       degradationLoop: {
         step1_recapture: 'tests/scripts/06-capture-forms.mjs（重捕 → 仓库外 archive）',

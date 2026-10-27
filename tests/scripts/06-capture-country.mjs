@@ -40,8 +40,15 @@ export function normalizeCountry(raw) {
 }
 
 // 桩响应体：只给 lookup 真正读取的字段。多给的字段等于替站点编造响应形状。
-export function ipapiStubBody(country) {
+function ipapiStubBody(country) {
   return JSON.stringify({ country_code: normalizeCountry(country) });
+}
+
+// 固定值只有在「页面真的向桩要过响应」之后才成立：hits=0 意味着这个源压根不做
+// ipapi lookup（或被站点换掉了端点），此时把请求值 us 原样写进台账就是在声称
+// 「这次是按 us 采的」——而它从未生效。如实记 null，条件变化当场可见（issue #34）。
+export function resolvedCountry(country, hits) {
+  return hits > 0 ? normalizeCountry(country) : null;
 }
 
 // 注册拦截；返回 { country, hits() } —— hits 是「本页面向桩要了几次响应」的计数，
@@ -64,6 +71,8 @@ export async function installCountryRoute(page, country) {
 // requireCaptureConditions：骨架派生紧跟重捕之后，台账里没有采集条件 = 管线断了
 //   （archive 早于本旋钮 / 台账被手工改坏）→ 硬拒，绝不静默产出一个「条件未知」
 //   的骨架（那正是本轮要消灭的归因盲区）。
+//   三态要分清：**键在、值为 null**（附着模式不固定 / 桩未被请求）= 已记录「未固定」，
+//   照常派生；**键缺失** = 条件未知，一律硬拒。
 // readCaptureConditions：清单再生成（06-manifest --from-ledger）必须逐字段复现
 //   **历史条目**，旧条目没有这两个键 → 键也不落（补 null 会让台账当场漂移、
 //   再生成被自己拒掉）。
