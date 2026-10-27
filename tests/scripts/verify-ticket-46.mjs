@@ -219,6 +219,71 @@ function addMatrixKey(root, key) {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// N6 注释行不打断 matrix 区块与列表（#39 review）
+//   YAML 里注释不结束结构。旧口径按缩进 break，`ticket:` 同缩进的注释行
+//   会让列表提前结束 → 有效 workflow 被误判成「缺票」。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      const p = join(root, FILES.workflow);
+      const src = readFileSync(p, 'utf8');
+      // 在 ticket: 与其首项之间插一行同缩进注释，并在列表中部再插一行
+      const withComment = src
+        .replace(/^(\s*)ticket:\s*$/m, '$1ticket:\n$1# matrix 说明：注释不结束列表')
+        .replace(/^(\s*)- '12'$/m, '$1# 中部注释\n$1- \'12\'');
+      writeFileSync(p, withComment);
+    },
+    runAudit
+  );
+  eq(r.code, 0, 'N6 matrix 内注释不打断解析（audit 仍绿）');
+  check(sawPass(r.out, 'A15') && sawPass(r.out, 'A16'), 'N6 A15/A16 皆 PASS（注释未截断票号清单）');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// N7 双引号票号 → 正常解析，不静默跳过（#39 review）
+//   旧口径只认单引号，`- "99"` 被跳过：若 plan 键都在，A14b/A16 仍绿，
+//   而 reusable 收到一个解析不出 plan 的票号。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
+      const p = join(root, FILES.workflow);
+      writeFileSync(p, readFileSync(p, 'utf8').replace(/^(\s*)- '45'$/m, '$1- \'45\'\n$1- "99"'));
+    },
+    runAudit
+  );
+  eq(r.code, 0, 'N7 双引号票号被正常解析（audit 绿）');
+  check(sawPass(r.out, 'A15') && sawPass(r.out, 'A16'), 'N7 A15/A16 皆 PASS（双引号项未被跳过）');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// N8 matrix 外的 ticket: 列表不被冒充（#39 review）
+//   `ticket:` 的搜索必须止于本 matrix 区块；否则后续 job 的 ticket 列表
+//   会被当成 caller 的票号清单，A15/A16 校验错了对象。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
+      const p = join(root, FILES.workflow);
+      // 把真正的 ticket 列表改名（本 matrix 内不再有 ticket:），再在文件末尾
+      // 追加另一个 job 的 matrix+ticket 列表。后续 job 的键必须比本 matrix 缩进
+      // 更深，否则「全文件找更深缩进的 ticket:」的旧口径根本不会误命中——
+      // 那样这条反例就是恒真的。
+      const src = readFileSync(p, 'utf8')
+        .replace(/^(\s*)ticket:\s*$/m, '$1ticket_list:')
+        + '\necho_job:\n  strategy:\n          matrix:\n              ticket:\n                - \'99\'\n';
+      writeFileSync(p, src);
+    },
+    runAudit
+  );
+  eq(r.code, 1, 'N8 本 matrix 无 ticket 列表时 audit 退出 1（红）');
+  check(sawFail(r.out, 'A14b'), 'N8 A14b 变红（不拿后续 job 的 ticket 列表冒充）');
+}
+
+// ══════════════════════════════════════════════════════════════════
 // P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 // ══════════════════════════════════════════════════════════════════
 {

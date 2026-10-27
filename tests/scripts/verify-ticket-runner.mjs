@@ -70,24 +70,46 @@ const legacyKeyOf = (wf) => wf.replace(/^verify-/, '').replace(/\.yml$/, '');
 
 // caller matrix 的票号清单：只在 `matrix:` 下的 `ticket:` 列表项区间里取。
 // 不扫全文件——文件别处的 `- 'NN'`（其他列表、注释块、尾部追加）都不算覆盖。
-// 返回 null 表示**没找到 matrix 区块**（调用方据此报「解析不到」而不是
-// 「缺这些票」：一个成因一条消息，否则把 workflow 写坏的人会去补票号）。
+// 返回 null 表示**解析不出来**（调用方据此报「解析不到」而不是「缺这些票」：
+// 一个成因一条消息，否则把 workflow 写坏的人会去补票号）。
+// 三个 fail-closed 口径：
+//   · `ticket:` 必须在**本 matrix 区块内**——越过区块即停，后续 job 的列表不算；
+//   · 注释行与空行不结束区块/列表（YAML 里注释不打断结构）；
+//   · 每个列表项都必须能解析成合法票号，解析不了就走 null，**不静默跳过**。
 function matrixTicketKeys(src) {
+  const indentOf = (l) => l.match(/^\s*/)[0].length;
+  const isSkippable = (l) => !l.trim() || /^\s*#/.test(l);
   const lines = src.split('\n');
+
   const at = lines.findIndex((l) => /^(\s*)matrix:\s*(#.*)?$/.test(l));
   if (at < 0) return null;
-  const matrixIndent = lines[at].match(/^\s*/)[0].length;
-  const ticketAt = lines.findIndex((l, i) =>
-    i > at && /^(\s*)ticket:\s*(#.*)?$/.test(l) && l.match(/^\s*/)[0].length > matrixIndent);
+  const matrixIndent = indentOf(lines[at]);
+
+  let ticketAt = -1;
+  for (let i = at + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (isSkippable(l)) continue;
+    if (indentOf(l) <= matrixIndent) break;
+    if (/^\s*ticket:\s*(#.*)?$/.test(l)) { ticketAt = i; break; }
+  }
   if (ticketAt < 0) return null;
-  const ticketIndent = lines[ticketAt].match(/^\s*/)[0].length;
+
+  const ticketIndent = indentOf(lines[ticketAt]);
   const keys = [];
   for (let i = ticketAt + 1; i < lines.length; i++) {
     const line = lines[i];
-    if (!line.trim()) continue;
-    if (line.match(/^\s*/)[0].length <= ticketIndent) break;
-    const m = /^\s*-\s*'([0-9][0-9a-z-]*)'\s*(#.*)?$/.exec(line);
-    if (m) keys.push(m[1]);
+    if (isSkippable(line)) continue;
+    if (indentOf(line) <= ticketIndent) break;
+
+    const item = /^\s*-\s+(.*)$/.exec(line);
+    if (!item) return null;
+    const quoted = /^(['"])(.*)\1\s*(#.*)?$/.exec(item[1]);
+    // 裸值只收非纯数字：`- 02` 在 YAML 里是整数 2，与字符串 '02' 不等价，
+    // 放行会让 A15 假绿（matrix 实际收到 2，plan 里却是 '02'）。
+    const bare = /^([0-9][0-9a-z-]*)\s*(#.*)?$/.exec(item[1]);
+    const key = quoted ? quoted[2] : bare && !/^[0-9]+$/.test(bare[1]) ? bare[1] : null;
+    if (key === null || !/^[0-9][0-9a-z-]*$/.test(key)) return null;
+    keys.push(key);
   }
   return keys;
 }
