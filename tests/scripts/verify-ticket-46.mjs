@@ -102,13 +102,7 @@ function editPlan(root, mutate) {
 
 const FAKE = { name: 'fake ticket proving no count cap (issue #20)', scripts: ['verify-ticket-46.mjs'] };
 
-// 在 `matrix: ticket:` 列表区间末尾插入一行（沿用末项自身缩进，不写死空格数）。
-// 区间口径与 runner 的 matrixTicketKeys 一致：只认 `matrix:` 的直接子键 `ticket:`，
-// 区块与列表都止于缩进回退——否则后续 job 的数值型 matrix 项会被当成「最后一项」
-// 而把票号插到别的矩阵里（P2 随之假红，且假绿无从谈起）。
-// 返回锚点信息供调用方核验位置：不把票号写死在这里（否则下一张票落地时本门变红，
-// 正是 #20 要消除的跨票耦合）。
-// 与 runner 的 matrixTicketKeys 同口径的票号项：单引号 / 双引号 / 裸非纯数字。
+// 票号项解析：与 runner 的 matrixTicketKeys 同口径——单引号 / 双引号 / 裸非纯数字。
 // 只认单引号会让「workflow 改用双引号」时 addMatrixKey 找不到锚点而抛错，
 // 尽管 audit 那边完全接受该写法。
 const TICKET_KEY = /^[0-9][0-9a-z-]*$/;
@@ -130,6 +124,13 @@ function followsWithKey(line, indent, key) {
   const item = line == null ? null : ticketItemOf(line);
   return !!item && item.indent === indent && item.value === key;
 }
+
+// 在 `matrix: ticket:` 列表区间末尾插入一行（沿用末项自身缩进与引号风格）。
+// 区间口径与 runner 的 matrixTicketKeys 一致：只认 `matrix:` 的直接子键 `ticket:`，
+// 区块与列表都止于缩进回退——否则后续 job 的数值型 matrix 项会被当成「最后一项」
+// 而把票号插到别的矩阵里（P2 随之假红，且假绿无从谈起）。
+// 返回锚点信息供调用方核验位置：不把票号写死在这里（否则下一张票落地时本门变红，
+// 正是 #20 要消除的跨票耦合）。
 function addMatrixKey(root, key) {
   const p = join(root, FILES.workflow);
   const src = readFileSync(p, 'utf8');
