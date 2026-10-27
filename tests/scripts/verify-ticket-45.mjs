@@ -540,6 +540,12 @@ let issues = [];
       id,
       source_url: 'https://example.invalid/' + id,
       family: 'fixture',
+      // 采集条件（issue #34）：默认建模「这个源不做 ipapi lookup」的合法样子
+      // （未固定 → capture_country: null、hits=0）；真被固定的源由 extra 显式带
+      // country + hits>0——骨架派生硬拒「声称固定却无证据」的条目，fixture 不能示范非法状态。
+      capture_country: null,
+      browser_locale: 'en-US',
+      ipapi_stub_hits: 0,
       http_status: 200,
       raw: { file: 'raw/' + file, bytes: Buffer.byteLength(html), sha256: '0'.repeat(64) },
       dom: { file: 'dom/' + file, bytes: Buffer.byteLength(html), sha256: '0'.repeat(64) },
@@ -552,10 +558,14 @@ let issues = [];
       archiveDir: 'corpus-forms',
       userAgent: 'fixture',
       entries: [
-        entry('iti-v29', 'iti-v29.html', itiHtml, { http_status: 403, browser_status: 200 }),
+        entry('iti-v29', 'iti-v29.html', itiHtml, { http_status: 403, browser_status: 200, capture_country: 'us', ipapi_stub_hits: 1 }),
         entry('rpn-input', 'rpn-input.html', challengeHtml, { browser_status: 200 }),
         entry('chosen-select', 'chosen-select.html', chosenHtml, { browser_status: 200 }),
-        { id: 'mui-autocomplete', source_url: 'https://example.invalid/mui', family: 'fixture', ok: false, error: 'net::ERR_NAME_NOT_RESOLVED' },
+        {
+          id: 'mui-autocomplete', source_url: 'https://example.invalid/mui', family: 'fixture',
+          capture_country: null, browser_locale: null, ipapi_stub_hits: 0,
+          ok: false, error: 'net::ERR_NAME_NOT_RESOLVED',
+        },
       ],
     }, null, 2) + '\n');
 

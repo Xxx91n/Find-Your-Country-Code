@@ -16,6 +16,8 @@
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 
+import { COUNTRY_FIELD, LOCALE_FIELD } from './06-capture-country.mjs';
+
 const sha256buf = (buf) => createHash('sha256').update(buf).digest('hex');
 
 // ── 形状令牌（与 06-skeleton.mjs textShape 同词表，含 ≤40 字符上限；幂等） ──
@@ -96,13 +98,19 @@ export function assertArchiveOutsideRepo(outDir, repoRoot) {
 // captured_at / attached_url / redacted / redaction_count（06-manifest.mjs
 // 对未知字段零感知）。redactionCount = 本次脱敏处数（形状记录不进条目，
 // 原值永不落任何清单）。
-export function buildAttachEntry({ id, sourceUrl, family, attachedUrl, userAgent, domBuf, frames, shotRel, redactionCount }) {
+// 采集条件（issue #34）：附着**不固定国别**——工具不导航、也不在用户浏览器里
+// 装路由拦截，现场由用户出口 IP 决定。键照样落（capture_country: null），
+// 语义是「本次采集未固定」，与「台账早于本旋钮（键缺失）」是两回事：后者被
+// 06-skeleton 硬拒。locale 读自附着现场，只记录不伪造。
+export function buildAttachEntry({ id, sourceUrl, family, attachedUrl, userAgent, browserLocale, domBuf, frames, shotRel, redactionCount }) {
   return {
     id,
     source_url: sourceUrl,
     family,
     login_derived: true,
     capture_mode: 'cdp-attach',
+    [COUNTRY_FIELD]: null,
+    [LOCALE_FIELD]: browserLocale || null,
     captured_at: new Date().toISOString(),
     attached_url: attachedUrl,
     redacted: true,

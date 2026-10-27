@@ -8,6 +8,10 @@
 //     · 原始快照的 **SHA-256 + 归档相对路径 + 字节数**（指向仓库外 archive）；
 //     · 合规元数据（source_url / captured_at / mirror_of / license_note；
 //       手工重构条目以 provenance（重构依据）替代 captured_at，无 capture 块）。
+//   采集条件（issue #34 / spec #32 Q16）：capture 块随带 `capture_country`
+//     （这次按哪个国家采）与 `browser_locale`（浏览器现场自报，只记录不固定），
+//     skeleton 块同步骨架 meta。历史条目没有这两个键 → 键也不落，`--from-ledger`
+//     复现旧条目时逐字节稳定（凭空补 null 会让台账自己报漂移）。
 //
 // 用法：node tests/scripts/06-manifest.mjs [--archive <dir>]
 //   node tests/scripts/06-manifest.mjs --from-ledger
@@ -19,6 +23,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { evidenceField, readCaptureConditions, requireEvidenceForClaim } from './06-capture-country.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -44,10 +50,17 @@ function ledgerToCaptureReport() {
     userAgent: 'ledger-round-trip',
     entries: captured.map((e) => {
       const c = e.capture;
+      // 矛盾状态不许逐字节复现下去：仓内台账带着「声称固定却无证据」时，
+      // --from-ledger 也必须拒绝，而不是把它当成既有事实原样重建（issue #34）。
+      requireEvidenceForClaim(c, e.id, 'ledger');
       return {
         id: e.id,
         source_url: e.source_url,
         family: e.family,
+        // 采集条件原样带回（键缺失就不落键）：--from-ledger 复现历史条目时
+        // 既不能凭空补 null，也不能把新条目的条件丢掉（issue #34）。
+        ...readCaptureConditions(c, e.id),
+        ...evidenceField(c),
         http_status: c.http_status,
         raw: c.raw ? { file: strip(c.raw.path), bytes: c.raw.bytes, sha256: c.raw.sha256 } : null,
         dom: c.dom ? { file: strip(c.dom.path), bytes: c.dom.bytes, sha256: c.dom.sha256 } : null,
@@ -159,12 +172,19 @@ function main() {
         skeleton_version: skel.skeleton_version,
         derived_from: skel.source,
         source_file: skel.source_file,
+        ...readCaptureConditions(skel, s.id),
       };
     }
 
     // ③ 原始快照（**仓库外**：只登记指纹与归档相对路径）
     if (c) {
+      // 写 capture 块之前先验声称与证据一致（此处抛出发生在唯一一次写盘之前）
+      requireEvidenceForClaim(c, s.id, 'archive');
       e.capture = {
+        ...readCaptureConditions(c, s.id),
+        // 证据与声称同处入库：git 里的 capture_country 不是口头声明，
+        // 同一块就带着「页面真的问过桩」的 ipapi_stub_hits（issue #34）
+        ...evidenceField(c),
         http_status: c.http_status,
         archive_root: cap.archiveRoot,
         archive_dir: cap.archiveDir || 'corpus-forms',
@@ -197,6 +217,7 @@ function main() {
         provenance: '每条标 source_url + captured_at + mirror_of + license_note；reconstructed 条目（手工重构镜像，GLOSSARY）以 provenance（重构依据）替代 captured_at——页面不可重现，无捕获时点，且不参与结构比对（无可信基线）',
         noPii: '不含真实 PII',
         rawNotInGit: '原始快照（含品牌内容与版权）一律出仓归档，不入 git',
+        captureConditions: '采集条件入台账（issue #34）：capture 块记 capture_country（06-capture-forms --country 固定的初始国家，默认 us）+ browser_locale（浏览器自报 locale，只记录不固定），并随带证据字段 ipapi_stub_hits（桩被该页请求过几次；不属强制两键，但 capture_country 非 null 时必须 >0）。三态：值非 null=已固定且有证据；键在值 null=已记录「未固定」（该源不做 IP lookup / 附着模式 / 未渲染）；键缺失=台账早于本旋钮。拦截点：requireEvidenceForClaim 在 06-skeleton 派生前、本脚本 archive 模式写 capture 块前、以及 --from-ledger 从仓内台账重建时三处硬拒（矛盾一旦入库，assertLedgerStable 只会把它逐字节复现下去，看不见它错）。清单再生成对历史条目不补 null（补了当场漂移）。',
       },
       degradationLoop: {
         step1_recapture: 'tests/scripts/06-capture-forms.mjs（重捕 → 仓库外 archive）',

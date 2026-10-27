@@ -22,11 +22,20 @@
 //                                 且必须附 provenance（重构依据，即「附 reason」惯例）；
 //                                 产物 source 标 reconstructed，**永不参与结构比对**
 //                                 （无可信基线，06-structural-diff 显式 skip）。
+//
+// 采集条件入 meta（issue #34 / spec #32 Q16）：--from archive 的骨架随带
+//   `capture_country`（这次按哪个国家采，由 06-capture-forms --country 固定）与
+//   `browser_locale`（浏览器现场自报，只记录不固定），取自同 archive 的
+//   CAPTURE-MANIFEST 条目；条目缺这两个键 = archive 早于本旋钮 → 硬拒
+//   （产出一个「条件未知」的骨架，正是本轮要消灭的归因盲区）。
+//   mirror / reconstructed 派生的是仓内自有页，无采集条件可记，键不落。
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { requireCaptureConditions } from './06-capture-country.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -221,6 +230,20 @@ function parseArgs(argv) {
   return o;
 }
 
+// 采集条件取自同 archive 的 CAPTURE-MANIFEST（06-capture-forms 的唯一现场台账落盘点）。
+function captureEntryOf(archiveRoot, id) {
+  const capPath = path.join(archiveRoot, 'corpus-forms', 'CAPTURE-MANIFEST.json');
+  if (!existsSync(capPath)) {
+    throw new Error('--from archive 缺现场台账：' + capPath + '（先跑 06-capture-forms.mjs --country <iso2>）');
+  }
+  const doc = JSON.parse(readFileSync(capPath, 'utf8'));
+  const entry = (Array.isArray(doc.entries) ? doc.entries : []).find((e) => e.id === id);
+  if (!entry) {
+    throw new Error('CAPTURE-MANIFEST 无该源条目：' + id + '（采集条件无从登记，不产「条件未知」的骨架）');
+  }
+  return entry;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const sources = JSON.parse(readFileSync(path.join(FORMS, 'sources.json'), 'utf8')).sources;
@@ -265,12 +288,18 @@ function main() {
   const nodeCount = countNodes(tree);
   const hash = sha256(canonical(tree));
 
+  // 采集条件入 meta：只 --from archive 有（自有页派生不存在采集现场）。
+  const conditions = args.from === 'archive'
+    ? requireCaptureConditions(captureEntryOf(path.resolve(args.archive), src.id), src.id)
+    : {};
+
   const out = {
     id: src.id,
     skeleton_version: 1,
     source: args.from,
     source_file: path.relative(REPO, htmlPath).replace(/\\/g, '/'),
     source_url: src.url,
+    ...conditions,
     root_selector: selector,
     node_count: nodeCount,
     sha256: hash,
@@ -283,7 +312,9 @@ function main() {
   const outPath = args.out || path.join(FORMS, 'skeletons', src.id + '.json');
   mkdirSync(path.dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n');
-  console.log(out.id + ': nodes=' + nodeCount + ' sha256=' + hash.slice(0, 16) + '… → ' + path.relative(REPO, outPath).replace(/\\/g, '/'));
+  console.log(out.id + ': nodes=' + nodeCount + ' sha256=' + hash.slice(0, 16) + '…' +
+    ' country=' + (out.capture_country === undefined ? '-' : out.capture_country) +
+    ' → ' + path.relative(REPO, outPath).replace(/\\/g, '/'));
 }
 
 try { main(); } catch (e) { console.error('skeleton failed: ' + ((e && e.message) || e)); process.exit(1); }

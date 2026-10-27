@@ -20,10 +20,15 @@
 //      匿名模式拒绝 login:true source；附着模式只服务 login:true source。
 //
 // 用法：
-//   node tests/scripts/06-capture-forms.mjs [--id <id>] [--archive <dir>] [--no-render]
+//   node tests/scripts/06-capture-forms.mjs [--id <id>] [--archive <dir>] [--no-render] [--country <iso2>]
 //   node tests/scripts/06-capture-forms.mjs --attach --id <id> [--cdp-port 9222] [--tab <url 子串>]
 //   CCH_ARCHIVE_ROOT=<dir> 可覆盖归档根（CI / 异机用）。
 //   CCH_CAPTURE_HEADLESS=1 强制 headless（默认有头，同 live-smoke 的启动口径）。
+//   --country（默认 us）：把页面 `initialCountryLookup` 解析出的**初始国家**钉住
+//     （issue #34 / spec #32 Q7/Q10）——拦截 ipapi.co 的 lookup 响应回指定国家。
+//     固定的是初始国家，不是 locale：locale 只记录不伪造；也不用 UA / 时区伪造。
+//     采集国别与浏览器 locale 随每条目的台账落 CAPTURE-MANIFEST（06-skeleton 据此
+//     写骨架 meta），使下次漂移能一眼分清「站点改了」与「采集条件变了」。
 //
 // 启动模式（票 T5 / issue #14；复用真实站点冒烟层已验证的模式）：
 //   真实站点普遍前置反爬托管挑战，headless shell 常被拦。默认有头启动；
@@ -45,6 +50,16 @@ import {
   newCaptureReport,
 } from './12-login-capture.mjs';
 
+import {
+  DEFAULT_COUNTRY,
+  normalizeCountry,
+  installCountryRoute,
+  captureConditionFields,
+  COUNTRY_FIELD,
+  LOCALE_FIELD,
+  HITS_FIELD,
+} from './06-capture-country.mjs';
+
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
 
@@ -65,7 +80,14 @@ const HEADLESS = FORCE_HEADLESS || NO_DISPLAY_LINUX;
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
 function parseArgs(argv) {
-  const out = { id: null, archive: DEFAULT_ARCHIVE_ROOT, render: true, attach: false, cdpPort: 9222, tab: null };
+  // countryProvided 与 countryRaw 分开记：附着模式要能分辨「用户显式传了 --country」
+  // 与「没传、走默认」——前者配 --attach 是静默失效，必须拒；后者是常态。
+  // 「传了旗标但没给值」（countryRaw = undefined）同样算显式传了：不能当成没传，
+  // 否则一次没写完的 `--country` 会静默按默认国别采并记进台账（PR #40 review）。
+  const out = {
+    id: null, archive: DEFAULT_ARCHIVE_ROOT, render: true, attach: false, cdpPort: 9222, tab: null,
+    countryProvided: false, countryRaw: null, country: DEFAULT_COUNTRY,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--id') out.id = argv[++i];
@@ -74,6 +96,7 @@ function parseArgs(argv) {
     else if (a === '--attach') out.attach = true;
     else if (a === '--cdp-port') out.cdpPort = Number(argv[++i]);
     else if (a === '--tab') out.tab = argv[++i];
+    else if (a === '--country') { out.countryProvided = true; out.countryRaw = argv[++i]; }
   }
   return out;
 }
@@ -100,16 +123,24 @@ async function fetchRaw(url) {
   }
 }
 
-async function renderDom(url, shotPath) {
+async function renderDom(url, shotPath, country) {
   const { chromium } = await import('playwright');
   const browser = await chromium.launch({ headless: HEADLESS });
   try {
     const page = await browser.newPage({ userAgent: UA });
+    // 国别固定必须在 goto **之前**注册：页面加载即发 ipapi lookup，晚注册的那次
+    // 请求走真出口 IP —— 正是本轮要消灭的假漂移成因（issue #34）。
+    const pin = await installCountryRoute(page, country);
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    // 等 SPA 首屏挂载：网络空闲或 3s 上限，不硬等（退化回路要的是形态，不是完整加载）
+    // 等 SPA 首屏挂载：网络空闲或 8s 上限，不硬等（退化回路要的是形态，不是完整加载）。
+    // 上限到了还没落定就照采——同国别重捕偶尔会差一条 attrs（utils 后应用的 placeholder），
+    // 边界与归属见 tests/corpus/forms/README.md §4「稳定性的边界」（issue #34）。
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     const html = await page.content();
     await page.screenshot({ path: shotPath, fullPage: false });
+    // 浏览器现场自报的 locale：只记录、不固定（spec #32：本轮只钉初始国家）。
+    let locale = null;
+    try { locale = await page.evaluate(() => navigator.language); } catch {}
     // 子帧快照：`srcdoc` / 嵌套预览帧的内容不在 `page.content()` 里（CodePen 形态必需）
     const frames = [];
     for (const f of page.frames()) {
@@ -118,7 +149,7 @@ async function renderDom(url, shotPath) {
     }
     // 浏览器导航状态（票 T5）：反爬站点常对裸 fetch 回 403/503、对有头浏览器
     // 正常渲染。漂移矩阵据此判可达性，fetchRaw 的 http_status 只作证据。
-    return { html, frames, status: response ? response.status() : null };
+    return { html, frames, status: response ? response.status() : null, locale, country: pin.country, stubHits: pin.hits() };
   } finally {
     await browser.close();
   }
@@ -153,6 +184,9 @@ async function attachCapture(source, args, outDir) {
     const page = candidates[0];
 
     const userAgent = await page.evaluate(() => navigator.userAgent);
+    // 附着现场的 locale：只记录（工具不导航、不拦截，无权也无手段固定它）
+    let browserLocale = null;
+    try { browserLocale = await page.evaluate(() => navigator.language); } catch {}
     const shotRel = 'shot/' + source.id + '.png';
     await page.screenshot({ path: path.join(outDir, shotRel), fullPage: false });
 
@@ -177,6 +211,7 @@ async function attachCapture(source, args, outDir) {
       family: source.family,
       attachedUrl: page.url(),
       userAgent,
+      browserLocale,
       domBuf,
       frames,
       shotRel,
@@ -196,6 +231,18 @@ async function attachCapture(source, args, outDir) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  // 国别参数的形态与适用性一律在**首次写盘 / 首次网络连接之前**判定（docs/agents/review.md Q1）。
+  // --attach 不装路由拦截（不导航、进的是用户已登录的浏览器），传了 --country 只会得到
+  // 一条「固定了但没生效」的台账 → 成对拒绝，一条消息一个成因。
+  if (args.attach && args.countryProvided) {
+    throw new Error(
+      '--country 与 --attach 互斥：附着模式在用户已登录的浏览器里只读现场，不导航也不拦截路由，' +
+      '固定国别（收到 --country ' + JSON.stringify(args.countryRaw === undefined ? '' : args.countryRaw) + '）。公开页重捕才走国别固定。'
+    );
+  }
+  // 传了旗标却没给值（countryRaw = undefined）走同一条拒绝：宁可不采，
+  // 也不把「没写完的参数」当成「没传」而静默按默认国别记进台账
+  args.country = normalizeCountry(args.countryProvided ? args.countryRaw : DEFAULT_COUNTRY);
   const archiveRoot = path.resolve(args.archive);
   const outDir = path.join(archiveRoot, 'corpus-forms');
 
@@ -214,6 +261,8 @@ async function main() {
       console.log('WARN 无 DISPLAY：浏览器自动回退 headless（受反爬挑战的源会如实失败，不伪造绿；CI 用 xvfb-run 提供有头显示）');
     }
     console.log('browser mode: ' + (args.render ? (HEADLESS ? 'headless' : 'headed') : 'n/a (--no-render)'));
+    console.log('country pin: ' + args.country + '（拦截 ipapi.co lookup；' +
+      (args.render ? '逐条 ipapi_stub_hits 见 CAPTURE-MANIFEST' : '--no-render 无浏览器，逐条记 null') + '）');
   }
 
   for (const sub of ['raw', 'dom', 'shot']) mkdirSync(path.join(outDir, sub), { recursive: true });
@@ -249,7 +298,17 @@ async function main() {
       console.log('SKIP ' + s.id + '  source=reconstructed —— 手工重构镜像不重捕（provenance 见 sources.json；结构比对由 06-structural-diff 显式 skip）');
       continue;
     }
-    const entry = { id: s.id, source_url: s.url, family: s.family };
+    // 采集条件先落 null：只有真跑过渲染才谈得上「这次按哪个国家钉的」。
+    // --no-render（无浏览器、无 lookup）或渲染前就失败时如实记 null，
+    // 不把没生效的请求值写成固定值（issue #34 的台账要给归因用，不能反着误导）。
+    const entry = {
+      id: s.id,
+      source_url: s.url,
+      family: s.family,
+      [COUNTRY_FIELD]: null,
+      [LOCALE_FIELD]: null,
+      [HITS_FIELD]: 0,
+    };
     try {
       const raw = await fetchRaw(s.url);
       entry.http_status = raw.status;
@@ -259,8 +318,14 @@ async function main() {
 
       if (args.render) {
         const shotPath = path.join(outDir, 'shot', s.id + '.png');
-        const rendered = await renderDom(s.url, shotPath);
+        const rendered = await renderDom(s.url, shotPath, args.country);
         entry.browser_status = rendered.status;
+        // 采集条件三字段一次写入（固定值只在桩真的被请求之后成立，见 06-capture-country）
+        Object.assign(entry, captureConditionFields({
+          country: rendered.country,
+          hits: rendered.stubHits,
+          locale: rendered.locale,
+        }));
         const domBuf = Buffer.from(rendered.html, 'utf8');
         writeFileSync(path.join(outDir, 'dom', s.id + '.html'), domBuf);
         entry.dom = { file: 'dom/' + s.id + '.html', bytes: domBuf.length, sha256: sha256(domBuf) };
@@ -284,6 +349,9 @@ async function main() {
       (entry.ok ? 'OK  ' : 'FAIL') + ' ' + entry.id +
       '  status=' + (entry.http_status ?? '-') +
       '  raw=' + (entry.raw ? entry.raw.bytes + 'B' : '-') +
+      '  country=' + (entry[COUNTRY_FIELD] ?? '-') +
+      '  locale=' + (entry[LOCALE_FIELD] ?? '-') +
+      '  ipapi_hits=' + entry[HITS_FIELD] +
       (entry.error ? '  err=' + entry.error : '')
     );
   }
