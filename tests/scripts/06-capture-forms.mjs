@@ -80,9 +80,14 @@ const HEADLESS = FORCE_HEADLESS || NO_DISPLAY_LINUX;
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
 function parseArgs(argv) {
-  // countryRaw 与「默认值」分开存：附着模式要能分辨「用户显式传了 --country」
+  // countryProvided 与 countryRaw 分开记：附着模式要能分辨「用户显式传了 --country」
   // 与「没传、走默认」——前者配 --attach 是静默失效，必须拒；后者是常态。
-  const out = { id: null, archive: DEFAULT_ARCHIVE_ROOT, render: true, attach: false, cdpPort: 9222, tab: null, countryRaw: null, country: DEFAULT_COUNTRY };
+  // 「传了旗标但没给值」（countryRaw = undefined）同样算显式传了：不能当成没传，
+  // 否则一次没写完的 `--country` 会静默按默认国别采并记进台账（PR #40 review）。
+  const out = {
+    id: null, archive: DEFAULT_ARCHIVE_ROOT, render: true, attach: false, cdpPort: 9222, tab: null,
+    countryProvided: false, countryRaw: null, country: DEFAULT_COUNTRY,
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--id') out.id = argv[++i];
@@ -91,7 +96,7 @@ function parseArgs(argv) {
     else if (a === '--attach') out.attach = true;
     else if (a === '--cdp-port') out.cdpPort = Number(argv[++i]);
     else if (a === '--tab') out.tab = argv[++i];
-    else if (a === '--country') out.countryRaw = argv[++i];
+    else if (a === '--country') { out.countryProvided = true; out.countryRaw = argv[++i]; }
   }
   return out;
 }
@@ -229,13 +234,15 @@ async function main() {
   // 国别参数的形态与适用性一律在**首次写盘 / 首次网络连接之前**判定（docs/agents/review.md Q1）。
   // --attach 不装路由拦截（不导航、进的是用户已登录的浏览器），传了 --country 只会得到
   // 一条「固定了但没生效」的台账 → 成对拒绝，一条消息一个成因。
-  if (args.attach && args.countryRaw != null) {
+  if (args.attach && args.countryProvided) {
     throw new Error(
       '--country 与 --attach 互斥：附着模式在用户已登录的浏览器里只读现场，不导航也不拦截路由，' +
-      '固定国别（收到 --country ' + JSON.stringify(args.countryRaw) + '）。公开页重捕才走国别固定。'
+      '固定国别（收到 --country ' + JSON.stringify(args.countryRaw === undefined ? '' : args.countryRaw) + '）。公开页重捕才走国别固定。'
     );
   }
-  args.country = normalizeCountry(args.countryRaw == null ? DEFAULT_COUNTRY : args.countryRaw);
+  // 传了旗标却没给值（countryRaw = undefined）走同一条拒绝：宁可不采，
+  // 也不把「没写完的参数」当成「没传」而静默按默认国别记进台账
+  args.country = normalizeCountry(args.countryProvided ? args.countryRaw : DEFAULT_COUNTRY);
   const archiveRoot = path.resolve(args.archive);
   const outDir = path.join(archiveRoot, 'corpus-forms');
 

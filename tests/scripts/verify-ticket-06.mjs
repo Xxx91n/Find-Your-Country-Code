@@ -535,6 +535,17 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       'S11 附着模式不固定国别，传了即拒（不产「固定了但没生效」的台账）', attachMix.out.trim().slice(0, 90));
     eq(existsSync(fresh), false, 'S11 非法 --country 未创建 archive（零副作用）');
     eq(existsSync(fresh2), false, 'S11 互斥组合未创建 archive（零副作用）');
+    // 「传了旗标却没给值」不能被当成「没传」：那会静默按默认国别采并记进台账
+    const fresh3 = join(tmpCli, 'never-created-3');
+    const missingValue = runTool(FILES.capture, ['--archive', fresh3, '--country']);
+    eq(missingValue.code, 2, 'S11 --country 缺操作数 → 退出码 2（不静默回落默认）');
+    check(containsToken(missingValue.out, '--country 需两字母').ok,
+      'S11 缺操作数仍按国别形态给成因（一条消息一个成因）', missingValue.out.trim().slice(0, 100));
+    eq(existsSync(fresh3), false, 'S11 缺操作数未创建 archive（零副作用）');
+    const attachMissingValue = runTool(FILES.capture, ['--attach', '--id', 'iti-v29', '--country', '--archive', fresh3]);
+    eq(attachMissingValue.code, 2, 'S11 附着侧同样按「是否显式传了旗标」判定，不看值给没给');
+    check(containsToken(attachMissingValue.out, '--country 与 --attach 互斥').ok,
+      'S11 空值的 --country 配 --attach 仍被互斥拒绝', attachMissingValue.out.trim().slice(0, 120));
   } finally {
     rmSync(tmpCli, { recursive: true, force: true });
   }
@@ -728,7 +739,7 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
   // (11) 默认国别是承重常量：漂移 workflow 不传 --country，每周运行实际就按默认采
   eq(DEFAULT_COUNTRY, 'us', 'S11 默认国别 == us（spec #32 Q10 的字面对象；改这个值必须同时改这条）');
-  check(containsToken(CAP_SRC, 'args.countryRaw == null ? DEFAULT_COUNTRY : args.countryRaw').ok,
+  check(containsToken(CAP_SRC, 'args.countryProvided ? args.countryRaw : DEFAULT_COUNTRY').ok,
     'S11 未传 --country 才回落默认（默认值取自库里的常量，不是就地写死 us）');
   check(containsToken(DRIFT_SRC, 'country: DEFAULT_COUNTRY').ok, 'S11 编排器默认与采集默认同源');
   const WF_DRIFT = read('.github/workflows/corpus-drift.yml');
