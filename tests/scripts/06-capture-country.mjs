@@ -98,6 +98,23 @@ function partitionConditions(entry, label) {
   };
 }
 
+// 声称与证据不得各说各话：capture_country 非 null 就必须拿得出「页面真的问过桩」
+// 的证据（hits>0）。缺这一条，旧版工具直接落请求值、或手工改坏的台账会把下一次
+// 归因带错（读到「按 jp 采」其实没人固定过）。
+// 两个调用面共用：06-skeleton 派生前（硬拒在写盘之前）；06-manifest 写 capture 块
+// 之前（仓内台账也不接受这个状态——否则 --from-ledger 会把矛盾逐字节复现下去）。
+// 键不存在（历史条目）或值为 null（已记录「未固定」）都不触发：那不是矛盾。
+export function requireEvidenceForClaim(entry, label) {
+  if (!entry || !(COUNTRY_FIELD in entry) || entry[COUNTRY_FIELD] == null) return;
+  if (!(Number(entry[HITS_FIELD]) > 0)) {
+    throw new Error(
+      label + ' 台账声称固定为 ' + JSON.stringify(entry[COUNTRY_FIELD]) + '，但 ' + HITS_FIELD +
+      '=' + JSON.stringify(entry[HITS_FIELD]) + ' —— 桩从未被请求过就不可能有固定值（这是旧版工具直接落请求值' +
+      '或手工改坏的产物）；重捕，或如实改成 null（未固定）'
+    );
+  }
+}
+
 export function requireCaptureConditions(entry, label) {
   const r = partitionConditions(entry, label);
   if (r.partial) throw new Error(r.partial);
@@ -107,15 +124,7 @@ export function requireCaptureConditions(entry, label) {
       '该 archive 早于 --country 旋钮或被手工改坏；用 06-capture-forms.mjs --country <iso2> 重捕后再派生'
     );
   }
-  // 固定值与证据不得各说各话：声称「按 X 采」却拿不出「页面真的问过桩」的证据，
-  // 就是一条会把下次归因带错的台账（旧版工具直接落请求值 / 手工改坏）。
-  if (r.fields[COUNTRY_FIELD] != null && !(Number(entry[HITS_FIELD]) > 0)) {
-    throw new Error(
-      label + ' 台账声称固定为 ' + JSON.stringify(r.fields[COUNTRY_FIELD]) + '，但 ' + HITS_FIELD +
-      '=' + JSON.stringify(entry[HITS_FIELD]) + ' —— 桩从未被请求过就不可能有固定值（这是旧版工具直接落请求值' +
-      '或手工改坏的产物）；重捕，或如实改成 null（未固定）'
-    );
-  }
+  requireEvidenceForClaim(entry, label);
   return r.fields;
 }
 

@@ -605,6 +605,13 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       eq(ent.capture.capture_country, 'jp', 'S11 采集国别入仓内台账 capture 块（git 可见的归因面）');
       eq(ent.capture.browser_locale, 'en-US', 'S11 浏览器 locale 入仓内台账 capture 块');
       eq(ent.capture.ipapi_stub_hits, 1, 'S11 证据字段随固定值一起入库（git 里的 capture_country 不是口头声明）');
+      // ledger→report→ledger 复现（这条路径平时走不到：已提交台账还没有这两个键，
+      // #35 重捕之后就靠它保稳）——采集条件与证据都必须原样带回，不得当场漂移
+      eq(runTool(FILES.manifestGen, ['--from-ledger']).code, 0, 'S11 带采集条件的台账能被 --from-ledger 无漂移复现');
+      const roundTrip = JSON.parse(readFileSync(realManifest, 'utf8')).entries.find((e) => e.id === 'iti-v29').capture;
+      eq(roundTrip.capture_country, 'jp', 'S11 复现后 capture_country 未丢');
+      eq(roundTrip.browser_locale, 'en-US', 'S11 复现后 browser_locale 未丢');
+      eq(roundTrip.ipapi_stub_hits, 1, 'S11 复现后证据字段未丢');
       const committedIti = JSON.parse(backup.toString('utf8')).entries.find((e) => e.id === 'iti-v29');
       eq(ent.skeleton.sha256, committedIti.skeleton.sha256, 'S11 骨架文件指纹未因采集条件而变（入库基线不动）');
       eq(ent.mirror.sha256, committedIti.mirror.sha256, 'S11 镜像页指纹未变');
@@ -653,17 +660,28 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       hits: 0,
       html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'),
     });
-    const noProof = deriveFromArchive(archNoProof, join(tmp, 'noproof.json'));
+    const noProofOut = join(tmp, 'noproof.json');
+    const noProof = deriveFromArchive(archNoProof, noProofOut);
     eq(noProof.code, 1, 'S11 「声称固定但 hits=0」的台账硬拒（固定值必须有证据）');
     check(containsToken(noProof.out, '桩从未被请求过').ok, 'S11 无证据固定的消息点名成因', noProof.out.trim().slice(0, 120));
+    eq(existsSync(noProofOut), false, 'S11 无证据固定不落骨架文件（拒在写盘之前）');
     const archNoHitsKey = join(tmp, 'arch-nohitskey');
     writeCaptureFixture(archNoHitsKey, {
       conditions: { capture_country: 'jp', browser_locale: 'en-US' },
       hits: null,
       html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'),
     });
-    eq(deriveFromArchive(archNoHitsKey, join(tmp, 'nohitskey.json')).code, 1,
+    const noHitsKeyOut = join(tmp, 'nohitskey.json');
+    eq(deriveFromArchive(archNoHitsKey, noHitsKeyOut).code, 1,
       'S11 证据字段缺失同样硬拒（判不出就宁缺勿假）');
+    eq(existsSync(noHitsKeyOut), false, 'S11 证据字段缺失同样不写盘');
+    // 同一矛盾进仓内台账的路也被堵：06-manifest 写 capture 块前先验声称与证据一致，
+    // 否则 --from-ledger 会把「无证据的固定」逐字节复现成既成事实（负例断言文件未变）
+    const preLedger = readFileSync(abs(FILES.manifest));
+    const badLedger = runTool(FILES.manifestGen, ['--archive', archNoProof]);
+    eq(badLedger.code, 1, 'S11 无证据固定也拒写仓内台账（不是只在骨架侧拦）');
+    check(containsToken(badLedger.out, '桩从未被请求过').ok, 'S11 台账侧拒绝同样点名成因', badLedger.out.trim().slice(0, 120));
+    eq(readFileSync(abs(FILES.manifest)).equals(preLedger), true, 'S11 台账侧拒绝发生在唯一一次写盘之前（清单字节未变）');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
