@@ -4,9 +4,11 @@
   "source": "archive",
   "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/iti-v29.html",
   "source_url": "https://intl-tel-input.com/",
+  "capture_country": "us",
+  "browser_locale": "zh-CN",
   "root_selector": ".iti",
   "node_count": 36,
-  "sha256": "cd60be1976af08f63712548afbc9aa9347e8c5e11a26c0f2c059b9791aaabc84",
+  "sha256": "b165f8d699c4160da7d050c64ec0f7d7c73f731715052845abd23fe0a4ac62d3",
   "tree": {
     "tag": "div",
     "class": [
@@ -36,20 +38,20 @@
             },
             "children": [
               {
-                "tag": "div",
+                "tag": "span",
                 "class": [
                   "iti__selected-country-primary"
                 ],
                 "children": [
                   {
-                    "tag": "div",
+                    "tag": "span",
                     "class": [
                       "iti__flag",
-                      "iti__jp"
+                      "iti__us"
                     ]
                   },
                   {
-                    "tag": "div",
+                    "tag": "span",
                     "class": [
                       "iti__arrow"
                     ],
@@ -60,11 +62,11 @@
                 ]
               },
               {
-                "tag": "div",
+                "tag": "span",
                 "class": [
                   "iti__selected-dial-code"
                 ],
-                "text": "+##"
+                "text": "+#"
               }
             ]
           },
@@ -330,7 +332,7 @@
           "autocomplete": "aaa",
           "data-intl-tel-input-id": "#",
           "inputmode": "aaa",
-          "placeholder": "##-####-####",
+          "placeholder": "###-###-####",
           "type": "aaa"
         }
       }

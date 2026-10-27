@@ -20,6 +20,10 @@
                  `input[type=search][role=combobox][aria-autocomplete=list]`
                  是真实误报面；listbox 项用 `data-dial-code` + `data-iso2`
                  （v29 实测属性名，非 v16 系的 data-country-code）。
+  shape_tags   : v29.5.7 实测 `.iti__selected-country-primary` / `.iti__flag` /
+                 `.iti__arrow` / `.iti__selected-dial-code` 均为 `span`（#35 纠形；
+                 此前误用旧版 `div`。票面原写「两处」，是按修复前的漏报 diff 数的——
+                 标签变化即早退吞掉了 primary 子树里的 flag / arrow 两条）。
   ══════════════════════════════════════════════════════════════════
 -->
 <style>
@@ -64,11 +68,11 @@
   <div class="iti iti--input-container iti--has-country-selector" id="iti-demo">
     <div class="iti__country-container">
       <button type="button" class="iti__selected-country" aria-label="Selected country">
-        <div class="iti__selected-country-primary">
-          <div class="iti__flag iti__cn"></div>
-          <div class="iti__arrow"></div>
-        </div>
-        <div class="iti__selected-dial-code">+86</div>
+        <span class="iti__selected-country-primary">
+          <span class="iti__flag iti__cn"></span>
+          <span class="iti__arrow"></span>
+        </span>
+        <span class="iti__selected-dial-code">+86</span>
       </button>
 
       <div id="iti-0__country-selector" class="iti__country-selector iti__hide" role="dialog" aria-modal="true">
