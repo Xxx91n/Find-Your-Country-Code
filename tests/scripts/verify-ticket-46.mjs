@@ -25,6 +25,7 @@
 //   N9 对象型条目内的同名 ticket: 不冒充票号轴（只认直接子键）
 //   N10 flush 序列写法（与 ticket: 同缩进）正常解析
 //   N11 不支持的列表项 → A14b/A15 红（解析不了即 fail-closed）
+//   N12 后续 job 的数值型 matrix 项不被当成插入锚点（只认本 matrix.ticket）
 //   P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 //
 // 用法：node tests/scripts/verify-ticket-46.mjs
@@ -100,21 +101,60 @@ function editPlan(root, mutate) {
 
 const FAKE = { name: 'fake ticket proving no count cap (issue #20)', scripts: ['verify-ticket-46.mjs'] };
 
-// 在 matrix 的**列表项区间**末尾插入一行（不改缩进假设：沿用最后一项自身的前缀）。
-// 必须真的落在 `matrix: ticket:` 之下——行尾注释照常保留，新行另起一行。
+// 在 `matrix: ticket:` 列表区间末尾插入一行（沿用末项自身缩进，不写死空格数）。
+// 区间口径与 runner 的 matrixTicketKeys 一致：只认 `matrix:` 的直接子键 `ticket:`，
+// 区块与列表都止于缩进回退——否则后续 job 的数值型 matrix 项会被当成「最后一项」
+// 而把票号插到别的矩阵里（P2 随之假红，且假绿无从谈起）。
 // 返回锚点信息供调用方核验位置：不把票号写死在这里（否则下一张票落地时本门变红，
 // 正是 #20 要消除的跨票耦合）。
-const MATRIX_ITEM = /^(\s*)-\s*'([0-9][0-9a-z-]*)'\s*(#.*)?$/gm;
+const MATRIX_ITEM = /^(\s*)-\s*'([0-9][0-9a-z-]*)'\s*(#.*)?$/;
 function addMatrixKey(root, key) {
   const p = join(root, FILES.workflow);
   const src = readFileSync(p, 'utf8');
-  const items = [...src.matchAll(MATRIX_ITEM)];
-  if (!items.length) throw new Error('mirror matrix has no ticket items: ' + FILES.workflow);
-  const last = items[items.length - 1];
-  const anchorLine = last[0];
-  const indent = last[1];
-  const at = last.index + anchorLine.length;
-  writeFileSync(p, src.slice(0, at) + '\n' + indent + "- '" + key + "'" + src.slice(at));
+  const lines = src.split('\n');
+  const indentOf = (l) => l.match(/^\s*/)[0].length;
+  const isSkippable = (l) => !l.trim() || /^\s*#/.test(l);
+
+  const matrixAt = lines.findIndex((l) => /^(\s*)matrix:\s*(#.*)?$/.test(l));
+  if (matrixAt < 0) throw new Error('mirror workflow has no matrix block: ' + FILES.workflow);
+  const matrixIndent = indentOf(lines[matrixAt]);
+
+  let childIndent = -1;
+  for (let i = matrixAt + 1; i < lines.length; i++) {
+    if (isSkippable(lines[i])) continue;
+    const ind = indentOf(lines[i]);
+    if (ind <= matrixIndent) break;
+    childIndent = ind;
+    break;
+  }
+
+  let ticketAt = -1;
+  for (let i = matrixAt + 1; i < lines.length; i++) {
+    if (isSkippable(lines[i])) continue;
+    const ind = indentOf(lines[i]);
+    if (ind <= matrixIndent) break;
+    if (ind === childIndent && /^\s*ticket:\s*(#.*)?$/.test(lines[i])) { ticketAt = i; break; }
+  }
+  if (ticketAt < 0) throw new Error('mirror workflow has no matrix.ticket list: ' + FILES.workflow);
+
+  const ticketIndent = indentOf(lines[ticketAt]);
+  let lastAt = -1;
+  for (let i = ticketAt + 1; i < lines.length; i++) {
+    if (isSkippable(lines[i])) continue;
+    const ind = indentOf(lines[i]);
+    if (ind < ticketIndent) break;
+    if (!/^\s*-\s+/.test(lines[i])) {
+      if (ind === ticketIndent) break;
+      continue;
+    }
+    if (MATRIX_ITEM.test(lines[i])) lastAt = i;
+  }
+  if (lastAt < 0) throw new Error('mirror matrix.ticket has no ticket items: ' + FILES.workflow);
+
+  const anchorLine = lines[lastAt];
+  const indent = anchorLine.match(/^\s*/)[0];
+  lines.splice(lastAt + 1, 0, indent + "- '" + key + "'");
+  writeFileSync(p, lines.join('\n'));
   return { anchorLine, indent };
 }
 
@@ -353,6 +393,43 @@ function addMatrixKey(root, key) {
   eq(r.code, 1, 'N11 含不支持的列表项时 audit 退出 1（红）');
   check(sawFail(r.out, 'A14b'), 'N11 A14b 变红（解析不了的项不静默跳过）');
   check(sawFail(r.out, 'A15'), 'N11 A15 变红（不把「少解析了一项」当作全覆盖）');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// N12 后续 job 的数值型 matrix 项不被当成插入锚点（#39 review 首轮 unverified）
+//   addMatrixKey 曾全文件匹配 `- 'NN'`，后续 job 若有 `- '18'` 这类数值项，
+//   票号会被插进那个矩阵（P2 假红）。改为与 audit 同口径：只用本 matrix 的
+//   `ticket:` 列表区间。
+// ══════════════════════════════════════════════════════════════════
+{
+  let anchor = null;
+  const r = withMirror(
+    (root) => {
+      editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
+      const p = join(root, FILES.workflow);
+      // 追加一个后续 job，其 matrix 含数值型列表项——旧口径会选中它
+      writeFileSync(p, readFileSync(p, 'utf8') +
+        '\nsmoke:\n  strategy:\n    matrix:\n      node:\n        - \'18\'\n');
+      anchor = addMatrixKey(root, '99');
+    },
+    (root) => {
+      const audit = runAudit(root);
+      const lines = readFileSync(join(root, FILES.workflow), 'utf8').split('\n');
+      const at = lines.findIndex((l) => l === anchor.anchorLine);
+      const next = at < 0 ? null : lines[at + 1];
+      // 后续 job 的 node 列表必须原样保留（未被插入）
+      const smokeAt = lines.findIndex((l) => l.trim() === 'smoke:');
+      const smokeTail = smokeAt < 0 ? [] : lines.slice(smokeAt);
+      const smokeUntouched = smokeTail.filter((l) => /^\s*-\s+'/.test(l)).length === 1;
+      return { audit, at, next, smokeUntouched, nodeItems: smokeTail.filter((l) => /^\s*-\s+'/.test(l)) };
+    }
+  );
+  const { audit, at, next, smokeUntouched, nodeItems } = r;
+  eq(audit.code, 0, 'N12 存在后续数值型 matrix job 时 audit 仍绿');
+  check(at >= 0 && next === anchor.indent + "- '99'",
+    'N12 票号插在 ticket 列表末项之后（未跑到后续 job）',
+    JSON.stringify({ at, next }));
+  check(smokeUntouched, 'N12 后续 job 的 matrix 未被改动', JSON.stringify(nodeItems));
 }
 
 // ══════════════════════════════════════════════════════════════════
