@@ -43,3 +43,8 @@ jobs:
       # 否则会击穿 verify-ticket-07/10/11 的反向断言门（workflow 不得引用受管区路径）。
       - name: Ignore-swallow guard (key paths must not be gitignored)
         run: node tests/scripts/check-ignore-guard.mjs
+
+      # retro 2026-10-26：悬空指针门 —— 代理阅读文档（AGENTS.md / docs/agents/*.md 等）
+      # 里的仓库相对路径必须真实存在。人工清过一轮同类问题，这次落成门。
+      - name: Doc reference guard (dangling path refs)
+        run: node tests/scripts/check-doc-refs.mjs

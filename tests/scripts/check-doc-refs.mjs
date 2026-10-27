@@ -7,8 +7,9 @@
 // 而该文件只存在于另一分支 —— 若不拦，main 上就是一条死指针。
 //
 // 只扫代理真正会读的文档（AGENTS.md / CONTRIBUTING.md / GLOSSARY.md /
-// docs/agents/*.md）。取反引号内的仓库相对路径（含 '/' 或带已知扩展名），
-// 逐条断言在树上存在；通配符、URL、命令、标识符自然排除。
+// docs/agents/*.md）。取反引号内的仓库相对路径，逐条断言在树上存在。
+// 判定口径：首段必须是仓库顶层已有条目（挡掉 `text/javascript`、裸文件名、
+// `/skill-name` 这类非路径反引号）；通配符与含空白的一律跳过。
 // 用法：node tests/scripts/check-doc-refs.mjs（CI: typecheck.yml）
 // ══════════════════════════════════════════════════════════════════
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -17,9 +18,14 @@ import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// 显式声明为「按条件存在」的引用（文档本身已写明 if it exists / 尚未创建）
-const OPTIONAL = new Set([
-  'GLOSSARY-MAP.md',
+// 构建/运行产物：文档可以写，但全新检出（CI）上本就不存在
+const GENERATED = ['dist/', 'playwright-report/', 'test-results/'];
+
+// 有意的「已不存在」引用。新增条目必须写明原因，否则等于给死指针开后门。
+const HISTORIC = new Map([
+  ['GLOSSARY-MAP.md', 'domain.md 明确写「if it exists」：多上下文仓库才有'],
+  ['src/Find-Your-Country-Code.js', 'CONTRIBUTING 冻结基准：票 22 已删除，文档指向 git 历史'],
+  ['.scratch/', 'CONTRIBUTING：2026-10-24 已删除且不入版本控制'],
 ]);
 
 function docFiles() {
@@ -33,25 +39,31 @@ function docFiles() {
   return files.filter(f => existsSync(join(ROOT, f)));
 }
 
-// 反引号内的仓库相对路径：不含空白与通配符，含 '/' 或以已知扩展名结尾
-const KNOWN_EXT = /\.(md|mjs|js|ts|json|ya?ml)$/i;
-function isPathToken(t) {
-  if (!/^[A-Za-z0-9_.@/-]+$/.test(t)) return false;   // 空白/通配/箭头/尖括号一律排除
-  if (t.startsWith('-') || t.includes('..')) return false;
-  return t.includes('/') || KNOWN_EXT.test(t);
+// 反引号内的仓库相对路径 → 规范化；非路径返回 null
+function normalize(raw, topLevel) {
+  const t = raw.trim();
+  if (!t || t.startsWith('/') || t.startsWith('-') || t.startsWith('.') || t.includes('..')) return null;
+  if (!/^[A-Za-z0-9_.@/-]+$/.test(t)) return null;        // 空白 / 通配 / 箭头 / 尖括号
+  if (!t.includes('/')) return null;                       // 裸文件名、扩展名不是路径断言
+  const first = t.split('/')[0] + (t.endsWith('/') ? '/' : '');
+  if (!topLevel.has(t.split('/')[0])) return null;         // 首段不是仓库顶层条目 → 非路径
+  return t;
 }
+
+const topLevel = new Set(readdirSync(ROOT).filter(n => !n.startsWith('.') || n === '.github'));
+for (const extra of ['.github', 'dist', 'playwright-report', 'test-results']) topLevel.add(extra);
 
 let checked = 0;
 const missing = [];
 for (const rel of docFiles()) {
   const text = readFileSync(join(ROOT, rel), 'utf8');
-  const spans = text.match(/`[^`\n]+`/g) || [];
-  for (const span of spans) {
-    const token = span.slice(1, -1).trim();
-    if (!isPathToken(token)) continue;
-    const clean = token.replace(/[/:]$/, '').replace(/^\.\//, '');
-    if (OPTIONAL.has(clean)) { checked++; continue; }
+  for (const span of text.match(/`[^`\n]+`/g) || []) {
+    const token = normalize(span.slice(1, -1), topLevel);
+    if (!token) continue;
+    if (GENERATED.some(p => token.startsWith(p))) continue;
+    if (HISTORIC.has(token)) continue;
     checked++;
+    const clean = token.replace(/[/:]$/, '');
     if (!existsSync(join(ROOT, clean))) missing.push(rel + ' → ' + token);
   }
 }
