@@ -10,9 +10,10 @@
   ══════════════════════════════════════════════════════════════════
   source_url   : https://intl-tel-input.com/
   captured_at  : 2026-09-16T10:19:55.086Z
-                 （镜像页自有副本的捕获时点。manifest 条目的 captured_at 是源页
-                   最近一次整批重捕的时点，#35 重捕后两者不再相同——本轮只按新
-                   捕获纠形，未重做镜像页。）
+                 （镜像页自有副本的捕获时点。manifest 条目的 captured_at 取
+                   CAPTURE-MANIFEST 顶层 capturedAt（最近一次重捕运行），两者
+                   自 #35 重捕起不再相同——本轮只纠形，未重做镜像页。）
+  shape_revised: 2026-10-27（#35 按 v29.5.7 实测结构纠四处标签 div → span）
   mirror_of    : iti-v29（原始快照存仓库外 archive，见 manifest.json）
   license_note : 形态复刻，非原文转载。仅保留**公开表单形态**（.iti 容器 /
                  input[type=tel] / 国家选择器 / 内部搜索框 / role=listbox 项），

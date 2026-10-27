@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 import { before, containsToken } from './gate-assert.mjs';
 import {
+  CONDITION_FIELDS,
   DEFAULT_COUNTRY,
   IPAPI_LOOKUP_URL_RE,
   captureConditionFields,
@@ -650,8 +651,12 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       // 自带的键同相。只盯 iti-v29 的「无键」状态会随其重派生失效（#35 翻面），
       // 这条对历史条目（无键）与重定后条目（有键）同时成立——补 null 与漏抄都红。
       for (const e of doc.entries) {
+        if (!e.skeleton) { // 加源还没派生骨架的中间态：单列成因，不拿栈顶当结论
+          failures.push('S11 ' + e.id + ' 清单无骨架块（06-manifest 未收录骨架文件）');
+          continue;
+        }
         const skelDoc = JSON.parse(read(e.skeleton.file));
-        for (const k of ['capture_country', 'browser_locale']) {
+        for (const k of CONDITION_FIELDS) { // 键名唯一来源在 06-capture-country
           eq(k in e.skeleton, k in skelDoc,
             'S11 skeleton 块的条件键与骨架文件同相（' + e.id + ' · ' + k + '）');
         }

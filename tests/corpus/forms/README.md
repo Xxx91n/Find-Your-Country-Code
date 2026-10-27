@@ -70,7 +70,7 @@ tests/corpus/forms/
 | **剥离品牌内容** | 镜像页去产品名 / logo / 文案（如 iti 的 "International Telephone Input" 一律不出现） |
 | **去追踪** | 镜像页零外链 / 零分析脚本，hermetic（E2E 零外部网络依赖） |
 | **内容替换** | 页面正文替换为自拟文案；仅保留**公开表单形态**（DOM 结构 + 类名/属性 + 交互行为） |
-| **标 `source_url` + `captured_at`** | `manifest.json` 每条 entry 均有；镜像页头注释同步标注。两个 `captured_at` 指的不是同一件事：清单里的是**源页最近一次整批重捕**的时点，镜像头里的是该自有副本的捕获时点——整批重捕不重做镜像页，所以重捕之后两者不再相等（#35 起重定后的 iti-v29 即此） |
+| **标 `source_url` + `captured_at`** | `manifest.json` 每条 entry 均有；镜像页头注释同步标注。两个 `captured_at` 指的不是同一件事：清单里的是 CAPTURE-MANIFEST 顶层 `capturedAt`（**最近一次重捕运行**的时点，整批运行时即整批的时点），镜像头里的是该自有副本的捕获时点——重捕不重做镜像页，所以重捕之后两者不再相等（#35 起重定后的 iti-v29 即此；镜像头的 `shape_revised` 记该副本最近一次被改的日期） |
 | **不含真实 PII** | 镜像页无任何真实用户数据；原始快照只采公开页首屏（未登录态） |
 | **不可重现页面（票 T4 / issue #13）** | 页面已不可访问、无法再重现时允许**手工重构镜像**（GLOSSARY「手工重构镜像」；spec #9 Q9）：凭截图 / 存档 / 记忆重建，标 `adoption=reconstructed` + `source=reconstructed` + `provenance`（重构依据，即「附 reason」惯例）；**无 `captured_at`、无 capture 块**（不伪造捕获 provenance）；**永不参与结构比对**（无可信基线，diff 只会误报），重捕与结构比对均显式 SKIP 留记录 |
 
