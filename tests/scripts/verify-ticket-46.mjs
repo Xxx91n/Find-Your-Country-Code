@@ -26,6 +26,7 @@
 //   N10 flush 序列写法（与 ticket: 同缩进）正常解析
 //   N11 不支持的列表项 → A14b/A15 红（解析不了即 fail-closed）
 //   N12 后续 job 的数值型 matrix 项不被当成插入锚点（只认本 matrix.ticket）
+//   N13 双引号票号列表也能找到锚点并保持引号风格（与 audit 同口径）
 //   P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 //
 // 用法：node tests/scripts/verify-ticket-46.mjs
@@ -107,7 +108,28 @@ const FAKE = { name: 'fake ticket proving no count cap (issue #20)', scripts: ['
 // 而把票号插到别的矩阵里（P2 随之假红，且假绿无从谈起）。
 // 返回锚点信息供调用方核验位置：不把票号写死在这里（否则下一张票落地时本门变红，
 // 正是 #20 要消除的跨票耦合）。
-const MATRIX_ITEM = /^(\s*)-\s*'([0-9][0-9a-z-]*)'\s*(#.*)?$/;
+// 与 runner 的 matrixTicketKeys 同口径的票号项：单引号 / 双引号 / 裸非纯数字。
+// 只认单引号会让「workflow 改用双引号」时 addMatrixKey 找不到锚点而抛错，
+// 尽管 audit 那边完全接受该写法。
+const TICKET_KEY = /^[0-9][0-9a-z-]*$/;
+function ticketItemOf(line) {
+  const m = /^(\s*)-\s+(.*)$/.exec(line);
+  if (!m) return null;
+  const quoted = /^(['"])(.*)\1\s*(#.*)?$/.exec(m[2]);
+  if (quoted) return TICKET_KEY.test(quoted[2])
+    ? { indent: m[1], value: quoted[2], quote: quoted[1] }
+    : null;
+  const bare = /^([0-9][0-9a-z-]*)\s*(#.*)?$/.exec(m[2]);
+  // 裸纯数字在 YAML 里是整数，与字符串键不等价，不算票号项
+  if (!bare || /^[0-9]+$/.test(bare[1])) return null;
+  return { indent: m[1], value: bare[1], quote: null };
+}
+
+// 锚点下一行是否为缩进一致的票号项（与引号风格无关）
+function followsWithKey(line, indent, key) {
+  const item = line == null ? null : ticketItemOf(line);
+  return !!item && item.indent === indent && item.value === key;
+}
 function addMatrixKey(root, key) {
   const p = join(root, FILES.workflow);
   const src = readFileSync(p, 'utf8');
@@ -139,6 +161,7 @@ function addMatrixKey(root, key) {
 
   const ticketIndent = indentOf(lines[ticketAt]);
   let lastAt = -1;
+  let lastItem = null;
   for (let i = ticketAt + 1; i < lines.length; i++) {
     if (isSkippable(lines[i])) continue;
     const ind = indentOf(lines[i]);
@@ -147,13 +170,16 @@ function addMatrixKey(root, key) {
       if (ind === ticketIndent) break;
       continue;
     }
-    if (MATRIX_ITEM.test(lines[i])) lastAt = i;
+    const item = ticketItemOf(lines[i]);
+    if (item) { lastAt = i; lastItem = item; }
   }
   if (lastAt < 0) throw new Error('mirror matrix.ticket has no ticket items: ' + FILES.workflow);
 
   const anchorLine = lines[lastAt];
-  const indent = anchorLine.match(/^\s*/)[0];
-  lines.splice(lastAt + 1, 0, indent + "- '" + key + "'");
+  const indent = lastItem.indent;
+  // 新行沿用锚点的引号风格（双引号列表里不混入单引号）
+  const rendered = lastItem.quote === '"' ? '"' + key + '"' : "'" + key + "'";
+  lines.splice(lastAt + 1, 0, indent + '- ' + rendered);
   writeFileSync(p, lines.join('\n'));
   return { anchorLine, indent };
 }
@@ -403,6 +429,7 @@ function addMatrixKey(root, key) {
 // ══════════════════════════════════════════════════════════════════
 {
   let anchor = null;
+  let addError = null;
   const r = withMirror(
     (root) => {
       editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
@@ -410,26 +437,64 @@ function addMatrixKey(root, key) {
       // 追加一个后续 job，其 matrix 含数值型列表项——旧口径会选中它
       writeFileSync(p, readFileSync(p, 'utf8') +
         '\nsmoke:\n  strategy:\n    matrix:\n      node:\n        - \'18\'\n');
-      anchor = addMatrixKey(root, '99');
+      try { anchor = addMatrixKey(root, '99'); } catch (e) { addError = e.message; }
     },
     (root) => {
       const audit = runAudit(root);
       const lines = readFileSync(join(root, FILES.workflow), 'utf8').split('\n');
-      const at = lines.findIndex((l) => l === anchor.anchorLine);
+      const at = anchor == null ? -1 : lines.findIndex((l) => l === anchor.anchorLine);
       const next = at < 0 ? null : lines[at + 1];
       // 后续 job 的 node 列表必须原样保留（未被插入）
       const smokeAt = lines.findIndex((l) => l.trim() === 'smoke:');
       const smokeTail = smokeAt < 0 ? [] : lines.slice(smokeAt);
-      const smokeUntouched = smokeTail.filter((l) => /^\s*-\s+'/.test(l)).length === 1;
-      return { audit, at, next, smokeUntouched, nodeItems: smokeTail.filter((l) => /^\s*-\s+'/.test(l)) };
+      const nodeItems = smokeTail.filter((l) => /^\s*-\s+'/.test(l));
+      return { audit, at, next, smokeUntouched: nodeItems.length === 1, nodeItems };
     }
   );
   const { audit, at, next, smokeUntouched, nodeItems } = r;
+  eq(addError, null, 'N12 能找到 ticket 列表锚点（未抛错）');
   eq(audit.code, 0, 'N12 存在后续数值型 matrix job 时 audit 仍绿');
-  check(at >= 0 && next === anchor.indent + "- '99'",
+  // 与引号风格无关：只要求锚点下一行是缩进一致的票号项 '99'
+  check(anchor != null && at >= 0 && followsWithKey(next, anchor.indent, '99'),
     'N12 票号插在 ticket 列表末项之后（未跑到后续 job）',
     JSON.stringify({ at, next }));
   check(smokeUntouched, 'N12 后续 job 的 matrix 未被改动', JSON.stringify(nodeItems));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// N13 workflow 改用双引号票号 → 仍能找到锚点（#39 review 四轮）
+//   audit 接受双引号写法；若 addMatrixKey 只认单引号，会找不到锚点而抛错，
+//   N12/P2 一起假红。新行还应沿用锚点的引号风格，避免列表里引号混杂。
+// ══════════════════════════════════════════════════════════════════
+{
+  let anchor = null;
+  let addError = null;
+  const r = withMirror(
+    (root) => {
+      editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
+      const p = join(root, FILES.workflow);
+      // 把 ticket 列表整体改成双引号写法
+      writeFileSync(p, readFileSync(p, 'utf8').replace(
+        /^(\s*)- '([0-9][0-9a-z-]*)'$/gm,
+        '$1- "$2"'
+      ));
+      try { anchor = addMatrixKey(root, '99'); } catch (e) { addError = e.message; }
+    },
+    (root) => {
+      const audit = runAudit(root);
+      const lines = readFileSync(join(root, FILES.workflow), 'utf8').split('\n');
+      const at = anchor == null ? -1 : lines.findIndex((l) => l === anchor.anchorLine);
+      const next = at < 0 ? null : lines[at + 1];
+      return { audit, at, next };
+    }
+  );
+  const { audit, at, next } = r;
+  eq(addError, null, 'N13 双引号列表也能找到锚点（未抛错）');
+  eq(audit.code, 0, 'N13 双引号列表下 audit 仍绿');
+  check(anchor != null && at >= 0 && followsWithKey(next, anchor.indent, '99'),
+    'N13 双引号列表也能定位并插入票号', JSON.stringify({ at, next }));
+  check(next != null && next === anchor?.indent + '- "99"',
+    'N13 新行沿用双引号风格（列表内引号一致）', JSON.stringify({ next }));
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -437,10 +502,11 @@ function addMatrixKey(root, key) {
 // ══════════════════════════════════════════════════════════════════
 {
   let anchor = null;
+  let addError = null;
   const r = withMirror(
     (root) => {
       editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
-      anchor = addMatrixKey(root, '99');
+      try { anchor = addMatrixKey(root, '99'); } catch (e) { addError = e.message; }
     },
     (root) => {
       const audit = runAudit(root);
@@ -448,13 +514,15 @@ function addMatrixKey(root, key) {
       // 锚点来自 addMatrixKey 的实际插入点，不写死任何票号——下一张票落地时本门不红。
       // 只数「全文出现几次 '99'」是恒真的——插入点跑到文件别处它照样通过。
       const lines = readFileSync(join(root, FILES.workflow), 'utf8').split('\n');
-      const at = lines.findIndex((l) => l.trim() === anchor.anchorLine.trim());
+      const at = anchor == null ? -1 : lines.findIndex((l) => l.trim() === anchor.anchorLine.trim());
       const next = at < 0 ? null : lines[at + 1];
-      const placement = { anchor: anchor.anchorLine, at, next, ok: at >= 0 && next === anchor.indent + "- '99'" };
+      const placement = { anchor: anchor == null ? null : anchor.anchorLine, at, next,
+        ok: anchor != null && at >= 0 && followsWithKey(next, anchor.indent, '99') };
       return { audit, placement };
     }
   );
   const { audit, placement } = r;
+  eq(addError, null, 'P2 能找到 ticket 列表锚点（未抛错）');
   eq(audit.code, 0, 'P2 新增票（plan + matrix 同步）后 audit 退出 0');
   check(sawPass(audit.out, 'A15') && sawPass(audit.out, 'A16'), 'P2 A15/A16 皆 PASS（假票真的进了 matrix，非注释蒙混）');
   check(sawPass(audit.out, 'A2'), 'P2 A2 仍为 PASS（无票数上限：加票零维护，AC2 实证）');
