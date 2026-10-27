@@ -98,19 +98,37 @@ function partitionConditions(entry, label) {
   };
 }
 
+// 采集条件三字段的一次构造（工具写条目与门断言共用同一份形状）：
+// 有浏览器才有 locale 与 hits，固定值仍要 hits>0 才成立（同 resolvedCountry）。
+// 单列成函数的理由不是复用行数，是让「工具记了什么」可被门直接断言——
+// 否则「CAPTURE-MANIFEST 记录采集国别与 locale」这条验收只能靠读源码确认。
+export function captureConditionFields({ country, hits, locale }) {
+  return {
+    [COUNTRY_FIELD]: resolvedCountry(country, hits),
+    [LOCALE_FIELD]: locale == null ? null : String(locale),
+    [HITS_FIELD]: Number(hits) || 0,
+  };
+}
+
 // 声称与证据不得各说各话：capture_country 非 null 就必须拿得出「页面真的问过桩」
 // 的证据（hits>0）。缺这一条，旧版工具直接落请求值、或手工改坏的台账会把下一次
 // 归因带错（读到「按 jp 采」其实没人固定过）。
-// 两个调用面共用：06-skeleton 派生前（硬拒在写盘之前）；06-manifest 写 capture 块
-// 之前（仓内台账也不接受这个状态——否则 --from-ledger 会把矛盾逐字节复现下去）。
+// 三个调用面共用：06-skeleton 派生前、06-manifest 写 capture 块前（archive 模式）、
+// 以及 --from-ledger 从仓内台账重建时——仓内台账也接受这个状态的话，
+// assertLedgerStable 会把矛盾逐字节复现成既成事实（它比矛盾更晚，永远看不到）。
 // 键不存在（历史条目）或值为 null（已记录「未固定」）都不触发：那不是矛盾。
-export function requireEvidenceForClaim(entry, label) {
+// `where` 说清矛盾数据住在哪一层：一条消息一个成因——archive 侧出路是重捕，
+// 仓内台账侧出路是先归因；后者绝不建议手改成 null（那等于用改账本抹掉证据缺口）。
+export function requireEvidenceForClaim(entry, label, where) {
   if (!entry || !(COUNTRY_FIELD in entry) || entry[COUNTRY_FIELD] == null) return;
   if (!(Number(entry[HITS_FIELD]) > 0)) {
+    const at = where || 'CAPTURE-MANIFEST 条目';
+    const way = at === 'CAPTURE-MANIFEST 条目'
+      ? '用 06-capture-forms.mjs --country <iso2> 重捕，或如实改成 null（未固定）'
+      : '先归因（archive 侧的原始台账说什么），归因后重捕；手改仓内台账只是把证据缺口藏起来';
     throw new Error(
-      label + ' 台账声称固定为 ' + JSON.stringify(entry[COUNTRY_FIELD]) + '，但 ' + HITS_FIELD +
-      '=' + JSON.stringify(entry[HITS_FIELD]) + ' —— 桩从未被请求过就不可能有固定值（这是旧版工具直接落请求值' +
-      '或手工改坏的产物）；重捕，或如实改成 null（未固定）'
+      label + ' 在 ' + at + ' 里声称固定为 ' + JSON.stringify(entry[COUNTRY_FIELD]) + '，但 ' + HITS_FIELD +
+      '=' + JSON.stringify(entry[HITS_FIELD]) + ' —— 桩从未被请求过就不可能有固定值；' + way
     );
   }
 }

@@ -19,6 +19,7 @@ import { before, containsToken } from './gate-assert.mjs';
 import {
   DEFAULT_COUNTRY,
   IPAPI_LOOKUP_URL_RE,
+  captureConditionFields,
   installCountryRoute,
   normalizeCountry,
   resolvedCountry,
@@ -503,8 +504,16 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
   // 固定值只在桩真的被请求之后才成立：hits=0 时把请求值写进台账，等于谎报采集条件
   eq(resolvedCountry('us', 1), 'us', 'S11 桩被请求过 → 固定值入台账');
   eq(resolvedCountry('us', 0), null, 'S11 桩未被请求 → 如实记 null（不做 lookup 的源不冒充「按 us 采」）');
-  check(containsToken(CAP_SRC, 'resolvedCountry(rendered.country, rendered.stubHits)').ok,
-    'S11 采集工具经这道判定才写 capture_country（不是直接把请求值落台账）');
+  // 生产侧的「记了什么」也必须可断言，否则验收项「CAPTURE-MANIFEST 记录采集国别与
+  // 浏览器 locale」只能靠读源码确认（删掉工具里的赋值，门仍是绿的）
+  eq(JSON.stringify(captureConditionFields({ country: 'us', hits: 2, locale: 'en-US' })),
+    JSON.stringify({ capture_country: 'us', browser_locale: 'en-US', ipapi_stub_hits: 2 }),
+    'S11 三字段一次构造的形状（键名与值都锁住）');
+  eq(captureConditionFields({ country: 'us', hits: 0, locale: null }).capture_country, null,
+    'S11 未被请求时构造出 null（工具没有别的路径能写固定值）');
+  check(containsToken(CAP_SRC, 'Object.assign(entry, captureConditionFields({').ok &&
+    containsToken(CAP_SRC, 'hits: rendered.stubHits').ok && containsToken(CAP_SRC, 'locale: rendered.locale').ok,
+    'S11 采集工具经这一份构造写采集条件（赋值与渲染现场同源，不是各自手抄）');
 
   // (4) 顺序：拦截先于导航（晚注册的那次 lookup 走真出口 IP = 假漂移成因）
   const ord = before(CAP_SRC, 'await installCountryRoute(page, country);', "await page.goto(url, { waitUntil");
@@ -613,7 +622,10 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       eq(roundTrip.browser_locale, 'en-US', 'S11 复现后 browser_locale 未丢');
       eq(roundTrip.ipapi_stub_hits, 1, 'S11 复现后证据字段未丢');
       const committedIti = JSON.parse(backup.toString('utf8')).entries.find((e) => e.id === 'iti-v29');
-      eq(ent.skeleton.sha256, committedIti.skeleton.sha256, 'S11 骨架文件指纹未因采集条件而变（入库基线不动）');
+      eq(ent.skeleton.sha256, committedIti.skeleton.sha256,
+        'S11 已提交骨架文件字节未动（清单重生成仍指向同一指纹——基线重定是 #35 的活）');
+      eq(ent.skeleton.capture_country, undefined,
+        'S11 未重生成的骨架不带采集条件键（键缺失=早于本旋钮，与「未固定」两回事）');
       eq(ent.mirror.sha256, committedIti.mirror.sha256, 'S11 镜像页指纹未变');
       const decl = String((doc._meta.compliance || {}).captureConditions || '');
       check(containsToken(decl, 'capture_country').ok && containsToken(decl, 'browser_locale').ok,
@@ -675,13 +687,36 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     eq(deriveFromArchive(archNoHitsKey, noHitsKeyOut).code, 1,
       'S11 证据字段缺失同样硬拒（判不出就宁缺勿假）');
     eq(existsSync(noHitsKeyOut), false, 'S11 证据字段缺失同样不写盘');
-    // 同一矛盾进仓内台账的路也被堵：06-manifest 写 capture 块前先验声称与证据一致，
-    // 否则 --from-ledger 会把「无证据的固定」逐字节复现成既成事实（负例断言文件未变）
-    const preLedger = readFileSync(abs(FILES.manifest));
-    const badLedger = runTool(FILES.manifestGen, ['--archive', archNoProof]);
+    // 同一矛盾进仓内台账的路也被堵：06-manifest 写 capture 块前先验声称与证据一致。
+    // 这一条必须自带备份/还原——它跑的是就地写 manifest.json 的生成器，万一不变量退化
+    // 成「放行」，没有还原就会把 fixture 内容留在入库基线上（门自己先把语料写坏）。
+    const ledgerBackup = readFileSync(abs(FILES.manifest));
+    let badLedger = { code: null, out: '' };
+    try {
+      badLedger = runTool(FILES.manifestGen, ['--archive', archNoProof]);
+    } finally {
+      writeFileSync(abs(FILES.manifest), ledgerBackup);
+    }
     eq(badLedger.code, 1, 'S11 无证据固定也拒写仓内台账（不是只在骨架侧拦）');
     check(containsToken(badLedger.out, '桩从未被请求过').ok, 'S11 台账侧拒绝同样点名成因', badLedger.out.trim().slice(0, 120));
-    eq(readFileSync(abs(FILES.manifest)).equals(preLedger), true, 'S11 台账侧拒绝发生在唯一一次写盘之前（清单字节未变）');
+    check(containsToken(badLedger.out, 'CAPTURE-MANIFEST 条目').ok,
+      'S11 archive 侧的消息说清矛盾住在哪一层（出路是重捕，不是改账本）', badLedger.out.trim().slice(0, 140));
+    eq(readFileSync(abs(FILES.manifest)).equals(ledgerBackup), true,
+      'S11 台账侧拒绝发生在唯一一次写盘之前（清单字节未变）');
+    // --from-ledger 侧：矛盾住在仓内台账时，出路不能是「手改成 null 抹证据」
+    const lyingLedger = JSON.parse(ledgerBackup.toString('utf8'));
+    lyingLedger.entries[0].capture = { capture_country: 'jp', browser_locale: 'en-US', ipapi_stub_hits: 0 };
+    writeFileSync(abs(FILES.manifest), JSON.stringify(lyingLedger, null, 2) + '\n');
+    let ledgerSide = { code: null, out: '' };
+    try {
+      ledgerSide = runTool(FILES.manifestGen, ['--from-ledger']);
+    } finally {
+      writeFileSync(abs(FILES.manifest), ledgerBackup);
+    }
+    eq(ledgerSide.code, 1, 'S11 --from-ledger 也拒矛盾台账（不让 assertLedgerStable 把它复现成既成事实）');
+    check(containsToken(ledgerSide.out, '仓内台账 manifest.json').ok && containsToken(ledgerSide.out, '手改仓内台账').ok,
+      'S11 台账侧的成因与出路各自单列（不误导人去手改 null）', ledgerSide.out.trim().slice(0, 150));
+    eq(readFileSync(abs(FILES.manifest)).equals(ledgerBackup), true, 'S11 两个台账负例跑完清单字节还原');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
