@@ -21,6 +21,11 @@ Userscript: finds phone country-code fields on any page, injects a 🌐 icon and
 - Inside `about:srcdoc` frames `location.origin` is the string `"null"`; use `window.origin` for origin checks.
 - Diffs that add or move a rejection, error, or failure path: read `docs/agents/review.md` before writing it — the check sits ahead of the first mutation, and a negative test locks the persisted state.
 
+## Working alongside other tickets
+
+- The `zz` uncommitted area may hold another ticket's work: commit only by naming explicit file/hunk IDs (`but status` for files, `but diff` for hunks), and check an e2e failure against the dirty file set before treating it as a regression.
+- Land work only through GitButler (`but`); push, land, merge, and any work on another agent's branch need the user's explicit instruction.
+
 ## Agent skills
 
 ### Issue tracker
