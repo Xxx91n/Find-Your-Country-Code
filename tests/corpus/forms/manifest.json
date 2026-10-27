@@ -4,7 +4,7 @@
     "ticket": "06-form-corpus",
     "covers": "A-030",
     "generated_by": "tests/scripts/06-manifest.mjs",
-    "generated_at": "2026-10-27T19:05:52.716Z",
+    "generated_at": "2026-10-27T19:12:40.242Z",
     "role": "**库内唯一权威清单**。原始快照不入库；库内只留指纹与元数据。",
     "layers": {
       "mirror": "① 镜像页（入 git，测试主力）：去品牌 / 去追踪 / 内容替换，断言确定性最高",
@@ -41,8 +41,8 @@
       "shape_notes": "iti v29 形态：.iti 容器 + input[type=tel] + 国家按钮 + 内部搜索框 input[role=combobox][type=search][aria-autocomplete=list]（A-031 误报面）；listbox 项用 data-dial-code + data-iso2",
       "mirror": {
         "file": "tests/corpus/forms/mirrors/iti-v29.html",
-        "bytes": 9726,
-        "sha256": "62aac219c19d1fb1c422855fa00b1f8d60a53ebdf94993cc6b8a41767b930770"
+        "bytes": 9872,
+        "sha256": "23594c0aec8ba5b124f59b9b4151816ae5b27a297000d50e9168b51089d5a83e"
       },
       "skeleton": {
         "file": "tests/corpus/forms/skeletons/iti-v29.json",
