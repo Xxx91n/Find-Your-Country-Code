@@ -24,7 +24,8 @@
                  `input[type=search][role=combobox][aria-autocomplete=list]`
                  是真实误报面；listbox 项用 `data-dial-code` + `data-iso2`
                  （v29 实测属性名，非 v16 系的 data-country-code）。
-  shape_tags   : v29.5.7 实测国家按钮（`.iti__selected-country`）内四处为 `span`：
+  shape_tags   : 站点自报 v29.5（页面版本徽标；spec #32 的 npm tarball 对照为
+                 29.5.7）。实测国家按钮（`.iti__selected-country`）内四处为 `span`：
                  `.iti__selected-country-primary` / `.iti__flag` / `.iti__arrow` /
                  `.iti__selected-dial-code`（#35 纠形；此前误用旧版 `div`）。
                  listbox 项里的 `.iti__flag` 仍是 `div`——只有按钮内这处变了。
