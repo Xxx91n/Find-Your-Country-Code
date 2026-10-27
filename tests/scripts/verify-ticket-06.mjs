@@ -3,15 +3,18 @@
 // 方法：**离线**（无网络、无浏览器、无 npm 依赖）读文本 + 哈希 + 目录纪律断言。
 // 覆盖：S0 自证 / S1 三层架构与目录纪律 / S2 指纹完整性 /
 //   S3 合规口径（去品牌·去追踪·provenance）/ S4 原始快照不入库 /
-//   S5 退化回路成文与工具链 / S6 命名正交 / S7 结构骨架确定性 / S8 覆盖声明。
+//   S5 退化回路成文与工具链 / S6 命名正交 / S7 结构骨架确定性 / S8 覆盖声明 /
+//   S10 结构 diff 标签变化后继续递归子树（issue #33 负例）。
 // 用法：node tests/scripts/verify-ticket-06.mjs
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { containsToken } from './gate-assert.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..', '..');
@@ -285,6 +288,60 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     eq(count(src, /waitForTimeout\s*\(/g), 0, 'S9 ' + name + ' 探测无就地等待字面量');
     eq(count(src, /waitUntil\s*:/g), 0, 'S9 ' + name + ' 探测无就地导航条件字面量');
     eq(count(src, /\.goto\(/g), 0, 'S9 ' + name + ' 探测不自行 goto（导航只在口径模块内）');
+  }
+}
+
+// == S10 结构 diff：标签变化后继续递归子树（issue #33 负例）==
+// 修复前：父标签不同即 return，子树差异被吞——同一处改版只报父节点一条。
+// 该负例在修复前红（只剩 1 条）、修复后绿（父标签 + 子 class 两条）。
+{
+  const tmp = mkdtempSync(join(tmpdir(), 'cch06-label-recurse-'));
+  try {
+    const node = (tag, cls, children) => ({ tag, class: cls, ...(children ? { children } : {}) });
+    const wrap = (tree) => JSON.stringify({
+      id: 'neg-label-recurse',
+      skeleton_version: 1,
+      source: 'capture',
+      source_url: 'https://example.invalid/',
+      root_selector: '#neg',
+      node_count: 2,
+      sha256: '0'.repeat(64),
+      tree,
+    }, null, 2);
+    const basePath = join(tmp, 'base.json');
+    const newPath = join(tmp, 'new.json');
+    writeFileSync(basePath, wrap(node('div', ['iti__selected-country'], [node('div', ['iti__flag', 'iti__jp'])])));
+    writeFileSync(newPath, wrap(node('span', ['iti__selected-country'], [node('div', ['iti__flag', 'iti__us'])])));
+
+    // 先证明刺激在场（读回落盘文件）：父标签 div→span，且子节点 class jp→us。
+    // 刺激不在场时输出断言只会是空操作，必须先红。
+    const baseRaw = readFileSync(basePath, 'utf8');
+    const newRaw = readFileSync(newPath, 'utf8');
+    const stims = [
+      ['base 子 class jp', baseRaw, '"iti__jp"'],
+      ['new 子 class us', newRaw, '"iti__us"'],
+      ['base 父标签 div', baseRaw, '"tag": "div"'],
+      ['new 父标签 span', newRaw, '"tag": "span"'],
+    ];
+    for (const [label, src, token] of stims) {
+      const s = containsToken(src, token);
+      check(s.ok, 'S10 负例刺激在场：' + label, s.detail);
+    }
+
+    const run = spawnSync(process.execPath, [abs(FILES.diff), '--base', basePath, '--new', newPath], { encoding: 'utf8' });
+    const out = String(run.stdout || '') + String(run.stderr || '');
+    const parent = containsToken(out, 'tag div → span');
+    const child = containsToken(out, 'class ["iti__flag","iti__jp"] → ["iti__flag","iti__us"]');
+    check(parent.ok, 'S10 输出含父标签变化 major（div → span）', parent.detail);
+    check(child.ok, 'S10 标签不同后继续递归子树：输出含子节点 class 变化（jp → us）', child.detail);
+    const majorLines = out.split('\n').filter((l) => /^\s+\[major\]\s/.test(l));
+    eq(majorLines.length, 2, 'S10 该负例恰好两条 major（父标签 + 子 class；无漏报也无噪声）');
+    check(/tier: MAJOR/.test(out), 'S10 tier 仍为 MAJOR（多报变化不改变分级语义）');
+    eq(run.status, 1, 'S10 major 退出码仍为 1（分级判定未变）');
+  } catch (e) {
+    failures.push('S10 结构 diff 负例失败: ' + ((e && e.message) || e));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
   }
 }
 
