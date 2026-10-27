@@ -646,6 +646,16 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
         'S11 骨架块的条件取自骨架文件本身（不随本次 archive 的 jp 漂移）');
       eq(ent.skeleton.browser_locale, committedSkel.browser_locale,
         'S11 骨架块的 locale 同取自骨架文件本身');
+      // 「键缺失不补 null」的全条目不动点：清单 skeleton 块的条件键与骨架文件
+      // 自带的键同相。只盯 iti-v29 的「无键」状态会随其重派生失效（#35 翻面），
+      // 这条对历史条目（无键）与重定后条目（有键）同时成立——补 null 与漏抄都红。
+      for (const e of doc.entries) {
+        const skelDoc = JSON.parse(read(e.skeleton.file));
+        for (const k of ['capture_country', 'browser_locale']) {
+          eq(k in e.skeleton, k in skelDoc,
+            'S11 skeleton 块的条件键与骨架文件同相（' + e.id + ' · ' + k + '）');
+        }
+      }
       eq(ent.mirror.sha256, committedIti.mirror.sha256, 'S11 镜像页指纹未变');
       const decl = String((doc._meta.compliance || {}).captureConditions || '');
       check(containsToken(decl, 'capture_country').ok && containsToken(decl, 'browser_locale').ok,

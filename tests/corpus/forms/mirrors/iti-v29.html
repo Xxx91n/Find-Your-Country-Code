@@ -10,6 +10,9 @@
   ══════════════════════════════════════════════════════════════════
   source_url   : https://intl-tel-input.com/
   captured_at  : 2026-09-16T10:19:55.086Z
+                 （镜像页自有副本的捕获时点。manifest 条目的 captured_at 是源页
+                   最近一次整批重捕的时点，#35 重捕后两者不再相同——本轮只按新
+                   捕获纠形，未重做镜像页。）
   mirror_of    : iti-v29（原始快照存仓库外 archive，见 manifest.json）
   license_note : 形态复刻，非原文转载。仅保留**公开表单形态**（.iti 容器 /
                  input[type=tel] / 国家选择器 / 内部搜索框 / role=listbox 项），
@@ -22,8 +25,7 @@
                  （v29 实测属性名，非 v16 系的 data-country-code）。
   shape_tags   : v29.5.7 实测 `.iti__selected-country-primary` / `.iti__flag` /
                  `.iti__arrow` / `.iti__selected-dial-code` 均为 `span`（#35 纠形；
-                 此前误用旧版 `div`。票面原写「两处」，是按修复前的漏报 diff 数的——
-                 标签变化即早退吞掉了 primary 子树里的 flag / arrow 两条）。
+                 此前误用旧版 `div`）。
   ══════════════════════════════════════════════════════════════════
 -->
 <style>
