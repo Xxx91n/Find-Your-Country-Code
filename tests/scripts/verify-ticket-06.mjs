@@ -4,7 +4,7 @@
 // 覆盖：S0 自证 / S1 三层架构与目录纪律 / S2 指纹完整性 /
 //   S3 合规口径（去品牌·去追踪·provenance）/ S4 原始快照不入库 /
 //   S5 退化回路成文与工具链 / S6 命名正交 / S7 结构骨架确定性 / S8 覆盖声明 /
-//   S10 结构 diff 标签变化后继续递归子树（issue #33 负例）。
+//   S9 双探测口径同源 / S10 结构 diff 标签变化后继续递归子树（issue #33 负例）。
 // 用法：node tests/scripts/verify-ticket-06.mjs
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
@@ -315,13 +315,15 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
     // 先证明刺激在场（读回落盘文件）：父标签 div→span，且子节点 class jp→us。
     // 刺激不在场时输出断言只会是空操作，必须先红。
+    // 父标签须锚定**根节点位置**：base 的子节点也是 div，裸 `"tag": "div"` 在
+    // 根标签没改的畸形注入里同样命中（docs/agents/review.md Q5）。
     const baseRaw = readFileSync(basePath, 'utf8');
     const newRaw = readFileSync(newPath, 'utf8');
     const stims = [
       ['base 子 class jp', baseRaw, '"iti__jp"'],
       ['new 子 class us', newRaw, '"iti__us"'],
-      ['base 父标签 div', baseRaw, '"tag": "div"'],
-      ['new 父标签 span', newRaw, '"tag": "span"'],
+      ['base 根标签 div', baseRaw, '"tree": {\n    "tag": "div"'],
+      ['new 根标签 span', newRaw, '"tree": {\n    "tag": "span"'],
     ];
     for (const [label, src, token] of stims) {
       const s = containsToken(src, token);
@@ -330,8 +332,10 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
 
     const run = spawnSync(process.execPath, [abs(FILES.diff), '--base', basePath, '--new', newPath], { encoding: 'utf8' });
     const out = String(run.stdout || '') + String(run.stderr || '');
-    const parent = containsToken(out, 'tag div → span');
-    const child = containsToken(out, 'class ["iti__flag","iti__jp"] → ["iti__flag","iti__us"]');
+    // 路径也钉住：只断言消息文本时，「递归但没推进 path」的变体会把子节点差异
+    // 打在根路径上而仍然全绿（review #33 Q5）。根路径 / 与子路径 /0 各自成对。
+    const parent = containsToken(out, '[major] /  tag div → span');
+    const child = containsToken(out, '[major] /0  class ["iti__flag","iti__jp"] → ["iti__flag","iti__us"]');
     check(parent.ok, 'S10 输出含父标签变化 major（div → span）', parent.detail);
     check(child.ok, 'S10 标签不同后继续递归子树：输出含子节点 class 变化（jp → us）', child.detail);
     const majorLines = out.split('\n').filter((l) => /^\s+\[major\]\s/.test(l));
