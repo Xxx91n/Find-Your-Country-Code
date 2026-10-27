@@ -30,12 +30,13 @@ const ROOT = resolve(here, '..', '..');
 const PLAN = join(here, 'verify-ticket-plan.json');
 const WORKFLOWS = join(ROOT, '.github', 'workflows');
 
-// plan 票数 canary：新增/删除票时**在本文件**同步期望数（同票提交里自维护）——
-// 任何门只断言 `--audit` 退出码，不对本行做跨文件字面量正则（加票不再改别家的门）。
+// plan 票面不变量（issue #20）：A2 只守「LEGACY 键面零覆盖丢失」——LEGACY 的每个
+//   键都必须出现在 plan 里，**无票数上限**：加票不碰本文件，也不碰任何票级门。
+//   删掉一个**新**票键改由 A15/A16（plan ↔ verify-tickets.yml matrix 全等）捕获。
+//   负例（删 LEGACY 键 → A2/A4 双红）由 verify-ticket-46 常驻锁住。
 // 门 key 规则（retro 2026-10-26）：取现有最大 key 的下一个序号；它与 GitHub
 // issue 号、历史 A 号散文（如 calibration corpus 的「票 44」）无关。溯源写在
 // plan entry 的 name 里（issue #NN / spec #NN），不让门 key 承担。
-const EXPECTED_TICKETS = 24;
 
 // 冻结期望：本合并替换掉的 21 个票级 workflow 及其脚本清单。
 // 独立真源（不读 plan）——用于 --audit 的「零票级覆盖丢失」断言。
@@ -61,6 +62,10 @@ const LEGACY = {
   'verify-39.yml': ['verify-ticket-39.mjs'],
   'verify-42.yml': ['verify-ticket-42.mjs'],
 };
+
+// LEGACY workflow 文件名 -> plan 票键（verify-02-settings.yml -> 02-settings）。
+// A2 与 A7 共用本变换，两处对「legacy 键面」的口径永久一致。
+const legacyKeyOf = (wf) => wf.replace(/^verify-/, '').replace(/\.yml$/, '');
 
 function loadPlan() { return JSON.parse(readFileSync(PLAN, 'utf8')); }
 function keysOf(plan) { return Object.keys(plan.tickets); }
@@ -146,8 +151,12 @@ if (mode === '--audit') {
 
   const pKeys = keysOf(plan);
   const legacyWfs = Object.keys(LEGACY);
+  const legacyKeys = legacyWfs.map(legacyKeyOf);
   ck('A1 plan schema=1', plan.schema === 1, 'got ' + plan.schema);
-  ck('A2 plan ticket count matches EXPECTED_TICKETS', pKeys.length === EXPECTED_TICKETS, 'got ' + pKeys.length + ', want ' + EXPECTED_TICKETS);
+  // A2 不变量（issue #20）：LEGACY 键面零覆盖丢失，**无票数上限**——加票零维护。
+  //   期望集合由 LEGACY 自身派生（唯一真源），不写数字；新票键的删除由 A15/A16 捕获。
+  const absentKeys = legacyKeys.filter(k => !pKeys.includes(k));
+  ck('A2 plan covers every legacy ticket key (no upper cap)', absentKeys.length === 0, 'missing: ' + absentKeys.join(', '));
   ck('A3 legacy baseline has 20 workflows', legacyWfs.length === 20, 'got ' + legacyWfs.length);
 
   const legacyScripts = new Set(Object.values(LEGACY).flat());
@@ -163,7 +172,7 @@ if (mode === '--audit') {
 
   const mism = [];
   for (const wf of legacyWfs) {
-    const key = wf.replace(/^verify-/, '').replace(/\.yml$/, '');
+    const key = legacyKeyOf(wf);
     const t = plan.tickets[key];
     if (!t) { mism.push(wf + ' -> missing plan key ' + key); continue; }
     const a = [...LEGACY[wf]].sort().join(',');

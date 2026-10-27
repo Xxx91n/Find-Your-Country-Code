@@ -84,12 +84,12 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
   check(!!t43, 'U0 plan 注册票 43（issue #13 手工重构镜像）');
   eq(JSON.stringify(t43 && t43.scripts), JSON.stringify(['verify-ticket-43.mjs']), 'U0 票 43 门脚本唯一指向本文件');
   check(/-\s*'43'/.test(read(FILES.workflow)), 'U0 verify-tickets.yml matrix 含 43（A15/A16 全等守卫面）');
-  // 票数期望是 runner 本地常量（加票在同票提交里自维护）；本门只断言 audit 可跑通
+  // audit A2 是不变量（LEGACY 键面零覆盖丢失、无票数上限）：本门只断言 audit 可跑通
   let auditCode = 0;
   try {
     execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (e) { auditCode = e.status; }
-  eq(auditCode, 0, 'U0 audit 全绿（A2 票数期望由 runner 常量自维护）');
+  eq(auditCode, 0, 'U0 audit 全绿（A2 为不变量，加票不触发跨票维护）');
 }
 
 // ══════════════════════════════════════════════════════════════════
