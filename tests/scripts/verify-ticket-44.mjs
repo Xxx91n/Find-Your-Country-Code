@@ -89,7 +89,7 @@ const check = (c, m, extra) => {
   try {
     execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (e) { auditCode = e.status; }
-  eq(auditCode, 0, 'V0 audit 全绿（票数与 workflow 数由 runner 常量自维护）');
+  eq(auditCode, 0, 'V0 audit 全绿（A2 为不变量，加票不触发跨票维护）');
 
   // V0b 共享断言器自检：缺失 / 逆序都必须红（防「门恒真」回归）
   eq(before('alpha beta', 'alpha', 'beta').ok, true, 'V0 gate-assert 顺序成立 → ok');

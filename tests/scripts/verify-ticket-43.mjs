@@ -13,7 +13,7 @@
 //   06-capture-forms（重构条目被跳过，零网络）与 verify-ticket-06（既有门）。
 //
 // 覆盖（issue #13 验收项一一对应）：
-//   U0 门自身接线（plan / matrix / audit 期望数）
+//   U0 门自身接线（plan / matrix / audit 不变量）
 //   U1 AC1：reconstructed 条目入库可通过既有静态门（verify-ticket-06 实跑 0 FAIL）
 //   U2 链条一致性（sources ↔ manifest ↔ skeleton ↔ 镜像头注释）
 //   U3 AC2：结构 diff 对 reconstructed 显式 skip 留记录（不静默、不产判定），
@@ -76,7 +76,7 @@ const RSRC = SOURCES.find((s) => s.id === RID);
 const RENT = MANIFEST.entries.find((e) => e.id === RID);
 
 // ══════════════════════════════════════════════════════════════════
-// U0 门自身接线（plan / matrix / audit 期望数一致）
+// U0 门自身接线（plan / matrix / audit 不变量——A2 键面，无计数）
 // ══════════════════════════════════════════════════════════════════
 {
   const plan = JSON.parse(read(FILES.plan));
@@ -84,12 +84,12 @@ const RENT = MANIFEST.entries.find((e) => e.id === RID);
   check(!!t43, 'U0 plan 注册票 43（issue #13 手工重构镜像）');
   eq(JSON.stringify(t43 && t43.scripts), JSON.stringify(['verify-ticket-43.mjs']), 'U0 票 43 门脚本唯一指向本文件');
   check(/-\s*'43'/.test(read(FILES.workflow)), 'U0 verify-tickets.yml matrix 含 43（A15/A16 全等守卫面）');
-  // 票数期望是 runner 本地常量（加票在同票提交里自维护）；本门只断言 audit 可跑通
+  // audit A2 是不变量（LEGACY 键面零覆盖丢失、无票数上限）：本门只断言 audit 可跑通
   let auditCode = 0;
   try {
     execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (e) { auditCode = e.status; }
-  eq(auditCode, 0, 'U0 audit 全绿（A2 票数期望由 runner 常量自维护）');
+  eq(auditCode, 0, 'U0 audit 全绿（A2 为不变量，加票不触发跨票维护）');
 }
 
 // ══════════════════════════════════════════════════════════════════

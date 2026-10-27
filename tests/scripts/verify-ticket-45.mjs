@@ -89,7 +89,7 @@ const check = (c, m, extra) => {
   try {
     execFileSync(process.execPath, [abs(FILES.runner), '--audit'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (e) { auditCode = e.status; }
-  eq(auditCode, 0, 'V0 audit 全绿（票数与 workflow 数由 runner 常量自维护）');
+  eq(auditCode, 0, 'V0 audit 全绿（A2 为不变量，加票不触发跨票维护）');
 }
 
 const WF = read(FILES.workflow);

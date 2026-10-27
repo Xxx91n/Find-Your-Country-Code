@@ -30,12 +30,14 @@ const ROOT = resolve(here, '..', '..');
 const PLAN = join(here, 'verify-ticket-plan.json');
 const WORKFLOWS = join(ROOT, '.github', 'workflows');
 
-// plan 票数 canary：新增/删除票时**在本文件**同步期望数（同票提交里自维护）——
-// 任何门只断言 `--audit` 退出码，不对本行做跨文件字面量正则（加票不再改别家的门）。
+// plan 票面不变量（issue #20）：A2 只守「LEGACY 键面零覆盖丢失」——LEGACY 的每个
+//   键都必须出现在 plan 里，**无票数上限**：加票（不新增 workflow）不碰本文件，
+//   也不碰任何票级门。新票键**单侧**删除（plan 删了、matrix 没删）由 A15/A16 捕获；
+//   plan 与 matrix 同时删除则任何票面守卫都看不见——那是有意的删除动作。
+//   负例（删 LEGACY 键 → A2/A4 双红）由 verify-ticket-46 常驻锁住。
 // 门 key 规则（retro 2026-10-26）：取现有最大 key 的下一个序号；它与 GitHub
 // issue 号、历史 A 号散文（如 calibration corpus 的「票 44」）无关。溯源写在
 // plan entry 的 name 里（issue #NN / spec #NN），不让门 key 承担。
-const EXPECTED_TICKETS = 24;
 
 // 冻结期望：本合并替换掉的 21 个票级 workflow 及其脚本清单。
 // 独立真源（不读 plan）——用于 --audit 的「零票级覆盖丢失」断言。
@@ -61,6 +63,83 @@ const LEGACY = {
   'verify-39.yml': ['verify-ticket-39.mjs'],
   'verify-42.yml': ['verify-ticket-42.mjs'],
 };
+
+// LEGACY workflow 文件名 -> plan 票键（verify-02-settings.yml -> 02-settings）。
+// A2 与 A7 共用本变换，两处对「legacy 键面」的口径永久一致。
+const legacyKeyOf = (wf) => wf.replace(/^verify-/, '').replace(/\.yml$/, '');
+
+// caller matrix 的票号清单：只在 `matrix:` 下的 `ticket:` 列表项区间里取。
+// 不扫全文件——文件别处的 `- 'NN'`（其他列表、注释块、尾部追加）都不算覆盖。
+// 返回 null 表示**解析不出来**（调用方据此报「解析不到」而不是「缺这些票」：
+// 一个成因一条消息，否则把 workflow 写坏的人会去补票号）。
+// 五条 fail-closed 口径：
+//   · `ticket:` 必须是 `matrix:` 的**直接子键**——对象型 matrix 条目下同名的
+//     `ticket:`（如 `matrix.config.ticket`）不是票号轴，不得冒充；
+//   · `ticket:` 与本 matrix 区块都必须在本区块内结束，后续 job 的列表不算；
+//   · 注释行与空行不结束区块/列表（YAML 里注释不打断结构）；
+//   · 序列项允许两种 YAML 写法：与 `ticket:` 同缩进（flush）或缩进 +2（嵌套）；
+//   · 每个列表项都必须能解析成合法票号，解析不了就走 null，**不静默跳过**。
+function matrixTicketKeys(src) {
+  const indentOf = (l) => l.match(/^\s*/)[0].length;
+  const isSkippable = (l) => !l.trim() || /^\s*#/.test(l);
+  const lines = src.split('\n');
+
+  const at = lines.findIndex((l) => /^(\s*)matrix:\s*(#.*)?$/.test(l));
+  if (at < 0) return null;
+  const matrixIndent = indentOf(lines[at]);
+
+  // 直接子键缩进 = matrix 之后第一条非空非注释行的缩进（必须深于 matrix 本身）。
+  let childIndent = -1;
+  for (let i = at + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (isSkippable(l)) continue;
+    const ind = indentOf(l);
+    if (ind <= matrixIndent) break;
+    childIndent = ind;
+    break;
+  }
+  if (childIndent < 0) return null;
+
+  let ticketAt = -1;
+  for (let i = at + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (isSkippable(l)) continue;
+    const ind = indentOf(l);
+    if (ind <= matrixIndent) break;
+    // 只认直接子键：更深缩进的同名键属于对象型条目的内部结构
+    if (ind === childIndent && /^\s*ticket:\s*(#.*)?$/.test(l)) { ticketAt = i; break; }
+  }
+  if (ticketAt < 0) return null;
+
+  const ticketIndent = indentOf(lines[ticketAt]);
+  const keys = [];
+  for (let i = ticketAt + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (isSkippable(line)) continue;
+    const ind = indentOf(line);
+
+    if (ind < ticketIndent) break;
+    const isItem = /^\s*-\s+/.test(line);
+    if (!isItem) {
+      // 同缩进的兄弟键结束列表；更深缩进的非序列行说明这不是票号序列
+      if (ind === ticketIndent) break;
+      return null;
+    }
+    // flush 写法与 `ticket:` 同缩进；嵌套写法 +2。其余缩进不认。
+    if (ind !== ticketIndent && ind !== ticketIndent + 2) return null;
+
+    const item = /^\s*-\s+(.*)$/.exec(line);
+    if (!item) return null;
+    const quoted = /^(['"])(.*)\1\s*(#.*)?$/.exec(item[1]);
+    // 裸值只收非纯数字：`- 02` 在 YAML 里是整数 2，与字符串 '02' 不等价，
+    // 放行会让 A15 假绿（matrix 实际收到 2，plan 里却是 '02'）。
+    const bare = /^([0-9][0-9a-z-]*)\s*(#.*)?$/.exec(item[1]);
+    const key = quoted ? quoted[2] : bare && !/^[0-9]+$/.test(bare[1]) ? bare[1] : null;
+    if (key === null || !/^[0-9][0-9a-z-]*$/.test(key)) return null;
+    keys.push(key);
+  }
+  return keys;
+}
 
 function loadPlan() { return JSON.parse(readFileSync(PLAN, 'utf8')); }
 function keysOf(plan) { return Object.keys(plan.tickets); }
@@ -146,8 +225,12 @@ if (mode === '--audit') {
 
   const pKeys = keysOf(plan);
   const legacyWfs = Object.keys(LEGACY);
+  const legacyKeys = legacyWfs.map(legacyKeyOf);
   ck('A1 plan schema=1', plan.schema === 1, 'got ' + plan.schema);
-  ck('A2 plan ticket count matches EXPECTED_TICKETS', pKeys.length === EXPECTED_TICKETS, 'got ' + pKeys.length + ', want ' + EXPECTED_TICKETS);
+  // A2 不变量（issue #20）：LEGACY 键面零覆盖丢失，**无票数上限**——加票零维护。
+  //   期望集合由 LEGACY 自身派生（唯一真源），不写数字；新票键的单侧删除由 A15/A16 捕获。
+  const absentKeys = legacyKeys.filter(k => !pKeys.includes(k));
+  ck('A2 plan covers every legacy ticket key (no upper cap)', absentKeys.length === 0, 'missing: ' + absentKeys.join(', '));
   ck('A3 legacy baseline has 20 workflows', legacyWfs.length === 20, 'got ' + legacyWfs.length);
 
   const legacyScripts = new Set(Object.values(LEGACY).flat());
@@ -163,7 +246,7 @@ if (mode === '--audit') {
 
   const mism = [];
   for (const wf of legacyWfs) {
-    const key = wf.replace(/^verify-/, '').replace(/\.yml$/, '');
+    const key = legacyKeyOf(wf);
     const t = plan.tickets[key];
     if (!t) { mism.push(wf + ' -> missing plan key ' + key); continue; }
     const a = [...LEGACY[wf]].sort().join(',');
@@ -191,10 +274,15 @@ if (mode === '--audit') {
   if (existsSync(caller)) {
     const c = readFileSync(caller, 'utf8');
     ck('A14 caller declares pull_request (non-release workflows must declare PR trigger)', /^\s*pull_request:/m.test(c));
-    const matrixKeys = [...c.matchAll(/^\s*-\s*'([0-9][0-9a-z-]*)'\s*$/gm)].map(m => m[1]);
-    const missKeys = pKeys.filter(k => !matrixKeys.includes(k));
-    const extraKeys = matrixKeys.filter(k => !pKeys.includes(k));
-    ck('A15 caller matrix covers every plan ticket', missKeys.length === 0, 'missing: ' + missKeys.join(', '));
+    // 只认 `matrix: ticket:` 区块内的列表项：注释块、文件别处的 `- 'NN'`
+    // 都不算覆盖（verify-ticket-46 N4 锁住该口径）。
+    const matrixKeys = matrixTicketKeys(c);
+    ck('A14b caller has a parseable matrix ticket list', matrixKeys !== null,
+      'no `matrix:`/`ticket:` list found in verify-tickets.yml (tickets not verifiable)');
+    const missKeys = matrixKeys === null ? pKeys : pKeys.filter(k => !matrixKeys.includes(k));
+    const extraKeys = matrixKeys === null ? [] : matrixKeys.filter(k => !pKeys.includes(k));
+    ck('A15 caller matrix covers every plan ticket', matrixKeys !== null && missKeys.length === 0,
+      matrixKeys === null ? 'matrix unparseable — see A14b' : 'missing: ' + missKeys.join(', '));
     ck('A16 caller matrix has no unknown ticket', extraKeys.length === 0, 'extra: ' + extraKeys.join(', '));
     ck('A17 caller has no literal cch/<NN> dead branch trigger', !/cch\/[0-9]/.test(c));
   }
