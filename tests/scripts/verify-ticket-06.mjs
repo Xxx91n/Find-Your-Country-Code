@@ -338,9 +338,12 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     const child = containsToken(out, '[major] /0  class ["iti__flag","iti__jp"] → ["iti__flag","iti__us"]');
     check(parent.ok, 'S10 输出含父标签变化 major（div → span）', parent.detail);
     check(child.ok, 'S10 标签不同后继续递归子树：输出含子节点 class 变化（jp → us）', child.detail);
-    // 计全部 change 行（任一档位），不只 major：只数 major 时，一个「记完 tag 就
-    // 递归子树、跳过本节点其余维度」的半修复变体，或到处冒 [minor] 的噪声实现，
-    // 都能蒙混过关。本 fixture 两侧只有这两处差异，正确实现恰好 2 行。
+    // 计全部 change 行（任一档位），不只 major：只数 major 时，到处冒 [minor] /
+    // [patch] 的噪声实现蒙混过关（标签说的「无噪声」根本没被断言）。
+    // 本 fixture 两侧只有这两处差异，正确实现恰好 2 行。
+    // 覆盖边界：本 fixture 父节点两侧 class / attrs 相同，故「记完 tag 就只递归
+    // 子树、跳过本节点其余维度」的变体在此仍是 2 行、本段挡不住——它确实继续
+    // 递归了，不属 #33 修的提前 return；要区分需让父节点另有维度差异，超出本票。
     const changeLines = out.split('\n').filter((l) => /^\s+\[(major|minor|patch)\]\s/.test(l));
     eq(changeLines.length, 2, 'S10 该负例恰好两条变化（父标签 + 子 class；无漏报也无噪声）');
     eq(changeLines.filter((l) => /\[major\]/.test(l)).length, 2, 'S10 两条均为 major（分级未被降档）');
