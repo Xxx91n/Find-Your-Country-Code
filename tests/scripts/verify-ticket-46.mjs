@@ -19,6 +19,12 @@
 //   N3 plan 加键但 matrix 缺行 → A15 红（新增面的等全守卫仍在）
 //   N4 plan 加键 + matrix 区块外的裸列表项 → A15 仍红（区块外不算覆盖）
 //   N5 matrix 区块改名 → A14b/A15 红（解析不到 ≠ 全覆盖，fail-closed）
+//   N6 matrix 内注释不打断解析（YAML 注释不结束结构）
+//   N7 双引号票号正常解析（合法项不静默跳过）
+//   N8 后续 job 的 ticket 列表不被冒充（搜索止于本 matrix 区块）
+//   N9 对象型条目内的同名 ticket: 不冒充票号轴（只认直接子键）
+//   N10 flush 序列写法（与 ticket: 同缩进）正常解析
+//   N11 不支持的列表项 → A14b/A15 红（解析不了即 fail-closed）
 //   P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 //
 // 用法：node tests/scripts/verify-ticket-46.mjs
@@ -326,6 +332,27 @@ function addMatrixKey(root, key) {
   );
   eq(r.code, 0, 'N10 flush 序列写法 audit 仍绿');
   check(sawPass(r.out, 'A15') && sawPass(r.out, 'A16'), 'N10 A15/A16 皆 PASS（flush 写法未被判成空列表）');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// N11 不支持的列表项 → A14b 必须红（#39 review 二轮 nitpick）
+//   N7 证明合法项不被跳过；这里补反向：保留全部合法票号、只加一个解析不了
+//   的项，A14b/A15 必须红——否则「静默跳过 + 其余键都在」会重新变绿。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      const p = join(root, FILES.workflow);
+      writeFileSync(p, readFileSync(p, 'utf8').replace(
+        /^(\s*)- '45'$/m,
+        '$1- \'45\'\n$1- \'not-a-ticket\''
+      ));
+    },
+    runAudit
+  );
+  eq(r.code, 1, 'N11 含不支持的列表项时 audit 退出 1（红）');
+  check(sawFail(r.out, 'A14b'), 'N11 A14b 变红（解析不了的项不静默跳过）');
+  check(sawFail(r.out, 'A15'), 'N11 A15 变红（不把「少解析了一项」当作全覆盖）');
 }
 
 // ══════════════════════════════════════════════════════════════════
