@@ -96,6 +96,8 @@ const FAKE = { name: 'fake ticket proving no count cap (issue #20)', scripts: ['
 
 // 在 matrix 的**列表项区间**末尾插入一行（不改缩进假设：沿用最后一项自身的前缀）。
 // 必须真的落在 `matrix: ticket:` 之下——行尾注释照常保留，新行另起一行。
+// 返回锚点信息供调用方核验位置：不把票号写死在这里（否则下一张票落地时本门变红，
+// 正是 #20 要消除的跨票耦合）。
 const MATRIX_ITEM = /^(\s*)-\s*'([0-9][0-9a-z-]*)'\s*(#.*)?$/gm;
 function addMatrixKey(root, key) {
   const p = join(root, FILES.workflow);
@@ -103,9 +105,11 @@ function addMatrixKey(root, key) {
   const items = [...src.matchAll(MATRIX_ITEM)];
   if (!items.length) throw new Error('mirror matrix has no ticket items: ' + FILES.workflow);
   const last = items[items.length - 1];
+  const anchorLine = last[0];
   const indent = last[1];
-  const at = last.index + last[0].length;
+  const at = last.index + anchorLine.length;
   writeFileSync(p, src.slice(0, at) + '\n' + indent + "- '" + key + "'" + src.slice(at));
+  return { anchorLine, indent };
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -218,20 +222,21 @@ function addMatrixKey(root, key) {
 // P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 // ══════════════════════════════════════════════════════════════════
 {
+  let anchor = null;
   const r = withMirror(
     (root) => {
       editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
-      addMatrixKey(root, '99');
+      anchor = addMatrixKey(root, '99');
     },
     (root) => {
       const audit = runAudit(root);
-      // 位置核验（可失败）：假票必须**紧跟在原最后一个 matrix 项之后**且缩进相同。
+      // 位置核验（可失败）：假票必须**紧跟在插入前的最后一个 matrix 项之后**且缩进相同。
+      // 锚点来自 addMatrixKey 的实际插入点，不写死任何票号——下一张票落地时本门不红。
       // 只数「全文出现几次 '99'」是恒真的——插入点跑到文件别处它照样通过。
       const lines = readFileSync(join(root, FILES.workflow), 'utf8').split('\n');
-      const anchor = lines.findIndex((l) => /^\s*-\s*'46'\s*$/.test(l));
-      const next = anchor < 0 ? null : lines[anchor + 1];
-      const indent = anchor < 0 ? null : lines[anchor].match(/^\s*/)[0];
-      const placement = { anchor, next, ok: anchor >= 0 && next === indent + "- '99'" };
+      const at = lines.findIndex((l) => l.trim() === anchor.anchorLine.trim());
+      const next = at < 0 ? null : lines[at + 1];
+      const placement = { anchor: anchor.anchorLine, at, next, ok: at >= 0 && next === anchor.indent + "- '99'" };
       return { audit, placement };
     }
   );
