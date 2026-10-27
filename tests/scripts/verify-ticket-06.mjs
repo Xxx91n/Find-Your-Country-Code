@@ -3,15 +3,18 @@
 // 方法：**离线**（无网络、无浏览器、无 npm 依赖）读文本 + 哈希 + 目录纪律断言。
 // 覆盖：S0 自证 / S1 三层架构与目录纪律 / S2 指纹完整性 /
 //   S3 合规口径（去品牌·去追踪·provenance）/ S4 原始快照不入库 /
-//   S5 退化回路成文与工具链 / S6 命名正交 / S7 结构骨架确定性 / S8 覆盖声明。
+//   S5 退化回路成文与工具链 / S6 命名正交 / S7 结构骨架确定性 / S8 覆盖声明 /
+//   S9 双探测口径同源 / S10 结构 diff 标签变化后继续递归子树（issue #33 负例）。
 // 用法：node tests/scripts/verify-ticket-06.mjs
 // ══════════════════════════════════════════════════════════════════
 import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { containsToken } from './gate-assert.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, '..', '..');
@@ -285,6 +288,72 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     eq(count(src, /waitForTimeout\s*\(/g), 0, 'S9 ' + name + ' 探测无就地等待字面量');
     eq(count(src, /waitUntil\s*:/g), 0, 'S9 ' + name + ' 探测无就地导航条件字面量');
     eq(count(src, /\.goto\(/g), 0, 'S9 ' + name + ' 探测不自行 goto（导航只在口径模块内）');
+  }
+}
+
+// == S10 结构 diff：标签变化后继续递归子树（issue #33 负例）==
+// 修复前：父标签不同即 return，子树差异被吞——同一处改版只报父节点一条。
+// 该负例在修复前红（只剩 1 条）、修复后绿（父标签 + 子 class 两条）。
+{
+  const tmp = mkdtempSync(join(tmpdir(), 'cch06-label-recurse-'));
+  try {
+    const node = (tag, cls, children) => ({ tag, class: cls, ...(children ? { children } : {}) });
+    const wrap = (tree) => JSON.stringify({
+      id: 'neg-label-recurse',
+      skeleton_version: 1,
+      source: 'capture',
+      source_url: 'https://example.invalid/',
+      root_selector: '#neg',
+      node_count: 2,
+      sha256: '0'.repeat(64),
+      tree,
+    }, null, 2);
+    const basePath = join(tmp, 'base.json');
+    const newPath = join(tmp, 'new.json');
+    writeFileSync(basePath, wrap(node('div', ['iti__selected-country'], [node('div', ['iti__flag', 'iti__jp'])])));
+    writeFileSync(newPath, wrap(node('span', ['iti__selected-country'], [node('div', ['iti__flag', 'iti__us'])])));
+
+    // 先证明刺激在场（读回落盘文件）：父标签 div→span，且子节点 class jp→us。
+    // 刺激不在场时输出断言只会是空操作，必须先红。
+    // 父标签须锚定**根节点位置**：base 的子节点也是 div，裸 `"tag": "div"` 在
+    // 根标签没改的畸形注入里同样命中（docs/agents/review.md Q5）。
+    const baseRaw = readFileSync(basePath, 'utf8');
+    const newRaw = readFileSync(newPath, 'utf8');
+    const stims = [
+      ['base 子 class jp', baseRaw, '"iti__jp"'],
+      ['new 子 class us', newRaw, '"iti__us"'],
+      ['base 根标签 div', baseRaw, '"tree": {\n    "tag": "div"'],
+      ['new 根标签 span', newRaw, '"tree": {\n    "tag": "span"'],
+    ];
+    for (const [label, src, token] of stims) {
+      const s = containsToken(src, token);
+      check(s.ok, 'S10 负例刺激在场：' + label, s.detail);
+    }
+
+    const run = spawnSync(process.execPath, [abs(FILES.diff), '--base', basePath, '--new', newPath], { encoding: 'utf8' });
+    const out = String(run.stdout || '') + String(run.stderr || '');
+    // 路径也钉住：只断言消息文本时，「递归但没推进 path」的变体会把子节点差异
+    // 打在根路径上而仍然全绿（review #33 Q5）。根路径 / 与子路径 /0 各自成对。
+    const parent = containsToken(out, '[major] /  tag div → span');
+    const child = containsToken(out, '[major] /0  class ["iti__flag","iti__jp"] → ["iti__flag","iti__us"]');
+    check(parent.ok, 'S10 输出含父标签变化 major（div → span）', parent.detail);
+    check(child.ok, 'S10 标签不同后继续递归子树：输出含子节点 class 变化（jp → us）', child.detail);
+    // 计全部 change 行（任一档位），不只 major：只数 major 时，到处冒 [minor] /
+    // [patch] 的噪声实现蒙混过关（标签说的「无噪声」根本没被断言）。
+    // 本 fixture 两侧只有这两处差异，正确实现恰好 2 行。
+    // 覆盖边界：本 fixture 父节点两侧 class / attrs 相同，故「记完 tag 就只递归
+    // 子树、跳过本节点其余维度」的变体在此仍是 2 行、本段挡不住——它确实继续
+    // 递归了，不属 #33 修的提前 return；要区分需让父节点另有维度差异，超出本票。
+    const changeLines = out.split('\n').filter((l) => /^\s+\[(major|minor|patch)\]\s/.test(l));
+    eq(changeLines.length, 2, 'S10 该负例恰好两条变化（父标签 + 子 class；无漏报也无噪声）');
+    eq(changeLines.filter((l) => /\[major\]/.test(l)).length, 2, 'S10 两条均为 major（分级未被降档）');
+    check(/changes: 2\b/.test(out), 'S10 汇总行 changes: 2 与逐行一致');
+    check(/tier: MAJOR/.test(out), 'S10 tier 仍为 MAJOR（多报变化不改变分级语义）');
+    eq(run.status, 1, 'S10 major 退出码仍为 1（分级判定未变）');
+  } catch (e) {
+    failures.push('S10 结构 diff 负例失败: ' + ((e && e.message) || e));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
   }
 }
 

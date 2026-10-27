@@ -38,7 +38,10 @@ const worst = (a, b) => (RANK[a] >= RANK[b] ? a : b);
 
 function diff(a, b, p, out) {
   if (!a || !b) { out.push({ kind: 'major', path: p, msg: 'node missing on one side' }); return; }
-  if (a.tag !== b.tag) { out.push({ kind: 'major', path: p, msg: 'tag ' + a.tag + ' → ' + b.tag }); return; }
+  // 标签不同只记一条 major 后**继续**比对子树（issue #33）：提前 return 会让同一处
+  // 改版只报父节点那一条，子树里真实的 class / 属性差异被吞（iti-v29 `div → span`
+  // 同时国旗 class 由 jp 变 us，旧行为只报 1 条）。tier 语义不变：major 已是最重档。
+  if (a.tag !== b.tag) { out.push({ kind: 'major', path: p, msg: 'tag ' + a.tag + ' → ' + b.tag }); }
   if (JSON.stringify(a.class || null) !== JSON.stringify(b.class || null)) {
     out.push({ kind: 'major', path: p, msg: 'class ' + JSON.stringify(a.class || []) + ' → ' + JSON.stringify(b.class || []) });
   }
