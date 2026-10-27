@@ -11,8 +11,9 @@
 //   拿到指定国家。**不伪造 UA、不伪造时区**（固定 locale 不在本轮范围：
 //   只记录，不固定）。
 //
-// 全部为纯函数（无 IO、无网络）；`installCountryRoute` 只要求传入对象提供
-//   Playwright 的 `page.route`，因此门可用假 page 行为级断言拦截接线。
+// 除 `installCountryRoute`（唯一的接线动作，只调 Playwright 的 page.route）之外
+// 全是纯函数（无 IO、无网络）；`installCountryRoute` 只要求传入对象提供
+//   `page.route`，因此门可用假 page 行为级断言拦截接线。
 // ══════════════════════════════════════════════════════════════════
 
 export const DEFAULT_COUNTRY = 'us';
@@ -47,8 +48,15 @@ function ipapiStubBody(country) {
 // 固定值只有在「页面真的向桩要过响应」之后才成立：hits=0 意味着这个源压根不做
 // ipapi lookup（或被站点换掉了端点），此时把请求值 us 原样写进台账就是在声称
 // 「这次是按 us 采的」——而它从未生效。如实记 null，条件变化当场可见（issue #34）。
+// hits 拿不准（缺失 / undefined）同样落 null：宁缺勿假。
 export function resolvedCountry(country, hits) {
-  return hits > 0 ? normalizeCountry(country) : null;
+  return Number(hits) > 0 ? normalizeCountry(country) : null;
+}
+
+// 证据字段（不在强制两键之内，但必须与固定值一道入台账）：历史条目没有它就
+// 不落键，保证 06-manifest --from-ledger 复现旧条目时逐字段稳定。
+export function evidenceField(entry) {
+  return entry && HITS_FIELD in entry ? { [HITS_FIELD]: entry[HITS_FIELD] } : {};
 }
 
 // 注册拦截；返回 { country, hits() } —— hits 是「本页面向桩要了几次响应」的计数，
@@ -97,6 +105,15 @@ export function requireCaptureConditions(entry, label) {
     throw new Error(
       label + ' 的 CAPTURE-MANIFEST 条目没有采集条件（' + CONDITION_FIELDS.join(' + ') + '）——' +
       '该 archive 早于 --country 旋钮或被手工改坏；用 06-capture-forms.mjs --country <iso2> 重捕后再派生'
+    );
+  }
+  // 固定值与证据不得各说各话：声称「按 X 采」却拿不出「页面真的问过桩」的证据，
+  // 就是一条会把下次归因带错的台账（旧版工具直接落请求值 / 手工改坏）。
+  if (r.fields[COUNTRY_FIELD] != null && !(Number(entry[HITS_FIELD]) > 0)) {
+    throw new Error(
+      label + ' 台账声称固定为 ' + JSON.stringify(r.fields[COUNTRY_FIELD]) + '，但 ' + HITS_FIELD +
+      '=' + JSON.stringify(entry[HITS_FIELD]) + ' —— 桩从未被请求过就不可能有固定值（这是旧版工具直接落请求值' +
+      '或手工改坏的产物）；重捕，或如实改成 null（未固定）'
     );
   }
   return r.fields;

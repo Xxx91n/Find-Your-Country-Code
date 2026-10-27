@@ -352,8 +352,9 @@ function evidenceText(row) {
   if (e.detail && !e.title) bits.push(e.detail);
   if (row.skeleton && row.skeleton.status === 'ok') {
     bits.push('nodes=' + row.skeleton.node_count);
-    // 采集实况（骨架 meta）与 summary 的请求值同栏并列，归因时一眼可比
-    if (row.skeleton.capture_country !== undefined) bits.push('country=' + row.skeleton.capture_country);
+    // 采集实况（骨架 meta）与 summary 的请求值同栏并列，归因时一眼可比；
+    // ok 行的这一键必由骨架派生分支写入，无需再判存在性
+    bits.push('country=' + row.skeleton.capture_country);
   }
   if (row.drift && row.drift.changes != null) bits.push('changes=' + row.drift.changes);
   return bits.join('; ') || '—';

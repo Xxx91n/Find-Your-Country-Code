@@ -24,7 +24,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { readCaptureConditions } from './06-capture-country.mjs';
+import { evidenceField, readCaptureConditions } from './06-capture-country.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -57,6 +57,7 @@ function ledgerToCaptureReport() {
         // 采集条件原样带回（键缺失就不落键）：--from-ledger 复现历史条目时
         // 既不能凭空补 null，也不能把新条目的条件丢掉（issue #34）。
         ...readCaptureConditions(c, e.id),
+        ...evidenceField(c),
         http_status: c.http_status,
         raw: c.raw ? { file: strip(c.raw.path), bytes: c.raw.bytes, sha256: c.raw.sha256 } : null,
         dom: c.dom ? { file: strip(c.dom.path), bytes: c.dom.bytes, sha256: c.dom.sha256 } : null,
@@ -176,6 +177,9 @@ function main() {
     if (c) {
       e.capture = {
         ...readCaptureConditions(c, s.id),
+        // 证据与声称同处入库：git 里的 capture_country 不是口头声明，
+        // 同一块就带着「页面真的问过桩」的 ipapi_stub_hits（issue #34）
+        ...evidenceField(c),
         http_status: c.http_status,
         archive_root: cap.archiveRoot,
         archive_dir: cap.archiveDir || 'corpus-forms',
@@ -208,7 +212,7 @@ function main() {
         provenance: '每条标 source_url + captured_at + mirror_of + license_note；reconstructed 条目（手工重构镜像，GLOSSARY）以 provenance（重构依据）替代 captured_at——页面不可重现，无捕获时点，且不参与结构比对（无可信基线）',
         noPii: '不含真实 PII',
         rawNotInGit: '原始快照（含品牌内容与版权）一律出仓归档，不入 git',
-        captureConditions: '采集条件入台账（issue #34）：capture 块记 capture_country（06-capture-forms --country 固定的初始国家，默认 us）+ browser_locale（浏览器自报 locale，只记录不固定）；skeleton 块同步骨架 meta；另有证据字段 ipapi_stub_hits（桩被该页请求过几次，不入强制两键）。国别只在 hits>0 时才写值，否则如实记 null（没生效的请求值不写成固定值）。清单再生成对历史条目**不补 null**（补了台账当场漂移）；而 --from archive 的骨架派生对**键缺失**的台账硬拒（早于本旋钮 → 重捕）。',
+        captureConditions: '采集条件入台账（issue #34）：capture 块记 capture_country（06-capture-forms --country 固定的初始国家，默认 us）+ browser_locale（浏览器自报 locale，只记录不固定），并随带证据字段 ipapi_stub_hits（桩被该页请求过几次；不属强制两键，但 capture_country 非 null 时必须 >0，由 requireCaptureConditions 拦）；skeleton 块同步骨架 meta。三态：值非 null=已固定且有证据；键在值 null=已记录「未固定」；键缺失=台账早于本旋钮（骨架派生硬拒，清单再生成对历史条目不补 null，补了台账当场漂移）。',
       },
       degradationLoop: {
         step1_recapture: 'tests/scripts/06-capture-forms.mjs（重捕 → 仓库外 archive）',

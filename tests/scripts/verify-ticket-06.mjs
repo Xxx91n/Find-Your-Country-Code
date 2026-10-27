@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 import { before, containsToken } from './gate-assert.mjs';
 import {
+  DEFAULT_COUNTRY,
   IPAPI_LOOKUP_URL_RE,
   installCountryRoute,
   normalizeCountry,
@@ -99,7 +100,7 @@ const ITI_SHAPE_HTML = (iso2, dial, placeholder) => [
   '</div></body></html>',
 ].join('');
 
-function writeCaptureFixture(archiveRoot, { conditions, html }) {
+function writeCaptureFixture(archiveRoot, { conditions, html, hits = 1 }) {
   const corpus = join(archiveRoot, 'corpus-forms');
   for (const d of ['dom', 'raw']) mkdirSync(join(corpus, d), { recursive: true });
   writeFileSync(join(corpus, 'dom', 'iti-v29.html'), html);
@@ -115,7 +116,11 @@ function writeCaptureFixture(archiveRoot, { conditions, html }) {
     frames: [],
     ok: true,
   };
-  if (conditions) Object.assign(entry, conditions, { ipapi_stub_hits: 1 });
+  if (conditions) {
+    Object.assign(entry, conditions);
+    // hits === null 用来造「证据字段缺失」的台账（旧版工具直接落请求值的样子）
+    if (hits !== null) entry.ipapi_stub_hits = hits;
+  }
   writeFileSync(join(corpus, 'CAPTURE-MANIFEST.json'), JSON.stringify({
     capturedAt: '2026-10-27T00:00:00.000Z',
     archiveRoot: String(archiveRoot).replace(/\\/g, '/'),
@@ -589,6 +594,8 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     eq(unpinned.browser_locale, 'zh-CN', 'S11 未固定时 locale 照记');
 
     // (8) 入库台账传播：capture 块随带采集条件；清单自我声明口径；跑完字节级还原
+    //     （就地写 manifest.json 再还原的口径沿用 verify-ticket-12 T3(c)：净零副作用，
+    //      06-manifest 没有 --out，只能在库内生成）
     const realManifest = abs(FILES.manifest);
     const backup = readFileSync(realManifest);
     try {
@@ -597,6 +604,7 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       const ent = doc.entries.find((e) => e.id === 'iti-v29');
       eq(ent.capture.capture_country, 'jp', 'S11 采集国别入仓内台账 capture 块（git 可见的归因面）');
       eq(ent.capture.browser_locale, 'en-US', 'S11 浏览器 locale 入仓内台账 capture 块');
+      eq(ent.capture.ipapi_stub_hits, 1, 'S11 证据字段随固定值一起入库（git 里的 capture_country 不是口头声明）');
       const committedIti = JSON.parse(backup.toString('utf8')).entries.find((e) => e.id === 'iti-v29');
       eq(ent.skeleton.sha256, committedIti.skeleton.sha256, 'S11 骨架文件指纹未因采集条件而变（入库基线不动）');
       eq(ent.mirror.sha256, committedIti.mirror.sha256, 'S11 镜像页指纹未变');
@@ -637,8 +645,45 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       containsToken(CAP_SRC, '[HITS_FIELD]: 0').ok, 'S11 采集条目先落三个采集条件键（缺值也落键，不是不写）');
     check(containsToken(LOGIN_SRC, '[COUNTRY_FIELD]: null').ok,
       'S11 附着条目显式记「未固定」（与「台账早于旋钮」两种语义不混）');
+    // 声称固定却拿不出证据：country 非 null 而桩从未被请求（hits=0）→ 同样硬拒。
+    // 这是「旧版工具直接把请求值落台账」或手工改坏的样子，放过去就会把下次归因带错。
+    const archNoProof = join(tmp, 'arch-noproof');
+    writeCaptureFixture(archNoProof, {
+      conditions: { capture_country: 'jp', browser_locale: 'en-US' },
+      hits: 0,
+      html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'),
+    });
+    const noProof = deriveFromArchive(archNoProof, join(tmp, 'noproof.json'));
+    eq(noProof.code, 1, 'S11 「声称固定但 hits=0」的台账硬拒（固定值必须有证据）');
+    check(containsToken(noProof.out, '桩从未被请求过').ok, 'S11 无证据固定的消息点名成因', noProof.out.trim().slice(0, 120));
+    const archNoHitsKey = join(tmp, 'arch-nohitskey');
+    writeCaptureFixture(archNoHitsKey, {
+      conditions: { capture_country: 'jp', browser_locale: 'en-US' },
+      hits: null,
+      html: ITI_SHAPE_HTML('jp', '+81', '90-1234-5678'),
+    });
+    eq(deriveFromArchive(archNoHitsKey, join(tmp, 'nohitskey.json')).code, 1,
+      'S11 证据字段缺失同样硬拒（判不出就宁缺勿假）');
   } finally {
     rmSync(tmp, { recursive: true, force: true });
+  }
+
+  // (11) 默认国别是承重常量：漂移 workflow 不传 --country，每周运行实际就按默认采
+  eq(DEFAULT_COUNTRY, 'us', 'S11 默认国别 == us（spec #32 Q10 的字面对象；改这个值必须同时改这条）');
+  check(containsToken(CAP_SRC, 'args.countryRaw == null ? DEFAULT_COUNTRY : args.countryRaw').ok,
+    'S11 未传 --country 才回落默认（默认值取自库里的常量，不是就地写死 us）');
+  check(containsToken(DRIFT_SRC, 'country: DEFAULT_COUNTRY').ok, 'S11 编排器默认与采集默认同源');
+  const WF_DRIFT = read('.github/workflows/corpus-drift.yml');
+  check(containsToken(WF_DRIFT, 'node tests/scripts/06-corpus-drift.mjs').ok && !/--country/.test(WF_DRIFT),
+    'S11 漂移 workflow 不覆盖 --country：默认值即 CI 的采集条件（一条命令锁住这条依赖）');
+
+  // (12) 反向锁「不采用 UA 或时区伪造」（验收项 3）：启动面只有 headless + 既有 UA
+  check(containsToken(CAP_SRC, 'chromium.launch({ headless: HEADLESS })').ok,
+    'S11 浏览器启动参数只有 headless（没有加时区/locale/geolocation 仿真）');
+  check(containsToken(CAP_SRC, 'browser.newPage({ userAgent: UA })').ok,
+    'S11 newPage 只带既有 UA 常量（沿用冒烟层口径，非本轮新造的伪装）');
+  for (const banned of ['timezoneId', 'geolocation', 'bypassCSP', '--disable-blink-features', 'emulateMedia']) {
+    check(!CAP_SRC.includes(banned), 'S11 采集工具不含伪装/反自动化开关：' + banned);
   }
 }
 
