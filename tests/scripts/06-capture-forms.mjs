@@ -127,7 +127,9 @@ async function renderDom(url, shotPath, country) {
     // 请求走真出口 IP —— 正是本轮要消灭的假漂移成因（issue #34）。
     const pin = await installCountryRoute(page, country);
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    // 等 SPA 首屏挂载：网络空闲或 3s 上限，不硬等（退化回路要的是形态，不是完整加载）
+    // 等 SPA 首屏挂载：网络空闲或 8s 上限，不硬等（退化回路要的是形态，不是完整加载）。
+    // 上限到了还没落定就照采——同国别重捕偶尔会差一条 attrs（utils 后应用的 placeholder），
+    // 边界与归属见 tests/corpus/forms/README.md §4「稳定性的边界」（issue #34）。
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
     const html = await page.content();
     await page.screenshot({ path: shotPath, fullPage: false });

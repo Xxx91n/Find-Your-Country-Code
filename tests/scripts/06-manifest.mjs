@@ -52,7 +52,7 @@ function ledgerToCaptureReport() {
       const c = e.capture;
       // 矛盾状态不许逐字节复现下去：仓内台账带着「声称固定却无证据」时，
       // --from-ledger 也必须拒绝，而不是把它当成既有事实原样重建（issue #34）。
-      requireEvidenceForClaim(c, e.id, '仓内台账 manifest.json 的 capture 块');
+      requireEvidenceForClaim(c, e.id, 'ledger');
       return {
         id: e.id,
         source_url: e.source_url,
@@ -179,7 +179,7 @@ function main() {
     // ③ 原始快照（**仓库外**：只登记指纹与归档相对路径）
     if (c) {
       // 写 capture 块之前先验声称与证据一致（此处抛出发生在唯一一次写盘之前）
-      requireEvidenceForClaim(c, s.id, 'CAPTURE-MANIFEST 条目');
+      requireEvidenceForClaim(c, s.id, 'archive');
       e.capture = {
         ...readCaptureConditions(c, s.id),
         // 证据与声称同处入库：git 里的 capture_country 不是口头声明，

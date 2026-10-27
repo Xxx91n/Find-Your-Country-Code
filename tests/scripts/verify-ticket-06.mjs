@@ -631,6 +631,9 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       check(containsToken(decl, 'capture_country').ok && containsToken(decl, 'browser_locale').ok,
         'S11 清单声明点名的就是那两个真实键名（声明与字段同源，不是一段随便的说明文字）', decl.slice(0, 80));
       const mgSrc = read(FILES.manifestGen);
+      check(containsToken(mgSrc, "requireEvidenceForClaim(c, e.id, 'ledger')").ok &&
+        containsToken(mgSrc, "requireEvidenceForClaim(c, s.id, 'archive')").ok,
+        'S11 两处写盘前的证据核验各自声明所在层（出路文案随层而变，不靠显示文本相等猜）');
       check(containsToken(mgSrc, '...readCaptureConditions(skel, s.id)').ok,
         'S11 skeleton 块同样抄骨架自带的采集条件');
       check(containsToken(mgSrc, '...readCaptureConditions(c, e.id)').ok,

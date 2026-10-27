@@ -116,21 +116,30 @@ export function captureConditionFields({ country, hits, locale }) {
 // 三个调用面共用：06-skeleton 派生前、06-manifest 写 capture 块前（archive 模式）、
 // 以及 --from-ledger 从仓内台账重建时——仓内台账也接受这个状态的话，
 // assertLedgerStable 会把矛盾逐字节复现成既成事实（它比矛盾更晚，永远看不到）。
+// 矛盾住在哪一层，出路就写哪一层的话：archive 侧的原始数据可以重捕；仓内台账侧只能先归因，
+// 手改成 null 等于把证据缺口藏起来（而且 --from-ledger 的 cur 与 out 同源于该文件，
+// 改完 assertLedgerStable 永远看不见）。按枚举取文案，不按显示文本相等判定——
+// 否则改一句提示词就换错出路。
+const CLAIM_REMEDIES = {
+  archive: {
+    at: 'CAPTURE-MANIFEST 条目',
+    way: '用 06-capture-forms.mjs --country <iso2> 重捕，或如实改成 null（未固定）',
+  },
+  ledger: {
+    at: '仓内台账 manifest.json 的 capture 块',
+    way: '先归因（archive 侧原始台账说什么），归因后重捕；手改仓内台账只是把证据缺口藏起来',
+  },
+};
+
 // 键不存在（历史条目）或值为 null（已记录「未固定」）都不触发：那不是矛盾。
-// `where` 说清矛盾数据住在哪一层：一条消息一个成因——archive 侧出路是重捕，
-// 仓内台账侧出路是先归因；后者绝不建议手改成 null（那等于用改账本抹掉证据缺口）。
-export function requireEvidenceForClaim(entry, label, where) {
+export function requireEvidenceForClaim(entry, label, kind) {
   if (!entry || !(COUNTRY_FIELD in entry) || entry[COUNTRY_FIELD] == null) return;
-  if (!(Number(entry[HITS_FIELD]) > 0)) {
-    const at = where || 'CAPTURE-MANIFEST 条目';
-    const way = at === 'CAPTURE-MANIFEST 条目'
-      ? '用 06-capture-forms.mjs --country <iso2> 重捕，或如实改成 null（未固定）'
-      : '先归因（archive 侧的原始台账说什么），归因后重捕；手改仓内台账只是把证据缺口藏起来';
-    throw new Error(
-      label + ' 在 ' + at + ' 里声称固定为 ' + JSON.stringify(entry[COUNTRY_FIELD]) + '，但 ' + HITS_FIELD +
-      '=' + JSON.stringify(entry[HITS_FIELD]) + ' —— 桩从未被请求过就不可能有固定值；' + way
-    );
-  }
+  if (Number(entry[HITS_FIELD]) > 0) return;
+  const r = CLAIM_REMEDIES[kind || 'archive'];
+  throw new Error(
+    label + ' 在 ' + r.at + ' 里声称固定为 ' + JSON.stringify(entry[COUNTRY_FIELD]) + '，但 ' + HITS_FIELD +
+    '=' + JSON.stringify(entry[HITS_FIELD]) + ' —— 桩从未被请求过就不可能有固定值；' + r.way
+  );
 }
 
 export function requireCaptureConditions(entry, label) {
