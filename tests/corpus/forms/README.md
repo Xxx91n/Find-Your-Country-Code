@@ -108,13 +108,15 @@ tests/corpus/forms/
 - **账本不是语料内容**：drift-degradations.json 只记录运行期可达性，不改变任何镜像页 / 结构骨架 / 指纹，因此**不需要重生成 manifest.json 或更新骨架基线**（例外口径；指纹完整性仍由 verify-ticket-06 守，账本字段与语料零副作用由 verify-ticket-44 守，周排期 / 自动告警面无写回由 verify-ticket-45 守）。
 - **无写回红线**：新骨架一律 `--out` 到仓库外 archive；报告拒绝写入 `tests/corpus/**`；workflow 不调用 `06-manifest`，也没有任何 git 写动作。**唯一写动作是开 / 更新漂移 issue**（`issues: write`，仓库内容 `contents: read`）；清单与镜像页更新永远是人工归因后的显式动作。
 - **有头浏览器**：CI 用 `xvfb-run` 提供虚拟显示（复用真实站点冒烟层已验证的启动口径）；`06-capture-forms.mjs` 默认有头，无 DISPLAY 时回退 headless 并告警，`CCH_CAPTURE_HEADLESS=1` 可强制。
+- **采集国别固定（issue #34 / spec #32 Q7/Q10/Q16）**：演示页用 `initialCountryLookup` 按访问者 IP 定初始国家，同一份代码换个出口 IP 就报一次假漂移（基线在 JP 下采、CI 在 US 下重捕即此）。采集工具因此收 `--country`（默认 `us`），**路由拦截** `ipapi.co` 的 lookup 响应回指定国家；不伪造 UA、不伪造时区。固定的是**初始国家**，不是 locale——`browser_locale` 只记录浏览器现场自报值。两处同时留痕：CAPTURE-MANIFEST 逐条 `capture_country` + `browser_locale` + `ipapi_stub_hits`，骨架 meta 由 `--from archive` 抄同一份。归因时看矩阵「请求值 vs 骨架实况」两栏即可分清「站点改了」与「采集条件变了」；`ipapi_stub_hits=0` 表示该源压根不做 IP lookup（固定对它无作用，如实记而不是假装生效）。**归一化层不动**：placeholder 与国旗 class 是 README §4 明列的要抓差异面，在归一化里抹平等于自废探测能力——环境噪声在采集侧固定，不在归一化侧掩盖。`--from archive` 对缺这两个键的旧台账硬拒（宁可让管线停下来重捕，也不产一个「条件未知」的骨架）；`--attach` 与 `--country` 互斥（附着模式不导航也不拦截，固定不了国别）。
 
 **命令**：
 
 ```bash
 # ① 重捕（显式动作；不进 CI pull_request 门）
-node tests/scripts/06-capture-forms.mjs                 # 全部候选
+node tests/scripts/06-capture-forms.mjs                 # 全部候选（按 us 采）
 node tests/scripts/06-capture-forms.mjs --id iti-v29    # 单个
+node tests/scripts/06-capture-forms.mjs --country jp    # 指定国别（默认 us）
 # ①-bis 登录态镜像采集（人工 CDP 附着旁路；runbook 见 LOGIN-CAPTURE.md；
 #     CI/自动化永不登录，产物同构 + login-derived + 敏感字段形状占位）
 node tests/scripts/06-capture-forms.mjs --attach --id <id> --cdp-port 9222
@@ -136,6 +138,7 @@ node tests/scripts/06-manifest.mjs --from-ledger
 node tests/scripts/verify-ticket-06.mjs
 # ⑤ 漂移探测（advisory 正式模式；corpus-drift.yml 的 schedule / dispatch 运行面）
 node tests/scripts/06-corpus-drift.mjs                 # 重捕 → 新骨架 → 结构 diff → 可达性矩阵
+                                                       # （采集按 --country 固定国别，默认 us）
 node tests/scripts/06-corpus-drift.mjs --no-capture    # 复用已有 archive（离线）
 # 漂移告警投递（消费 drift-issues.json；--dry-run 离线看投递计划，不调用 gh）
 node tests/scripts/06-drift-issue.mjs --dry-run
@@ -157,6 +160,8 @@ node tests/scripts/verify-ticket-45.mjs
                                        //   | reconstructed（手工重构镜像，票 T4：
                                        //     附 provenance，永不参与结构比对）
   "source_url": "https://intl-tel-input.com/",
+  "capture_country": "us",                // 采集条件（issue #34）：--from archive 才有，
+  "browser_locale": "en-US",              //   取自同 archive 的 CAPTURE-MANIFEST 条目
   "root_selector": ".iti",
   "node_count": 36,
   "sha256": "…",                       // 归一化树的规范序列化哈希（自校验）
