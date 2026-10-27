@@ -12,7 +12,7 @@
 //   红绿方向。**离线**（无网络、无浏览器、无 npm 依赖），仓库内零写入。
 //
 // 覆盖：
-//   P0 门自身接线（plan / matrix / audit 全绿）
+//   P0 门自身接线（plan 注册 + audit 全绿；matrix 面由 A15/A16 守，不另设解析）
 //   P1 镜像保真：原样镜像 audit 全绿（负例基线，防止镜像本身是坏的就乱报）
 //   N1 删一个 LEGACY 键 → A2 与 A4 同红（不变量真的在守）
 //   N2 删一个**新**键（非 LEGACY）→ A2 保持绿，A16 红（不变量不越权）
@@ -94,9 +94,9 @@ function editPlan(root, mutate) {
 
 const FAKE = { name: 'fake ticket proving no count cap (issue #20)', scripts: ['verify-ticket-46.mjs'] };
 
-// 在 matrix 的**列表项区间**末尾插入一行（不改缩进假设：沿用同行最后一项的前缀）。
-// 必须真的落在 `matrix: ticket:` 之下——发散的缩进会让插入变成注释块里的坏 YAML。
-const MATRIX_ITEM = /^(\s*)-\s*'([0-9][0-9a-z-]*)'\s*$/gm;
+// 在 matrix 的**列表项区间**末尾插入一行（不改缩进假设：沿用最后一项自身的前缀）。
+// 必须真的落在 `matrix: ticket:` 之下——行尾注释照常保留，新行另起一行。
+const MATRIX_ITEM = /^(\s*)-\s*'([0-9][0-9a-z-]*)'\s*(#.*)?$/gm;
 function addMatrixKey(root, key) {
   const p = join(root, FILES.workflow);
   const src = readFileSync(p, 'utf8');
@@ -194,7 +194,7 @@ function addMatrixKey(root, key) {
     runAudit
   );
   eq(r.code, 1, 'N4 matrix 外声明票 99 时 audit 退出 1（红）');
-  check(sawFail(r.out, 'A15'), 'N4 A15 变红（matrix 区块外的列表项/注释不算覆盖）');
+  check(sawFail(r.out, 'A15'), 'N4 A15 变红（matrix 区块外的列表项不算覆盖）');
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -225,18 +225,22 @@ function addMatrixKey(root, key) {
     },
     (root) => {
       const audit = runAudit(root);
-      // 反向核验插入位置：插入行必须是缩进对齐的真实列表项，不是注释块里的坏 YAML
-      const inserted = [...readFileSync(join(root, FILES.workflow), 'utf8').matchAll(MATRIX_ITEM)]
-        .map((m) => m[2]);
-      return { audit, inserted };
+      // 位置核验（可失败）：假票必须**紧跟在原最后一个 matrix 项之后**且缩进相同。
+      // 只数「全文出现几次 '99'」是恒真的——插入点跑到文件别处它照样通过。
+      const lines = readFileSync(join(root, FILES.workflow), 'utf8').split('\n');
+      const anchor = lines.findIndex((l) => /^\s*-\s*'46'\s*$/.test(l));
+      const next = anchor < 0 ? null : lines[anchor + 1];
+      const indent = anchor < 0 ? null : lines[anchor].match(/^\s*/)[0];
+      const placement = { anchor, next, ok: anchor >= 0 && next === indent + "- '99'" };
+      return { audit, placement };
     }
   );
-  const { audit, inserted } = r;
+  const { audit, placement } = r;
   eq(audit.code, 0, 'P2 新增票（plan + matrix 同步）后 audit 退出 0');
   check(sawPass(audit.out, 'A15') && sawPass(audit.out, 'A16'), 'P2 A15/A16 皆 PASS（假票真的进了 matrix，非注释蒙混）');
   check(sawPass(audit.out, 'A2'), 'P2 A2 仍为 PASS（无票数上限：加票零维护，AC2 实证）');
-  check(inserted.filter((k) => k === '99').length === 1,
-    'P2 假票在 matrix 中恰出现一次（插入点解析正确）');
+  check(placement.ok, 'P2 假票紧跟在原末项之后且缩进一致（插入点在 matrix 内）',
+    JSON.stringify(placement));
 }
 
 console.log('-----------------------------');
