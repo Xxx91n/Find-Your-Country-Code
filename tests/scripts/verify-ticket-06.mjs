@@ -679,6 +679,8 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
     const noProof = deriveFromArchive(archNoProof, noProofOut);
     eq(noProof.code, 1, 'S11 「声称固定但 hits=0」的台账硬拒（固定值必须有证据）');
     check(containsToken(noProof.out, '桩从未被请求过').ok, 'S11 无证据固定的消息点名成因', noProof.out.trim().slice(0, 120));
+    check(containsToken(noProof.out, '在 CAPTURE-MANIFEST 条目 里声称固定').ok,
+      'S11 骨架侧的拒绝声明数据住在 archive 层（出路是重捕；默认值不能是没人看的承重逻辑）', noProof.out.trim().slice(0, 140));
     eq(existsSync(noProofOut), false, 'S11 无证据固定不落骨架文件（拒在写盘之前）');
     const archNoHitsKey = join(tmp, 'arch-nohitskey');
     writeCaptureFixture(archNoHitsKey, {

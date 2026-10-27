@@ -151,7 +151,7 @@ export function requireCaptureConditions(entry, label) {
       '该 archive 早于 --country 旋钮或被手工改坏；用 06-capture-forms.mjs --country <iso2> 重捕后再派生'
     );
   }
-  requireEvidenceForClaim(entry, label);
+  requireEvidenceForClaim(entry, label, 'archive');
   return r.fields;
 }
 
