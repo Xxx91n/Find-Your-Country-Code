@@ -72,9 +72,12 @@ const legacyKeyOf = (wf) => wf.replace(/^verify-/, '').replace(/\.yml$/, '');
 // 不扫全文件——文件别处的 `- 'NN'`（其他列表、注释块、尾部追加）都不算覆盖。
 // 返回 null 表示**解析不出来**（调用方据此报「解析不到」而不是「缺这些票」：
 // 一个成因一条消息，否则把 workflow 写坏的人会去补票号）。
-// 三个 fail-closed 口径：
-//   · `ticket:` 必须在**本 matrix 区块内**——越过区块即停，后续 job 的列表不算；
+// 五条 fail-closed 口径：
+//   · `ticket:` 必须是 `matrix:` 的**直接子键**——对象型 matrix 条目下同名的
+//     `ticket:`（如 `matrix.config.ticket`）不是票号轴，不得冒充；
+//   · `ticket:` 与本 matrix 区块都必须在本区块内结束，后续 job 的列表不算；
 //   · 注释行与空行不结束区块/列表（YAML 里注释不打断结构）；
+//   · 序列项允许两种 YAML 写法：与 `ticket:` 同缩进（flush）或缩进 +2（嵌套）；
 //   · 每个列表项都必须能解析成合法票号，解析不了就走 null，**不静默跳过**。
 function matrixTicketKeys(src) {
   const indentOf = (l) => l.match(/^\s*/)[0].length;
@@ -85,12 +88,26 @@ function matrixTicketKeys(src) {
   if (at < 0) return null;
   const matrixIndent = indentOf(lines[at]);
 
+  // 直接子键缩进 = matrix 之后第一条非空非注释行的缩进（必须深于 matrix 本身）。
+  let childIndent = -1;
+  for (let i = at + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (isSkippable(l)) continue;
+    const ind = indentOf(l);
+    if (ind <= matrixIndent) break;
+    childIndent = ind;
+    break;
+  }
+  if (childIndent < 0) return null;
+
   let ticketAt = -1;
   for (let i = at + 1; i < lines.length; i++) {
     const l = lines[i];
     if (isSkippable(l)) continue;
-    if (indentOf(l) <= matrixIndent) break;
-    if (/^\s*ticket:\s*(#.*)?$/.test(l)) { ticketAt = i; break; }
+    const ind = indentOf(l);
+    if (ind <= matrixIndent) break;
+    // 只认直接子键：更深缩进的同名键属于对象型条目的内部结构
+    if (ind === childIndent && /^\s*ticket:\s*(#.*)?$/.test(l)) { ticketAt = i; break; }
   }
   if (ticketAt < 0) return null;
 
@@ -99,7 +116,17 @@ function matrixTicketKeys(src) {
   for (let i = ticketAt + 1; i < lines.length; i++) {
     const line = lines[i];
     if (isSkippable(line)) continue;
-    if (indentOf(line) <= ticketIndent) break;
+    const ind = indentOf(line);
+
+    if (ind < ticketIndent) break;
+    const isItem = /^\s*-\s+/.test(line);
+    if (!isItem) {
+      // 同缩进的兄弟键结束列表；更深缩进的非序列行说明这不是票号序列
+      if (ind === ticketIndent) break;
+      return null;
+    }
+    // flush 写法与 `ticket:` 同缩进；嵌套写法 +2。其余缩进不认。
+    if (ind !== ticketIndent && ind !== ticketIndent + 2) return null;
 
     const item = /^\s*-\s+(.*)$/.exec(line);
     if (!item) return null;

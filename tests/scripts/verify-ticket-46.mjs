@@ -284,6 +284,51 @@ function addMatrixKey(root, key) {
 }
 
 // ══════════════════════════════════════════════════════════════════
+// N9 对象型 matrix 条目里的同名 ticket: 不冒充票号轴（#39 review 二轮）
+//   `matrix.config.ticket` 是对象内部结构，不是矩阵维度。直接子键口径下
+//   只认与 matrix 其余直接子键同缩进的那一个。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      const p = join(root, FILES.workflow);
+      const src = readFileSync(p, 'utf8');
+      // 在 matrix 内加一个对象型条目，其内部含同名 ticket:（含 plan 未知的 99）
+      writeFileSync(p, src.replace(
+        /^(\s*)ticket:\s*$/m,
+        '$1config:\n$1  ticket:\n$1    - \'99\'\n$1ticket:'
+      ));
+    },
+    runAudit
+  );
+  eq(r.code, 0, 'N9 对象型条目内的 ticket: 不被误取（audit 仍绿）');
+  check(sawPass(r.out, 'A16'), 'N9 A16 PASS（99 未被当成 matrix 票号）');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// N10 flush 序列写法（同 `ticket:` 缩进）被正常解析（#39 review 二轮）
+//   YAML 允许序列项与父键同缩进；旧口径按 `<= ticketIndent` 直接 break，
+//   把这种合法写法判成空列表。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      const p = join(root, FILES.workflow);
+      const src = readFileSync(p, 'utf8');
+      // 把 10 空格缩进的列表项整体改成与 ticket: 同缩进的 flush 写法
+      writeFileSync(p, src.replace(
+        /^(\s*)ticket:\n((?:\s*- '[^']*'\n)+)/m,
+        (m, ind, items) => ind + 'ticket:\n' +
+          items.split('\n').filter(Boolean).map((l) => l.replace(/^ {10}/, '        ')).join('\n') + '\n'
+      ));
+    },
+    runAudit
+  );
+  eq(r.code, 0, 'N10 flush 序列写法 audit 仍绿');
+  check(sawPass(r.out, 'A15') && sawPass(r.out, 'A16'), 'N10 A15/A16 皆 PASS（flush 写法未被判成空列表）');
+}
+
+// ══════════════════════════════════════════════════════════════════
 // P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 // ══════════════════════════════════════════════════════════════════
 {
