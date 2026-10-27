@@ -22,9 +22,12 @@
 // 用法：
 //   node tests/scripts/06-corpus-drift.mjs [--archive <dir>] [--out <dir>]
 //        [--id <id> ...] [--no-capture] [--degradations <file>]
-//        [--strict] [--headless]
+//        [--strict] [--headless] [--country <iso2>]
 //   --no-capture     复用 archive 里已有的 CAPTURE-MANIFEST（离线 / 门测试）
 //   --id             可重复；多个 id 时抓取全量再本地过滤（capture CLI 只收单个 --id）
+//   --country        传给采集工具的固定初始国家（默认 us）；--no-capture 时只作
+//                    「本次运行按什么条件跑」的声明，逐源实况看骨架 meta
+//                    （issue #34：不固定国别 = 换个出口 IP 就报一次假漂移）
 //   --degradations   降级登记文件（默认 tests/corpus/forms/drift-degradations.json）
 //   --strict         漂移 minor/major 也判红（仅手动诊断；schedule 不带——
 //                    正式模式的「红灯」是开 issue，不阻断运行）
@@ -38,6 +41,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertArchiveOutsideRepo } from './12-login-capture.mjs';
+import { DEFAULT_COUNTRY, normalizeCountry } from './06-capture-country.mjs';
 import {
   buildDriftIssues,
   DRIFT_ISSUE_LABEL,
@@ -101,6 +105,7 @@ function parseArgs(argv) {
     degradations: DEFAULT_DEGRADATIONS,
     strict: false,
     headless: false,
+    country: DEFAULT_COUNTRY,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -111,6 +116,7 @@ function parseArgs(argv) {
     else if (a === '--degradations') o.degradations = argv[++i];
     else if (a === '--strict') o.strict = true;
     else if (a === '--headless') o.headless = true;
+    else if (a === '--country') o.country = argv[++i];
     else throw new Error('unknown arg: ' + a);
   }
   return o;
@@ -344,7 +350,11 @@ function evidenceText(row) {
   if (e.title) bits.push('title=' + JSON.stringify(e.title));
   if (e.error) bits.push('error=' + e.error);
   if (e.detail && !e.title) bits.push(e.detail);
-  if (row.skeleton && row.skeleton.status === 'ok') bits.push('nodes=' + row.skeleton.node_count);
+  if (row.skeleton && row.skeleton.status === 'ok') {
+    bits.push('nodes=' + row.skeleton.node_count);
+    // 采集实况（骨架 meta）与 summary 的请求值同栏并列，归因时一眼可比
+    if (row.skeleton.capture_country !== undefined) bits.push('country=' + row.skeleton.capture_country);
+  }
   if (row.drift && row.drift.changes != null) bits.push('changes=' + row.drift.changes);
   return bits.join('; ') || '—';
 }
@@ -357,6 +367,9 @@ function renderMarkdown(summary) {
   L.push('- commit: ' + (summary.run.commit || '（本地运行）'));
   if (summary.run.run_url) L.push('- run: ' + summary.run.run_url);
   L.push('- 浏览器: ' + summary.browser + '（CI 经 xvfb-run 提供有头虚拟显示）');
+  L.push('- 采集国别（本次运行请求）: `' + summary.capture_country_requested + '`' +
+    '（ipapi.co lookup 被路由拦截固定；逐源实况见矩阵「证据」列 country=…，' +
+    '未做 IP lookup 的源固定不生效，如实记 null/未固定）');
   L.push('- archive: ' + summary.archive_root + '（仓库外；原始快照不入库）');
   L.push('- 契约: ' + (summary.contract.ok ? 'OK' : 'VIOLATION ×' + summary.contract.violations.length));
   L.push('');
@@ -464,6 +477,7 @@ function main() {
   const outDir = path.resolve(args.out);
 
   // ── 全部护栏先于第一次写盘 / 网络动作（review：检查必须在首个 mutation 之前） ──
+  args.country = normalizeCountry(args.country);
   assertArchiveOutsideRepo(path.join(archiveRoot, 'corpus-forms'), REPO);
   assertReportOutsideCorpus(outDir);
 
@@ -479,6 +493,9 @@ function main() {
   let captureStatus = null;
   if (!args.noCapture) {
     const capArgs = [TOOLS.capture, '--archive', archiveRoot];
+    // 国别显式传给采集（issue #34）：GitHub runner 的出口 IP 每次可能不同，
+    // 不传就等于让「按哪个国家采」继续由运气决定——假漂移的成因本身。
+    capArgs.push('--country', args.country);
     // capture CLI 的 --id 只收单个（后者覆盖前者）；多 id 时抓全量再在本地过滤。
     if (scope.length === 1) capArgs.push('--id', scope[0].id);
     const r = run(capArgs, args.headless ? { CCH_CAPTURE_HEADLESS: '1' } : null);
@@ -537,6 +554,10 @@ function main() {
           file: posix(path.relative(archiveRoot, outPath)),
           node_count: skel.node_count,
           tree_sha256: skel.sha256,
+          // 实况而非声明：这一行的国别来自骨架自带 meta（= 采集时的固定值）。
+          // 与 summary.capture_country_requested（本次运行请求的值）对照即可看出
+          // 「条件变了」还是「站点改了」（issue #34）。
+          capture_country: skel.capture_country ?? null,
         };
       } else {
         skeleton = { status: 'failed', log: tail(logOf(r), 12) };
@@ -627,6 +648,9 @@ function main() {
     run: runMetadata(),
     archive_root: posix(archiveRoot),
     browser: browserMode(args),
+    // 本次运行**请求**的固定国别（逐源实况看 matrix[].skeleton.capture_country）；
+    // 两者不一致即说明该源压根没被固定（如 --no-render / 不做 lookup 的源）。
+    capture_country_requested: args.country,
     mode: args.noCapture ? 'no-capture (existing archive)' : 'capture',
     capture: { exit_code: captureStatus, log_tail: captureLog.length ? tail(captureLog.join('\n'), 40) : '' },
     contract: { ok: violations.length === 0, violations, warnings },
