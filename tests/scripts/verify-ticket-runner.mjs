@@ -70,21 +70,23 @@ const legacyKeyOf = (wf) => wf.replace(/^verify-/, '').replace(/\.yml$/, '');
 
 // caller matrix 的票号清单：只在 `matrix:` 下的 `ticket:` 列表项区间里取。
 // 不扫全文件——文件别处的 `- 'NN'`（其他列表、注释块、尾部追加）都不算覆盖。
+// 返回 null 表示**没找到 matrix 区块**（调用方据此报「解析不到」而不是
+// 「缺这些票」：一个成因一条消息，否则把 workflow 写坏的人会去补票号）。
 function matrixTicketKeys(src) {
   const lines = src.split('\n');
-  const at = lines.findIndex((l) => /^(\s*)matrix:\s*$/.test(l));
-  if (at < 0) return [];
+  const at = lines.findIndex((l) => /^(\s*)matrix:\s*(#.*)?$/.test(l));
+  if (at < 0) return null;
   const matrixIndent = lines[at].match(/^\s*/)[0].length;
   const ticketAt = lines.findIndex((l, i) =>
-    i > at && /^(\s*)ticket:\s*$/.test(l) && l.match(/^\s*/)[0].length > matrixIndent);
-  if (ticketAt < 0) return [];
+    i > at && /^(\s*)ticket:\s*(#.*)?$/.test(l) && l.match(/^\s*/)[0].length > matrixIndent);
+  if (ticketAt < 0) return null;
   const ticketIndent = lines[ticketAt].match(/^\s*/)[0].length;
   const keys = [];
   for (let i = ticketAt + 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line.trim()) continue;
     if (line.match(/^\s*/)[0].length <= ticketIndent) break;
-    const m = /^\s*-\s*'([0-9][0-9a-z-]*)'\s*$/.exec(line);
+    const m = /^\s*-\s*'([0-9][0-9a-z-]*)'\s*(#.*)?$/.exec(line);
     if (m) keys.push(m[1]);
   }
   return keys;
@@ -226,9 +228,12 @@ if (mode === '--audit') {
     // 只认 `matrix: ticket:` 区块内的列表项：注释块、文件别处的 `- 'NN'`
     // 都不算覆盖（verify-ticket-46 N4 锁住该口径）。
     const matrixKeys = matrixTicketKeys(c);
-    const missKeys = pKeys.filter(k => !matrixKeys.includes(k));
-    const extraKeys = matrixKeys.filter(k => !pKeys.includes(k));
-    ck('A15 caller matrix covers every plan ticket', missKeys.length === 0, 'missing: ' + missKeys.join(', '));
+    ck('A14b caller has a parseable matrix ticket list', matrixKeys !== null,
+      'no `matrix:`/`ticket:` list found in verify-tickets.yml (tickets not verifiable)');
+    const missKeys = matrixKeys === null ? pKeys : pKeys.filter(k => !matrixKeys.includes(k));
+    const extraKeys = matrixKeys === null ? [] : matrixKeys.filter(k => !pKeys.includes(k));
+    ck('A15 caller matrix covers every plan ticket', matrixKeys !== null && missKeys.length === 0,
+      matrixKeys === null ? 'matrix unparseable — see A14b' : 'missing: ' + missKeys.join(', '));
     ck('A16 caller matrix has no unknown ticket', extraKeys.length === 0, 'extra: ' + extraKeys.join(', '));
     ck('A17 caller has no literal cch/<NN> dead branch trigger', !/cch\/[0-9]/.test(c));
   }

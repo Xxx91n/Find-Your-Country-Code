@@ -17,7 +17,8 @@
 //   N1 删一个 LEGACY 键 → A2 与 A4 同红（不变量真的在守）
 //   N2 删一个**新**键（非 LEGACY）→ A2 保持绿，A16 红（不变量不越权）
 //   N3 plan 加键但 matrix 缺行 → A15 红（新增面的等全守卫仍在）
-//   N4 plan 加键 + matrix 注释行 → A15 仍红（被注释的票不算覆盖）
+//   N4 plan 加键 + matrix 区块外的裸列表项 → A15 仍红（区块外不算覆盖）
+//   N5 matrix 区块改名 → A14b/A15 红（解析不到 ≠ 全覆盖，fail-closed）
 //   P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 //
 // 用法：node tests/scripts/verify-ticket-46.mjs
@@ -116,8 +117,8 @@ function addMatrixKey(root, key) {
   check(!!t46, 'P0 plan 注册票 46（issue #20 audit A2 不变量）');
   eq(JSON.stringify(t46 && t46.scripts), JSON.stringify(['verify-ticket-46.mjs']),
     'P0 票 46 门脚本唯一指向本文件');
-  check(new RegExp("^\\s*-\\s*'46'\\s*$", 'm').test(read(FILES.workflow)),
-    'P0 verify-tickets.yml matrix 含 46（A15/A16 全等守卫面）');
+  // matrix 接线不再单独断言：A15（每个 plan 键都在 matrix 内）与上面的
+  // 「plan 含 46」合起来已蕴含「matrix 含 46」，重复断言只会引入第二套解析口径。
   const audit = runAudit(ROOT);
   eq(audit.code, 0, 'P0 仓库本体 audit 全绿');
 }
@@ -194,6 +195,23 @@ function addMatrixKey(root, key) {
   );
   eq(r.code, 1, 'N4 matrix 外声明票 99 时 audit 退出 1（红）');
   check(sawFail(r.out, 'A15'), 'N4 A15 变红（matrix 区块外的列表项/注释不算覆盖）');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// N5 matrix 区块被改名 → A14b/A15 红（解析不到要报「解析不到」，不是「缺票」）
+//   锁住 fail-closed：找不到 `matrix:`/`ticket:` 时绝不能当作「全都覆盖了」。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      const p = join(root, FILES.workflow);
+      writeFileSync(p, readFileSync(p, 'utf8').replace(/^(\s*)matrix:/m, '$1matrix2:'));
+    },
+    runAudit
+  );
+  eq(r.code, 1, 'N5 matrix 区块改名后 audit 退出 1（红）');
+  check(sawFail(r.out, 'A14b'), 'N5 A14b 变红（报解析不到 matrix，成因单一）');
+  check(sawFail(r.out, 'A15'), 'N5 A15 变红（不把「解析不到」当作「全覆盖」）');
 }
 
 // ══════════════════════════════════════════════════════════════════
