@@ -11,7 +11,7 @@
 //   自身零依赖脚本，S7 同款模式，--out 落 tmpdir，无仓库内副作用）。
 //
 // 覆盖（issue #12 验收项一一对应）：
-//   T0 门自身接线（plan / matrix / audit 期望数）
+//   T0 门自身接线（plan / matrix / audit 不变量）
 //   T1 工具纪律（附着模式成对拒绝；附着零导航；CI 永不附着）
 //   T2 敏感字段占位替换（AC：离线 fixture，正例取自仓库既有镜像）
 //   T3 同构产物被既有骨架管线直接消费（AC：零下游改动）
@@ -75,7 +75,7 @@ const SOURCES = JSON.parse(read(FILES.sources));
 const CAPTURE_SRC = read(FILES.capture);
 
 // ══════════════════════════════════════════════════════════════════
-// T0 门自身接线（plan / matrix / audit 期望数一致）
+// T0 门自身接线（plan / matrix / audit 不变量——A2 键面，无计数）
 // ══════════════════════════════════════════════════════════════════
 {
   const plan = JSON.parse(read(FILES.plan));

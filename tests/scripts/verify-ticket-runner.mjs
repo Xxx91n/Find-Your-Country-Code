@@ -31,8 +31,9 @@ const PLAN = join(here, 'verify-ticket-plan.json');
 const WORKFLOWS = join(ROOT, '.github', 'workflows');
 
 // plan 票面不变量（issue #20）：A2 只守「LEGACY 键面零覆盖丢失」——LEGACY 的每个
-//   键都必须出现在 plan 里，**无票数上限**：加票不碰本文件，也不碰任何票级门。
-//   删掉一个**新**票键改由 A15/A16（plan ↔ verify-tickets.yml matrix 全等）捕获。
+//   键都必须出现在 plan 里，**无票数上限**：加票（不新增 workflow）不碰本文件，
+//   也不碰任何票级门。新票键**单侧**删除（plan 删了、matrix 没删）由 A15/A16 捕获；
+//   plan 与 matrix 同时删除则任何票面守卫都看不见——那是有意的删除动作。
 //   负例（删 LEGACY 键 → A2/A4 双红）由 verify-ticket-46 常驻锁住。
 // 门 key 规则（retro 2026-10-26）：取现有最大 key 的下一个序号；它与 GitHub
 // issue 号、历史 A 号散文（如 calibration corpus 的「票 44」）无关。溯源写在
@@ -66,6 +67,28 @@ const LEGACY = {
 // LEGACY workflow 文件名 -> plan 票键（verify-02-settings.yml -> 02-settings）。
 // A2 与 A7 共用本变换，两处对「legacy 键面」的口径永久一致。
 const legacyKeyOf = (wf) => wf.replace(/^verify-/, '').replace(/\.yml$/, '');
+
+// caller matrix 的票号清单：只在 `matrix:` 下的 `ticket:` 列表项区间里取。
+// 不扫全文件——文件别处的 `- 'NN'`（其他列表、注释块、尾部追加）都不算覆盖。
+function matrixTicketKeys(src) {
+  const lines = src.split('\n');
+  const at = lines.findIndex((l) => /^(\s*)matrix:\s*$/.test(l));
+  if (at < 0) return [];
+  const matrixIndent = lines[at].match(/^\s*/)[0].length;
+  const ticketAt = lines.findIndex((l, i) =>
+    i > at && /^(\s*)ticket:\s*$/.test(l) && l.match(/^\s*/)[0].length > matrixIndent);
+  if (ticketAt < 0) return [];
+  const ticketIndent = lines[ticketAt].match(/^\s*/)[0].length;
+  const keys = [];
+  for (let i = ticketAt + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    if (line.match(/^\s*/)[0].length <= ticketIndent) break;
+    const m = /^\s*-\s*'([0-9][0-9a-z-]*)'\s*$/.exec(line);
+    if (m) keys.push(m[1]);
+  }
+  return keys;
+}
 
 function loadPlan() { return JSON.parse(readFileSync(PLAN, 'utf8')); }
 function keysOf(plan) { return Object.keys(plan.tickets); }
@@ -154,7 +177,7 @@ if (mode === '--audit') {
   const legacyKeys = legacyWfs.map(legacyKeyOf);
   ck('A1 plan schema=1', plan.schema === 1, 'got ' + plan.schema);
   // A2 不变量（issue #20）：LEGACY 键面零覆盖丢失，**无票数上限**——加票零维护。
-  //   期望集合由 LEGACY 自身派生（唯一真源），不写数字；新票键的删除由 A15/A16 捕获。
+  //   期望集合由 LEGACY 自身派生（唯一真源），不写数字；新票键的单侧删除由 A15/A16 捕获。
   const absentKeys = legacyKeys.filter(k => !pKeys.includes(k));
   ck('A2 plan covers every legacy ticket key (no upper cap)', absentKeys.length === 0, 'missing: ' + absentKeys.join(', '));
   ck('A3 legacy baseline has 20 workflows', legacyWfs.length === 20, 'got ' + legacyWfs.length);
@@ -200,7 +223,9 @@ if (mode === '--audit') {
   if (existsSync(caller)) {
     const c = readFileSync(caller, 'utf8');
     ck('A14 caller declares pull_request (non-release workflows must declare PR trigger)', /^\s*pull_request:/m.test(c));
-    const matrixKeys = [...c.matchAll(/^\s*-\s*'([0-9][0-9a-z-]*)'\s*$/gm)].map(m => m[1]);
+    // 只认 `matrix: ticket:` 区块内的列表项：注释块、文件别处的 `- 'NN'`
+    // 都不算覆盖（verify-ticket-46 N4 锁住该口径）。
+    const matrixKeys = matrixTicketKeys(c);
     const missKeys = pKeys.filter(k => !matrixKeys.includes(k));
     const extraKeys = matrixKeys.filter(k => !pKeys.includes(k));
     ck('A15 caller matrix covers every plan ticket', missKeys.length === 0, 'missing: ' + missKeys.join(', '));

@@ -13,7 +13,7 @@
 //   06-capture-forms（重构条目被跳过，零网络）与 verify-ticket-06（既有门）。
 //
 // 覆盖（issue #13 验收项一一对应）：
-//   U0 门自身接线（plan / matrix / audit 期望数）
+//   U0 门自身接线（plan / matrix / audit 不变量）
 //   U1 AC1：reconstructed 条目入库可通过既有静态门（verify-ticket-06 实跑 0 FAIL）
 //   U2 链条一致性（sources ↔ manifest ↔ skeleton ↔ 镜像头注释）
 //   U3 AC2：结构 diff 对 reconstructed 显式 skip 留记录（不静默、不产判定），
@@ -76,7 +76,7 @@ const RSRC = SOURCES.find((s) => s.id === RID);
 const RENT = MANIFEST.entries.find((e) => e.id === RID);
 
 // ══════════════════════════════════════════════════════════════════
-// U0 门自身接线（plan / matrix / audit 期望数一致）
+// U0 门自身接线（plan / matrix / audit 不变量——A2 键面，无计数）
 // ══════════════════════════════════════════════════════════════════
 {
   const plan = JSON.parse(read(FILES.plan));

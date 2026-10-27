@@ -17,6 +17,7 @@
 //   N1 删一个 LEGACY 键 → A2 与 A4 同红（不变量真的在守）
 //   N2 删一个**新**键（非 LEGACY）→ A2 保持绿，A16 红（不变量不越权）
 //   N3 plan 加键但 matrix 缺行 → A15 红（新增面的等全守卫仍在）
+//   N4 plan 加键 + matrix 注释行 → A15 仍红（被注释的票不算覆盖）
 //   P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 //
 // 用法：node tests/scripts/verify-ticket-46.mjs
@@ -52,20 +53,6 @@ const check = (c, m, extra) => {
   else failures.push(m + (extra ? ' — ' + extra : ''));
 };
 
-// ══════════════════════════════════════════════════════════════════
-// P0 门自身接线（plan / matrix / audit）
-// ══════════════════════════════════════════════════════════════════
-{
-  const plan = JSON.parse(read(FILES.plan));
-  const t46 = plan.tickets['46'];
-  check(!!t46, 'P0 plan 注册票 46（issue #20 audit A2 不变量）');
-  eq(JSON.stringify(t46 && t46.scripts), JSON.stringify(['verify-ticket-46.mjs']),
-    'P0 票 46 门脚本唯一指向本文件');
-  check(/-\s*'46'/.test(read(FILES.workflow)), 'P0 verify-tickets.yml matrix 含 46（A15/A16 全等守卫面）');
-  const audit = runAudit(ROOT);
-  eq(audit.code, 0, 'P0 仓库本体 audit 全绿');
-}
-
 // ── 镜像树：runner 以自身位置上溯 2 级锚定仓库根，plan 与脚本同目录 ──
 function mirror() {
   const root = mkdtempSync(join(tmpdir(), 'cch46-'));
@@ -74,6 +61,12 @@ function mirror() {
   cpSync(abs(FILES.scriptsDir), join(root, FILES.scriptsDir), { recursive: true });
   cpSync(abs(FILES.workflowsDir), join(root, FILES.workflowsDir), { recursive: true });
   return root;
+}
+
+// 每例一个全新镜像，跑完必删——用例之间零状态泄漏。
+function withMirror(mutate, body) {
+  const root = mirror();
+  try { mutate(root); return body(root); } finally { rmSync(root, { recursive: true, force: true }); }
 }
 
 function runAudit(root) {
@@ -91,107 +84,143 @@ function runAudit(root) {
 const sawFail = (out, id) => new RegExp('^FAIL ' + id + '\\b', 'm').test(out);
 const sawPass = (out, id) => new RegExp('^PASS ' + id + '\\b', 'm').test(out);
 
-function loadMirrorPlan(root) {
-  return JSON.parse(readFileSync(join(root, FILES.plan), 'utf8'));
+function editPlan(root, mutate) {
+  const p = join(root, FILES.plan);
+  const plan = JSON.parse(readFileSync(p, 'utf8'));
+  mutate(plan);
+  writeFileSync(p, JSON.stringify(plan, null, 2) + '\n');
 }
-function saveMirrorPlan(root, plan) {
-  writeFileSync(join(root, FILES.plan), JSON.stringify(plan, null, 2) + '\n');
-}
+
+const FAKE = { name: 'fake ticket proving no count cap (issue #20)', scripts: ['verify-ticket-46.mjs'] };
+
+// 在 matrix 的**列表项区间**末尾插入一行（不改缩进假设：沿用同行最后一项的前缀）。
+// 必须真的落在 `matrix: ticket:` 之下——发散的缩进会让插入变成注释块里的坏 YAML。
+const MATRIX_ITEM = /^(\s*)-\s*'([0-9][0-9a-z-]*)'\s*$/gm;
 function addMatrixKey(root, key) {
   const p = join(root, FILES.workflow);
   const src = readFileSync(p, 'utf8');
-  const last = src.lastIndexOf("\n          - '");
-  const nl = src.indexOf('\n', last + 1);
-  writeFileSync(p, src.slice(0, nl) + "\n          - '" + key + "'" + src.slice(nl));
+  const items = [...src.matchAll(MATRIX_ITEM)];
+  if (!items.length) throw new Error('mirror matrix has no ticket items: ' + FILES.workflow);
+  const last = items[items.length - 1];
+  const indent = last[1];
+  const at = last.index + last[0].length;
+  writeFileSync(p, src.slice(0, at) + '\n' + indent + "- '" + key + "'" + src.slice(at));
+}
+
+// ══════════════════════════════════════════════════════════════════
+// P0 门自身接线（plan / matrix / audit）
+// ══════════════════════════════════════════════════════════════════
+{
+  const plan = JSON.parse(read(FILES.plan));
+  const t46 = plan.tickets['46'];
+  check(!!t46, 'P0 plan 注册票 46（issue #20 audit A2 不变量）');
+  eq(JSON.stringify(t46 && t46.scripts), JSON.stringify(['verify-ticket-46.mjs']),
+    'P0 票 46 门脚本唯一指向本文件');
+  check(new RegExp("^\\s*-\\s*'46'\\s*$", 'm').test(read(FILES.workflow)),
+    'P0 verify-tickets.yml matrix 含 46（A15/A16 全等守卫面）');
+  const audit = runAudit(ROOT);
+  eq(audit.code, 0, 'P0 仓库本体 audit 全绿');
 }
 
 // ══════════════════════════════════════════════════════════════════
 // P1 镜像保真：原样镜像 audit 全绿，且 A2 为 PASS（负例的可信基线）
 // ══════════════════════════════════════════════════════════════════
 {
-  const root = mirror();
-  try {
-    const r = runAudit(root);
-    eq(r.code, 0, 'P1 原样镜像 audit 退出 0（镜像保真）');
-    check(sawPass(r.out, 'A2'), 'P1 原样镜像 A2 为 PASS（负例基线成立）');
-    check(!sawFail(r.out, 'A2'), 'P1 原样镜像无 A2 FAIL（N1 的红不可能来自基线漂移）');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  const r = withMirror(() => {}, runAudit);
+  eq(r.code, 0, 'P1 原样镜像 audit 退出 0（镜像保真）');
+  check(sawPass(r.out, 'A2'), 'P1 原样镜像 A2 为 PASS（负例基线成立）');
 }
 
 // ══════════════════════════════════════════════════════════════════
 // N1 删一个 LEGACY 键 → A2 与 A4 同红（AC3：不变量真的在守）
 // ══════════════════════════════════════════════════════════════════
 {
-  const root = mirror();
-  try {
-    const plan = loadMirrorPlan(root);
-    const legacyKey = '02-settings'; // 来自 LEGACY（冻结面），非本票新增
-    check(!!plan.tickets[legacyKey], 'N1 前置：镜像 plan 含 LEGACY 键 ' + legacyKey);
-    delete plan.tickets[legacyKey];
-    saveMirrorPlan(root, plan);
-
-    const r = runAudit(root);
-    eq(r.code, 1, 'N1 删 LEGACY 键后 audit 退出 1（红）');
-    check(sawFail(r.out, 'A2'), 'N1 A2 变红（LEGACY 键面零覆盖丢失不变量在守）');
-    check(sawFail(r.out, 'A4'), 'N1 A4 变红（脚本面零覆盖丢失同向）');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  const legacyKey = '02-settings'; // 来自 LEGACY（冻结面），非本票新增
+  const r = withMirror(
+    (root) => editPlan(root, (plan) => {
+      if (!plan.tickets[legacyKey]) throw new Error('mirror plan lacks LEGACY key ' + legacyKey);
+      delete plan.tickets[legacyKey];
+    }),
+    runAudit
+  );
+  eq(r.code, 1, 'N1 删 LEGACY 键 ' + legacyKey + ' 后 audit 退出 1（红）');
+  check(sawFail(r.out, 'A2'), 'N1 A2 变红（LEGACY 键面零覆盖丢失不变量在守）');
+  check(sawFail(r.out, 'A4'), 'N1 A4 变红（脚本面零覆盖丢失同向）');
 }
 
 // ══════════════════════════════════════════════════════════════════
 // N2 删一个**新**键 → A2 保持绿，A16 红（不变量不越权到新增面）
 // ══════════════════════════════════════════════════════════════════
 {
-  const root = mirror();
-  try {
-    const plan = loadMirrorPlan(root);
-    const newKey = '45'; // 不在 LEGACY 中
-    check(!!plan.tickets[newKey], 'N2 前置：镜像 plan 含新增键 ' + newKey);
-    delete plan.tickets[newKey];
-    saveMirrorPlan(root, plan);
-
-    const r = runAudit(root);
-    eq(r.code, 1, 'N2 删新增键后 audit 退出 1（红）');
-    check(sawPass(r.out, 'A2'), 'N2 A2 仍为 PASS（不变量只守 LEGACY 键面，不写死新票）');
-    check(sawFail(r.out, 'A16'), 'N2 A16 变红（matrix 含 plan 未知票，新增面删除由等全守卫捕获）');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  const newKey = '45'; // 不在 LEGACY 中
+  const r = withMirror(
+    (root) => editPlan(root, (plan) => {
+      if (!plan.tickets[newKey]) throw new Error('mirror plan lacks new key ' + newKey);
+      delete plan.tickets[newKey];
+    }),
+    runAudit
+  );
+  eq(r.code, 1, 'N2 删新增键 ' + newKey + ' 后 audit 退出 1（红）');
+  check(sawPass(r.out, 'A2'), 'N2 A2 仍为 PASS（不变量只守 LEGACY 键面，不写死新票）');
+  check(sawFail(r.out, 'A16'), 'N2 A16 变红（matrix 含 plan 未知票，新增面删除由等全守卫捕获）');
 }
 
 // ══════════════════════════════════════════════════════════════════
 // N3 plan 加键但 matrix 缺行 → A15 红（新增面同样受等全守卫约束）
 // ══════════════════════════════════════════════════════════════════
 {
-  const root = mirror();
-  try {
-    const plan = loadMirrorPlan(root);
-    plan.tickets['99'] = { name: 'fake ticket for A15 negative case (issue #20)', scripts: ['verify-ticket-46.mjs'] };
-    saveMirrorPlan(root, plan);
+  const r = withMirror(
+    (root) => editPlan(root, (plan) => { plan.tickets['99'] = FAKE; }),
+    runAudit
+  );
+  eq(r.code, 1, 'N3 plan 加键但 matrix 缺行后 audit 退出 1（红）');
+  check(sawFail(r.out, 'A15'), 'N3 A15 变红（caller matrix 必须覆盖每个 plan 键）');
+}
 
-    const r = runAudit(root);
-    eq(r.code, 1, 'N3 plan 加键但 matrix 缺行后 audit 退出 1（红）');
-    check(sawFail(r.out, 'A15'), 'N3 A15 变红（caller matrix 必须覆盖每个 plan 键）');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+// ══════════════════════════════════════════════════════════════════
+// N4 matrix 外追加 `- 'NN'` 行 → A15 仍红（只认 matrix 区块内的列表项）
+//   锁住 A15 的解析口径：文件别处的列表项 / 注释块里的票号不能冒充 matrix 覆盖。
+// ══════════════════════════════════════════════════════════════════
+{
+  const r = withMirror(
+    (root) => {
+      editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
+      const p = join(root, FILES.workflow);
+      // 裸列表项（非注释）挂到 matrix 之外的另一个键下：全文件扫 `- 'NN'`
+      // 的旧口径会把它当成 matrix 覆盖。
+      writeFileSync(p, readFileSync(p, 'utf8') + "\noff_matrix_tickets:\n  branches:\n    - '99'\n");
+    },
+    runAudit
+  );
+  eq(r.code, 1, 'N4 matrix 外声明票 99 时 audit 退出 1（红）');
+  check(sawFail(r.out, 'A15'), 'N4 A15 变红（matrix 区块外的列表项/注释不算覆盖）');
 }
 
 // ══════════════════════════════════════════════════════════════════
 // P2 plan + matrix 同步加假票 → audit 全绿（无票数上限：加票零维护）
 // ══════════════════════════════════════════════════════════════════
 {
-  const root = mirror();
-  try {
-    const plan = loadMirrorPlan(root);
-    plan.tickets['99'] = { name: 'fake ticket proving no count cap (issue #20)', scripts: ['verify-ticket-46.mjs'] };
-    saveMirrorPlan(root, plan);
-    addMatrixKey(root, '99');
-
-    const r = runAudit(root);
-    eq(r.code, 0, 'P2 新增票（plan + matrix 同步）后 audit 退出 0');
-    check(sawPass(r.out, 'A2'), 'P2 A2 仍为 PASS（无票数上限：加票零维护，AC2 实证）');
-  } finally { rmSync(root, { recursive: true, force: true }); }
+  const r = withMirror(
+    (root) => {
+      editPlan(root, (plan) => { plan.tickets['99'] = FAKE; });
+      addMatrixKey(root, '99');
+    },
+    (root) => {
+      const audit = runAudit(root);
+      // 反向核验插入位置：插入行必须是缩进对齐的真实列表项，不是注释块里的坏 YAML
+      const inserted = [...readFileSync(join(root, FILES.workflow), 'utf8').matchAll(MATRIX_ITEM)]
+        .map((m) => m[2]);
+      return { audit, inserted };
+    }
+  );
+  const { audit, inserted } = r;
+  eq(audit.code, 0, 'P2 新增票（plan + matrix 同步）后 audit 退出 0');
+  check(sawPass(audit.out, 'A15') && sawPass(audit.out, 'A16'), 'P2 A15/A16 皆 PASS（假票真的进了 matrix，非注释蒙混）');
+  check(sawPass(audit.out, 'A2'), 'P2 A2 仍为 PASS（无票数上限：加票零维护，AC2 实证）');
+  check(inserted.filter((k) => k === '99').length === 1,
+    'P2 假票在 matrix 中恰出现一次（插入点解析正确）');
 }
 
-console.log('');
-console.log(((failures.length ? 'FAIL' : 'PASS') + ' verify-ticket-46: ' + pass + ' PASS, ' + failures.length + ' FAIL'));
-if (failures.length) {
-  console.log(failures.map((f) => '  FAIL ' + f).join('\n'));
-  process.exit(1);
-}
+console.log('-----------------------------');
+console.log('verify-ticket-46: ' + pass + ' PASS, ' + failures.length + ' FAIL');
+if (failures.length) { console.log('failures:'); failures.forEach((f) => console.log('  - ' + f)); process.exit(1); }
