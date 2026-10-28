@@ -95,16 +95,26 @@ function pseudoNameHit(iso: string, text: string): boolean {
 }
 
 function pseudoOptionStats(opts: AnyEl[]): OptionStats {
-  let plusDial = 0, parenDial = 0, isoName = 0, numeric = 0;
+  let plusDial = 0, parenDial = 0, textDial = 0, isoName = 0, numeric = 0;
   for (let i = 0; i < opts.length; i++) {
     const o = opts[i];
     const val = String((o.getAttribute && (o.getAttribute('data-value') || o.getAttribute('value'))) || '').trim();
     const txt = String(o.textContent || '').trim();
     const lab = String((o.getAttribute && o.getAttribute('aria-label')) || '').trim();
     const cands = [val, txt, lab].filter(Boolean);
-    if (cands.some(s => DIAL_SET.has(s.replace(/^\+/, '').replace(/^00/, '')))) plusDial++;
+    const plusHit = cands.some(s => DIAL_SET.has(s.replace(/^\+/, '').replace(/^00/, '')));
+    if (plusHit) plusDial++;
     const pm = (txt + ' ' + lab).match(/\(\+(\d{1,4})\)/);
-    if (pm && DIAL_SET.has(pm[1])) parenDial++;
+    const parenHit = !!(pm && DIAL_SET.has(pm[1]));
+    if (parenHit) parenDial++;
+    // #3 / spec #42：裸 +NN 文本令牌（无括号）在伪侧**只作反向证据**——同原生口径
+    // （括号形态归 parenDial、同一证据不双写），供国家语义谓词判定「值域里有没有区号」。
+    // 它不进任何加分项：伪 select 的 L3 计分面仍是 plusDial/parenDial/numeric/isoName，
+    // 权重与注入口径一字未动（「加分对等」另挂 #4）。
+    if (!plusHit && !parenHit) {
+      const tm = (txt + ' ' + lab).match(/(?:^|[^(\d])\+(\d{1,4})(?!\d)/);
+      if (tm && DIAL_SET.has(tm[1])) textDial++;
+    }
     let iso = '';
     let nameText = '';
     if (val && ISO2_SET.has(val.toLowerCase())) { iso = val.toLowerCase(); nameText = txt + ' ' + lab; }
@@ -112,11 +122,7 @@ function pseudoOptionStats(opts: AnyEl[]): OptionStats {
     if (iso && pseudoNameHit(iso, nameText)) isoName++;
     if (/^\d{1,4}$/.test(val || txt)) numeric++;
   }
-  // 票 08：pseudo 侧的裸 +NN 文本证据**本票不启用**（textDial 恒为 0）——
-  // 语料先行：当前语料无该形态的伪 select 正/负例，且伪 select 证据策略受
-  // 「伪 select 只登记、不自动注入」的档位约束（与原生 select 同口径不等价）。
-  // 该对称性缺口已作为残留登记在票 08 报告，待语料基础到位后再评估。
-  return { total: opts.length, plusDial, parenDial, textDial: 0, isoName, numeric };
+  return { total: opts.length, plusDial, parenDial, textDial, isoName, numeric };
 }
 
 function comboboxEvidence(el: AnyEl) {

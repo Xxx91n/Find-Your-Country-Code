@@ -306,9 +306,10 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
 
 // ══ 9. 纯国家选择器退出召唤面（#3 / spec #42）══
 // 登记由**分数**驱动：只把档位压成 none 的旧抑制请不出国家选择器，且伪 select 分支此前
-// 完全没有该抑制。可失败性：两条变异实跑过，第三条由断言条件直接可读——
+// 完全没有该抑制。可失败性：三条变异实跑过，第四条由断言条件直接可读——
 //   摘掉 noRegister 判定 → 4.4 / 9.1 / 9.3 / 9.8 / 9.10 / 9.13 / 9.14 / 9.15 / 9.18 转红；
 //   去掉 reason 的 tier 守卫 → 9.19 转红；
+//   去掉伪侧 textDial 反向证据 → 9.20 / 9.21 / 9.22 转红（#43 审查返修，守 US11）；
 //   删掉 0 分信号留痕 → 9.1 / 9.8 / 4.4 转红（三者都把该信号写进断言条件）。
 // 其余为口径 guard 与正例对照（修复前后同为真，作用是证明阻断没有顺手改掉注入口径、
 // 分数面或豁免面）：9.2 / 9.4 / 9.6 / 9.7 / 9.9 / 9.11 / 9.12 / 9.16 / 9.17。
@@ -463,6 +464,37 @@ const reasons = function (records) { return records.map(function (r) { return r.
     p.calls.attach.length === 1 && p.calls.rememberLow.length === 0 &&
     reasons(p.records).every(function (r) { return r !== DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC; }),
     'attach=' + p.calls.attach.length + ' reasons=' + JSON.stringify(reasons(p.records)));
+}
+
+// 9g #43 审查返修：伪 select 侧的裸 +NN 文本证据必须**可评估**，否则 #42 谓词第 4 条在伪侧
+//    空转，把「带区号证据的伪 select」误判成纯国家并撤出召唤面——直接违反 US11「现有带
+//    (+NN)/+NN 证据的伪 select 行为完全不变」。该证据只作反向证据，不进任何加分项。
+{
+  const lb = makeNode('UL', { role: 'listbox', id: 'bare-lb' }, [
+    makeNode('LI', { role: 'option', 'data-value': 'US' }, [], 'United States +1'),
+    makeNode('LI', { role: 'option', 'data-value': 'CA' }, [], 'Canada +1'),
+    makeNode('LI', { role: 'option', 'data-value': 'GB' }, [], 'United Kingdom +44'),
+    makeNode('LI', { role: 'option', 'data-value': 'CN' }, [], 'China +86'),
+  ]);
+  const trig = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'bare-lb',
+      id: 'bare-combo', class: 'MuiSelect-select' }, [], 'United States +1'),
+    { 'bare-lb': lb });
+  check('9.20 伪侧裸 +NN 文本被计入反向证据(textDial>0 ⇒ 不判 noRegister)',
+    pseudoOptionStats(lb.children).textDial === 4 &&
+    pseudoOptionStats(lb.children).plusDial === 0 &&
+    pseudoOptionStats(lb.children).parenDial === 0,
+    JSON.stringify(pseudoOptionStats(lb.children)));
+  const p = registerProbe();
+  const res = p.Det.scoreElement(trig);
+  check('9.21 该证据不抬分：L3 计分面仍只有 plus/paren/numeric/isoName（权重面未动）',
+    res.score === 50 && !hasName(res, 'country-semantic:no-register'),
+    'score=' + res.score + ' :: ' + sigNames(res).join(','));
+  p.Det._process(trig);
+  check('9.22 带区号证据的伪 select 仍登记（US11 不回归）',
+    p.calls.rememberLow.length === 1 && p.calls.rememberLow[0][1] === 'pseudo' &&
+    p.calls.attach.length === 0,
+    'rememberLow=' + p.calls.rememberLow.length);
 }
 
 console.log('-----------------------------');
