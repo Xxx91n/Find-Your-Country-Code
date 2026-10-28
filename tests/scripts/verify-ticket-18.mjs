@@ -630,6 +630,50 @@ function acTrigger(ac) {
   check('9.35 其 reason 指向国家语义门而非搜索 veto',
     resS.noRegister === true && pS.Det._reasonOf(resS) === DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC,
     'noRegister=' + resS.noRegister + ' reason=' + pS.Det._reasonOf(resS));
+
+  // 9.36–9.37 #45 审查返修（CodeRabbit PR #46，两条实测复现后修）：
+  //   ① veto 的国家名免除门槛必须是**覆盖过半**，不是「命中一条即解除」——少数国名与
+  //      城市/帮助混排的站点搜索（France / Paris / Help，1/3）若解除 veto，会退回按分数
+  //      登记（34 >= 25）重新进召唤面，正是 veto 要挡的那类。
+  //   ② 原生侧同一选项只计一次国家证据：英文名选项同时满足 isoName 与 countryName，
+  //      重复计数把 2/5 虚增成 4/5 而误判 noRegister。
+  const lbMix = makeNode('UL', { role: 'listbox', id: 'mix-lb' }, [
+    makeNode('LI', { role: 'option' }, [], 'France'),
+    makeNode('LI', { role: 'option' }, [], 'Paris'),
+    makeNode('LI', { role: 'option' }, [], 'Help'),
+  ]);
+  const trigMix = withRoot(
+    makeNode('INPUT', { role: 'combobox', type: 'text', 'aria-expanded': 'false',
+      'aria-controls': 'mix-lb', 'aria-autocomplete': 'list',
+      id: 'mix-combo', class: 'country-search' }, [], ''),
+    { 'mix-lb': lbMix });
+  const pMix = registerProbe();
+  const resMix = pMix.Det.scoreElement(trigMix);
+  check('9.36 少数国名命中不解除搜索 veto（France/Paris/Help 1/3 仍判站内搜索）',
+    sigNames(resMix).some(function (n) { return n === 'pseudo:veto:search-typeahead'; }),
+    sigNames(resMix).join(','));
+  pMix.Det._process(trigMix);
+  check('9.37 该形态不登记（veto 未被少数国名打开）',
+    pMix.calls.rememberLow.length === 0, 'rememberLow=' + pMix.calls.rememberLow.length);
+
+  // 构造要点：国家名恰为 2/5（低于谓词的 50% 门槛），分数 32（kw:country 14 + anchor:tel 18）
+  // 已过登记线——重复计数会把分子虚增到 4/5 并判 noRegister，字段因此退出召唤面。
+  // 非国名选项刻意取非数字、非区号的值，避免 plusDial 串入（否则国家名不再是唯一变量）。
+  const selDouble = makeNode('SELECT', { name: 'country', id: 'double-count' }, [], '');
+  selDouble.options = [{ value: 'US', text: 'United States' }, { value: 'GB', text: 'United Kingdom' },
+    { value: 'a', text: 'Alpha' }, { value: 'b', text: 'Beta' }, { value: 'c', text: 'Gamma' }];
+  // _process 不接受 ctx，锚靠 ownerDocument 兜底扫描发现——不喂这个输入，重算就掉到
+  // 14 分（低于登记线），9.39 会因「压根没到登记线」而通过，变成抓不住缺陷的空断言。
+  selDouble.ownerDocument = { querySelectorAll: function () { return [{ tagName: 'INPUT' }]; },
+    getElementById: function () { return null; }, defaultView: undefined };
+  const pDouble = registerProbe();
+  const resDouble = pDouble.Det.scoreElement(selDouble, { anchorHasTel: true });
+  check('9.38 原生侧同一选项只计一次国家证据（2/5 不虚增成 4/5）',
+    resDouble.noRegister !== true && resDouble.score === 32,
+    'score=' + resDouble.score + ' noRegister=' + resDouble.noRegister + ' :: ' + sigNames(resDouble).join(','));
+  pDouble.Det._process(selDouble);
+  check('9.39 该形态照常登记（重复计数会让它被误挡出召唤面）',
+    pDouble.calls.rememberLow.length === 1, 'rememberLow=' + pDouble.calls.rememberLow.length);
 }
 
 console.log('-----------------------------');

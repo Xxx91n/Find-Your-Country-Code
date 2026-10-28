@@ -159,14 +159,17 @@ function comboboxEvidence(el: AnyEl) {
     if (opts.length) stats = pseudoOptionStats(opts);
   }
   // 否决组 [17 票策略 §2]: 搜索型 typeahead —— aria-autocomplete=list|both 且选项内容与
-  // 国家数据零命中（区号/ISO2/括号区号/国家名全空）→ 站内搜索补全，整体判 none 不登记。
-  // #45：国家名也算命中——纯国名的国家 autocomplete（MUI 默认就带 aria-autocomplete=list）
-  // 不是站内搜索，归国家语义判定（结论同为不登记，但 reason 必须指向真实成因）。
+  // 国家数据零命中（区号/ISO2/括号区号全空）→ 站内搜索补全，整体判 none 不登记。
+  // #45：纯国名的国家 autocomplete（MUI 默认就带 aria-autocomplete=list）不是站内搜索，
+  // 归国家语义判定——结论同为不登记，但 reason 必须指向真实成因。
+  // 国名覆盖门槛取国家语义谓词同一口径（>= 50%），不是「命中一条即解除」：
+  // 城市/帮助混排的站点搜索（France / Paris / Help）里个别国名不该打开这个口子，
+  // 否则它退回按分数登记（34 >= 25）重新进召唤面——正是 veto 要挡的那类。
   const ac = String(el.getAttribute('aria-autocomplete') || '').toLowerCase();
   let veto = '';
   if ((ac === 'list' || ac === 'both') && stats && stats.total >= 2 &&
       stats.plusDial === 0 && stats.parenDial === 0 && stats.isoName === 0 &&
-      stats.countryName === 0) veto = 'search-typeahead';
+      stats.countryName / stats.total < 0.5) veto = 'search-typeahead';
   return { listbox, stats, veto };
 }
 
@@ -310,13 +313,16 @@ function optStats(el: AnyEl): OptionStats {
     // 票 13 [issue 验收3]：ISO2 成员测试以数据全集为域（ISO2_SET），替换「像 2 字母」
     // 形态学预筛；文本↔国家名互证保留（假两字母不撞库 [MD §4]）
     const vi = v.toLowerCase();
+    let nameMatched = false;
     if (ISO2_SET.has(vi) && t.length > 2 && /^[A-Za-z\s.'-]+$/.test(t)) {
       const en = ISO2_MAP[vi].countryEn.toLowerCase();
-      if (t.toLowerCase().includes(en.split(' ')[0]) || en.includes(t.toLowerCase())) isoName++;
+      if (t.toLowerCase().includes(en.split(' ')[0]) || en.includes(t.toLowerCase())) { isoName++; nameMatched = true; }
     }
     // #45：文本恰为国家名（含本地化国名，旧 isoName 的拉丁字母正则把 CJK 排除在外）。
     // 只作国家语义谓词的证据，不进任何加分项 —— 分数面与 #45 之前逐位一致。
-    if (isCountryNameText(t)) countryName++;
+    // 与 isoName 互斥计票：同一选项只算一次国家证据，否则英文名选项会被两条路径同时
+    // 计入，把 2/5 虚增成 4/5（谓词只看合计占比，重复计数会放走本不该拦的字段）。
+    if (!nameMatched && isCountryNameText(t)) countryName++;
   }
   // total = 有效选项数（占位首项剔除后）；规模门槛与各分布占比均以有效计数为分母
   const total = opts.length - placeholder;
