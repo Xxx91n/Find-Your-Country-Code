@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 import { before, containsToken } from './gate-assert.mjs';
 import {
+  CONDITION_FIELDS,
   DEFAULT_COUNTRY,
   IPAPI_LOOKUP_URL_RE,
   captureConditionFields,
@@ -625,8 +626,8 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       eq(ent.capture.capture_country, 'jp', 'S11 采集国别入仓内台账 capture 块（git 可见的归因面）');
       eq(ent.capture.browser_locale, 'en-US', 'S11 浏览器 locale 入仓内台账 capture 块');
       eq(ent.capture.ipapi_stub_hits, 1, 'S11 证据字段随固定值一起入库（git 里的 capture_country 不是口头声明）');
-      // ledger→report→ledger 复现（这条路径平时走不到：已提交台账还没有这两个键，
-      // #35 重捕之后就靠它保稳）——采集条件与证据都必须原样带回，不得当场漂移
+      // ledger→report→ledger 复现：已提交台账自 #35 重捕起带这两个键，
+      // 之后每次清单再生成都靠它保稳——采集条件与证据必须原样带回，不得当场漂移
       eq(runTool(FILES.manifestGen, ['--from-ledger']).code, 0, 'S11 带采集条件的台账能被 --from-ledger 无漂移复现');
       const roundTrip = JSON.parse(readFileSync(realManifest, 'utf8')).entries.find((e) => e.id === 'iti-v29').capture;
       eq(roundTrip.capture_country, 'jp', 'S11 复现后 capture_country 未丢');
@@ -634,9 +635,32 @@ const SOURCES = JSON.parse(read(FILES.sources)).sources;
       eq(roundTrip.ipapi_stub_hits, 1, 'S11 复现后证据字段未丢');
       const committedIti = JSON.parse(backup.toString('utf8')).entries.find((e) => e.id === 'iti-v29');
       eq(ent.skeleton.sha256, committedIti.skeleton.sha256,
-        'S11 已提交骨架文件字节未动（清单重生成仍指向同一指纹——基线重定是 #35 的活）');
-      eq(ent.skeleton.capture_country, undefined,
-        'S11 未重生成的骨架不带采集条件键（键缺失=早于本旋钮，与「未固定」两回事）');
+        'S11 已提交骨架文件字节未动（清单重生成只抄指纹，不改骨架）');
+      // #35 基线重定后，已提交骨架 meta 自带采集条件；而本次重生成用的是 jp 的
+      // fixture archive——条件必须取自骨架文件本身（us），不能抄成这次 archive 的国别。
+      const committedSkel = JSON.parse(read(FORMS + '/skeletons/iti-v29.json'));
+      check(typeof committedSkel.capture_country === 'string' && committedSkel.capture_country.length === 2,
+        'S11 #35 重定后的已提交骨架 meta 含采集国别（缺失=退回条件未知）', String(committedSkel.capture_country));
+      check(typeof committedSkel.browser_locale === 'string' && committedSkel.browser_locale.length > 0,
+        'S11 #35 重定后的已提交骨架 meta 含浏览器 locale', String(committedSkel.browser_locale));
+      eq(ent.skeleton.capture_country, committedSkel.capture_country,
+        'S11 骨架块的条件取自骨架文件本身（不随本次 archive 的 jp 漂移）');
+      eq(ent.skeleton.browser_locale, committedSkel.browser_locale,
+        'S11 骨架块的 locale 同取自骨架文件本身');
+      // 「键缺失不补 null」的全条目不动点：清单 skeleton 块的条件键与骨架文件
+      // 自带的键同相。只盯 iti-v29 的「无键」状态会随其重派生失效（#35 翻面），
+      // 这条对历史条目（无键）与重定后条目（有键）同时成立——补 null 与漏抄都红。
+      for (const e of doc.entries) {
+        if (!e.skeleton) { // 加源还没派生骨架的中间态：单列成因，不拿栈顶当结论
+          failures.push('S11 ' + e.id + ' 清单无骨架块（06-manifest 未收录骨架文件）');
+          continue;
+        }
+        const skelDoc = JSON.parse(read(e.skeleton.file));
+        for (const k of CONDITION_FIELDS) { // 键名唯一来源在 06-capture-country
+          eq(k in e.skeleton, k in skelDoc,
+            'S11 skeleton 块的条件键与骨架文件同相（' + e.id + ' · ' + k + '）');
+        }
+      }
       eq(ent.mirror.sha256, committedIti.mirror.sha256, 'S11 镜像页指纹未变');
       const decl = String((doc._meta.compliance || {}).captureConditions || '');
       check(containsToken(decl, 'capture_country').ok && containsToken(decl, 'browser_locale').ok,

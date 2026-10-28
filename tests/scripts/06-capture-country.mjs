@@ -22,7 +22,7 @@ export const DEFAULT_COUNTRY = 'us';
 export const COUNTRY_FIELD = 'capture_country';
 export const LOCALE_FIELD = 'browser_locale';
 export const HITS_FIELD = 'ipapi_stub_hits';
-const CONDITION_FIELDS = [COUNTRY_FIELD, LOCALE_FIELD];
+export const CONDITION_FIELDS = [COUNTRY_FIELD, LOCALE_FIELD];
 
 // 站点实际请求的是 `https://ipapi.co/json?token=…`（2026-10-27 抓
 // https://intl-tel-input.com/js/homepage.js 对照：lookup 只读响应里的 country_code，

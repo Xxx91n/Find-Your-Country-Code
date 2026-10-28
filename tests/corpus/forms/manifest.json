@@ -4,7 +4,7 @@
     "ticket": "06-form-corpus",
     "covers": "A-030",
     "generated_by": "tests/scripts/06-manifest.mjs",
-    "generated_at": "2026-10-25T17:38:14.361Z",
+    "generated_at": "2026-10-27T19:25:07.951Z",
     "role": "**库内唯一权威清单**。原始快照不入库；库内只留指纹与元数据。",
     "layers": {
       "mirror": "① 镜像页（入 git，测试主力）：去品牌 / 去追踪 / 内容替换，断言确定性最高",
@@ -16,7 +16,8 @@
       "brandStripped": "剥离品牌内容（产品名 / logo / 文案）与追踪（分析 / 外链）",
       "provenance": "每条标 source_url + captured_at + mirror_of + license_note；reconstructed 条目（手工重构镜像，GLOSSARY）以 provenance（重构依据）替代 captured_at——页面不可重现，无捕获时点，且不参与结构比对（无可信基线）",
       "noPii": "不含真实 PII",
-      "rawNotInGit": "原始快照（含品牌内容与版权）一律出仓归档，不入 git"
+      "rawNotInGit": "原始快照（含品牌内容与版权）一律出仓归档，不入 git",
+      "captureConditions": "采集条件入台账（issue #34）：capture 块记 capture_country（06-capture-forms --country 固定的初始国家，默认 us）+ browser_locale（浏览器自报 locale，只记录不固定），并随带证据字段 ipapi_stub_hits（桩被该页请求过几次；不属强制两键，但 capture_country 非 null 时必须 >0）。三态：值非 null=已固定且有证据；键在值 null=已记录「未固定」（该源不做 IP lookup / 附着模式 / 未渲染）；键缺失=台账早于本旋钮。拦截点：requireEvidenceForClaim 在 06-skeleton 派生前、本脚本 archive 模式写 capture 块前、以及 --from-ledger 从仓内台账重建时三处硬拒（矛盾一旦入库，assertLedgerStable 只会把它逐字节复现下去，看不见它错）。清单再生成对历史条目不补 null（补了当场漂移）。"
     },
     "degradationLoop": {
       "step1_recapture": "tests/scripts/06-capture-forms.mjs（重捕 → 仓库外 archive）",
@@ -33,40 +34,45 @@
       "family": "iti",
       "adoption": "adopted",
       "source_url": "https://intl-tel-input.com/",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "iti-v29",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": ".iti",
       "shape_notes": "iti v29 形态：.iti 容器 + input[type=tel] + 国家按钮 + 内部搜索框 input[role=combobox][type=search][aria-autocomplete=list]（A-031 误报面）；listbox 项用 data-dial-code + data-iso2",
       "mirror": {
         "file": "tests/corpus/forms/mirrors/iti-v29.html",
-        "bytes": 9124,
-        "sha256": "42ab30a2fea7b6478634e6ec83ed51e1e6bff6062a1dd07808bb7d643e859336"
+        "bytes": 10015,
+        "sha256": "3efc099ebee5659bea1051ef83bb9f42a9aa9f8c3dc9e66212071652f87541df"
       },
       "skeleton": {
         "file": "tests/corpus/forms/skeletons/iti-v29.json",
-        "bytes": 10254,
-        "sha256": "598ab7ef92b3f75f17ec00e98b3c78366ef3cfec6e44df5bb391322b46d7f83e",
-        "tree_sha256": "cd60be1976af08f63712548afbc9aa9347e8c5e11a26c0f2c059b9791aaabc84",
+        "bytes": 10313,
+        "sha256": "6e5ca040ce382edaf1dc6695e47956b384998ef75db2d1728e465cb6a213e5ee",
+        "tree_sha256": "b165f8d699c4160da7d050c64ec0f7d7c73f731715052845abd23fe0a4ac62d3",
         "node_count": 36,
         "root_selector": ".iti",
         "skeleton_version": 1,
         "derived_from": "archive",
-        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/iti-v29.html"
+        "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/iti-v29.html",
+        "capture_country": "us",
+        "browser_locale": "zh-CN"
       },
       "capture": {
+        "capture_country": "us",
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 1,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
         "raw": {
           "path": "corpus-forms/raw/iti-v29.html",
           "bytes": 50480,
-          "sha256": "4d7ded847a0afc3e5dd47b39348f639978873dfbfa0b0fa2d6c4c6681f2c7e5b"
+          "sha256": "8b3629a048b36df5cd96e35a87f8868d2e0401f8744b149889a4c1a67f594e90"
         },
         "dom": {
           "path": "corpus-forms/dom/iti-v29.html",
-          "bytes": 116125,
-          "sha256": "1d9a123db5d4e9e70980f3fda25dfc4e7147094fcce634ed0d003658c30d347e"
+          "bytes": 112157,
+          "sha256": "5475cb8637f018765587403e0cf3dbfd6b4f895eb2a82cec7f229ac94669f65d"
         },
         "frames": [],
         "shot": {
@@ -80,7 +86,7 @@
       "family": "phone-input-select",
       "adoption": "adopted",
       "source_url": "https://catamphetamine.gitlab.io/react-phone-number-input/",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "rpn-input",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": ".PhoneInput",
@@ -102,6 +108,9 @@
         "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/rpn-input.html"
       },
       "capture": {
+        "capture_country": null,
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 0,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
@@ -127,7 +136,7 @@
       "family": "iti-nested-frame",
       "adoption": "adopted",
       "source_url": "https://cdpn.io/webdevpuneet/fullpage/ExzVrPY",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "codepen-iti-v17",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": "iframe#result",
@@ -154,6 +163,9 @@
         "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/codepen-iti-v17.frame0.html"
       },
       "capture": {
+        "capture_country": null,
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 0,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
@@ -171,7 +183,7 @@
           {
             "path": "corpus-forms/dom/codepen-iti-v17.frame0.html",
             "bytes": 85834,
-            "sha256": "200cf576b70a47dfa9fd2cf2d8e58d701a16e747b28ed38c7460e1be0ffe5f37",
+            "sha256": "c68196b22578721fa3e97f467b81932aae07d8946b002166e79227aa95e15672",
             "url": "about:srcdoc"
           }
         ],
@@ -186,7 +198,7 @@
       "family": "pseudo-select",
       "adoption": "adopted",
       "source_url": "https://mui.com/material-ui/react-autocomplete/",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "mui-autocomplete",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": ".MuiAutocomplete-root",
@@ -208,18 +220,21 @@
         "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/mui-autocomplete.html"
       },
       "capture": {
+        "capture_country": null,
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 0,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
         "raw": {
           "path": "corpus-forms/raw/mui-autocomplete.html",
-          "bytes": 701068,
-          "sha256": "910b4478578743f83aa178cbe3cac8d36eed6d36d2638e50df58c1bff80998db"
+          "bytes": 720719,
+          "sha256": "63de21db2644b3b6a04f2cf6e4cf85e92e8b80e2394dc554ab7ef586e8a9222d"
         },
         "dom": {
           "path": "corpus-forms/dom/mui-autocomplete.html",
-          "bytes": 922362,
-          "sha256": "4121be7287cc2d99d0cd492d0ccd6f2e8e1f32f2ba256740b31ae4db4bd25b5b"
+          "bytes": 950516,
+          "sha256": "51f1f70d35572290f515115b5eb38aaca31494c82a15782af7a5b3f927a3ab5e"
         },
         "frames": [],
         "shot": {
@@ -233,7 +248,7 @@
       "family": "pseudo-select",
       "adoption": "adopted",
       "source_url": "https://element-plus.org/en-US/component/select.html",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "element-plus-select",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": ".el-select",
@@ -255,18 +270,21 @@
         "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/element-plus-select.html"
       },
       "capture": {
+        "capture_country": null,
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 0,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
         "raw": {
           "path": "corpus-forms/raw/element-plus-select.html",
-          "bytes": 750444,
-          "sha256": "038e4bba07610fbf7dfadb11d829bf5b0d04cbbb64afd58aa1f7bd46890ea805"
+          "bytes": 750092,
+          "sha256": "447cf6dc957d2bd265f3aabec92cef22810386d8a5a8cb43b88fec8d0bb8ee47"
         },
         "dom": {
           "path": "corpus-forms/dom/element-plus-select.html",
-          "bytes": 943820,
-          "sha256": "d283b79ebabcaef14e00af9b5d2de1d765fce399ba2be30e29ae98afe232830d"
+          "bytes": 943707,
+          "sha256": "a4d3e8cf8762ed52843103f52765704ac298a8d44c7aad672efc88d7e25e0109"
         },
         "frames": [],
         "shot": {
@@ -280,7 +298,7 @@
       "family": "pseudo-select",
       "adoption": "adopted",
       "source_url": "https://ant.design/components/select",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "antd-select",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": ".ant-select",
@@ -302,18 +320,21 @@
         "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/antd-select.html"
       },
       "capture": {
+        "capture_country": null,
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 0,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
         "raw": {
           "path": "corpus-forms/raw/antd-select.html",
-          "bytes": 776653,
-          "sha256": "d06cc975fa3d8ee5eb530633d4c9665b96bb6edbc98ddca68965c3f5ad4ddc5a"
+          "bytes": 776679,
+          "sha256": "1a57010410f58c2f74593a740b484edc9d6d2c0d96a6c423e98e4a7716ff4c3a"
         },
         "dom": {
           "path": "corpus-forms/dom/antd-select.html",
-          "bytes": 815805,
-          "sha256": "4c1e0bb7091e8a1ea6308c93a8bc41ba477964e66ef96992aaba9cab96102290"
+          "bytes": 889901,
+          "sha256": "2c23c6988eb0b789be4236a80425e36e2e76fd26a4e1f3a01458663804412c91"
         },
         "frames": [],
         "shot": {
@@ -327,7 +348,7 @@
       "family": "visual-replacement-hidden-select",
       "adoption": "adopted",
       "source_url": "https://harvesthq.github.io/chosen/",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "chosen-select",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": "select.chosen-select",
@@ -349,6 +370,9 @@
         "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/chosen-select.html"
       },
       "capture": {
+        "capture_country": null,
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 0,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
@@ -360,7 +384,7 @@
         "dom": {
           "path": "corpus-forms/dom/chosen-select.html",
           "bytes": 97912,
-          "sha256": "f8bdd01aa182213622f50b3f95cab2806fea2a06c4d7dc9731dac2e2c45843a1"
+          "sha256": "86749748e784dc3f6fa6f7c2c5dd03a1bd982a2247e6dcf8a63b63345fa4521a"
         },
         "frames": [],
         "shot": {
@@ -374,7 +398,7 @@
       "family": "real-signup",
       "adoption": "adopted",
       "source_url": "https://signup.heroku.com/",
-      "captured_at": "2026-09-16T10:19:55.086Z",
+      "captured_at": "2026-10-27T18:36:17.844Z",
       "mirror_of": "heroku-signup",
       "license_note": "形态复刻（非原文转载）：仅保留公开表单形态，已去品牌 / 去追踪 / 内容替换，不含真实 PII；原始快照出仓归档，不入 git。",
       "form_selector": "#self_declared_country",
@@ -396,55 +420,34 @@
         "source_file": "../choose-your-country-evidence-archive/corpus-forms/dom/heroku-signup.html"
       },
       "capture": {
+        "capture_country": null,
+        "browser_locale": "zh-CN",
+        "ipapi_stub_hits": 0,
         "http_status": 200,
         "archive_root": "D:/Aworker/mozilla/choose-your-country-evidence-archive",
         "archive_dir": "corpus-forms",
         "raw": {
           "path": "corpus-forms/raw/heroku-signup.html",
           "bytes": 283846,
-          "sha256": "42ab711a5b5cca4061fbb1d8e7dd247fe3298de2f2e8a964e63c795125de2a3d"
+          "sha256": "9f03e0fbba989053a78ba6e39c91a26d1774daaaad244b1dc61ba0adff18a112"
         },
         "dom": {
           "path": "corpus-forms/dom/heroku-signup.html",
-          "bytes": 290154,
-          "sha256": "96e88ccd1b2b4cefb4cc49983dc97320a84f46c67b61de2906566df4511af95a"
+          "bytes": 290052,
+          "sha256": "1941f75000cc175579f0492f831553d6afe1f1bf4202a5c832f95f048c5fba08"
         },
         "frames": [
           {
             "path": "corpus-forms/dom/heroku-signup.frame0.html",
-            "bytes": 55687,
-            "sha256": "76fa992b264f89158e1b8574058a9ae34275496933d63e571d52bd1df0b167dc",
-            "url": "https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&co=aHR0cHM6Ly9zaWdudXAuaGVyb2t1LmNvbTo0NDM.&hl=en&v=BnqMGSY_YP4cCmbNINHpJPkd&size=invisible&anchor-ms=20000&execute-ms=30000&cb=12wwwonqho26"
+            "bytes": 16601,
+            "sha256": "50afac7cf1f3624ed285106b20c9fb8eac3fcf3135f45b5763338f12f62e065e",
+            "url": "https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&co=aHR0cHM6Ly9zaWdudXAuaGVyb2t1LmNvbTo0NDM.&hl=zh-CN&v=NhfdZHzre16wrc2m6BxEdu7J&size=invisible&anchor-ms=20000&execute-ms=30000&cb=v2d2ri2mlw6"
           },
           {
             "path": "corpus-forms/dom/heroku-signup.frame1.html",
-            "bytes": 17704,
-            "sha256": "ba8b79951b5ab1407e452447328e066cc35799872e6c43ba50ddeaaf5e391fd5",
-            "url": "https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&co=aHR0cHM6Ly9zaWdudXAuaGVyb2t1LmNvbTo0NDM.&hl=en&v=BnqMGSY_YP4cCmbNINHpJPkd&size=normal&anchor-ms=20000&execute-ms=30000&cb=yxi3u06f097x"
-          },
-          {
-            "path": "corpus-forms/dom/heroku-signup.frame2.html",
-            "bytes": 39,
-            "sha256": "a7fe83ec64bb23eb28090598db3d166ed98e52e39d1afbbfd74c579553f93e4e",
-            "url": "about:blank"
-          },
-          {
-            "path": "corpus-forms/dom/heroku-signup.frame3.html",
-            "bytes": 39,
-            "sha256": "a7fe83ec64bb23eb28090598db3d166ed98e52e39d1afbbfd74c579553f93e4e",
-            "url": "about:blank"
-          },
-          {
-            "path": "corpus-forms/dom/heroku-signup.frame4.html",
-            "bytes": 39,
-            "sha256": "a7fe83ec64bb23eb28090598db3d166ed98e52e39d1afbbfd74c579553f93e4e",
-            "url": "about:blank"
-          },
-          {
-            "path": "corpus-forms/dom/heroku-signup.frame5.html",
-            "bytes": 30676,
-            "sha256": "adde78a2b86a1b4bf33739129198a5f56b322479dabf062e79aeb2ca6e409fd1",
-            "url": "https://www.recaptcha.net/recaptcha/enterprise/bframe?hl=en&v=BnqMGSY_YP4cCmbNINHpJPkd&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&bft=0dAFcWeA7m5GoDkAnPADVMnePqJRu4eUHliRjS0NDBbIShYW8vm4CH3B1Fc9X-imBdFiJFGyJ9EBL-0Elmo3H0BZ6ktUADzwrz_Q"
+            "bytes": 16435,
+            "sha256": "bf385658757c7fdc66812569d9b175cea8ae6807d4595bbc0b1365d1ba371f19",
+            "url": "https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6LeV12EtAAAAALmlcREe-ACfMSE4LEZKOPx8mv7J&co=aHR0cHM6Ly9zaWdudXAuaGVyb2t1LmNvbTo0NDM.&hl=zh-CN&v=NhfdZHzre16wrc2m6BxEdu7J&size=normal&anchor-ms=20000&execute-ms=30000&cb=p06f2691p9fh"
           }
         ],
         "shot": {
