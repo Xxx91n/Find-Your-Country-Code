@@ -8,6 +8,8 @@
 //   验收5 伪 select 裁决=实现（非缓议）; 检查点二 口径复用静态落点
 //   #3 / spec #42 追加 9.：登记门（纯国家选择器两形态都不调登记 / 含 (+NN) 仍登记 /
 //         强关键字豁免 / 判定记录 reason 取国家语义工具门）
+//   #45 追加 9.27–9.35：国家语义证据面补「选项文本恰为国家名」（本地化国名的原生 select /
+//         只有国名的 ARIA combobox），并锁住证据面只加国名、不放宽区号面
 // 装载: 引擎束（config+countries+detect, createDetect 注入记录型 UI）+ 填充束
 //   （i18n+iti-adapter+fill），零构建；与 verify-ticket-02/13 同心智。
 // ══════════════════════════════════════════════════════════════════════
@@ -312,6 +314,9 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
 //   去掉 reason 的 tier 守卫 → 9.19 转红；
 //   去掉伪侧 textDial 反向证据 → 9.20 / 9.21 / 9.22 转红（#43 首轮返修，守 US11）；
 //   去掉 tel-country-code 豁免 → 9.23 / 9.24 转红（#43 二轮返修，守 US5）；
+//   去掉 countryName 证据（谓词的 (isoName + countryName) 退回只看 isoName） → 9.27 / 9.28 转红
+//                                    （#45 返修：本地化国名 / 纯国名两形态）；
+//   把 veto 的国家名命中退回零命中口径 → 9.29 转红（#45：纯国名 autocomplete 不冒充站内搜索）；
 //   删掉 0 分信号留痕 → 9.1 / 9.8 / 4.4 转红（三者都把该信号写进断言条件，未实跑）。
 // 真·口径 guard 与正例对照（上述四条变异都转不了它们的红，只证明阻断没有顺手改掉注入口径
 // 与分数面）：9.2 / 9.4 / 9.6 / 9.7 / 9.9 / 9.11 / 9.12 / 9.16 / 9.17。
@@ -542,6 +547,89 @@ function acTrigger(ac) {
   check('9.26 country / country-name 不一起豁免（那两个 token 就是国家选择器）',
     resCountry.noRegister === true && resCName.noRegister === true,
     'country=' + resCountry.noRegister + ' country-name=' + resCName.noRegister);
+}
+
+// 9i #45：国家语义证据面不能只认「ISO2 ↔ 国名互证」。真实站点的纯国家选择器有两类拿不到
+//    ISO2 线索：本地化国名的原生 select（值 ISO2、文本 CJK —— 旧 isoName 的拉丁字母正则把
+//    CJK 直接排除）与只有国名的 ARIA combobox（无值域 ISO2）。两类都实测进过召唤面
+//    （32 / 34 分），与 #3 的判据是同一缺口。取证：CLDR 推荐形态即 value=ISO2 + label=本地化
+//    国名（atomcode 调研，2026-10-29）；MUI CountrySelect 的 renderOption 输出
+//    `<li role=option>` + 国名文本。
+//    反向护栏：证据面只放行「文本恰为国家名」，带任何区号证据的仍照旧不进国家语义判定。
+{
+  // (a) 原生：ISO2 值 + 中文国名，同 form tel 锚（issue #45 实测 32 分）
+  const nativeLocalized = makeNode('SELECT', { name: 'country', id: 'cty-loc' }, [], '');
+  nativeLocalized.options = [{ value: 'US', text: '美国' }, { value: 'GB', text: '英国' },
+    { value: 'CN', text: '中国大陆' }, { value: 'JP', text: '日本' }];
+  nativeLocalized.ownerDocument = { querySelectorAll: function () { return [{ tagName: 'INPUT' }]; },
+    getElementById: function () { return null; }, defaultView: undefined };
+  const pA = registerProbe();
+  const resA = pA.Det.scoreElement(nativeLocalized, { anchorHasTel: true });
+  check('9.27 本地化国名原生 select 判 noRegister（CJK 不因拉丁字母正则出局）',
+    resA.noRegister === true && hasName(resA, 'country-semantic:no-register'),
+    'score=' + resA.score + ' :: ' + sigNames(resA).join(','));
+  check('9.28 该形态分数面未动（32 分原样保留，只改登记裁决）',
+    resA.score === 32, 'score=' + resA.score);
+  pA.Det._process(nativeLocalized);
+  check('9.29 本地化国名原生 select 不调用登记',
+    pA.calls.rememberLow.length === 0, 'rememberLow=' + pA.calls.rememberLow.length);
+
+  // (d) ARIA combobox：选项只有国名，无 data-value / 无 ISO2 文本（issue #45 实测 34 分）
+  const lbName = makeNode('UL', { role: 'listbox', id: 'nameonly-lb' }, [
+    makeNode('LI', { role: 'option' }, [], 'United States'),
+    makeNode('LI', { role: 'option' }, [], 'United Kingdom'),
+    makeNode('LI', { role: 'option' }, [], 'China'),
+    makeNode('LI', { role: 'option' }, [], 'Japan'),
+  ]);
+  const trigName = withRoot(
+    makeNode('INPUT', { role: 'combobox', type: 'text', 'aria-expanded': 'false',
+      'aria-controls': 'nameonly-lb', id: 'nameonly-combo', class: 'select-country' }, [], ''),
+    { 'nameonly-lb': lbName });
+  const pD = registerProbe();
+  const resD = pD.Det.scoreElement(trigName);
+  check('9.30 纯国名 ARIA combobox 判 noRegister',
+    resD.noRegister === true && hasName(resD, 'country-semantic:no-register'),
+    'score=' + resD.score + ' :: ' + sigNames(resD).join(','));
+  check('9.31 该形态分数面未动（34 分原样保留，结构分 20 仍 < 登记线口径不变）',
+    resD.score === 34, 'score=' + resD.score);
+  pD.Det._process(trigName);
+  check('9.32 纯国名 ARIA combobox 不调用登记',
+    pD.calls.rememberLow.length === 0, 'rememberLow=' + pD.calls.rememberLow.length);
+
+  // 反向护栏：国家名 + 括号区号 → 不进国家语义判定（国家名不足以覆盖区号证据）
+  const lbDial = makeNode('UL', { role: 'listbox', id: 'namedial-lb' }, [
+    makeNode('LI', { role: 'option' }, [], 'United States (+1)'),
+    makeNode('LI', { role: 'option' }, [], 'United Kingdom (+44)'),
+    makeNode('LI', { role: 'option' }, [], 'China (+86)'),
+  ]);
+  const trigDial = withRoot(
+    makeNode('INPUT', { role: 'combobox', type: 'text', 'aria-expanded': 'false',
+      'aria-controls': 'namedial-lb', id: 'namedial-combo', class: 'select-country' }, [], ''),
+    { 'namedial-lb': lbDial });
+  const pR = registerProbe();
+  const resR = pR.Det.scoreElement(trigDial);
+  check('9.33 国家名 + 括号区号仍不进国家语义判定（证据面只加国名，不放宽区号面）',
+    resR.noRegister !== true, 'score=' + resR.score + ' :: ' + sigNames(resR).join(','));
+
+  // 搜索型 veto 不得把纯国名 autocomplete 冒充站内搜索：reason 必须指向国家语义门
+  const lbSearch = makeNode('UL', { role: 'listbox', id: 'ctysearch-lb' }, [
+    makeNode('LI', { role: 'option' }, [], 'Germany'),
+    makeNode('LI', { role: 'option' }, [], 'France'),
+    makeNode('LI', { role: 'option' }, [], 'Japan'),
+  ]);
+  const trigSearch = withRoot(
+    makeNode('INPUT', { role: 'combobox', type: 'text', 'aria-expanded': 'false',
+      'aria-controls': 'ctysearch-lb', 'aria-autocomplete': 'list',
+      id: 'ctysearch-combo', class: 'country-search' }, [], ''),
+    { 'ctysearch-lb': lbSearch });
+  const pS = registerProbe();
+  const resS = pS.Det.scoreElement(trigSearch);
+  check('9.34 纯国名 autocomplete 不被判为站内搜索 veto',
+    !sigNames(resS).some(function (n) { return n.indexOf('pseudo:veto:') === 0; }),
+    sigNames(resS).join(','));
+  check('9.35 其 reason 指向国家语义门而非搜索 veto',
+    resS.noRegister === true && pS.Det._reasonOf(resS) === DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC,
+    'noRegister=' + resS.noRegister + ' reason=' + pS.Det._reasonOf(resS));
 }
 
 console.log('-----------------------------');

@@ -54,6 +54,24 @@
     <option value="JP">Japan</option>
   </select>
 
+  <!-- ⑤ #45 (a) 本地化国名的原生 select：独立夹具 country-semantic-localized.html。
+     本页不放 input[type=tel] —— 锚→目标关联有全文档兜底（src/detect/index.ts:683），
+     往本页塞一个主号输入会把 ② generic-combo 从 20 抬到 38 而跨过登记线，
+     破坏该例「结构分 20 < 登记线 25」的既有前提。 -->
+
+  <!-- ⑥ #45 (d) ARIA combobox，选项**只有国名**（无 data-value / 无 ISO2 文本）：
+     34 分（kw:country 14 + pseudo:combobox 20 结构分无条件入账）→ 过登记线 25。
+     与 ③④ 的区别：这里没有任何 ISO2 线索，国名就是全部证据。 -->
+  <label for="country-nameonly">Country</label>
+  <div id="country-nameonly" role="combobox" aria-expanded="false"
+       aria-controls="nameonly-lb" aria-labelledby="country-nameonly" tabindex="0">United States</div>
+  <ul id="nameonly-lb" role="listbox">
+    <li role="option">United States</li>
+    <li role="option">United Kingdom</li>
+    <li role="option">China</li>
+    <li role="option">Japan</li>
+  </ul>
+
   <!-- ④ 纯国家选择器（伪 select 形态，语料 mm2-pseudo-country-only 形状）：
      可聚焦 div + 后代 ul>li（data-value=ISO2 / 文本国名）→ 34 分（kw:country 14 +
      custom:dropdown 20）已过登记线 25，且 custom 分支的 isoName>0 单独通过内容门槛。 -->

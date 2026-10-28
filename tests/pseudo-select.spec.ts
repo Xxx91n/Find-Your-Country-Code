@@ -61,12 +61,29 @@ test.describe('伪 select 端到端（票 18）', () => {
     // 修复前 visible、修复后 hidden。
     await expect(wrapperFor(page, '#country-native')).toHaveCount(0);
     await expect(wrapperFor(page, '#country-pseudo')).toHaveCount(0);
+    // #45: 纯国名（无 ISO2 线索）的 ARIA combobox 同为纯国家选择器，判据必须同口径。
+    // 修复前它凭「结构分 20 无条件入账」达 34 分进召唤面。
+    await expect(wrapperFor(page, '#country-nameonly')).toHaveCount(0);
     // 搜索型展开（选项证据面出现）→ 重扫后仍不注入不登记（veto 路径实测）
     await page.locator('#site-search').click();
     await page.waitForTimeout(600);
     await expect(wrapperFor(page, '#site-search')).toHaveCount(0);
     // 登记面为空 → 面板召唤按钮隐藏
     await openPanel(page, '#anchor-cc');
+    await expect(page.locator('#cch-summon')).toBeHidden();
+  });
+
+  // #45 (a)：本地化国名的原生下拉。独立夹具的理由见 pseudo-negative.html ⑤ 的注释——
+  // 往那一页塞 input[type=tel] 会经全文档兜底把 generic-combo 抬过登记线。
+  test('票45 本地化国名原生下拉不登记召唤；英文对照同结论；带区号证据者仍登记', async ({ page }) => {
+    await page.goto('/fixtures/country-semantic-localized.html');
+    await expect(wrapperFor(page, '#country-localized')).toHaveCount(0);
+    await expect(wrapperFor(page, '#country-english')).toHaveCount(0);
+    // 反向护栏：区号证据在场的国家名下拉不受影响，仍按 auto 档注入
+    await expect(wrapperFor(page, '#country-with-dial')).toHaveCount(1);
+    // 三个字段都不到登记面（两个被国家语义挡住，带区号那个已注入）→ 召唤入口不出现。
+    // 这条同时锁住「召唤面里没有纯国家语义字段」：修复前 #country-localized 会被登记。
+    await openPanel(page, '#country-with-dial');
     await expect(page.locator('#cch-summon')).toBeHidden();
   });
 });
