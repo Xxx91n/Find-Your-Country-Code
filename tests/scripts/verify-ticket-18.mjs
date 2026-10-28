@@ -306,13 +306,14 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
 
 // ══ 9. 纯国家选择器退出召唤面（#3 / spec #42）══
 // 登记由**分数**驱动：只把档位压成 none 的旧抑制请不出国家选择器，且伪 select 分支此前
-// 完全没有该抑制。可失败性：三条变异实跑过，第四条由断言条件直接可读——
+// 完全没有该抑制。可失败性：四条变异实跑过，第五条由断言条件直接可读——
 //   摘掉 noRegister 判定 → 4.4 / 9.1 / 9.3 / 9.8 / 9.10 / 9.13 / 9.14 / 9.15 / 9.18 转红；
 //   去掉 reason 的 tier 守卫 → 9.19 转红；
-//   去掉伪侧 textDial 反向证据 → 9.20 / 9.21 / 9.22 转红（#43 审查返修，守 US11）；
+//   去掉伪侧 textDial 反向证据 → 9.20 / 9.21 / 9.22 转红（#43 首轮返修，守 US11）；
+//   去掉 tel-country-code 豁免 → 9.23 / 9.24 转红（#43 二轮返修，守 US5）；
 //   删掉 0 分信号留痕 → 9.1 / 9.8 / 4.4 转红（三者都把该信号写进断言条件）。
 // 其余为口径 guard 与正例对照（修复前后同为真，作用是证明阻断没有顺手改掉注入口径、
-// 分数面或豁免面）：9.2 / 9.4 / 9.6 / 9.7 / 9.9 / 9.11 / 9.12 / 9.16 / 9.17。
+// 分数面或豁免面）：9.2 / 9.4 / 9.6 / 9.7 / 9.9 / 9.11 / 9.12 / 9.16 / 9.17 / 9.25 / 9.26。
 // 判定记录断在调用点——_register 的下游 UI.rememberLow 未被调用，reason 取自既有国家语义
 // 工具门，不得是「只登记不注入」（那描述一个没发生的结果）。
 function countryOptions() {
@@ -495,6 +496,48 @@ const reasons = function (records) { return records.map(function (r) { return r.
     p.calls.rememberLow.length === 1 && p.calls.rememberLow[0][1] === 'pseudo' &&
     p.calls.attach.length === 0,
     'rememberLow=' + p.calls.rememberLow.length);
+}
+
+// 9h #43 二轮审查返修：L0 的 WHATWG 区号 token 也必须是逃生口。此前逃生口只看 L1 关键字，
+//    于是 autocomplete="tel-country-code"（站点显式声明「这是国际区号」）的伪 select 被国家语义
+//    挡出召唤面——本 PR 之前它凭 100 分照常登记（撞 US5「明确写着区号的字段仍可召唤」）。
+//    同条带反向护栏：autocomplete 的 country / country-name 声明的是地址里的国家名，正是
+//    「国家选择器」本身，不得一起豁免（故逃生口取 === 'tel-country-code'，不是 !!strong）。
+function acTrigger(ac) {
+  const lb = makeNode('UL', { role: 'listbox', id: 'ac-' + ac }, [
+    makeNode('LI', { role: 'option', 'data-value': 'US' }, [], 'United States'),
+    makeNode('LI', { role: 'option', 'data-value': 'GB' }, [], 'United Kingdom'),
+    makeNode('LI', { role: 'option', 'data-value': 'CN' }, [], 'China'),
+  ]);
+  // 属性面刻意不含 country / dial 词根：让 autocomplete 成为唯一的区号语义来源
+  const byId = {};
+  byId['ac-' + ac] = lb;
+  return withRoot(
+    makeNode('INPUT', { role: 'combobox', type: 'text', 'aria-expanded': 'false',
+      'aria-controls': 'ac-' + ac, autocomplete: ac, id: 'sel-node', class: 'rs__input' }, [], ''),
+    byId);
+}
+{
+  const p = registerProbe();
+  const res = p.Det.scoreElement(acTrigger('tel-country-code'));
+  check('9.23 tel-country-code 豁免：不判 noRegister，分数与信号保留',
+    res.noRegister !== true && res.score >= 100 &&
+    !hasName(res, 'country-semantic:no-register'),
+    'score=' + res.score + ' :: ' + sigNames(res).join(','));
+  p.Det._process(acTrigger('tel-country-code'));
+  check('9.24 tel-country-code 伪 select 仍登记（档位上限照旧不注入）',
+    p.calls.rememberLow.length === 1 && p.calls.rememberLow[0][1] === 'pseudo' &&
+    p.calls.attach.length === 0, 'rememberLow=' + p.calls.rememberLow.length);
+  const pOff = registerProbe();
+  pOff.Det._process(acTrigger('off'));
+  check('9.25 没有区号 token 时照旧被挡（豁免未放宽到一般形态）',
+    pOff.calls.rememberLow.length === 0, 'rememberLow=' + pOff.calls.rememberLow.length);
+  const pCty = registerProbe();
+  const resCountry = pCty.Det.scoreElement(acTrigger('country'));
+  const resCName = pCty.Det.scoreElement(acTrigger('country-name'));
+  check('9.26 country / country-name 不一起豁免（那两个 token 就是国家选择器）',
+    resCountry.noRegister === true && resCName.noRegister === true,
+    'country=' + resCountry.noRegister + ' country-name=' + resCName.noRegister);
 }
 
 console.log('-----------------------------');

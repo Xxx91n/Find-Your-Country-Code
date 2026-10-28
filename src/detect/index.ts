@@ -238,11 +238,17 @@ function attrPhraseHit(attrStr: string): string | null {
 // [SP US7 / GLOSSARY「国家选择器≠区号字段」]。既有档位压制（tier→none）用它，
 // 「不登记召唤」也用它——不新造阈值、不动权重。
 // total>=2 与两侧既有规模门槛同口径（options<2 在各分支已自行留痕判死）。
-// kw==='strong' 是唯一逃生口：区号专名（dial code / country code）即使选项尚未加载
-// 出区号证据（懒渲染），也仍按用户可理解的意图保留召唤。
-function isCountrySemanticOnly(st: OptionStats | null, kw: string | null): boolean {
+// 两个逃生口，都是「用户/站点显式声明区号语义」：
+//   ① kw==='strong' —— 属性写着区号专名（dial code / country code / idd…）；
+//   ② explicitDialToken —— L0 命中 autocomplete="tel-country-code"（WHATWG 的区号 token）。
+//      `country` / `country-name` 两个 token 不在此列：它们声明的是地址里的国家名，
+//      正是「国家选择器」本身，必须继续被本谓词判定 [SP US5 不误伤懒加载区号字段]。
+//      ②是 #43 审查轮对 spec「强关键字是唯一逃生口」的一处收窄补充（措辞已回写票面）。
+function isCountrySemanticOnly(st: OptionStats | null, kw: string | null,
+                               explicitDialToken: boolean): boolean {
   return !!st && st.total >= 2 && st.isoName / st.total >= 0.5 &&
-    st.plusDial === 0 && st.parenDial === 0 && st.textDial === 0 && kw !== 'strong';
+    st.plusDial === 0 && st.parenDial === 0 && st.textDial === 0 &&
+    kw !== 'strong' && !explicitDialToken;
 }
 
 // ── L3 选项分布统计（一次性扫描；value 与 text 双证据口径；票 13：占位首项剔除 + ISO2 全集域） ──
@@ -664,7 +670,8 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
       // ── 国家语义判定（#3 / spec #42）：原生与伪 select 走同一谓词 ──
       // 谓词早于分档求值，两个下游都读它：档位压制（既有 [SP US7] 路径，逐位不变）
       // 与「不登记召唤」（本次新增）。
-      const countrySemantic = isCountrySemanticOnly(tag === 'SELECT' ? st : pseudoSt, kw);
+      const countrySemantic = isCountrySemanticOnly(tag === 'SELECT' ? st : pseudoSt, kw,
+        strong === 'tel-country-code');
 
       // 国家选择器语义分层 [SP US7]：ISO 主导（无任何区号内容证据、无 strong kw）且未达高置信 →
       // 不自动注入（国家选择≠区号选择 [MD §2④]）；低置信档不适用，仅保留可召唤语义
