@@ -51,10 +51,16 @@ test.describe('伪 select 端到端（票 18）', () => {
     await expect(page.locator('#rs-carrier')).toHaveAttribute('data-events', /input,change,/);
   });
 
-  test('验收1 否决组: 搜索型 typeahead 不登记不注入; 通用 combobox（无国家上下文）不登记', async ({ page }) => {
+  test('验收1 否决组 + 纯国家选择器: 搜索型/通用 combobox/原生与伪 select 纯国家选择器均不登记不注入', async ({ page }) => {
     await page.goto('/fixtures/pseudo-negative.html');
     await expect(wrapperFor(page, '#site-search')).toHaveCount(0);
     await expect(wrapperFor(page, '#generic-combo')).toHaveCount(0);
+    // #3 / spec #42: 纯国家选择器（ISO2 + 国名、零区号证据）两形态同口径——两例分数
+    // （原生 44 / 伪 select 34）均已过登记线 25。下面两条 toHaveCount(0) 锁的是
+    // 「注入口径不变」（修复前后同为 0）；真正的判据是末尾那条召唤入口断言——
+    // 修复前 visible、修复后 hidden。
+    await expect(wrapperFor(page, '#country-native')).toHaveCount(0);
+    await expect(wrapperFor(page, '#country-pseudo')).toHaveCount(0);
     // 搜索型展开（选项证据面出现）→ 重扫后仍不注入不登记（veto 路径实测）
     await page.locator('#site-search').click();
     await page.waitForTimeout(600);

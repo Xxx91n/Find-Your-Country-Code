@@ -95,16 +95,26 @@ function pseudoNameHit(iso: string, text: string): boolean {
 }
 
 function pseudoOptionStats(opts: AnyEl[]): OptionStats {
-  let plusDial = 0, parenDial = 0, isoName = 0, numeric = 0;
+  let plusDial = 0, parenDial = 0, textDial = 0, isoName = 0, numeric = 0;
   for (let i = 0; i < opts.length; i++) {
     const o = opts[i];
     const val = String((o.getAttribute && (o.getAttribute('data-value') || o.getAttribute('value'))) || '').trim();
     const txt = String(o.textContent || '').trim();
     const lab = String((o.getAttribute && o.getAttribute('aria-label')) || '').trim();
     const cands = [val, txt, lab].filter(Boolean);
-    if (cands.some(s => DIAL_SET.has(s.replace(/^\+/, '').replace(/^00/, '')))) plusDial++;
+    const plusHit = cands.some(s => DIAL_SET.has(s.replace(/^\+/, '').replace(/^00/, '')));
+    if (plusHit) plusDial++;
     const pm = (txt + ' ' + lab).match(/\(\+(\d{1,4})\)/);
-    if (pm && DIAL_SET.has(pm[1])) parenDial++;
+    const parenHit = !!(pm && DIAL_SET.has(pm[1]));
+    if (parenHit) parenDial++;
+    // #3 / spec #42：裸 +NN 文本令牌（无括号）在伪侧**只作反向证据**——同原生口径
+    // （括号形态归 parenDial、同一证据不双写），供国家语义谓词判定「值域里有没有区号」。
+    // 它不进任何加分项：伪 select 的 L3 计分面仍是 plusDial/parenDial/numeric/isoName，
+    // 权重与注入口径一字未动（「加分对等」另挂 #4）。
+    if (!plusHit && !parenHit) {
+      const tm = (txt + ' ' + lab).match(/(?:^|[^(\d])\+(\d{1,4})(?!\d)/);
+      if (tm && DIAL_SET.has(tm[1])) textDial++;
+    }
     let iso = '';
     let nameText = '';
     if (val && ISO2_SET.has(val.toLowerCase())) { iso = val.toLowerCase(); nameText = txt + ' ' + lab; }
@@ -112,11 +122,7 @@ function pseudoOptionStats(opts: AnyEl[]): OptionStats {
     if (iso && pseudoNameHit(iso, nameText)) isoName++;
     if (/^\d{1,4}$/.test(val || txt)) numeric++;
   }
-  // 票 08：pseudo 侧的裸 +NN 文本证据**本票不启用**（textDial 恒为 0）——
-  // 语料先行：当前语料无该形态的伪 select 正/负例，且伪 select 证据策略受
-  // 「伪 select 只登记、不自动注入」的档位约束（与原生 select 同口径不等价）。
-  // 该对称性缺口已作为残留登记在票 08 报告，待语料基础到位后再评估。
-  return { total: opts.length, plusDial, parenDial, textDial: 0, isoName, numeric };
+  return { total: opts.length, plusDial, parenDial, textDial, isoName, numeric };
 }
 
 function comboboxEvidence(el: AnyEl) {
@@ -225,6 +231,24 @@ function attrPhraseHit(attrStr: string): string | null {
     if (pn && (norm.indexOf(pn) >= 0 || joined.indexOf(pn.replace(/ /g, '')) >= 0)) return p;
   }
   return null;
+}
+
+// ── 国家语义判定谓词（#3 / spec #42）：原生 select 与伪 select 共用的单一口径 ──
+// 「选项是 ISO2 + 国名、且值域里没有任何区号证据」= 国家选择器而非区号字段
+// [SP US7 / GLOSSARY「国家选择器≠区号字段」]。既有档位压制（tier→none）用它，
+// 「不登记召唤」也用它——不新造阈值、不动权重。
+// total>=2 与两侧既有规模门槛同口径（options<2 在各分支已自行留痕判死）。
+// 两个逃生口，都是「用户/站点显式声明区号语义」：
+//   ① kw==='strong' —— 属性写着区号专名（dial code / country code / idd…）；
+//   ② explicitDialToken —— L0 命中 autocomplete="tel-country-code"（WHATWG 的区号 token）。
+//      `country` / `country-name` 两个 token 不在此列：它们声明的是地址里的国家名，
+//      正是「国家选择器」本身，必须继续被本谓词判定 [SP US5 不误伤懒加载区号字段]。
+//      ②是 #43 审查轮对 spec「强关键字是唯一逃生口」的一处收窄补充（措辞已回写票面）。
+function isCountrySemanticOnly(st: OptionStats | null, kw: string | null,
+                               explicitDialToken: boolean): boolean {
+  return !!st && st.total >= 2 && st.isoName / st.total >= 0.5 &&
+    st.plusDial === 0 && st.parenDial === 0 && st.textDial === 0 &&
+    kw !== 'strong' && !explicitDialToken;
 }
 
 // ── L3 选项分布统计（一次性扫描；value 与 text 双证据口径；票 13：占位首项剔除 + ISO2 全集域） ──
@@ -433,6 +457,9 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
       const type = (el.getAttribute('type') || (tag === 'INPUT' ? 'text' : '')).toLowerCase();
       let score = 0;
       let pseudoHit = false;
+      // #3 / spec #42: 伪 select 侧的选项内容统计（与原生侧的 st 同角色）——
+      // 国家语义谓词要在两个形态上给同一结论，就得在两形态上拿到同一份证据
+      let pseudoSt: OptionStats | null = null;
 
       // ── L0 语义标准层 ──
       const ac = (el.getAttribute('autocomplete') || '').toLowerCase().trim();
@@ -574,6 +601,9 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
           pseudoHit = true;
           score += add('L2', 'pseudo:combobox', ARIA_COMBO_STRUCT_SCORE);
           const st2 = combo.stats;
+          // 边界：收起态组件库下拉解不出 [role=option] → stats 为 null → 谓词无内容证据可判，
+          // 该字段照常留在召唤面（放宽成「无选项即国家选择器」会误伤懒加载的区号下拉）
+          pseudoSt = st2;
           if (st2) {
             if (st2.total < 2) {
               sig.push({ layer: 'L3', name: 'pseudo:gate:options<2', pts: 0 });
@@ -596,6 +626,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
         else {
           const custom = customDropdownStats(el);
           if (custom) {
+            pseudoSt = custom;
             if (custom.total < 2) {
               sig.push({ layer: 'L2', name: 'custom:gate:options<2', pts: 0 });
             } else if (custom.plusDial + custom.parenDial + custom.isoName === 0) {
@@ -636,15 +667,28 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
       else if (score >= SCORE_LOWKEY) tier = 'lowkey';
       else tier = 'none';
 
+      // ── 国家语义判定（#3 / spec #42）：原生与伪 select 走同一谓词 ──
+      // 谓词早于分档求值，两个下游都读它：档位压制（既有 [SP US7] 路径，逐位不变）
+      // 与「不登记召唤」（本次新增）。
+      const countrySemantic = isCountrySemanticOnly(tag === 'SELECT' ? st : pseudoSt, kw,
+        strong === 'tel-country-code');
+
       // 国家选择器语义分层 [SP US7]：ISO 主导（无任何区号内容证据、无 strong kw）且未达高置信 →
       // 不自动注入（国家选择≠区号选择 [MD §2④]）；低置信档不适用，仅保留可召唤语义
-      if (st && st.isoName / st.total >= 0.5 && st.plusDial === 0 && st.parenDial === 0 &&
-          st.textDial === 0 && kw !== 'strong' && tier !== 'auto') {
+      if (countrySemantic && tier !== 'auto') {
         tier = 'none';
         sig.push({ layer: 'L2', name: 'country-semantic:suppress', pts: 0 });
       }
+      // #3 / spec #42: 纯国家选择器不进召唤面——登记由**分数**驱动，只压档位不足以把它
+      // 请出召唤面（原生 44 分与伪 select 34 分同样 ≥ 登记线）。判定不看档位：伪 select
+      // 的高分来自 country 词 / ISO 占比 / 主号锚而非区号证据，其档位上限又会在结算时把
+      // 高分压成 none，保留「已到 auto 不抑制」的豁免会漏掉「国家选择器紧挨电话框」这一
+      // 最常见布局。分数与信号明细原样保留（不归零），由 _process 结算层据此跳过登记。
+      if (countrySemantic) {
+        sig.push({ layer: 'L2', name: 'country-semantic:no-register', pts: 0 });
+      }
 
-      return { score, tier, signals: sig, pseudo: pseudoHit };
+      return { score, tier, signals: sig, pseudo: pseudoHit, noRegister: countrySemantic };
     },
 
     // ══ 票 03 [A-028]：reason 派生器 ══
@@ -656,6 +700,12 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
     _reasonOf(res: ScoreResult): string {
       const names = ((res && res.signals) || []).map(s => String(s && s.name));
       const has = (p: string): boolean => names.some(n => n === p || n.indexOf(p) === 0);
+      // 最终裁决（结算层据此跳过登记）优先于注入层留痕：被国家语义阻断的字段**根本没有
+      // 被登记**，此时报「只登记不注入」或「因可见性降档」都在描述一个没发生的结果。
+      // tier 守卫：判定成立但字段最终仍被注入（auto 档 / 页面规则抬档）时不冒充本原因——
+      // 一条消息只说一个原因，注入成功的原因是「已识别」。
+      if (has('country-semantic:no-register') && res && res.tier === 'none')
+        return DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC;
       // 注入层（最终裁决）
       if (has('gate:adr-0005-register-only')) return DIAG_REASON.INJECT_GATE_REGISTER_ONLY;
       if (has('gate:visibility-hidden')) return DIAG_REASON.INJECT_GATE_VISIBILITY;
@@ -952,7 +1002,7 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
         // KeePassXC Site Preferences 用户干预压过启发式）；lowkey 覆盖同理；
         // none 覆盖已在上方短路（撤图标不登记）。
         if (Rules && (pageTier === 'auto' || pageTier === 'lowkey') && res.tier !== pageTier) {
-          res = { score: res.score, tier: pageTier, pseudo: res.pseudo,
+          res = { score: res.score, tier: pageTier, pseudo: res.pseudo, noRegister: res.noRegister,
             signals: (res.signals || []).concat([{ layer: 'R', name: 'rule:tier-override', pts: 0 }]) };
         }
         // ── 票 13 可见性闸门（注入档位最终裁决）[AM 结论4 / SP US4]：只降注入档位，
@@ -961,14 +1011,14 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
         // forced/pageTier 规则是用户显式干预，已在上方生效；召唤图标（data-cch-summon）
         // 是用户显式行为，不被闸门回拆（summonedWrap 检查）。
         if (!summonedWrap && res.tier !== 'none' && this._hiddenByStyle(el)) {
-          res = { score: res.score, tier: 'none', pseudo: res.pseudo,
+          res = { score: res.score, tier: 'none', pseudo: res.pseudo, noRegister: res.noRegister,
             signals: (res.signals || []).concat([{ layer: 'VIS', name: 'gate:visibility-hidden', pts: 0 }]) };
         }
         // ── 票 18: 伪 select 档位上限 =「登记 + 手动召唤」——不自动注入图标、
         // 不自动填充。分数与信号原样保留（≥25 走 rememberLow 登记召唤面），档位强制 none
         // + 0 分留痕；用户显式规则覆盖已在上方生效，不受此限。
         if (res.pseudo && res.tier !== 'none') {
-          res = { score: res.score, tier: 'none', pseudo: true,
+          res = { score: res.score, tier: 'none', pseudo: true, noRegister: res.noRegister,
             signals: (res.signals || []).concat([{ layer: 'L2', name: 'gate:adr-0005-register-only', pts: 0 }]) };
         }
       }
@@ -1001,7 +1051,13 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
 
       if (res.tier === 'none') {
         if (wrapEl && !summonedWrap) _detach(el); // 误挂移除（用户召唤图标除外 [票 13]）
-        if (res.score >= ITI_LOW_REGISTER_SCORE) _register(el, kind, res.score, res.signals);
+        // #3 / spec #42: 国家语义阻断的字段跳过登记（分数与信号已在 res 上原样保留）——
+        // 它达得到登记线，只是「选国家」不等于「选区号」，不该出现在召唤面。
+        // 边界：显式规则把**原生/承值**形态抬到 lowkey 档时走下方 _attach，UI 的
+        // lowkeyMode=hidden 迁移仍会把字段转回召唤面（伪 select 不受此路影响——票 18
+        // 档位上限先把它压回 none，仍由本门挡住）。用户显式干预压过启发式（票 05/30 同族），
+        // 本票不修。
+        if (res.score >= ITI_LOW_REGISTER_SCORE && !res.noRegister) _register(el, kind, res.score, res.signals);
         return;
       }
       // auto / lowkey
