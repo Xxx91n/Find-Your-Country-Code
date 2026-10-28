@@ -134,6 +134,9 @@ export interface ScoreResult {
   tier: Tier;
   signals: Signal[];
   pseudo?: boolean;
+  // #3（spec #42）：国家语义判定为「纯国家选择器」→ 结算层跳过召唤登记（分数不归零）。
+  // 与 tier 无关：伪 select 的档位上限会把高分压成 none，只看档位漏掉最常见布局。
+  noRegister?: boolean;
 }
 
 // 伪 select / select 选项内容分布统计（detect optStats 与 pseudoOptionStats 共用口径）

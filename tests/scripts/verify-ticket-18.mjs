@@ -6,6 +6,8 @@
 //         （含既有语料回归 mismatch=0，规模动态计数 >=41 —— 伪层对既有语料零扰动）
 //   验收2 填充策略: 可编辑型隐藏承值 input 原生 setter+事件 / select-only listbox 点击选值
 //   验收5 伪 select 裁决=实现（非缓议）; 检查点二 口径复用静态落点
+//   #3 / spec #42 追加 9.：登记门（纯国家选择器两形态都不调登记 / 含 (+NN) 仍登记 /
+//         强关键字豁免 / 判定记录 reason 取国家语义工具门）
 // 装载: 引擎束（config+countries+detect, createDetect 注入记录型 UI）+ 填充束
 //   （i18n+iti-adapter+fill），零构建；与 verify-ticket-02/13 同心智。
 // ══════════════════════════════════════════════════════════════════════
@@ -45,7 +47,8 @@ const engineBundle = [
   toModuleBody(readFileSync(join(ROOT, 'src', 'data', 'countries.ts'), 'utf8')),
   toModuleBody(readFileSync(join(ROOT, 'src', 'detect', 'index.ts'), 'utf8')),
 ].join('\n');
-const { createDetect, COUNTRIES, pseudoOptionStats } = new Function(stripTypes(engineBundle) + '\n;return { createDetect, COUNTRIES, ISO2_MAP, pseudoOptionStats };')();
+const { createDetect, COUNTRIES, pseudoOptionStats, DIAG_REASON } =
+  new Function(stripTypes(engineBundle) + '\n;return { createDetect, COUNTRIES, ISO2_MAP, pseudoOptionStats, DIAG_REASON };')();
 
 // ── 填充束（真实 fill 模块；Node 20 无 navigator/window 全局，verify-13 同口径 stub）──
 const fillBundle = [
@@ -203,14 +206,26 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
     rememberLow: function () { calls.rememberLow.push(Array.prototype.slice.call(arguments)); },
     summon() {}, _pruneLow() {},
   }, null);
-  Det._process(trig);
-  check('4.1 antd 形态不被类型/只读闸门误杀(登记命中)', calls.rememberLow.length === 1 && calls.rememberLow[0][1] === 'pseudo');
+  // 检查点一「不误杀」的证据面 = 评分层：类型/只读/aria-hidden 闸门都没判死它，
+  // pseudo 候选成立且 isoName 证据入账。（登记与否不由本形状决定——见 4.4）
+  const res4 = Det.scoreElement(trig);
+  check('4.1 antd 形态不被类型/aria-hidden 闸门误杀(pseudo 候选成立 + score>=25)',
+    res4.pseudo === true && res4.score >= 25 &&
+    !res4.signals.some(function (s) { return /^gate:(input-type|aria-hidden)/.test(s.name); }),
+    'score=' + res4.score + ' :: ' + res4.signals.map(function (s) { return s.name; }).join(','));
   // antd 选项文本=ISO2、国名在 aria-label（17 票 observed）→ 双面互证 isoName=4/4
   check('4.2 antd 选项 aria-label 国名互证入 L3(isoName=4/4)',
     pseudoOptionStats(lb.children).isoName === 4,
     'isoName=' + pseudoOptionStats(lb.children).isoName);
-  check('4.3 isoName 证据入账(score>=25)', calls.rememberLow.length === 1 && calls.rememberLow[0][2] >= 25,
-    'score=' + (calls.rememberLow[0] ? calls.rememberLow[0][2] : 'n/a'));
+  check('4.3 isoName 证据入账(country-identity 信号)',
+    res4.signals.some(function (s) { return s.name === 'pseudo:opts:country-identity'; }),
+    res4.signals.map(function (s) { return s.name; }).join(','));
+  // #3 / spec #42：17 票 observed 的 antd 国家选择形态选项只有 ISO2 + 国名、零区号证据
+  // ⇒ 纯国家选择器，退出召唤面（本例不是被闸门杀掉，而是被国家语义判定挡在登记之外）
+  Det._process(trig);
+  check('4.4 该形态按 #3 不登记召唤，且带国家语义阻断留痕',
+    calls.rememberLow.length === 0 &&
+    res4.signals.some(function (s) { return s.name === 'country-semantic:no-register'; }));
 }
 
 // ══ 5. aria-hidden 承值 input 硬排除（防承值面混入登记） ══
@@ -287,6 +302,167 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
   const plan18 = JSON.parse(readFileSync(join(ROOT, 'tests', 'scripts', 'verify-ticket-plan.json'), 'utf8'));
   const caller18 = readFileSync(join(ROOT, '.github', 'workflows', 'verify-tickets.yml'), 'utf8');
   check('8.8 票 18 已挂接 CI（plan 条目 + 调用方 matrix）', !!plan18.tickets['18'] && caller18.includes("'18'"));
+}
+
+// ══ 9. 纯国家选择器退出召唤面（#3 / spec #42）══
+// 登记由**分数**驱动：只把档位压成 none 的旧抑制请不出国家选择器，且伪 select 分支此前
+// 完全没有该抑制。可失败性：两条变异实跑过，第三条由断言条件直接可读——
+//   摘掉 noRegister 判定 → 4.4 / 9.1 / 9.3 / 9.8 / 9.10 / 9.13 / 9.14 / 9.15 / 9.18 转红；
+//   去掉 reason 的 tier 守卫 → 9.19 转红；
+//   删掉 0 分信号留痕 → 9.1 / 9.8 / 4.4 转红（三者都把该信号写进断言条件）。
+// 其余为口径 guard 与正例对照（修复前后同为真，作用是证明阻断没有顺手改掉注入口径、
+// 分数面或豁免面）：9.2 / 9.4 / 9.6 / 9.7 / 9.9 / 9.11 / 9.12 / 9.16 / 9.17。
+// 判定记录断在调用点——_register 的下游 UI.rememberLow 未被调用，reason 取自既有国家语义
+// 工具门，不得是「只登记不注入」（那描述一个没发生的结果）。
+function countryOptions() {
+  return [
+    makeNode('LI', { role: 'option', 'data-value': 'US' }, [], 'United States'),
+    makeNode('LI', { role: 'option', 'data-value': 'GB' }, [], 'United Kingdom'),
+    makeNode('LI', { role: 'option', 'data-value': 'CN' }, [], 'China'),
+    makeNode('LI', { role: 'option', 'data-value': 'JP' }, [], 'Japan'),
+  ];
+}
+function recordingDiag(records) {
+  return {
+    counter: function () {}, error: function () {}, info: function () {},
+    warn: function (point, reason) { records.push({ point: point, reason: reason }); },
+    trace: function (point, reason) { records.push({ point: point, reason: reason }); },
+    traceOn: function () { return true; }, setTrace: function () { return true; },
+    records: function () { return records; }, checks: function () { return []; },
+    snapshot: function () { return { records: records }; }, text: function () { return ''; },
+    clear: function () {},
+  };
+}
+function registerProbe() {
+  const calls = { attach: [], rememberLow: [] };
+  const records = [];
+  const Det = createDetect({
+    attach: function () { calls.attach.push(Array.prototype.slice.call(arguments)); },
+    rememberLow: function () { calls.rememberLow.push(Array.prototype.slice.call(arguments)); },
+    detach() {}, summon() {}, _pruneLow() {},
+  }, null, recordingDiag(records));
+  return { Det: Det, calls: calls, records: records };
+}
+const sigNames = function (res) { return res.signals.map(function (s) { return s.name; }); };
+const hasName = function (res, name) {
+  return res.signals.some(function (s) { return s.name === name && s.pts === 0; });
+};
+const reasons = function (records) { return records.map(function (r) { return r.reason; }); };
+
+// 9a 伪 select（ARIA combobox 形态）纯国家选择器：ISO2 值 + 国名文本、零区号证据
+{
+  const lb = makeNode('UL', { role: 'listbox', id: 'cty-lb' }, countryOptions());
+  const trig = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'cty-lb',
+      id: 'cty-combo', class: 'MuiSelect-select' }, [], 'United States'),
+    { 'cty-lb': lb });
+  const p = registerProbe();
+  const res = p.Det.scoreElement(trig);
+  check('9.1 伪 select 分支同口径判定(noRegister + 0 分留痕)', res.noRegister === true &&
+    hasName(res, 'country-semantic:no-register'), sigNames(res).join(','));
+  check('9.2 分数与信号明细保留（不归零）', res.score >= 25 &&
+    res.signals.some(function (s) { return s.name === 'pseudo:opts:country-identity'; }),
+    'score=' + res.score);
+  p.Det._process(trig);
+  check('9.3 纯国家伪 select 不调用登记', p.calls.rememberLow.length === 0,
+    'rememberLow=' + p.calls.rememberLow.length);
+  check('9.4 注入口径 guard：纯国家伪 select 不注入图标（修复前后同为 0）', p.calls.attach.length === 0);
+  check('9.5 reason 派生为既有国家语义工具门', reasons(p.records).indexOf(DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC) >= 0,
+    JSON.stringify(reasons(p.records)));
+}
+
+// 9b 同结构正例对照：选项含 (+NN) → 判定不成立、照常登记（修复不得过头）
+{
+  const lb = makeNode('UL', { role: 'listbox', id: 'dial-lb' }, dialOptions());
+  const trig = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'dial-lb',
+      id: 'dial-combo', class: 'MuiSelect-select' }, [], 'United States (+1)'),
+    { 'dial-lb': lb });
+  const p = registerProbe();
+  const res = p.Det.scoreElement(trig);
+  check('9.6 含 (+NN) 的伪 select 不被国家语义阻断', res.noRegister !== true &&
+    !hasName(res, 'country-semantic:no-register'), sigNames(res).join(','));
+  p.Det._process(trig);
+  check('9.7 含 (+NN) 的伪 select 仍登记(kind=pseudo)', p.calls.rememberLow.length === 1 &&
+    p.calls.rememberLow[0][1] === 'pseudo', 'rememberLow=' + p.calls.rememberLow.length);
+}
+
+// 9c 原生 select 侧同口径（语料 F2 形态：name=country + ISO2 值 + 国名，44 分已过登记线）
+{
+  const sel = makeNode('SELECT', { name: 'country', id: 'cty-native' }, [], '');
+  sel.options = [{ value: 'US', text: 'United States' }, { value: 'GB', text: 'United Kingdom' },
+    { value: 'CN', text: 'China' }, { value: 'JP', text: 'Japan' }];
+  const p = registerProbe();
+  const res = p.Det.scoreElement(sel);
+  check('9.8 原生侧判定与既有的档位压制同谓词', res.noRegister === true &&
+    hasName(res, 'country-semantic:suppress') && hasName(res, 'country-semantic:no-register'),
+    sigNames(res).join(','));
+  check('9.9 原生侧分数保留（原 44 分不归零，仍 ≥ 登记线 25）', res.score >= 25, 'score=' + res.score);
+  p.Det._process(sel);
+  check('9.10 纯国家原生 select 不调用登记', p.calls.rememberLow.length === 0,
+    'rememberLow=' + p.calls.rememberLow.length + ' reasons=' + JSON.stringify(reasons(p.records)));
+  check('9.11 口径 guard：原生 reason 仍为国家语义工具门（修复前经 suppress 已同值）', reasons(p.records).indexOf(DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC) >= 0,
+    JSON.stringify(reasons(p.records)));
+}
+
+// 9d 最常见布局「国家选择器紧挨电话框」：主号锚把分数抬到 auto 档 —— 旧豁免
+//    （tier!=='auto' 才抑制）在此漏网，档位上限随后又补上 gate:adr-0005-register-only
+//    留痕。阻断登记不看档位，且 reason 必须压过该注入层留痕。
+{
+  const lb = makeNode('UL', { role: 'listbox', id: 'cty2-lb' }, countryOptions());
+  const trig = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'cty2-lb',
+      id: 'cty2-combo', class: 'select-country' }, [], 'United States'),
+    { 'cty2-lb': lb });
+  // 同 form 主号锚（_process 走 ownerDocument 兜底扫描 input[type=tel]）
+  trig.ownerDocument = { querySelectorAll: function () { return [{ tagName: 'INPUT' }]; },
+    getElementById: function () { return null; }, defaultView: undefined };
+  const p = registerProbe();
+  const res = p.Det.scoreElement(trig, { anchorHasTel: true });
+  check('9.12 有锚时纯国家选择器达 auto 档（旧豁免的漏网面）', res.tier === 'auto' && res.score >= 70,
+    'score=' + res.score + ' tier=' + res.tier);
+  check('9.13 auto 档不压档位，但照旧判 noRegister', res.noRegister === true &&
+    !hasName(res, 'country-semantic:suppress'), sigNames(res).join(','));
+  p.Det._process(trig);
+  check('9.14 结算后被档位上限压成 none 也不登记', p.calls.rememberLow.length === 0 &&
+    p.calls.attach.length === 0, 'rememberLow=' + p.calls.rememberLow.length);
+  check('9.15 与 register-only 留痕共存时 reason 取国家语义阻断',
+    reasons(p.records).indexOf(DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC) >= 0 &&
+    reasons(p.records).indexOf(DIAG_REASON.INJECT_GATE_REGISTER_ONLY) < 0,
+    JSON.stringify(reasons(p.records)));
+}
+
+// 9e 强关键字是唯一逃生口：属性写着区号专名 → 不阻断（懒加载选项等合法字段不误伤）
+{
+  const lb = makeNode('UL', { role: 'listbox', id: 'kw-lb' }, countryOptions());
+  const trig = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'kw-lb',
+      id: 'kw-combo', 'aria-label': 'Country code' }, [], 'United States'),
+    { 'kw-lb': lb });
+  const p = registerProbe();
+  const res = p.Det.scoreElement(trig);
+  check('9.16 强关键字豁免(不判 noRegister)', res.noRegister !== true &&
+    res.signals.some(function (s) { return s.name === 'kw:strong'; }), sigNames(res).join(','));
+  p.Det._process(trig);
+  check('9.17 强关键字字段仍可登记召唤', p.calls.rememberLow.length === 1,
+    'rememberLow=' + p.calls.rememberLow.length);
+}
+
+// 9f 判定成立但字段被**注入**（L0 autocomplete=country 抬到 auto 档）：注入口径本票不动，
+//    判定记录也不得因此冒充国家语义门——一条消息只说一个原因（注入成功＝已识别）。
+{
+  const sel = makeNode('SELECT', { name: 'country', id: 'cty-l0', autocomplete: 'country' }, [], '');
+  sel.options = [{ value: 'US', text: 'United States' }, { value: 'GB', text: 'United Kingdom' },
+    { value: 'CN', text: 'China' }, { value: 'JP', text: 'Japan' }];
+  const p = registerProbe();
+  const res = p.Det.scoreElement(sel);
+  check('9.18 auto 档纯国家 select 仍走注入（注入口径不变）', res.tier === 'auto' &&
+    res.noRegister === true, 'score=' + res.score + ' tier=' + res.tier);
+  p.Det._process(sel);
+  check('9.19 注入成功时 reason 取「已识别」，不冒充国家语义门',
+    p.calls.attach.length === 1 && p.calls.rememberLow.length === 0 &&
+    reasons(p.records).every(function (r) { return r !== DIAG_REASON.TOOL_GATE_COUNTRY_SEMANTIC; }),
+    'attach=' + p.calls.attach.length + ' reasons=' + JSON.stringify(reasons(p.records)));
 }
 
 console.log('-----------------------------');

@@ -6,6 +6,8 @@
 <style>
   #search-lb, #gen-lb { display: none; border: 1px solid #ccc; width: 240px; list-style: none; margin: 4px 0; padding: 0; }
   #search-lb.open, #gen-lb.open { display: block; }
+  .dd-trigger { border: 1px solid #999; padding: 6px 10px; display: inline-block; min-width: 240px; }
+  .dd-list { border: 1px solid #ccc; list-style: none; margin: 4px 0; padding: 0; width: 260px; }
 </style>
 </head>
 <body>
@@ -40,6 +42,29 @@
     <li role="option">Option 3</li>
     <li role="option">Option 4</li>
   </ul>
+
+  <!-- ③ 纯国家选择器（原生形态，语料 F2 形状）：name=country + ISO2 值 + 国名文本，
+     无任何区号证据 → 44 分（kw:country 14 + opts:country-identity 30）已过登记线 25。
+     #3 / spec #42 判据：不登记召唤（修复前凭分数达线进召唤面 → 召唤入口可见）。 -->
+  <label for="country-native">Country of residence</label>
+  <select id="country-native" name="country">
+    <option value="US">United States</option>
+    <option value="GB">United Kingdom</option>
+    <option value="CN">China</option>
+    <option value="JP">Japan</option>
+  </select>
+
+  <!-- ④ 纯国家选择器（伪 select 形态，语料 mm2-pseudo-country-only 形状）：
+     可聚焦 div + 后代 ul>li（data-value=ISO2 / 文本国名）→ 34 分（kw:country 14 +
+     custom:dropdown 20）已过登记线 25，且 custom 分支的 isoName>0 单独通过内容门槛。 -->
+  <div id="country-pseudo" class="select-country dd-trigger" tabindex="0"><span>United States</span>
+    <ul id="country-pseudo-list" class="dd-list open">
+      <li data-value="us">United States</li>
+      <li data-value="gb">United Kingdom</li>
+      <li data-value="cn">China</li>
+      <li data-value="jp">Japan</li>
+    </ul>
+  </div>
 
   <script>
     (function () {

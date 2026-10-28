@@ -68,18 +68,16 @@ test.describe('票 02 分级行为接线（三档注入样式 + 面板召唤入�
     await expect(wrapperFor(page, '#area-code').locator('.cch-btn')).toHaveAttribute('data-cch-tier', 'lowkey');
   });
 
-  test('低置信字段不注入但登记；面板出现召唤入口，点击后补挂', async ({ page }) => {
+  test('国家语义纯国家选择器：不注入也不登记（召唤面为空）', async ({ page }) => {
     await page.goto('/fixtures/fp-regression.html');
-    // fp-country（国家语义 none 档，44 分）已登记；正例控件可开面板
+    // [#3 / spec #42] fp-country（F2 形态，44 分 ≥ 登记线 25，档位被国家语义压成 none）
+    // 本票前凭「分数达线」进召唤面；国家选择≠区号选择，现在两形态都不登记。
+    // 本用例是修复前红→修复后绿的原生侧判据；「登记 + 召唤补挂」的正向覆盖在
+    // tests/visibility.spec.ts（带 (+NN) 的原生隐藏承值 select）与 tests/pseudo-select.spec.ts。
     await expect(wrapperFor(page, '#fp-country')).toHaveCount(0);
     await wrapperFor(page, '#fp-control').locator('.cch-btn').click();
     await expect(page.locator('#cch-pop')).toBeVisible();
-    const summon = page.locator('#cch-summon');
-    await expect(summon).toBeVisible(); // [SP US18] 面板可手动召唤
-    await summon.click();
-    await expect(wrapperFor(page, '#fp-country')).toHaveCount(1);
-    // 召唤后入口消失
-    await expect(summon).toHaveCount(0);
+    await expect(page.locator('#cch-summon')).toBeHidden(); // [SP US18] 召唤面不含国家选择器
   });
 });
 
