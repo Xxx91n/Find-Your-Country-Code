@@ -674,6 +674,40 @@ function acTrigger(ac) {
   pDouble.Det._process(selDouble);
   check('9.39 该形态照常登记（重复计数会让它被误挡出召唤面）',
     pDouble.calls.rememberLow.length === 1, 'rememberLow=' + pDouble.calls.rememberLow.length);
+
+  // 9.40–9.41 #45 三轮审查返修（CodeRabbit PR #46，diff 外意见，实测复现）：
+  //   区号藏在选项**值**里（value="France +33" / text="France"）时，裸 +NN 扫描只看文本
+  //   ⇒ countryName 计了国名却不记区号证据 ⇒ 有区号的下拉被当纯国家选择器挡出召唤面。
+  //   对拍 main（47aea97）：同一构造 main 判 noReg=false 并登记 —— 这是本票引入的回归。
+  //   修法只收窄国名证据的采集面（带区号令牌的选项不算国名），不扩计分面。
+  const selDialValue = makeNode('SELECT', { name: 'country', id: 'dial-in-value' }, [], '');
+  selDialValue.options = [{ value: 'France +33', text: 'France' },
+    { value: 'Germany +49', text: 'Germany' }, { value: 'Spain +34', text: 'Spain' }];
+  selDialValue.ownerDocument = { querySelectorAll: function () { return [{ tagName: 'INPUT' }]; },
+    getElementById: function () { return null; }, defaultView: undefined };
+  const pDialValue = registerProbe();
+  const resDialValue = pDialValue.Det.scoreElement(selDialValue);
+  check('9.40 区号藏在选项值里不判纯国家选择器（value="France +33"）',
+    resDialValue.noRegister !== true,
+    'score=' + resDialValue.score + ' noRegister=' + resDialValue.noRegister + ' :: ' + sigNames(resDialValue).join(','));
+  pDialValue.Det._process(selDialValue);
+  check('9.41 该形态照常登记（与 main 口径一致，回归已消除）',
+    pDialValue.calls.rememberLow.length === 1, 'rememberLow=' + pDialValue.calls.rememberLow.length);
+
+  // 伪侧同口径：data-value 里藏区号，文本只有国名
+  const lbDialVal = makeNode('UL', { role: 'listbox', id: 'dv-lb' }, [
+    makeNode('LI', { role: 'option', 'data-value': 'France +33' }, [], 'France'),
+    makeNode('LI', { role: 'option', 'data-value': 'Germany +49' }, [], 'Germany'),
+    makeNode('LI', { role: 'option', 'data-value': 'Spain +34' }, [], 'Spain'),
+  ]);
+  const trigDialVal = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'dv-lb',
+      id: 'dv-combo', class: 'select-country' }, [], 'France'),
+    { 'dv-lb': lbDialVal });
+  const pDv = registerProbe();
+  const resDv = pDv.Det.scoreElement(trigDialVal);
+  check('9.42 伪侧同一口径：data-value 藏区号时不判纯国家选择器',
+    resDv.noRegister !== true, 'score=' + resDv.score + ' :: ' + sigNames(resDv).join(','));
 }
 
 console.log('-----------------------------');
