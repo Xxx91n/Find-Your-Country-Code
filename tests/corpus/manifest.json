@@ -2061,6 +2061,48 @@
    "ctx": {
     "anchorHasTel": false
    }
+  },
+  {
+   "id": "mm2-pseudo-nameonly-combobox-anchored",
+   "family": "mm2",
+   "polarity": "negative",
+   "expect": "none",
+   "expectedTier": "none",
+   "dialEvidence": false,
+   "upgradeCandidate": false,
+   "knownResidual": false,
+   "source": "issue #45 形态 (e)（Pseudo-select 纯国名 + tel 主号锚）；形态来源同 (d)：MUI Autocomplete CountrySelect 的 renderOption 输出 <li role=option> + 国名文本（atomcode 调研 2026-10-29）",
+   "note": "伪 select 负例④（#45 形态 e）：ARIA combobox 的选项只有国名，且同 form 有 tel 主号锚 ⇒ 52 分（kw:country 14 + pseudo:combobox 20 + anchor:tel 18）。这是本票表格里分数最高的漏网形态：锚把分数抬过 SCORE_LOWKEY(35)，伪 select 档位上限再压回 none，所以「只看档位」的判定会漏掉它。修复前 country-semantic 谓词不成立（isoName=0）⇒ 进召唤面；修复后由 countryName 证据判 noRegister。与 (d) 的差别只在锚，用来分开锁「无锚」与「有锚」两条。",
+   "signalAttribution": [
+    "L1:kw:country(+14)（class \"select-country\"）",
+    "L2:pseudo:combobox(+20) 结构分无条件入账",
+    "L2:anchor:tel(+18)（同 form input[type=tel]）",
+    "52 >= SCORE_LOWKEY(35) ⇒ 评分层 lowkey，随后被伪 select 档位上限压回 none",
+    "修复前无 country-semantic:no-register（isoName=0）",
+    "修复后 country-semantic:no-register（countryName=3/3）"
+   ],
+   "el": {
+    "tag": "input",
+    "type": "text",
+    "className": "select-country",
+    "attrs": {
+     "role": "combobox",
+     "aria-expanded": "false",
+     "aria-controls": "nameonly-anchored-lb"
+    },
+    "listbox": {
+     "id": "nameonly-anchored-lb",
+     "options": [
+      "China",
+      "United States",
+      "Japan"
+     ]
+    }
+   },
+   "labels": [],
+   "ctx": {
+    "anchorHasTel": true
+   }
   }
  ],
  "realSiteForms": [
