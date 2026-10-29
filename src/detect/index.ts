@@ -39,6 +39,36 @@ const DIAL_SET = new Set(COUNTRIES.map(c => c.code.slice(1)));
 // ISO2 全集成员域（票 13 [issue 验收3]）：「值是否 ISO2」只看数据全集键集，不再做
 // 「像 2 字母」形态学预筛 [SP US8；whatwg#8597 select 语义由选项内容裁决]
 const ISO2_SET = new Set(Object.keys(ISO2_MAP));
+
+// #45：国家名全集（英文名 + 中文本地名，归一化：小写 + 空白折叠）。只作国家语义谓词的
+// 证据来源，**不进任何加分项**。为何需要独立于 ISO2_SET：真实站点的纯国家选择器有两类
+// 拿不到 ISO2 线索——本地化国名的原生 select（值 ISO2、文本 CJK，旧 isoName 的拉丁字母
+// 正则把 CJK 排除）与只有国名的 ARIA combobox（无值域 ISO2）。两类都是「每一项点名一个
+// 国家」的直接证据，与「值是 ISO2」是同一结论的两条独立取证路径（CLDR 推荐形态即
+// value=ISO2 + label=本地化国名；Shopify 则 value=国名本身）。
+const normalizeCountryName = (s: string): string => String(s).toLowerCase().replace(/\s+/g, ' ').trim();
+const COUNTRY_NAME_SET = (() => {
+  const s = new Set<string>();
+  for (const c of COUNTRIES) { s.add(normalizeCountryName(c.country)); s.add(normalizeCountryName(c.countryEn)); }
+  return s;
+})();
+const isCountryNameText = (s: string): boolean => !!s && COUNTRY_NAME_SET.has(normalizeCountryName(s));
+
+// 裸 +NN 区号令牌（无括号）的匹配式。值 / 文本 / aria-label 共用，口径一致。
+const BARE_DIAL_RE = /(?:^|[^(\d])\+(\d{1,4})(?!\d)/;
+// 该选项是否携带任何区号令牌：值里的纯区号、值/文本里的裸 +NN、文本里的 (+NN)。
+// 国名证据（countryName）用它把「区号藏在值里」的选项排除在外——这类选项是区号字段，
+// 不是纯国家选择器，哪怕可见文本只有国名。
+function optionHasDialToken(v: string, t: string, lab?: string): boolean {
+  const bareValue = String(v || '').replace(/^\+/, '').replace(/^00/, '');
+  if (DIAL_SET.has(bareValue)) return true;
+  const joined = [v, t, lab].filter(Boolean).join(' ');
+  const paren = joined.match(/\(\+(\d{1,4})\)/);
+  if (paren && DIAL_SET.has(paren[1])) return true;
+  const bare = joined.match(BARE_DIAL_RE);
+  return !!(bare && DIAL_SET.has(bare[1]));
+}
+
 // 占位首项词表（票 13 [issue 验收5]）：请选择类首项只可能是占位；命中词表且值域无
 // 区号/ISO2 证据才剔除（+86/+86 类实义首项不受影响）
 const PLACEHOLDER_TEXT_RE = /^(?:please\s+select|select\b|choose\b|pick\b|请选择|請選擇|选择|選擇|点击选择|[-—–…]+\s*$)/i;
@@ -95,7 +125,7 @@ function pseudoNameHit(iso: string, text: string): boolean {
 }
 
 function pseudoOptionStats(opts: AnyEl[]): OptionStats {
-  let plusDial = 0, parenDial = 0, textDial = 0, isoName = 0, numeric = 0;
+  let plusDial = 0, parenDial = 0, textDial = 0, isoName = 0, countryName = 0, numeric = 0;
   for (let i = 0; i < opts.length; i++) {
     const o = opts[i];
     const val = String((o.getAttribute && (o.getAttribute('data-value') || o.getAttribute('value'))) || '').trim();
@@ -112,7 +142,7 @@ function pseudoOptionStats(opts: AnyEl[]): OptionStats {
     // 它不进任何加分项：伪 select 的 L3 计分面仍是 plusDial/parenDial/numeric/isoName，
     // 权重与注入口径一字未动（「加分对等」另挂 #4）。
     if (!plusHit && !parenHit) {
-      const tm = (txt + ' ' + lab).match(/(?:^|[^(\d])\+(\d{1,4})(?!\d)/);
+      const tm = (txt + ' ' + lab).match(BARE_DIAL_RE);
       if (tm && DIAL_SET.has(tm[1])) textDial++;
     }
     let iso = '';
@@ -120,9 +150,14 @@ function pseudoOptionStats(opts: AnyEl[]): OptionStats {
     if (val && ISO2_SET.has(val.toLowerCase())) { iso = val.toLowerCase(); nameText = txt + ' ' + lab; }
     else if (txt && ISO2_SET.has(txt.toLowerCase())) { iso = txt.toLowerCase(); nameText = lab || txt; }
     if (iso && pseudoNameHit(iso, nameText)) isoName++;
+    // #45：纯国名选项（无 ISO2 值可互证）——文本或 aria-label 恰为国家名即计一条。
+    // 与 isoName 互斥（isoName 已要求 ISO2 值域），同一证据不双写。
+    // 带区号令牌的选项不计（同原生侧口径）：区号可能藏在 data-value 里（"France +33"），
+    // 那是区号字段，不该被国名证据判成纯国家选择器。
+    if (!iso && (isCountryNameText(txt) || isCountryNameText(lab)) && !optionHasDialToken(val, txt, lab)) countryName++;
     if (/^\d{1,4}$/.test(val || txt)) numeric++;
   }
-  return { total: opts.length, plusDial, parenDial, textDial, isoName, numeric };
+  return { total: opts.length, plusDial, parenDial, textDial, isoName, countryName, numeric };
 }
 
 function comboboxEvidence(el: AnyEl) {
@@ -142,10 +177,16 @@ function comboboxEvidence(el: AnyEl) {
   }
   // 否决组 [17 票策略 §2]: 搜索型 typeahead —— aria-autocomplete=list|both 且选项内容与
   // 国家数据零命中（区号/ISO2/括号区号全空）→ 站内搜索补全，整体判 none 不登记。
+  // #45：纯国名的国家 autocomplete（MUI 默认就带 aria-autocomplete=list）不是站内搜索，
+  // 归国家语义判定——结论同为不登记，但 reason 必须指向真实成因。
+  // 国名覆盖门槛取国家语义谓词同一口径（>= 50%），不是「命中一条即解除」：
+  // 城市/帮助混排的站点搜索（France / Paris / Help）里个别国名不该打开这个口子，
+  // 否则它退回按分数登记（34 >= 25）重新进召唤面——正是 veto 要挡的那类。
   const ac = String(el.getAttribute('aria-autocomplete') || '').toLowerCase();
   let veto = '';
   if ((ac === 'list' || ac === 'both') && stats && stats.total >= 2 &&
-      stats.plusDial === 0 && stats.parenDial === 0 && stats.isoName === 0) veto = 'search-typeahead';
+      stats.plusDial === 0 && stats.parenDial === 0 && stats.isoName === 0 &&
+      stats.countryName / stats.total < 0.5) veto = 'search-typeahead';
   return { listbox, stats, veto };
 }
 
@@ -238,6 +279,10 @@ function attrPhraseHit(attrStr: string): string | null {
 // [SP US7 / GLOSSARY「国家选择器≠区号字段」]。既有档位压制（tier→none）用它，
 // 「不登记召唤」也用它——不新造阈值、不动权重。
 // total>=2 与两侧既有规模门槛同口径（options<2 在各分支已自行留痕判死）。
+// 证据面（#45 补齐）：ISO2↔国名互证（isoName）与「选项文本恰为国家名」（countryName）
+// 是同一结论的两条独立取证路径，任一占比过半即成立。后者覆盖两类 isoName 拿不到的真实
+// 形态：本地化国名的原生 select（值 ISO2、文本 CJK 被 isoName 的拉丁字母正则排除）与
+// 只有国名的 ARIA combobox（无值域 ISO2）。两者互斥计票，同一证据不双写。
 // 两个逃生口，都是「用户/站点显式声明区号语义」：
 //   ① kw==='strong' —— 属性写着区号专名（dial code / country code / idd…）；
 //   ② explicitDialToken —— L0 命中 autocomplete="tel-country-code"（WHATWG 的区号 token）。
@@ -246,8 +291,9 @@ function attrPhraseHit(attrStr: string): string | null {
 //      ②是 #43 审查轮对 spec「强关键字是唯一逃生口」的一处收窄补充（措辞已回写票面）。
 function isCountrySemanticOnly(st: OptionStats | null, kw: string | null,
                                explicitDialToken: boolean): boolean {
-  return !!st && st.total >= 2 && st.isoName / st.total >= 0.5 &&
-    st.plusDial === 0 && st.parenDial === 0 && st.textDial === 0 &&
+  if (!st || st.total < 2) return false;
+  const named = (st.isoName + st.countryName) / st.total >= 0.5;
+  return named && st.plusDial === 0 && st.parenDial === 0 && st.textDial === 0 &&
     kw !== 'strong' && !explicitDialToken;
 }
 
@@ -260,7 +306,7 @@ function optStats(el: AnyEl): OptionStats {
     const o = raw[i];
     if ((o.value || '').trim()) opts.push(o);
   }
-  let plusDial = 0, parenDial = 0, textDial = 0, isoName = 0, numeric = 0, placeholder = 0;
+  let plusDial = 0, parenDial = 0, textDial = 0, isoName = 0, countryName = 0, numeric = 0, placeholder = 0;
   for (let i = 0; i < opts.length; i++) {
     const o = opts[i];
     // 票 13 [issue 验收5]：占位首项（请选择类）剔除出计分 —— 不进 total、不进任何分布
@@ -278,20 +324,30 @@ function optStats(el: AnyEl): OptionStats {
     // 两条护栏：① 括号形式归 parenDial（前置字符排除 '('），两者互斥不重复计分；
     // ② 值本身已是区号时不计（同一证据 value/text 双写不重复计分，沿用票 27 去重纪律）。
     else if (!valueIsDial) {
-      const tm = t.match(/(?:^|[^(\d])\+(\d{1,4})(?!\d)/);
+      const tm = t.match(BARE_DIAL_RE);
       if (tm && DIAL_SET.has(tm[1])) textDial++;
     }
     // 票 13 [issue 验收3]：ISO2 成员测试以数据全集为域（ISO2_SET），替换「像 2 字母」
     // 形态学预筛；文本↔国家名互证保留（假两字母不撞库 [MD §4]）
     const vi = v.toLowerCase();
+    let nameMatched = false;
     if (ISO2_SET.has(vi) && t.length > 2 && /^[A-Za-z\s.'-]+$/.test(t)) {
       const en = ISO2_MAP[vi].countryEn.toLowerCase();
-      if (t.toLowerCase().includes(en.split(' ')[0]) || en.includes(t.toLowerCase())) isoName++;
+      if (t.toLowerCase().includes(en.split(' ')[0]) || en.includes(t.toLowerCase())) { isoName++; nameMatched = true; }
     }
+    // #45：文本恰为国家名（含本地化国名，旧 isoName 的拉丁字母正则把 CJK 排除在外）。
+    // 只作国家语义谓词的证据，不进任何加分项 —— 分数面与 #45 之前逐位一致。
+    // 与 isoName 互斥计票：同一选项只算一次国家证据，否则英文名选项会被两条路径同时
+    // 计入，把 2/5 虚增成 4/5（谓词只看合计占比，重复计数会放走本不该拦的字段）。
+    // 带区号令牌的选项一律不算：`value="France +33" / text="France"` 的区号藏在值里，
+    // 裸 +NN 扫描只看文本 ⇒ 计了国名却不记区号证据 ⇒ 有区号的下拉被当成纯国家选择器挡出
+    // 召唤面（对拍 main：同一构造 main 判 noReg=false 并正常登记）。此处只收窄国名证据的
+    // 采集面，不扩计分面——把值并入裸 +NN 扫描会新增 textDial 并抬分，超出本票边界。
+    if (!nameMatched && isCountryNameText(t) && !optionHasDialToken(v, t)) countryName++;
   }
   // total = 有效选项数（占位首项剔除后）；规模门槛与各分布占比均以有效计数为分母
   const total = opts.length - placeholder;
-  return { total, plusDial, parenDial, textDial, isoName, numeric };
+  return { total, plusDial, parenDial, textDial, isoName, countryName, numeric };
 }
 
 // 票 04：observer 配置与指纹属性面（两者对齐 —— 指纹读什么，observer 就监听什么）

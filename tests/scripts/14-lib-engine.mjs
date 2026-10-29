@@ -164,14 +164,32 @@ export function buildElement(caseDef) {
     if (l.for) labelRegistry.push({ for: l.for, text: l.text });
     if (l.id) labelRegistry.push({ id: l.id, text: l.text });
   }
+  // 票 45：ARIA combobox 形态的 listbox 须能被 aria-controls 解析到（引擎走
+  // resolveAriaIds → getElementById）。用例以 el.listbox 声明 { id, options }；
+  // 未声明时本表为空，既有用例的解析结果逐位不变（append-only 语义）。
+  const listboxById = new Map();
+  const elDefForListbox = caseDef.el || {};
+  if (elDefForListbox.listbox) {
+    const lbDef = elDefForListbox.listbox;
+    const lb = new El('ul', { id: lbDef.id, attrs: { role: 'listbox' } });
+    for (const o of lbDef.options || []) {
+      const li = new El('li', { attrs: { role: 'option' }, text: typeof o === 'string' ? o : o.text });
+      if (o && typeof o === 'object' && o.value) li.attrs['data-value'] = o.value;
+      lb.children.push(li);
+    }
+    listboxById.set(lbDef.id, lb);
+  }
   const docMock = {
     querySelector(sel) {
       const m = /^label\[for="(.*)"\]$/.exec(sel);
       if (m) { const l = labelRegistry.find(x => x.for === m[1]); return l ? { textContent: l.text } : null; }
       return null;
     },
-    getElementById(id) { const l = labelRegistry.find(x => x.id === id); return l ? { textContent: l.text } : null; },
-    querySelectorAll() { return []; },
+    getElementById(id) {
+      if (listboxById.has(id)) return listboxById.get(id);
+      const l = labelRegistry.find(x => x.id === id);
+      return l ? { textContent: l.text } : null;
+    },
     // 票 08：可见性判定面（_hiddenByStyle 读 defaultView.getComputedStyle）。
     // 仅在用例显式声明 el.style 时返回该声明；未声明返回 {}
     // ⇒ display/visibility/opacity/clip/clipPath 各判定项均不命中，与既有

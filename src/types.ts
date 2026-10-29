@@ -147,6 +147,10 @@ export interface OptionStats {
   // 票 08 [A-031 形态③]：选项文本中的**裸 +NN 区号令牌**（无括号）计数
   textDial: number;
   isoName: number;
+  // #45：选项文本**恰为国家名**（本国名或本地化国名，去空格大小写后全等）的计数。
+  // 只作国家语义谓词的证据，不进任何加分项 —— 它是「值域里每一项都点名某个国家」的
+  // 直接证据，在 ISO2 缺失（本地化国名 / 纯国名下拉）时仍成立。
+  countryName: number;
   numeric: number;
 }
 
