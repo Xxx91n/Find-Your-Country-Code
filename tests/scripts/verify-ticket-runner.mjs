@@ -297,6 +297,44 @@ if (mode === '--audit') {
   // 票 44（corpus-drift 原型 workflow）新增 1 个 advisory workflow：30 -> 12。
   ck('A19 workflow count reduced 30 -> 12', wfFiles.length === 12, 'got ' + wfFiles.length + ': ' + wfFiles.sort().join(', '));
 
+  // A20（retro 2026-10-29 #3）检查编号完整性：门里的 `check('<组>.<序> …')` 必须
+  //   **组内连续、且按源码顺序递增**。跳号（本次会话前 9.16 缺席是人肉发现的）与
+  //   乱序（9.43/9.44 插在 9.33 与 9.34 之间）都会让「红名单」这类按编号引用的注释
+  //   失去可核对性。只巡检计划内的门脚本，零误报面。
+  const numIssues = [];
+  for (const s of [...new Set(planScripts)].sort()) {
+    const p = join(here, s);
+    if (!existsSync(p)) continue;
+    const src = readFileSync(p, 'utf8');
+    const seen = [];
+    for (const m of src.matchAll(/check\(\s*'(\d+)\.(\d+)\b/g)) {
+      seen.push({ group: Number(m[1]), seq: Number(m[2]), at: m.index });
+    }
+    const byGroup = new Map();
+    for (const n of seen) {
+      if (!byGroup.has(n.group)) byGroup.set(n.group, []);
+      byGroup.get(n.group).push(n);
+    }
+    for (const [g, list] of byGroup) {
+      const sorted = [...list].sort((a, b) => a.seq - b.seq);
+      const expectFirst = sorted.length ? sorted[0].seq : 1;
+      // 组内自 1 起连续；历史门有从非 1 起的组（4.x 等），只查「组内连续」与「源码顺序」
+      for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i].seq !== sorted[i - 1].seq + 1) {
+          numIssues.push(s + ' 组 ' + g + '：' + g + '.' + sorted[i - 1].seq + ' 之后是 ' + g + '.' + sorted[i].seq + '（跳号）');
+        }
+      }
+      const inSourceOrder = list.every((n, i) => i === 0 || n.seq > list[i - 1].seq);
+      if (!inSourceOrder) {
+        const bad = list.find((n, i) => i > 0 && n.seq <= list[i - 1].seq);
+        numIssues.push(s + ' 组 ' + g + '：源码顺序在 ' + g + '.' + bad.seq + ' 处回退（编号乱序）');
+      }
+      if (expectFirst < 1) numIssues.push(s + ' 组 ' + g + '：起始编号非正');
+    }
+  }
+  ck('A20 gate check numbering is contiguous and in source order', numIssues.length === 0,
+    numIssues.slice(0, 5).join(' | ') + (numIssues.length > 5 ? ' …(' + numIssues.length + ' total)' : ''));
+
   console.log('');
   console.log('AUDIT ' + pass + ' passed / ' + fail + ' failed');
   if (fail) console.log('failures: ' + failures.join(' | '));
