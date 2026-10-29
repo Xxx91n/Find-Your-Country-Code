@@ -611,6 +611,27 @@ function acTrigger(ac) {
   check('9.33 国家名 + 括号区号仍不进国家语义判定（证据面只加国名，不放宽区号面）',
     resR.noRegister !== true, 'score=' + resR.score + ' :: ' + sigNames(resR).join(','));
 
+  // #45 形态 (e)：纯国名 ARIA combobox + tel 锚（52 分，本票表格里分数最高的漏网形态）。
+  // 无锚的 (d) 由 9.30 锁；有锚这条单独锁——锚把分数抬过 SCORE_LOWKEY(35)，档位上限
+  // 随后再压回 none，是最容易被「只看档位」的判定漏掉的一条。
+  const lbAnchored = makeNode('UL', { role: 'listbox', id: 'anchored-lb' }, [
+    makeNode('LI', { role: 'option' }, [], 'China'),
+    makeNode('LI', { role: 'option' }, [], 'United States'),
+    makeNode('LI', { role: 'option' }, [], 'Japan'),
+  ]);
+  const trigAnchored = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'anchored-lb',
+      id: 'anchored-combo', class: 'select-country' }, [], 'China'),
+    { 'anchored-lb': lbAnchored });
+  const pAnch = registerProbe();
+  const resAnch = pAnch.Det.scoreElement(trigAnchored, { anchorHasTel: true });
+  check('9.43 纯国名 ARIA combobox + tel 锚（52 分）仍判 noRegister',
+    resAnch.noRegister === true && resAnch.score === 52,
+    'score=' + resAnch.score + ' :: ' + sigNames(resAnch).join(','));
+  pAnch.Det._process(trigAnchored);
+  check('9.44 该形态不调用登记（有锚不等于可召唤）',
+    pAnch.calls.rememberLow.length === 0, 'rememberLow=' + pAnch.calls.rememberLow.length);
+
   // 搜索型 veto 不得把纯国名 autocomplete 冒充站内搜索：reason 必须指向国家语义门
   const lbSearch = makeNode('UL', { role: 'listbox', id: 'ctysearch-lb' }, [
     makeNode('LI', { role: 'option' }, [], 'Germany'),
