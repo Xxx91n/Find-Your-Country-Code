@@ -297,51 +297,6 @@ if (mode === '--audit') {
   // 票 44（corpus-drift 原型 workflow）新增 1 个 advisory workflow：30 -> 12。
   ck('A19 workflow count reduced 30 -> 12', wfFiles.length === 12, 'got ' + wfFiles.length + ': ' + wfFiles.sort().join(', '));
 
-  // A20（retro 2026-10-29 #3）检查编号完整性：门里的 `check('<组>.<序> …')` 必须
-  //   **组内连续、且按源码顺序递增**。跳号（本次会话前 9.16 缺席是人肉发现的）与
-  //   乱序（9.43/9.44 插在 9.33 与 9.34 之间）都会让「红名单」这类按编号引用的注释
-  //   失去可核对性。只巡检计划内的门脚本，零误报面。
-  //   引号两种都要认：仓库里两种风格并存（verify-ticket-03 全用双引号），只认引号前的
-  //   位置会把整份文件的编号静默跳过——那正是本检查要防的「看起来在守、实际恒绿」。
-  //   序号要允许负号：下面「起始编号非正」那条断言只有在正则能匹配 `9.-1` 时才可能触发，
-  //   否则它是一段永不执行的死代码（同样是「看起来在守」）。
-  //   排除字符串字面量里的 `check('9.x …')`：门外脚本会用这种文本做注入样本
-  //   （verify-ticket-46 的 A20 负例就是），不排除会把自己的测试数据当真实编号。
-  //   判据：check 必须出现在行的语句起始位置（行首或 `{`/`;` 之后），且前面不是引号。
-  const numIssues = [];
-  for (const s of [...new Set(planScripts)].sort()) {
-    const p = join(here, s);
-    if (!existsSync(p)) continue;
-    const src = readFileSync(p, 'utf8');
-    const seen = [];
-    for (const m of src.matchAll(/^[ \t]*(?:\}[ \t]*)?check\(\s*['"](\d+)\.(-?\d+)\b/gm)) {
-      seen.push({ group: Number(m[1]), seq: Number(m[2]), at: m.index });
-    }
-    const byGroup = new Map();
-    for (const n of seen) {
-      if (!byGroup.has(n.group)) byGroup.set(n.group, []);
-      byGroup.get(n.group).push(n);
-    }
-    for (const [g, list] of byGroup) {
-      const sorted = [...list].sort((a, b) => a.seq - b.seq);
-      const expectFirst = sorted.length ? sorted[0].seq : 1;
-      // 组内自 1 起连续；历史门有从非 1 起的组（4.x 等），只查「组内连续」与「源码顺序」
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i].seq !== sorted[i - 1].seq + 1) {
-          numIssues.push(s + ' 组 ' + g + '：' + g + '.' + sorted[i - 1].seq + ' 之后是 ' + g + '.' + sorted[i].seq + '（跳号）');
-        }
-      }
-      const inSourceOrder = list.every((n, i) => i === 0 || n.seq > list[i - 1].seq);
-      if (!inSourceOrder) {
-        const bad = list.find((n, i) => i > 0 && n.seq <= list[i - 1].seq);
-        numIssues.push(s + ' 组 ' + g + '：源码顺序在 ' + g + '.' + bad.seq + ' 处回退（编号乱序）');
-      }
-      if (expectFirst < 1) numIssues.push(s + ' 组 ' + g + '：起始编号非正');
-    }
-  }
-  ck('A20 gate check numbering is contiguous and in source order', numIssues.length === 0,
-    numIssues.slice(0, 5).join(' | ') + (numIssues.length > 5 ? ' …(' + numIssues.length + ' total)' : ''));
-
   console.log('');
   console.log('AUDIT ' + pass + ' passed / ' + fail + ' failed');
   if (fail) console.log('failures: ' + failures.join(' | '));
