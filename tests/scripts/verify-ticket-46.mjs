@@ -531,6 +531,48 @@ function addMatrixKey(root, key) {
     JSON.stringify(placement));
 }
 
+// ══════════════════════════════════════════════════════════════════
+// N14–N16 A20（检查编号完整性，retro 2026-10-29 #3）的负例
+//   A20 的三条失败分支此前只靠人工变异验证——那是一次性证据，不是常驻守卫。
+//   这里在同一镜像树上各造一例，锁住「A20 真能红」。
+// ══════════════════════════════════════════════════════════════════
+// 在镜像的某个门脚本里改写一个 check 编号
+function rewriteGateNumber(root, script, from, to) {
+  const p = join(root, FILES.scriptsDir, script);
+  const src = readFileSync(p, 'utf8');
+  const next = src.replace(from, to);
+  if (next === src) throw new Error('A20 负例注入失败：未找到 ' + JSON.stringify(from));
+  writeFileSync(p, next);
+}
+{
+  // N14 跳号：9.2 → 9.4（9.3 缺席）
+  const r = withMirror(
+    (root) => rewriteGateNumber(root, 'verify-ticket-18.mjs', "check('9.2 分数与信号明细保留", "check('9.4 分数与信号明细保留"),
+    runAudit
+  );
+  eq(r.code, 1, 'N14 跳号 → audit 退出 1');
+  check(sawFail(r.out, 'A20'), 'N14 A20 转红（跳号被捕获）', r.out.split('\n').filter((l) => /FAIL A20/.test(l)).join(''));
+}
+{
+  // N15 乱序：把 9.3 的编号改成 9.1（源码顺序回退）
+  const r = withMirror(
+    (root) => rewriteGateNumber(root, 'verify-ticket-18.mjs', "check('9.3 纯国家伪 select 不调用登记", "check('9.1 纯国家伪 select 不调用登记"),
+    runAudit
+  );
+  eq(r.code, 1, 'N15 编号乱序 → audit 退出 1');
+  check(sawFail(r.out, 'A20'), 'N15 A20 转红（源码顺序回退被捕获）', r.out.split('\n').filter((l) => /FAIL A20/.test(l)).join(''));
+}
+{
+  // N16 起始编号非正：9.1 → 9.-1（这条分支只有在正则允许负号时才可能触发）
+  const r = withMirror(
+    (root) => rewriteGateNumber(root, 'verify-ticket-18.mjs', "check('9.1 伪 select 分支同口径判定", "check('9.-1 伪 select 分支同口径判定"),
+    runAudit
+  );
+  eq(r.code, 1, 'N16 起始编号非正 → audit 退出 1');
+  check(/起始编号非正/.test(r.out), 'N16 A20 报「起始编号非正」（此前是死代码）',
+    r.out.split('\n').filter((l) => /FAIL A20/.test(l)).join(''));
+}
+
 console.log('-----------------------------');
 console.log('verify-ticket-46: ' + pass + ' PASS, ' + failures.length + ' FAIL');
 if (failures.length) { console.log('failures:'); failures.forEach((f) => console.log('  - ' + f)); process.exit(1); }

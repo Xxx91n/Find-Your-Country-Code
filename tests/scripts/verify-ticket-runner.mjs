@@ -301,17 +301,20 @@ if (mode === '--audit') {
   //   **组内连续、且按源码顺序递增**。跳号（本次会话前 9.16 缺席是人肉发现的）与
   //   乱序（9.43/9.44 插在 9.33 与 9.34 之间）都会让「红名单」这类按编号引用的注释
   //   失去可核对性。只巡检计划内的门脚本，零误报面。
-  //   引号两种都要认：仓库里两种风格并存（verify-ticket-03 全用双引号），只认单引号
-  //   会把整份文件的编号静默跳过——那正是本检查要防的「看起来在守、实际恒绿」。
+  //   引号两种都要认：仓库里两种风格并存（verify-ticket-03 全用双引号），只认引号前的
+  //   位置会把整份文件的编号静默跳过——那正是本检查要防的「看起来在守、实际恒绿」。
   //   序号要允许负号：下面「起始编号非正」那条断言只有在正则能匹配 `9.-1` 时才可能触发，
   //   否则它是一段永不执行的死代码（同样是「看起来在守」）。
+  //   排除字符串字面量里的 `check('9.x …')`：门外脚本会用这种文本做注入样本
+  //   （verify-ticket-46 的 A20 负例就是），不排除会把自己的测试数据当真实编号。
+  //   判据：check 必须出现在行的语句起始位置（行首或 `{`/`;` 之后），且前面不是引号。
   const numIssues = [];
   for (const s of [...new Set(planScripts)].sort()) {
     const p = join(here, s);
     if (!existsSync(p)) continue;
     const src = readFileSync(p, 'utf8');
     const seen = [];
-    for (const m of src.matchAll(/check\(\s*['"](\d+)\.(-?\d+)\b/g)) {
+    for (const m of src.matchAll(/^[ \t]*(?:\}[ \t]*)?check\(\s*['"](\d+)\.(-?\d+)\b/gm)) {
       seen.push({ group: Number(m[1]), seq: Number(m[2]), at: m.index });
     }
     const byGroup = new Map();
