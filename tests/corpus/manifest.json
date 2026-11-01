@@ -2103,6 +2103,142 @@
    "ctx": {
     "anchorHasTel": true
    }
+  },
+  {
+   "id": "mm2-pseudo-bare-dial-combobox",
+   "family": "mm2",
+   "polarity": "positive",
+   "expect": "inject",
+   "knownResidual": false,
+   "source": "票 4（issue #4）语料先行；形态来源：Base Web（v8.baseweb.design）Select 组件文档的国家选择示例与 VA.gov（design.va.gov）Web Components 文档的 combobox/listbox 形态——ARIA combobox + listbox 选项「国名 + 裸+NN」+ data-value=ISO2",
+   "expectBasis": "polarity=positive 取 harness 评分面口径（evaluateCase 镜像 scoreElement）：票 4 计分对等后裸 +NN 进伪侧 L3 计分（8/条、封顶 45），96 分 >= SCORE_AUTO(70) → 评分层 auto。运行时 _process 的伪 select 档位上限（ADR-0005 只登记不注入）在结算层把档位压回 none 并留 gate:adr-0005-register-only 痕，该行为由 verify-ticket-18 9.48 单独锁——本例锁评分对等本身，非注入行为。",
+   "note": "伪 select 正例（票 4 计分对等）：ARIA combobox 触发器 + listbox 选项「国名 + 裸+NN」（无括号）+ data-value=ISO2。票 4 之前 textDial 只作 #42 谓词反向证据、不进任何加分项，评分 64（kw:country 14 + pseudo:combobox 20 + country-identity 30）；票 4 起 pseudo:opts:+NN-text(32) 入账 → 96 分 auto。与原生侧 opts:+NN-text 同权重（L3_PLUS_PAREN_SCORE=8/条）、同封顶（L3_DIAL_CAP=45），对等由 verify-ticket-18 9.45/9.46 锁；#43 的反向证据半边（谓词面）不变（9.20/9.22）。",
+   "signalAttribution": [
+    "L1:kw:country(+14)（aria-label \"Country\"）",
+    "L2:pseudo:combobox(+20) 结构分",
+    "L3:pseudo:opts:+NN-text(+32)（textDial=4 × 8，票 4 计分对等，同原生 opts:+NN-text 权重）",
+    "L3:pseudo:opts:country-identity(+30)（ISO2 值域 + 国名文本 4/4）",
+    "96 >= SCORE_AUTO(70) ⇒ 评分层 auto（运行时 _process 档位上限压回 none，见 expectBasis）"
+   ],
+   "el": {
+    "tag": "div",
+    "className": "css-baseweb-select",
+    "attrs": {
+     "role": "combobox",
+     "aria-expanded": "false",
+     "aria-controls": "bare-dial-lb",
+     "aria-label": "Country"
+    },
+    "listbox": {
+     "id": "bare-dial-lb",
+     "options": [
+      {
+       "value": "US",
+       "text": "United States +1"
+      },
+      {
+       "value": "GB",
+       "text": "United Kingdom +44"
+      },
+      {
+       "value": "CN",
+       "text": "China +86"
+      },
+      {
+       "value": "JP",
+       "text": "Japan +81"
+      }
+     ]
+    }
+   },
+   "labels": [],
+   "ctx": {}
+  },
+  {
+   "id": "mm2-pseudo-fx-rate-neg",
+   "family": "mm2",
+   "polarity": "negative",
+   "expect": "none",
+   "knownResidual": false,
+   "source": "票 4（issue #4）负例面语料先行；形态来源：汇率/资费增量下拉（选项文本形如 +0.2%，金融/账单页常见）",
+   "note": "伪 select 负例⑤（汇率/资费增量形态）：ARIA combobox 选项文本是 +0.2% 类增量令牌——BARE_DIAL_RE 虽可析出 +0，但 0 不在 DIAL_SET（无 dial code 0 的国家）⇒ textDial=0，票 4 的 pseudo:opts:+NN-text 不入账。锁定计分对等不把百分比增量误当区号证据（与 verify-ticket-18 9.47 同向）。",
+   "signalAttribution": [
+    "L2:pseudo:combobox(+20) 结构分（textDial=0、plusDial=0、parenDial=0 ⇒ 无任何 L3 区号证据）",
+    "20 < ITI_LOW_REGISTER_SCORE(25) → 不进召唤面"
+   ],
+   "el": {
+    "tag": "div",
+    "className": "fx-rate-select",
+    "attrs": {
+     "role": "combobox",
+     "aria-expanded": "false",
+     "aria-controls": "fx-rate-lb"
+    },
+    "listbox": {
+     "id": "fx-rate-lb",
+     "options": [
+      {
+       "value": "up02",
+       "text": "+0.2%"
+      },
+      {
+       "value": "up05",
+       "text": "+0.5%"
+      },
+      {
+       "value": "dn03",
+       "text": "-0.3%"
+      }
+     ]
+    }
+   },
+   "labels": [],
+   "ctx": {}
+  },
+  {
+   "id": "mm2-pseudo-utc-offset-neg",
+   "family": "mm2",
+   "polarity": "negative",
+   "expect": "none",
+   "knownResidual": false,
+   "source": "票 4（issue #4）负例面语料先行；形态来源：时区偏移下拉（选项文本形如 UTC+8，设置/排程页常见）",
+   "note": "伪 select 负例⑥（时区偏移形态）：ARIA combobox 选项文本是 UTC+8 类偏移令牌——BARE_DIAL_RE 可析出 +8，但 8 不在 DIAL_SET（无 dial code 8 的国家；注意 UT+7/UTC+1 类偏移会命中 1/7 的 dial code，属既有 BARE_DIAL_RE 白名单口径，票 4 不改）⇒ textDial=0，pseudo:opts:+NN-text 不入账。与 9.47 同向。",
+   "signalAttribution": [
+    "L2:pseudo:combobox(+20) 结构分（textDial=0 ⇒ 无任何 L3 区号证据）",
+    "20 < ITI_LOW_REGISTER_SCORE(25) → 不进召唤面"
+   ],
+   "el": {
+    "tag": "div",
+    "className": "tz-select",
+    "attrs": {
+     "role": "combobox",
+     "aria-expanded": "false",
+     "aria-controls": "tz-offset-lb"
+    },
+    "listbox": {
+     "id": "tz-offset-lb",
+     "options": [
+      {
+       "value": "cst",
+       "text": "UTC+8"
+      },
+      {
+       "value": "ect",
+       "text": "UTC+5"
+      },
+      {
+       "value": "est",
+       "text": "UTC-5"
+      },
+      {
+       "value": "jst",
+       "text": "UTC+9"
+      }
+     ]
+    }
+   },
+   "labels": [],
+   "ctx": {}
   }
  ],
  "realSiteForms": [
