@@ -137,10 +137,11 @@ function pseudoOptionStats(opts: AnyEl[]): OptionStats {
     const pm = (txt + ' ' + lab).match(/\(\+(\d{1,4})\)/);
     const parenHit = !!(pm && DIAL_SET.has(pm[1]));
     if (parenHit) parenDial++;
-    // #3 / spec #42：裸 +NN 文本令牌（无括号）在伪侧**只作反向证据**——同原生口径
-    // （括号形态归 parenDial、同一证据不双写），供国家语义谓词判定「值域里有没有区号」。
-    // 它不进任何加分项：伪 select 的 L3 计分面仍是 plusDial/parenDial/numeric/isoName，
-    // 权重与注入口径一字未动（「加分对等」另挂 #4）。
+    // #3 / spec #42 + 票 4：裸 +NN 文本令牌（无括号）在伪侧双通道生效——
+    // ① 反向证据（#43 同口径）：括号形态归 parenDial、同一证据不双写，供国家语义
+    //    谓词判定「值域里有没有区号」；
+    // ② 计分对等（票 4）：进伪侧 ARIA 层 L3 计分（pseudo:opts:+NN-text），与原生侧
+    //    opts:+NN-text 同权重（L3_PLUS_PAREN_SCORE）、同封顶（L3_DIAL_CAP）。
     if (!plusHit && !parenHit) {
       const tm = (txt + ' ' + lab).match(BARE_DIAL_RE);
       if (tm && DIAL_SET.has(tm[1])) textDial++;
@@ -667,6 +668,10 @@ export function createDetect(UI: CchUI, Rules: CchRules | null, Diag?: CchDiag |
               if (st2.plusDial > 0) score += add('L3', 'pseudo:opts:plus-dial', Math.min(st2.plusDial * L3_PLUS_DIAL_SCORE, L3_DIAL_CAP));
               // 票 28（A-002）：与 select 侧口径同步 —— 括号区号独立计分，去掉 plusDial > 0 前置（票 13 检查点二）
               if (st2.parenDial > 0) score += add('L3', 'pseudo:opts:(+NN)-text', Math.min(st2.parenDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
+              // 票 4：裸 +NN 文本证据计分对等 —— 与原生侧 opts:+NN-text 同权重
+              // （L3_PLUS_PAREN_SCORE/条）、同封顶（L3_DIAL_CAP）；#42 谓词的反向证据
+              // 半边（#43）不受影响，同一证据两处消费与原生侧口径一致（括号/裸不双写）。
+              if (st2.textDial > 0) score += add('L3', 'pseudo:opts:+NN-text', Math.min(st2.textDial * L3_PLUS_PAREN_SCORE, L3_DIAL_CAP));
               if (st2.numeric / st2.total >= L3_NUMERIC_MIN_RATE) score += add('L3', 'pseudo:opts:numeric-enum', L3_NUMERIC_PENALTY);
               if (st2.isoName / st2.total >= 0.5) score += add('L3', 'pseudo:opts:country-identity', L3_ISO_BONUS);
             }
