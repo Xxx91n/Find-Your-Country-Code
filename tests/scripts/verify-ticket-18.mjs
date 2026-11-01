@@ -753,6 +753,20 @@ function acTrigger(ac) {
 
 // ══ 9j 票 4：伪 select 裸 +NN 文本证据计分对等（同权重、同封顶、负例不抬、档位上限不变）══
 {
+  // 9j 块共用助手：{value,text}[] → listbox（LI 转换），以及 combobox 触发器 + withRoot 挂载。
+  const bareLb = function (lbId, opts) {
+    return makeNode('UL', { role: 'listbox', id: lbId }, opts.map(function (o) {
+      return makeNode('LI', { role: 'option', 'data-value': o.value }, [], o.text);
+    }));
+  };
+  const bareCombo = function (lbId, lb, label) {
+    const byId = {};
+    byId[lbId] = lb;
+    return withRoot(
+      makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': lbId,
+        id: lbId.replace(/-lb$/, '-combo'), class: 'MuiSelect-select' }, [], label),
+      byId);
+  };
   // 9.45 同权重对等：同构造的原生 select 与 ARIA combobox（选项文本都是裸 +NN），
   // 两侧 opts:+NN-text / pseudo:opts:+NN-text 的分项增量相等（4 条 × 8 = 32）。
   const bareOpts = function () {
@@ -761,13 +775,8 @@ function acTrigger(ac) {
   };
   const selPar = makeNode('SELECT', { id: 'parity-native' }, [], '');
   selPar.options = bareOpts();
-  const lbPar = makeNode('UL', { role: 'listbox', id: 'parity-lb' }, bareOpts().map(function (o) {
-    return makeNode('LI', { role: 'option', 'data-value': o.value }, [], o.text);
-  }));
-  const trigPar = withRoot(
-    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'parity-lb',
-      id: 'parity-combo', class: 'MuiSelect-select' }, [], 'United States +1'),
-    { 'parity-lb': lbPar });
+  const lbPar = bareLb('parity-lb', bareOpts());
+  const trigPar = bareCombo('parity-lb', lbPar, 'United States +1');
   const pN = registerProbe();
   const resN = pN.Det.scoreElement(selPar);
   const resP = registerProbe().Det.scoreElement(trigPar);
@@ -785,13 +794,8 @@ function acTrigger(ac) {
   }
   const selCap = makeNode('SELECT', { id: 'cap-native' }, [], '');
   selCap.options = capOpts.slice();
-  const lbCap = makeNode('UL', { role: 'listbox', id: 'cap-lb' }, capOpts.map(function (o) {
-    return makeNode('LI', { role: 'option', 'data-value': o.value }, [], o.text);
-  }));
-  const trigCap = withRoot(
-    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'cap-lb',
-      id: 'cap-combo', class: 'MuiSelect-select' }, [], 'United States +1'),
-    { 'cap-lb': lbCap });
+  const lbCap = bareLb('cap-lb', capOpts);
+  const trigCap = bareCombo('cap-lb', lbCap, 'United States +1');
   const resNCap = registerProbe().Det.scoreElement(selCap);
   const resPCap = registerProbe().Det.scoreElement(trigCap);
   const natCap = resNCap.signals.find(function (s) { return s.name === 'opts:+NN-text'; });
@@ -807,10 +811,7 @@ function acTrigger(ac) {
     makeNode('LI', { role: 'option' }, [], 'UTC+8'),
     makeNode('LI', { role: 'option' }, [], 'EUR/USD'),
   ]);
-  const trigFx = withRoot(
-    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'fx-lb',
-      id: 'fx-combo', class: 'MuiSelect-select' }, [], '+0.2%'),
-    { 'fx-lb': lbFx });
+  const trigFx = bareCombo('fx-lb', lbFx, '+0.2%');
   const resFx = registerProbe().Det.scoreElement(trigFx);
   const stFx = pseudoOptionStats(lbFx.children);
   check('9.47 负例不抬分：+0.2% / UTC+8 ⇒ textDial=0 且无 pseudo:opts:+NN-text',
@@ -820,16 +821,8 @@ function acTrigger(ac) {
 
   // 9.48 抬分后档位上限不变：分数升高后 _process 结算仍是「登记 + 手动召唤」
   // （rememberLow、不 attach），tier 压回 none + gate:adr-0005-register-only 留痕（守 US11）。
-  const lbReg = makeNode('UL', { role: 'listbox', id: 'reg-lb' }, [
-    makeNode('LI', { role: 'option', 'data-value': 'US' }, [], 'United States +1'),
-    makeNode('LI', { role: 'option', 'data-value': 'CA' }, [], 'Canada +1'),
-    makeNode('LI', { role: 'option', 'data-value': 'GB' }, [], 'United Kingdom +44'),
-    makeNode('LI', { role: 'option', 'data-value': 'CN' }, [], 'China +86'),
-  ]);
-  const trigReg = withRoot(
-    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'reg-lb',
-      id: 'reg-combo', class: 'MuiSelect-select' }, [], 'United States +1'),
-    { 'reg-lb': lbReg });
+  const lbReg = bareLb('reg-lb', bareOpts());
+  const trigReg = bareCombo('reg-lb', lbReg, 'United States +1');
   const pReg = registerProbe();
   pReg.Det._process(trigReg);
   const stReg = pReg.Det._state.get(trigReg);
