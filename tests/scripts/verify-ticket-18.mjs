@@ -312,7 +312,10 @@ const CA = { code: '+1', iso: 'CA', flag: 'x', country: '加拿大', countryEn: 
 //   摘掉 noRegister 判定 → 4.4 / 9.1 / 9.3 / 9.8 / 9.10 / 9.13 / 9.14 / 9.15 / 9.18
 //                                    / 9.25 / 9.26 转红；
 //   去掉 reason 的 tier 守卫 → 9.19 转红；
-//   去掉伪侧 textDial 反向证据 → 9.20 / 9.21 / 9.22 转红（#43 首轮返修，守 US11）；
+//   去掉伪侧 textDial 反向证据（谓词面） → 9.20 / 9.22 转红（#43 首轮返修，守 US11）；
+//   去掉伪侧 textDial 计分（pseudo:opts:+NN-text 加分项） → 9.21 / 9.45 / 9.46 转红
+//                                    （票 4 计分对等：同权重 8/条、封顶 45）；
+//   抬分后若伪 select 档位上限失守（自动注入 / 漏登记） → 9.48 转红（票 4，守 US11）；
 //   去掉 tel-country-code 豁免 → 9.23 / 9.24 转红（#43 二轮返修，守 US5）；
 //   去掉 countryName 证据（谓词的 (isoName + countryName) 退回只看 isoName） → 9.27 / 9.28 转红
 //                                    （#45 返修：本地化国名 / 纯国名两形态）；
@@ -478,7 +481,8 @@ const reasons = function (records) { return records.map(function (r) { return r.
 
 // 9g #43 审查返修：伪 select 侧的裸 +NN 文本证据必须**可评估**，否则 #42 谓词第 4 条在伪侧
 //    空转，把「带区号证据的伪 select」误判成纯国家并撤出召唤面——直接违反 US11「现有带
-//    (+NN)/+NN 证据的伪 select 行为完全不变」。该证据只作反向证据，不进任何加分项。
+//    (+NN)/+NN 证据的伪 select 行为完全不变」。票 4 起该证据双向生效：既作 #42 谓词的
+//    反向证据，也进伪侧 ARIA 层 L3 计分（与原生侧 opts:+NN-text 同权重、同封顶）。
 {
   const lb = makeNode('UL', { role: 'listbox', id: 'bare-lb' }, [
     makeNode('LI', { role: 'option', 'data-value': 'US' }, [], 'United States +1'),
@@ -497,8 +501,10 @@ const reasons = function (records) { return records.map(function (r) { return r.
     JSON.stringify(pseudoOptionStats(lb.children)));
   const p = registerProbe();
   const res = p.Det.scoreElement(trig);
-  check('9.21 该证据不抬分：L3 计分面仍只有 plus/paren/numeric/isoName（权重面未动）',
-    res.score === 50 && !hasName(res, 'country-semantic:no-register'),
+  check('9.21 票4 计分对等：textDial 抬升伪侧 L3（同权重 8/条、封顶 45），信号入账且不判 noRegister',
+    res.score === 82 &&
+    res.signals.some(function (s) { return s.name === 'pseudo:opts:+NN-text' && s.pts === 32; }) &&
+    res.noRegister !== true,
     'score=' + res.score + ' :: ' + sigNames(res).join(','));
   p.Det._process(trig);
   check('9.22 带区号证据的伪 select 仍登记（US11 不回归）',
@@ -744,6 +750,96 @@ function acTrigger(ac) {
     ' :: ' + ((stAnch && stAnch.signals) || []).map(function (s) { return s.name; }).join(','));
   check('9.44 该形态不调用登记（有锚不等于可召唤）',
     pAnch.calls.rememberLow.length === 0, 'rememberLow=' + pAnch.calls.rememberLow.length);
+
+// ══ 9j 票 4：伪 select 裸 +NN 文本证据计分对等（同权重、同封顶、负例不抬、档位上限不变）══
+{
+  // 9.45 同权重对等：同构造的原生 select 与 ARIA combobox（选项文本都是裸 +NN），
+  // 两侧 opts:+NN-text / pseudo:opts:+NN-text 的分项增量相等（4 条 × 8 = 32）。
+  const bareOpts = function () {
+    return [{ value: 'US', text: 'United States +1' }, { value: 'CA', text: 'Canada +1' },
+      { value: 'GB', text: 'United Kingdom +44' }, { value: 'CN', text: 'China +86' }];
+  };
+  const selPar = makeNode('SELECT', { id: 'parity-native' }, [], '');
+  selPar.options = bareOpts();
+  const lbPar = makeNode('UL', { role: 'listbox', id: 'parity-lb' }, bareOpts().map(function (o) {
+    return makeNode('LI', { role: 'option', 'data-value': o.value }, [], o.text);
+  }));
+  const trigPar = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'parity-lb',
+      id: 'parity-combo', class: 'MuiSelect-select' }, [], 'United States +1'),
+    { 'parity-lb': lbPar });
+  const pN = registerProbe();
+  const resN = pN.Det.scoreElement(selPar);
+  const resP = registerProbe().Det.scoreElement(trigPar);
+  const natSig = resN.signals.find(function (s) { return s.name === 'opts:+NN-text'; });
+  const psSig = resP.signals.find(function (s) { return s.name === 'pseudo:opts:+NN-text'; });
+  check('9.45 同权重对等：原生/伪侧裸 +NN 分项增量相等（4×8=32）',
+    !!natSig && !!psSig && natSig.pts === psSig.pts && natSig.pts === 32 &&
+    pseudoOptionStats(lbPar.children).textDial === 4,
+    'native=' + (natSig && natSig.pts) + ' pseudo=' + (psSig && psSig.pts));
+
+  // 9.46 封顶对等：textDial 条数超过 L3_DIAL_CAP(45)/L3_PLUS_PAREN_SCORE(8) ⇒ 两侧同封 45。
+  const capOpts = [];
+  for (let i = 0; i < 6; i++) {
+    capOpts.push({ value: 'US', text: 'United States +1' });
+  }
+  const selCap = makeNode('SELECT', { id: 'cap-native' }, [], '');
+  selCap.options = capOpts.slice();
+  const lbCap = makeNode('UL', { role: 'listbox', id: 'cap-lb' }, capOpts.map(function (o) {
+    return makeNode('LI', { role: 'option', 'data-value': o.value }, [], o.text);
+  }));
+  const trigCap = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'cap-lb',
+      id: 'cap-combo', class: 'MuiSelect-select' }, [], 'United States +1'),
+    { 'cap-lb': lbCap });
+  const resNCap = registerProbe().Det.scoreElement(selCap);
+  const resPCap = registerProbe().Det.scoreElement(trigCap);
+  const natCap = resNCap.signals.find(function (s) { return s.name === 'opts:+NN-text'; });
+  const psCap = resPCap.signals.find(function (s) { return s.name === 'pseudo:opts:+NN-text'; });
+  check('9.46 封顶对等：6 条 textDial（48 > 45）两侧同封 45',
+    !!natCap && !!psCap && natCap.pts === 45 && psCap.pts === 45,
+    'native=' + (natCap && natCap.pts) + ' pseudo=' + (psCap && psCap.pts));
+
+  // 9.47 负例不抬分：汇率/资费增量（+0.2%）与时区偏移（UTC+8）不是区号令牌
+  // ⇒ textDial=0、无 pseudo:opts:+NN-text 信号。
+  const lbFx = makeNode('UL', { role: 'listbox', id: 'fx-lb' }, [
+    makeNode('LI', { role: 'option' }, [], '+0.2%'),
+    makeNode('LI', { role: 'option' }, [], 'UTC+8'),
+    makeNode('LI', { role: 'option' }, [], 'EUR/USD'),
+  ]);
+  const trigFx = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'fx-lb',
+      id: 'fx-combo', class: 'MuiSelect-select' }, [], '+0.2%'),
+    { 'fx-lb': lbFx });
+  const resFx = registerProbe().Det.scoreElement(trigFx);
+  const stFx = pseudoOptionStats(lbFx.children);
+  check('9.47 负例不抬分：+0.2% / UTC+8 ⇒ textDial=0 且无 pseudo:opts:+NN-text',
+    stFx.textDial === 0 && stFx.plusDial === 0 && stFx.parenDial === 0 &&
+    !resFx.signals.some(function (s) { return s.name === 'pseudo:opts:+NN-text'; }),
+    JSON.stringify(stFx) + ' :: ' + sigNames(resFx).join(','));
+
+  // 9.48 抬分后档位上限不变：分数升高后 _process 结算仍是「登记 + 手动召唤」
+  // （rememberLow、不 attach），tier 压回 none + gate:adr-0005-register-only 留痕（守 US11）。
+  const lbReg = makeNode('UL', { role: 'listbox', id: 'reg-lb' }, [
+    makeNode('LI', { role: 'option', 'data-value': 'US' }, [], 'United States +1'),
+    makeNode('LI', { role: 'option', 'data-value': 'CA' }, [], 'Canada +1'),
+    makeNode('LI', { role: 'option', 'data-value': 'GB' }, [], 'United Kingdom +44'),
+    makeNode('LI', { role: 'option', 'data-value': 'CN' }, [], 'China +86'),
+  ]);
+  const trigReg = withRoot(
+    makeNode('DIV', { role: 'combobox', 'aria-expanded': 'false', 'aria-controls': 'reg-lb',
+      id: 'reg-combo', class: 'MuiSelect-select' }, [], 'United States +1'),
+    { 'reg-lb': lbReg });
+  const pReg = registerProbe();
+  pReg.Det._process(trigReg);
+  const stReg = pReg.Det._state.get(trigReg);
+  check('9.48 抬分后档位上限不变：仍「登记(kind=pseudo)+手动召唤」，tier=none + cap 留痕',
+    pReg.calls.rememberLow.length === 1 && pReg.calls.rememberLow[0][1] === 'pseudo' &&
+    pReg.calls.attach.length === 0 && !!stReg && stReg.tier === 'none' &&
+    (stReg.signals || []).some(function (s) { return s.name === 'gate:adr-0005-register-only'; }),
+    'rememberLow=' + pReg.calls.rememberLow.length + ' attach=' + pReg.calls.attach.length +
+    ' tier=' + (stReg && stReg.tier) + ' score=' + (stReg && stReg.score));
+}
 
 console.log('-----------------------------');
 console.log('verify-ticket-18: ' + pass + ' PASS, ' + fail + ' FAIL');
