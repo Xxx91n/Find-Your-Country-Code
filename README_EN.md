@@ -4,20 +4,20 @@
 **English** | [**简体中文**](./README.md)
 
 <p align="center">
-  
-**Browser userscript for quickly selecting and filling international phone country codes on almost any website.**
+
+**Browser userscript: detects phone country-code fields on any webpage, attaches a 🌐 icon, and opens a searchable dialing-code picker. Works with userscript managers like Tampermonkey.**
 </p>
 </div>
 
 ## Features
 
-- Multi-signal weighted scoring auto-detects country/phone code fields (`select`, `input`, and `intl-tel-input` scenarios) with tiered actions by confidence — honorific prefixes, local fixed-line area codes, and pure numeric dropdowns no longer trigger false icons
+- Multi-signal weighted scoring auto-detects country/phone code fields (`select`, `input`, `intl-tel-input` scenarios) with tiered actions by confidence — honorific prefixes, local fixed-line area codes, and pure numeric dropdowns no longer trigger false icons
 - High-confidence fields get an automatic 🌐 icon; medium confidence injects low-key (semi-transparent, shrunk, restored on hover); low confidence stays hidden but can be summoned from the panel
 - Honors standard `autocomplete` signals (e.g. `tel-country-code`) and validates dropdown options by content
-- One-click 🌐 trigger to open a fast country code picker; search by country name (CN/EN), ISO code, and dialing code
-- Favorites support with persistent local storage
-- Works with dynamic pages: MutationObserver scanning + SPA route-change rescans, traversing open Shadow DOM
-- intl-tel-input v16–v29 adaptation; React/Vue controlled components sync via native event sequences
+- One click on 🌐 opens the country-code panel; search by Chinese/English country name, ISO code, or dialing code
+- Favorites persist via GM storage
+- Works on dynamic pages: MutationObserver scanning + SPA route-change rescans, traversing open Shadow DOM
+- intl-tel-input v16–v29 adaptation; React/Vue controlled components sync through the native input→change→blur sequence
 
 ## Screenshots
 
@@ -32,39 +32,52 @@
   </tr>
 </table>
 
-## Installation
+Known boundary: closed shadow roots go undetected; cross-frame panel messaging degrades on nested shadow-hosted frames ([src/main.ts](./src/main.ts)).
+
+## Usage
 
 ### Prerequisites
 
-Install one userscript manager extension:
+Install one userscript manager:
 
 - [Tampermonkey](https://www.tampermonkey.net/)
 - [Greasemonkey](https://www.greasespot.net/)
 - [Violentmonkey](https://violentmonkey.github.io/)
 
-### Install Script
+### Install the script
 
-1. **Direct install URL**
+**Option 1: direct install**
 
 - [GreasyFork](https://update.greasyfork.org/scripts/573755/Find-Your-Country-Code.user.js)
 - [GitHub Release](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest/download/find-your-country-code.user.js)
 
-2. **Manual install**
-   1. Build from source: clone this repo, then run `npm install && npm run build` to produce `dist/find-your-country-code.user.js`.
-   2. Create a new userscript in your manager
-   3. Paste the build output and save
+**Option 2: manual install**
 
-## Single Authoritative Channel
+1. Build from source: clone this repo, run `npm install && npm run build` — the artifact is `dist/find-your-country-code.user.js`.
+2. Open your userscript manager's dashboard.
+3. Add a new script.
+4. Paste the build output and save.
 
-The **single authoritative channel** for this project is the source repository [GitHub: Xxx91n/Find-Your-Country-Code](https://github.com/Xxx91n/Find-Your-Country-Code): the source code, the version source of truth (`package.json`), and the release artifacts ([`releases/latest`](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest)) all live there.
+## Versioning & sync
 
-The [GreasyFork listing](https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code) is a **pull-based mirror**: GreasyFork pulls updates from that `releases/latest` artifact through its own "Sync from external URL" feature. This repository does not push to GreasyFork, and there is no such path (GreasyFork exposes no write API).
+`package.json`'s `version` is the single source of truth: `vite.config.ts` reads it at build time and injects the artifact `// @version`. GitHub Release artifacts ship from [`releases/latest`](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest).
 
-**Current state (observed 2026-09-17)**: the online GreasyFork `@version` reads `1.7.0`, equal to the source repository's `package.json` (`1.7.0`) and to the GitHub `releases/latest` artifact version. That alignment is an **observation from that date only**, and does not confirm the GreasyFork-side sync state — the sync switch cannot be verified from outside, and future mirror updates still depend on GreasyFork's own pull behaviour. For the latest version, use the source repository channel.
+The [GreasyFork listing](https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code) is a pull-based mirror — GreasyFork fetches updates itself from the `releases/latest` artifact through its "Sync from external URL" setting; this repo never pushes to GreasyFork (GF has no write API). CI runs a daily read-only consistency check ([`gf-alignment-check.yml`](./.github/workflows/gf-alignment-check.yml)) that alerts when the two versions drift. For the latest version first, use the GitHub Release link.
 
 ## Contributing
 
-[issue](https://github.com/Xxx91n/Find-Your-Country-Code/issues) and [PR](https://github.com/Xxx91n/Find-Your-Country-Code/pulls) are welcome!
+Open an [issue](https://github.com/Xxx91n/Find-Your-Country-Code/issues) or a [PR](https://github.com/Xxx91n/Find-Your-Country-Code/pulls).
+
+Development:
+
+```bash
+npm install
+npm run dev
+npm run build      # artifact: dist/find-your-country-code.user.js
+npm run e2e        # build + Playwright e2e tests
+```
+
+Bump the version only in `package.json`; the release flow is in [CONTRIBUTING_EN.md](./CONTRIBUTING_EN.md).
 
 ## License
 

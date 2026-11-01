@@ -4,18 +4,18 @@
 [**English**](./README_EN.md) | **简体中文**
 
 <p align="center">
-  
-**一个浏览器js脚本，专注于在任意网页中快速选择填写手机号的国家区号，可用于篡改猴。**
+
+**一个浏览器 js 脚本：识别网页里的手机号国家区号字段，挂 🌐 图标，点开即是可搜索的区号面板。可用于篡改猴。**
 </p>
 </div>
 
 ## 功能特性
 
-- 多信号加权评分自动识别国家/区号字段（`select`、`input`、`intl-tel-input` 场景），按置信度分级行动，称呼前缀、固话本地区号、纯数字枚举等易混淆字段不再误报
+- 多信号加权评分自动识别国家/区号字段（`select`、`input`、`intl-tel-input` 场景），按置信度分级行动：称呼前缀、固话本地区号、纯数字枚举等易混淆字段不再误报
 - 高置信字段自动注入 🌐 图标；中置信低调注入（半透明小图标，悬停恢复）；低置信默认不注入，可从面板手动召唤
 - 支持 `autocomplete` 标准信号（如 `tel-country-code`）与下拉选项内容验证
-- 点击 🌐 图标快速打开国家区号面板，支持中文/英文国家名、ISO、区号搜索
-- 支持收藏常用国家区号并持久化保存
+- 点击 🌐 图标打开区号面板，支持中文/英文国家名、ISO、区号搜索
+- 收藏常用区号，GM 持久化保存
 - 兼容动态页面：MutationObserver 自动扫描 + SPA 路由切换重扫，穿透 open Shadow DOM
 - intl-tel-input v16–v29 版本适配；React/Vue 等受控组件经原生事件序列真实同步
 
@@ -32,12 +32,17 @@
   </tr>
 </table>
 
-## 如何使用
+已知局限：closed Shadow Root 检测不到；跨帧面板消息在嵌套 shadow 宿主帧场景走降级提示（[src/main.ts](./src/main.ts)）。
+
+## 使用
+
 ### 前置要求
 
-安装以下任意一个浏览器扩展:
+安装以下任意一个浏览器扩展：
+
 - [Tampermonkey](https://www.tampermonkey.net/)
 - [Greasemonkey](https://www.greasespot.net/)
+- [Violentmonkey](https://violentmonkey.github.io/)
 
 ### 安装脚本
 
@@ -49,21 +54,30 @@
 **方法二：手动安装**
 
 1. 自行构建：克隆仓库后执行 `npm install && npm run build`，产物为 `dist/find-your-country-code.user.js`。
-2. 打开 Tampermonkey 管理面板。
-3. 点击 添加新脚本。
+2. 打开脚本管理器的管理面板。
+3. 点击「添加新脚本」。
 4. 粘贴产物代码并保存。
 
-## 唯一权威渠道
+## 版本与同步
 
-本项目的**唯一权威渠道**是源仓库 [GitHub: Xxx91n/Find-Your-Country-Code](https://github.com/Xxx91n/Find-Your-Country-Code)：源码、版本真源（`package.json`）与发行产物（[`releases/latest`](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest)）均以该仓库为准。
+`package.json` 的 `version` 是唯一版本真源：`vite.config.ts` 构建时读它并注入产物 `// @version`，GitHub Release 产物由 [`releases/latest`](https://github.com/Xxx91n/Find-Your-Country-Code/releases/latest) 提供。
 
-[GreasyFork 脚本页](https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code) 是**拉取式镜像（pull-based mirror）**：GreasyFork 通过站内「Sync from external URL」自行从上述 `releases/latest` 产物拉取更新；本仓库不向 GreasyFork 推送，也没有这条路径（GreasyFork 未提供写入 API）。
-
-**当前状态（观测于 2026-09-17）**：GreasyFork 线上 `@version` 为 `1.7.0`，与源仓库 `package.json`（`1.7.0`）及 GitHub `releases/latest` 产物版本一致。该一致性仅为**当日观测结果**，不构成对 GreasyFork 站内同步状态的确认——同步开关无法从外部核实，镜像侧后续更新仍取决于 GreasyFork 自身的拉取行为；如需最新版本，请以源仓库渠道为准。
+[GreasyFork 脚本页](https://greasyfork.org/zh-CN/scripts/573755-find-your-country-code)是拉取式镜像——GreasyFork 通过站内「Sync from external URL」自行从 `releases/latest` 产物拉取更新，本仓库不向 GreasyFork 推送（GF 无写入 API）。CI 每天跑一次只读一致性校验（[`gf-alignment-check.yml`](./.github/workflows/gf-alignment-check.yml)），发现两边版本漂移时告警。镜像侧版本可能滞后于仓库；要第一时间拿到最新版本，走 GitHub Release 直链。
 
 ## 贡献
 
 提交 [issue](https://github.com/Xxx91n/Find-Your-Country-Code/issues) 或 [PR](https://github.com/Xxx91n/Find-Your-Country-Code/pulls)。
+
+开发流程：
+
+```bash
+npm install
+npm run dev
+npm run build      # 产物 dist/find-your-country-code.user.js
+npm run e2e        # 构建 + Playwright 端到端测试
+```
+
+版本号只改 `package.json` 一处；发布流程与节奏见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
 
 ## 许可证
 
